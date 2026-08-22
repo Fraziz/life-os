@@ -1,0 +1,411 @@
+/* ══════════════════════════════════════════════════════════════
+   LIFE ROADMAP — Node Graph / Blueprint Canvas
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ── */
+.roadmapPage {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--topbar-height, 0px) - var(--space-8) * 2);
+  min-height: 500px;
+  gap: 0;
+  position: relative;
+  margin: calc(-1 * var(--space-8));  /* Bleed to edge of content area */
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* ── Top bar ── */
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pageTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.pageSub {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  padding: 1px 6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+}
+
+/* ── Filter pills ── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.filterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filterPill:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.filterPill.filterActive {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+  font-weight: var(--weight-semibold);
+}
+
+/* ── Zoom controls ── */
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.zoomBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.zoomLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ── Column headers (pinned, not scaled) ── */
+.columnHeaders {
+  position: relative;
+  height: 32px;
+  flex-shrink: 0;
+  background: rgba(7, 7, 14, 0.6);
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+.colHeader {
+  position: absolute;
+  transform: translateX(-50%);
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  transition: left var(--transition-fast);
+}
+
+/* ── Canvas viewport (clipping area) ── */
+.canvasViewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--color-bg);
+  cursor: grab;
+  user-select: none;
+}
+
+.canvasViewport.dragging {
+  cursor: grabbing;
+}
+
+/* ── Canvas (scaled & panned) ── */
+.canvas {
+  position: relative;
+  will-change: transform;
+}
+
+/* ── Dot grid ── */
+.dotGrid {
+  pointer-events: none;
+}
+
+/* ── SVG connection curves ── */
+.svgOverlay {
+  pointer-events: none;
+}
+
+.connectionPath {
+  animation: drawPath 0.8s ease forwards;
+}
+
+@keyframes drawPath {
+  from { stroke-dasharray: 2000; stroke-dashoffset: 2000; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ── Node card ── */
+.nodeCard {
+  position: absolute;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 4px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+  cursor: default;
+  overflow: visible;
+}
+
+.nodeCard:hover {
+  transform: translateY(-1px);
+}
+
+.nodeHovered {
+  transform: translateY(-2px) !important;
+}
+
+.nodeConnected {
+  opacity: 1;
+}
+
+/* Accent bar on left edge */
+.nodeAccentBar {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── Node header ── */
+.nodeHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nodeTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.nodeStatusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nodeExternalLink {
+  margin-left: auto;
+  color: var(--color-text-faint);
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.nodeCard:hover .nodeExternalLink {
+  opacity: 1;
+}
+
+/* ── Node title ── */
+.nodeTitle {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Progress bar ── */
+.nodeProgressArea {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.nodeProgressTrack {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.nodeProgressFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+.nodeProgressLabel {
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 26px;
+  text-align: right;
+}
+
+/* ── Connection port dots ── */
+.portOut,
+.portIn {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.nodeCard:hover .portOut,
+.nodeCard:hover .portIn {
+  opacity: 1;
+}
+
+.portOut {
+  right: -5px;
+}
+
+.portIn {
+  left: -5px;
+}
+
+/* ── Legend bar ── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 6px var(--space-5);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.legendLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.legendHint {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* ── Loading screen ── */
+.loadingScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  height: 400px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* ── Mobile tweaks ── */
+@media (max-width: 768px) {
+  .roadmapPage {
+    margin: calc(-1 * var(--space-4));
+    height: calc(100dvh - var(--topbar-height, 56px) - 72px);
+  }
+
+  .topBar {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .filterRow {
+    display: none; /* Show only zoom on mobile */
+  }
+
+  .colHeader {
+    font-size: 9px;
+  }
+
+  .legend {
+    padding: 4px var(--space-3);
+  }
+}

@@ -1,0 +1,770 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: 100%;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.zenMode {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  z-index: var(--z-modal);
+  padding: var(--space-8);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* In zen mode, collapse two-column grid to a single centred card */
+.zenMode .focusContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  gap: var(--space-6);
+}
+
+.zenMode .focusCard {
+  width: 100%;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Zen Focus Container ── */
+.focusContainer {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .focusContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Left: Central Focus Card ── */
+.focusCard {
+  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(124, 106, 255, 0.04) 100%);
+  border: 1px solid rgba(124, 106, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  position: relative;
+}
+
+/* Mode Switcher Tabs */
+.modeTabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.modeTab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modeTab:hover {
+  color: var(--color-text);
+}
+
+.modeTab.activeMode {
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 2px 8px rgba(124, 106, 255, 0.3);
+}
+
+/* ── Formal Circular Gauge Timer Display ── */
+.timerDisplay {
+  font-size: 3.25rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  user-select: none;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.timerDisplay.activeTick {
+  color: var(--color-accent-light);
+  text-shadow: 0 0 24px rgba(124, 106, 255, 0.35);
+}
+
+/* ── Current Task Hero Area ── */
+.currentTaskArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 600px;
+  width: 100%;
+}
+
+.taskTagPill {
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-light);
+  background: rgba(124, 106, 255, 0.15);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.taskTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.taskWhy {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Controls Row ── */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btnStart {
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  padding: var(--space-3) var(--space-8);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(124, 106, 255, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.btnStart:hover {
+  background: #6a5cff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 106, 255, 0.45);
+}
+
+.btnPause {
+  background: #f59e0b;
+  color: #000;
+  border: none;
+  padding: var(--space-3) var(--space-8);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.btnPause:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+}
+
+.btnFinish {
+  background: var(--color-success);
+  color: #07070e;
+  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(34, 211, 165, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.btnFinish:hover {
+  background: #10b981;
+  transform: translateY(-2px);
+}
+
+.btnReset {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnReset:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+/* ── Subtasks on Focus Page (Formal & Clean) ── */
+.subtasksBox {
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--color-border-subtle);
+  border-radius: 0;
+  padding: var(--space-2) 0 var(--space-2) var(--space-4);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.subtaskRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.subtaskRow.done {
+  text-decoration: line-through;
+  color: var(--color-text-faint);
+}
+
+/* ── Right Sidebar: Task Picker & History ── */
+.sideSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sideCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sideCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sideCardTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Side Mode Grid & Buttons */
+.sideModeGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sideModeBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all var(--transition-fast);
+}
+
+.sideModeBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.sideModeBtn.activeSideMode {
+  background: rgba(124, 106, 255, 0.15);
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 0 0 1px rgba(124, 106, 255, 0.2);
+}
+
+/* ── Side Session Controls ── */
+.sideBtnStart {
+  width: 100%;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(124, 106, 255, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.sideBtnStart:hover {
+  background: #6a5cff;
+  transform: translateY(-1px);
+}
+
+.sideBtnPause {
+  width: 100%;
+  background: #f59e0b;
+  color: #07070e;
+  border: none;
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.sideBtnPause:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.sideActionBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all var(--transition-fast);
+}
+
+.sideActionBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.sideBtnFinish {
+  width: 100%;
+  background: rgba(34, 211, 165, 0.12);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+  padding: 8px var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.sideBtnFinish:hover {
+  background: var(--color-success);
+  color: #07070e;
+  transform: translateY(-1px);
+}
+
+/* ── Side Distraction Parking Lot ── */
+.sideParkingLotForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sideParkingLotInput {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.sideParkingLotInput:focus {
+  border-color: var(--color-accent);
+}
+
+.sideBtnParkSubmit {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.sideBtnParkSubmit:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.historyItem {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historyItemTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.historyItemMeta {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Modals ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeInFast 0.2s ease forwards;
+}
+
+.modalCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── ADHD Superpower Elements ── */
+
+.adhdBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-warning);
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Time Timer SVG Circular Container */
+.timeTimerContainer {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-4) 0;
+}
+
+.timeTimerSvg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.timeTimerCenter {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timerSubtitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+}
+
+.livePulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: inline-block;
+  animation: pulse 1.5s ease infinite;
+}
+
+/* 1-Click Magic Breakdown Button */
+.btnMagicBreakdown {
+  background: rgba(124, 106, 255, 0.15);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-light);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.btnMagicBreakdown:hover {
+  background: var(--color-accent);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Distraction Parking Lot */
+.parkingLotCard {
+  width: 100%;
+  max-width: 600px;
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.parkingLotForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.parkingLotLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.parkingLotInput {
+  flex: 1;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 6px 10px;
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.parkingLotInput:focus {
+  border-color: var(--color-accent);
+}
+
+.btnParkSubmit {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.btnParkSubmit:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Ambient Sound Grid */
+.ambientBtnGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.ambientPill {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 6px 8px;
+  border-radius: var(--radius-lg);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all var(--transition-fast);
+}
+
+.ambientPill:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.ambientPill.activeAmbient {
+  background: rgba(34, 211, 165, 0.15);
+  border-color: var(--color-success);
+  color: var(--color-success);
+  font-weight: 600;
+}
+

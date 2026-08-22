@@ -1,0 +1,52 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Main content area ── */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--transition-base);
+}
+
+.main.sidebarCollapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ── Page content wrapper ── */
+.content {
+  flex: 1;
+  padding: var(--space-8);
+  max-width: 100%;
+  width: 100%;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* ── Mobile adjustments ── */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: var(--topbar-height);
+  }
+
+  .main.sidebarCollapsed {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: var(--space-4);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: var(--space-3);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+  }
+}
+
