@@ -3,6 +3,10 @@ import AppShell from '@/components/layout/AppShell';
 import SkipLink from '@/components/ui/SkipLink';
 import './globals.css';
 
+// Force all pages to render dynamically (never pre-rendered at build time)
+// This is required because pages use React Context providers available only at runtime
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: {
     default: 'Life OS — Turn Dreams Into Action',
