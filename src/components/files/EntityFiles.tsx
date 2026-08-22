@@ -44,7 +44,7 @@ export function FilesDrawer({
   title: string;
   onClose: () => void;
 }) {
-  const { filesFor, uploadFiles, deleteFile, uploads, error } = useAttachments();
+  const { filesFor, uploadFiles, addLinkAttachment, deleteFile, uploads, error } = useAttachments();
   const files = filesFor(entityType, entityId);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -52,6 +52,9 @@ export function FilesDrawer({
   const folderRef = useRef<HTMLInputElement>(null);
   const [folder, setFolder] = useState('All');
   const [dragging, setDragging] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkName, setLinkName] = useState('');
 
   useEffect(() => {
     const el = folderRef.current;
@@ -78,6 +81,22 @@ export function FilesDrawer({
     });
   };
 
+  const handleAddLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkUrl.trim()) return;
+    await addLinkAttachment({
+      url: linkUrl.trim(),
+      name: linkName.trim() || linkUrl.trim(),
+      entityType,
+      entityId,
+      entityTitle: title,
+      folder: 'Links',
+    });
+    setLinkUrl('');
+    setLinkName('');
+    setShowLinkInput(false);
+  };
+
   return (
     <div className={styles.overlay} onClick={onClose} role="presentation">
       <div
@@ -88,9 +107,9 @@ export function FilesDrawer({
       >
         <div className={styles.header}>
           <div>
-            <h2 className={styles.title}>Files</h2>
+            <h2 className={styles.title}>Files & Links</h2>
             <p className={styles.subtitle}>
-              {title} — add photos, videos, documents, or a whole folder. Same files on phone and computer.
+              {title} — add photos, documents, or Drive links. Free cloud sync across phone & PC.
             </p>
           </div>
           <button className={styles.close} onClick={onClose} aria-label="Close files">
@@ -104,16 +123,44 @@ export function FilesDrawer({
           <button className={styles.bigBtn} type="button" onClick={() => photoRef.current?.click()}>
             <ImageIcon size={18} /> Photos
           </button>
-          <button className={styles.bigBtn} type="button" onClick={() => videoRef.current?.click()}>
-            <Video size={18} /> Videos
-          </button>
           <button className={styles.bigBtn} type="button" onClick={() => fileRef.current?.click()}>
             <FilePlus size={18} /> Documents
           </button>
+          <button className={styles.bigBtn} type="button" onClick={() => setShowLinkInput(!showLinkInput)}>
+            <Paperclip size={18} /> Drive / Link
+          </button>
           <button className={styles.bigBtn} type="button" onClick={() => folderRef.current?.click()}>
-            <FolderUp size={18} /> Whole folder
+            <FolderUp size={18} /> Folder
           </button>
         </div>
+
+        {showLinkInput && (
+          <form onSubmit={handleAddLink} style={{ margin: '12px 0', padding: 12, background: 'var(--color-surface-2)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Link Title (e.g. Google Drive, Figma, Notion)"
+              value={linkName}
+              onChange={(e) => setLinkName(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, color: 'var(--color-text)' }}
+            />
+            <input
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={linkUrl}
+              required
+              onChange={(e) => setLinkUrl(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, color: 'var(--color-text)' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setShowLinkInput(false)} style={{ padding: '6px 12px', borderRadius: 6, background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+                Cancel
+              </button>
+              <button type="submit" style={{ padding: '6px 14px', borderRadius: 6, background: 'var(--color-accent)', color: 'white', border: 'none', fontWeight: 600 }}>
+                Save Link
+              </button>
+            </div>
+          </form>
+        )}
 
         <input ref={photoRef} className={styles.hidden} type="file" accept="image/*" multiple onChange={(e) => void handleFiles(e.target.files)} />
         <input ref={videoRef} className={styles.hidden} type="file" accept="video/*" multiple onChange={(e) => void handleFiles(e.target.files)} />

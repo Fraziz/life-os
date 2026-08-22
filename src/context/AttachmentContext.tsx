@@ -29,6 +29,14 @@ interface AttachmentContextType {
     entityTitle: string;
     folder?: string;
   }) => Promise<void>;
+  addLinkAttachment: (params: {
+    url: string;
+    name: string;
+    entityType: FileEntityType;
+    entityId: string;
+    entityTitle: string;
+    folder?: string;
+  }) => Promise<void>;
   deleteFile: (file: LifeFile) => Promise<void>;
 }
 
@@ -128,65 +136,147 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
       setError(null);
 
       for (const file of list) {
-        if (file.size > MAX_BYTES) {
-          setError(`${file.name} is bigger than 200 MB. Pick a smaller file.`);
-          continue;
-        }
         const relative = (file as File & { webkitRelativePath?: string }).webkitRelativePath || '';
         const folderName = relative.includes('/')
           ? relative.split('/')[0]
           : folder || 'General';
+
+        // For files <= 2MB (images, screenshots, notes, docs):
+        // Convert to Data URL and store in Firestore directly — ZERO Blaze plan required!
+        if (file.size <= 2 * 1024 * 1024) {
+          setUploads((prev) => ({ ...prev, [file.name]: 30 }));
+          try {
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(new Error('Failed to read file.'));
+              reader.readAsDataURL(file);
+            });
+
+            setUploads((prev) => ({ ...prev, [file.name]: 80 }));
+
+            await addDoc(collection(getFirebaseDb(), 'users', user.uid, 'files'), {
+              name: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              size: file.size,
+              kind: classify(file.type, file.name),
+              folder: folderName,
+              storagePath: 'inline-firestore',
+              downloadUrl: dataUrl,
+              entityType,
+              entityId,
+              entityTitle,
+              createdAt: serverTimestamp(),
+            });
+
+            setUploads((prev) => {
+              const next = { ...prev };
+              delete next[file.name];
+              return next;
+            });
+            continue;
+          } catch (err) {
+            console.warn('Direct upload failed, trying storage:', err);
+          }
+        }
+
+        // For larger files: Attempt Firebase Storage
+        if (file.size > MAX_BYTES) {
+          setError(`${file.name} is bigger than 200 MB. Pick a smaller file or add a link.`);
+          continue;
+        }
+
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const path = `users/${user.uid}/${entityType}/${entityId}/${folderName}/${id}-${safeName(file.name)}`;
-        const storageRef = ref(getFirebaseStorage(), path);
-        const task = uploadBytesResumable(storageRef, file, { contentType: file.type || 'application/octet-stream' });
 
-        await new Promise<void>((resolve, reject) => {
-          task.on(
-            'state_changed',
-            (snap) => {
-              const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-              setUploads((prev) => ({ ...prev, [file.name]: pct }));
-            },
-            (err) => {
-              setUploads((prev) => {
-                const next = { ...prev };
-                delete next[file.name];
-                return next;
-              });
-              setError(explainFirebaseError(err));
-              reject(err);
-            },
-            async () => {
-              try {
-                const downloadUrl = await getDownloadURL(task.snapshot.ref);
-                await addDoc(collection(getFirebaseDb(), 'users', user.uid, 'files'), {
-                  name: file.name,
-                  mimeType: file.type || 'application/octet-stream',
-                  size: file.size,
-                  kind: classify(file.type, file.name),
-                  folder: folderName,
-                  storagePath: path,
-                  downloadUrl,
-                  entityType,
-                  entityId,
-                  entityTitle,
-                  createdAt: serverTimestamp(),
-                });
+        try {
+          const storageRef = ref(getFirebaseStorage(), path);
+          const task = uploadBytesResumable(storageRef, file, { contentType: file.type || 'application/octet-stream' });
+
+          await new Promise<void>((resolve, reject) => {
+            task.on(
+              'state_changed',
+              (snap) => {
+                const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                setUploads((prev) => ({ ...prev, [file.name]: pct }));
+              },
+              (err) => {
                 setUploads((prev) => {
                   const next = { ...prev };
                   delete next[file.name];
                   return next;
                 });
-                resolve();
-              } catch (err) {
-                setError(explainFirebaseError(err));
                 reject(err);
+              },
+              async () => {
+                try {
+                  const downloadUrl = await getDownloadURL(task.snapshot.ref);
+                  await addDoc(collection(getFirebaseDb(), 'users', user.uid, 'files'), {
+                    name: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    size: file.size,
+                    kind: classify(file.type, file.name),
+                    folder: folderName,
+                    storagePath: path,
+                    downloadUrl,
+                    entityType,
+                    entityId,
+                    entityTitle,
+                    createdAt: serverTimestamp(),
+                  });
+                  setUploads((prev) => {
+                    const next = { ...prev };
+                    delete next[file.name];
+                    return next;
+                  });
+                  resolve();
+                } catch (err) {
+                  reject(err);
+                }
               }
-            }
+            );
+          });
+        } catch (err) {
+          // If storage fails due to free plan limits, alert user to attach smaller files or drive links
+          setError(
+            `Could not upload "${file.name}" via Firebase Storage (free plan limit). Please upload photos/docs under 2MB or use Google Drive/Dropbox links.`
           );
-        });
+        }
       }
+    },
+    [user]
+  );
+
+  const addLinkAttachment = useCallback(
+    async ({
+      url,
+      name,
+      entityType,
+      entityId,
+      entityTitle,
+      folder = 'Links',
+    }: {
+      url: string;
+      name: string;
+      entityType: FileEntityType;
+      entityId: string;
+      entityTitle: string;
+      folder?: string;
+    }) => {
+      if (!user) throw new Error('Log in first.');
+      await addDoc(collection(getFirebaseDb(), 'users', user.uid, 'files'), {
+        name: name || url,
+        mimeType: 'text/uri-list',
+        size: 0,
+        kind: 'document',
+        folder: folder || 'Links',
+        storagePath: 'link-url',
+        downloadUrl: url.startsWith('http') ? url : `https://${url}`,
+        entityType,
+        entityId,
+        entityTitle,
+        createdAt: serverTimestamp(),
+      });
     },
     [user]
   );
@@ -194,10 +284,12 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   const deleteFile = useCallback(
     async (file: LifeFile) => {
       if (!user) return;
-      try {
-        await deleteObject(ref(getFirebaseStorage(), file.storagePath));
-      } catch {
-        // Storage object may already be gone — still remove the card.
+      if (file.storagePath && file.storagePath !== 'inline-firestore' && file.storagePath !== 'link-url') {
+        try {
+          await deleteObject(ref(getFirebaseStorage(), file.storagePath));
+        } catch {
+          // Storage object may already be gone — still remove the card.
+        }
       }
       await deleteDoc(doc(getFirebaseDb(), 'users', user.uid, 'files', file.id));
     },
@@ -205,8 +297,8 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   );
 
   const value = useMemo(
-    () => ({ files, isLoaded, error, uploads, filesFor, uploadFiles, deleteFile }),
-    [files, isLoaded, error, uploads, filesFor, uploadFiles, deleteFile]
+    () => ({ files, isLoaded, error, uploads, filesFor, uploadFiles, addLinkAttachment, deleteFile }),
+    [files, isLoaded, error, uploads, filesFor, uploadFiles, addLinkAttachment, deleteFile]
   );
 
   return <AttachmentContext.Provider value={value}>{children}</AttachmentContext.Provider>;
