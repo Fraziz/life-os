@@ -148,15 +148,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Task>(TASKS_STORAGE_KEY);
-      if (parsed) setTasks(parsed);
+      if (parsed && parsed.length > 0) setTasks(parsed);
+      else if (!parsed) setTasks(DEFAULT_TASKS);
     } catch (err) {
       console.error('Failed to load Life OS tasks:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveTasks = (newTasks: Task[]) => {

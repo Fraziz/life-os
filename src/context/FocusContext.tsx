@@ -71,8 +71,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 
   const sessionStartRef = useRef<string | null>(null);
 
-  // Load focus history and default active task on mount
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const saved = localStorage.getItem(FOCUS_HISTORY_KEY);
       if (saved) {
@@ -81,9 +80,16 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error('Failed to load focus history:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   // Sync default active task from tasks list

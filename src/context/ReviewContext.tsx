@@ -70,18 +70,28 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
   const [reviews, setReviews] = useState<WeeklyReview[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const saved = localStorage.getItem(REVIEWS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setReviews(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) setReviews(parsed);
+        else setReviews(DEFAULT_WEEKLY_REVIEWS);
+      } else {
+        setReviews(DEFAULT_WEEKLY_REVIEWS);
       }
     } catch (err) {
       console.error('Failed to load weekly reviews:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveReviews = (newReviews: WeeklyReview[]) => {

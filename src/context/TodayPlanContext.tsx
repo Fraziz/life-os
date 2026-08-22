@@ -70,8 +70,7 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
   const [todayPlan, setTodayPlan] = useState<TodayPlanState>(DEFAULT_TODAY_PLAN);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const saved = localStorage.getItem(TODAY_PLAN_STORAGE_KEY);
       if (saved) {
@@ -85,9 +84,16 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error('Failed to load Today Plan:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, [settings?.availableHoursPerDay]);
 
   const savePlan = (newPlan: TodayPlanState) => {

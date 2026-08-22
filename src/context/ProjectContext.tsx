@@ -87,15 +87,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Project>(PROJECTS_STORAGE_KEY);
-      if (parsed) setProjects(parsed);
+      if (parsed && parsed.length > 0) setProjects(parsed);
+      else if (!parsed) setProjects(DEFAULT_PROJECTS);
     } catch (err) {
       console.error('Failed to load Life OS projects:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveProjects = (newProjects: Project[]) => {

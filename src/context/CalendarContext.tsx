@@ -99,17 +99,27 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const [scheduledBlocks, setScheduledBlocks] = useState<ScheduledWorkBlock[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsedEvents = loadJsonArray<CalendarEvent>(EVENTS_STORAGE_KEY);
-      if (parsedEvents) setEvents(parsedEvents);
+      if (parsedEvents && parsedEvents.length > 0) setEvents(parsedEvents);
+      else if (!parsedEvents) setEvents(DEFAULT_CALENDAR_EVENTS);
+
       const parsedBlocks = loadJsonArray<ScheduledWorkBlock>(BLOCKS_STORAGE_KEY);
-      if (parsedBlocks) setScheduledBlocks(parsedBlocks);
+      if (parsedBlocks && parsedBlocks.length > 0) setScheduledBlocks(parsedBlocks);
+      else if (!parsedBlocks) setScheduledBlocks(DEFAULT_SCHEDULED_BLOCKS);
     } catch (err) {
       console.error('Failed to load Calendar data:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveEvents = (newEvents: CalendarEvent[]) => {

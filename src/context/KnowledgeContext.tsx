@@ -67,14 +67,28 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const [docs, setDocs]       = useState<KnowledgeDocument[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      setDocs(raw ? JSON.parse(raw) : []);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) setDocs(parsed);
+        else setDocs(defaultDocs());
+      } else {
+        setDocs(defaultDocs());
+      }
     } catch {
-      setDocs([]);
+      setDocs(defaultDocs());
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
     setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const persist = useCallback((next: KnowledgeDocument[]) => {

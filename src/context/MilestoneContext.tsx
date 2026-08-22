@@ -113,15 +113,23 @@ export function MilestoneProvider({ children }: { children: React.ReactNode }) {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Milestone>(MILESTONES_STORAGE_KEY);
-      if (parsed) setMilestones(parsed);
+      if (parsed && parsed.length > 0) setMilestones(parsed);
+      else if (!parsed) setMilestones(DEFAULT_MILESTONES);
     } catch (err) {
       console.error('Failed to load Life OS milestones:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveMilestones = (newMilestones: Milestone[]) => {

@@ -105,15 +105,23 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
   const [areas, setAreas] = useState<LifeArea[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<LifeArea>(AREAS_STORAGE_KEY);
-      if (parsed) setAreas(parsed);
+      if (parsed && parsed.length > 0) setAreas(parsed);
+      else if (!parsed) setAreas(DEFAULT_LIFE_AREAS);
     } catch (err) {
       console.error('Failed to load Life Areas:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   // Save to localStorage whenever areas change

@@ -364,6 +364,31 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Mobile Touch & Responsive Polish ── */
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+/* Prevent auto-zoom on input focus on iOS Safari */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px !important;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    min-height: 38px;
+    touch-action: manipulation;
+  }
+
+  /* Smooth momentum scrolling on mobile */
+  body,
+  main,
+  div {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Container max-width clamp for ultra-wide displays */
@@ -375,3 +400,4 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: auto;
   }
 }
+

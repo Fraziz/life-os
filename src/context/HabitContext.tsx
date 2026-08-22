@@ -162,18 +162,27 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const [checkIns, setCheckIns] = useState<HabitCheckIn[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsedHabits = loadJsonArray<Habit>(HABITS_STORAGE_KEY);
-      if (parsedHabits) setHabits(parsedHabits);
+      if (parsedHabits && parsedHabits.length > 0) setHabits(parsedHabits);
+      else if (!parsedHabits) setHabits(DEFAULT_HABITS);
 
       const parsedCheckIns = loadJsonArray<HabitCheckIn>(CHECKINS_STORAGE_KEY);
       if (parsedCheckIns) setCheckIns(parsedCheckIns);
+      else setCheckIns(generateSeedCheckIns());
     } catch (err) {
       console.error('Failed to load Habits data:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveHabits = (newHabits: Habit[]) => {

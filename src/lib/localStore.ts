@@ -1,3 +1,4 @@
+export const CLOUD_SYNC_EVENT = 'life_os_cloud_synced';
 const META_KEY = 'life_os_kv_updated_v1';
 
 export function loadJsonArray<T>(key: string): T[] | null {
@@ -12,7 +13,19 @@ export function loadJsonArray<T>(key: string): T[] | null {
   }
 }
 
+export function loadJsonObject<T>(key: string): T | null {
+  if (typeof localStorage === 'undefined') return null;
+  const raw = localStorage.getItem(key);
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function saveJson(key: string, value: unknown) {
+  if (typeof localStorage === 'undefined') return;
   localStorage.setItem(key, JSON.stringify(value));
 }
 

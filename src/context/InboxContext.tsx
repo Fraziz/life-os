@@ -65,15 +65,23 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<InboxItem>(INBOX_STORAGE_KEY);
-      if (parsed) setItems(parsed);
+      if (parsed && parsed.length > 0) setItems(parsed);
+      else if (!parsed) setItems(DEFAULT_INBOX_ITEMS);
     } catch (err) {
       console.error('Failed to load inbox items:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveItems = (newItems: InboxItem[]) => {

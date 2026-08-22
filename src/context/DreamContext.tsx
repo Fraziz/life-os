@@ -79,15 +79,23 @@ export function DreamProvider({ children }: { children: React.ReactNode }) {
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Dream>(DREAMS_STORAGE_KEY);
-      if (parsed) setDreams(parsed);
+      if (parsed && parsed.length > 0) setDreams(parsed);
+      else if (!parsed) setDreams(DEFAULT_DREAMS);
     } catch (err) {
       console.error('Failed to load Life OS dreams:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveDreams = (newDreams: Dream[]) => {

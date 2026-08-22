@@ -88,15 +88,23 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Goal>(GOALS_STORAGE_KEY);
-      if (parsed) setGoals(parsed);
+      if (parsed && parsed.length > 0) setGoals(parsed);
+      else if (!parsed) setGoals(DEFAULT_GOALS);
     } catch (err) {
       console.error('Failed to load Life OS goals:', err);
-    } finally {
-      setIsLoaded(true);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
+    setIsLoaded(true);
+
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const saveGoals = (newGoals: Goal[]) => {

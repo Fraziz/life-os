@@ -120,12 +120,35 @@ function patchLocalStorage() {
  * If Firestore already has user data, syncs the cloud state.
  */
 export async function hydrateFromCloud(uid: string): Promise<void> {
+  // Check if last active user was different to isolate user data
+  if (typeof localStorage !== 'undefined') {
+    const lastUid = localStorage.getItem('life_os_active_uid');
+    if (lastUid && lastUid !== uid) {
+      const toRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(PREFIX) && k !== 'life_os_sidebar_collapsed') {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach((k) => {
+        if (rawRemoveItem) rawRemoveItem.call(localStorage, k);
+        else localStorage.removeItem(k);
+      });
+    }
+    if (rawSetItem) rawSetItem.call(localStorage, 'life_os_active_uid', uid);
+    else localStorage.setItem('life_os_active_uid', uid);
+  }
+
   const fetchDocsPromise = getDocs(collection(getFirebaseDb(), 'users', uid, 'kv'));
-  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
   
   const snap = await Promise.race([fetchDocsPromise, timeoutPromise]);
   if (!snap) {
     activeUid = uid;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+    }
     return;
   }
 
@@ -139,6 +162,9 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
       )
     ).catch(() => {});
     activeUid = uid;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+    }
     return;
   }
 
@@ -167,6 +193,11 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 
   activeUid = uid;
   await flushCloudNow();
+
+  // Notify all components that cloud data is loaded
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+  }
 }
 
 export function startCloudSync(uid: string) {
