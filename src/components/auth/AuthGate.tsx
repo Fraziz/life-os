@@ -59,9 +59,26 @@ export default function AuthGate({
     };
   }, [user]);
 
-  // Not logged in: show login page immediately, no loading screens
+  // If not logged in: only render children on /login page where no dashboard providers are needed
   if (!user) {
-    return <>{children}</>;
+    if (pathname === '/login') {
+      return <>{children}</>;
+    }
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          background: '#0b0d17',
+          color: 'rgba(255, 255, 255, 0.7)',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '15px',
+        }}
+      >
+        Opening Life OS…
+      </div>
+    );
   }
 
   // Logged in: render shell immediately, sync happens in background
