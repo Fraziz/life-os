@@ -25,16 +25,27 @@ import {
   Target,
   FolderKanban,
   CheckSquare,
+  Printer,
+  Download,
+  Copy,
+  Check,
+  FileCode,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 
-// ── Simple Markdown Renderer ──────────────────────────────
+// ── Formal Markdown & Document Renderer ───────────────────
 function renderMarkdown(md: string): string {
   let html = md
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
   // Headings
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
@@ -53,12 +64,15 @@ function renderMarkdown(md: string): string {
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+
   // Horizontal rule
   html = html.replace(/^---$/gm, '<hr/>');
 
   // Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
-    if (/^<(h[1-6]|ul|hr|div)/.test(block.trim())) return block;
+    if (/^<(h[1-6]|ul|hr|div|pre|blockquote)/.test(block.trim())) return block;
     return block.trim() ? `<p>${block.trim()}</p>` : '';
   }).join('\n');
 
@@ -66,16 +80,24 @@ function renderMarkdown(md: string): string {
 }
 
 // ── Markdown Toolbar ─────────────────────────────────────
-function MarkdownToolbar({ onInsert }: { onInsert: (before: string, after?: string) => void }) {
+function MarkdownToolbar({
+  onInsert,
+  onInsertTemplate,
+}: {
+  onInsert: (before: string, after?: string) => void;
+  onInsertTemplate: () => void;
+}) {
   const tools = [
     { label: 'H1', before: '# ', after: '' },
     { label: 'H2', before: '## ', after: '' },
     { label: 'H3', before: '### ', after: '' },
     { label: 'B',  before: '**', after: '**' },
     { label: 'I',  before: '*', after: '*' },
-    { label: '—',  before: '\n---\n', after: '' },
+    { label: 'Quote', before: '> ', after: '' },
+    { label: 'Code', before: '`', after: '`' },
     { label: 'List', before: '- ', after: '' },
     { label: 'Task', before: '- [ ] ', after: '' },
+    { label: 'Divider', before: '\n---\n', after: '' },
   ];
   return (
     <div className={styles.toolbar}>
@@ -90,6 +112,14 @@ function MarkdownToolbar({ onInsert }: { onInsert: (before: string, after?: stri
           {t.label}
         </button>
       ))}
+      <button
+        type="button"
+        className={`${styles.toolbarBtn} ${styles.templateBtn}`}
+        onClick={onInsertTemplate}
+        title="Insert Formal Document Template"
+      >
+        <Sparkles size={11} style={{ marginRight: 3 }} /> Formal Template
+      </button>
     </div>
   );
 }
@@ -104,6 +134,7 @@ export default function KnowledgePage() {
   const [searchQ, setSearchQ]     = useState('');
   const [tagFilter, setTagFilter]  = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
+  const [copied, setCopied] = useState(false);
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -195,6 +226,215 @@ export default function KnowledgePage() {
         setIsCreating(false);
       }
     }
+  };
+
+  // Export as Formal Printable PDF
+  const handleExportPdf = () => {
+    if (!fTitle) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to export as PDF.');
+      return;
+    }
+    const renderedHtml = renderMarkdown(fContent || '');
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const tagsHtml = fTags ? fTags.split(',').map((t) => `<span class="badge">${t.trim()}</span>`).join(' ') : '';
+    const linkedHtml = [
+      linkedDream ? `Dream: ${linkedDream.title}` : '',
+      linkedGoal ? `Goal: ${linkedGoal.title}` : '',
+      linkedProject ? `Project: ${linkedProject.title}` : '',
+    ].filter(Boolean).join(' | ');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${fTitle}</title>
+        <style>
+          @page { size: A4; margin: 18mm; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.65;
+            margin: 0;
+            padding: 24px;
+          }
+          .header {
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+          }
+          .doc-type {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6366f1;
+            font-weight: 700;
+            margin-bottom: 6px;
+          }
+          h1 {
+            font-size: 26px;
+            margin: 0 0 8px 0;
+            color: #0f172a;
+            font-weight: 800;
+          }
+          .meta {
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+          }
+          .badge {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: inline-block;
+            margin-right: 4px;
+          }
+          .content {
+            font-size: 14px;
+          }
+          h2 {
+            font-size: 18px;
+            color: #0f172a;
+            margin-top: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+          }
+          h3 {
+            font-size: 15px;
+            color: #334155;
+            margin-top: 18px;
+          }
+          p { margin: 10px 0; }
+          ul { padding-left: 20px; }
+          li { margin-bottom: 5px; }
+          blockquote {
+            border-left: 3px solid #6366f1;
+            padding-left: 12px;
+            color: #475569;
+            margin: 14px 0;
+            font-style: italic;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 0 6px 6px 0;
+          }
+          pre {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+          }
+          code { font-family: monospace; }
+          .inline-code {
+            background: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 12px;
+          }
+          .md-check {
+            margin: 5px 0;
+            font-family: inherit;
+          }
+          .md-check.done {
+            color: #94a3b8;
+            text-decoration: line-through;
+          }
+          hr {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 24px 0;
+          }
+          .footer {
+            margin-top: 40px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="doc-type">Life OS — Formal Document</div>
+          <h1>${fTitle}</h1>
+          <div class="meta">
+            <span><strong>Date:</strong> ${dateStr}</span>
+            <span><strong>Status:</strong> ${fStatus.toUpperCase()}</span>
+            ${linkedHtml ? `<span><strong>Connected:</strong> ${linkedHtml}</span>` : ''}
+          </div>
+          ${tagsHtml ? `<div style="margin-top: 8px;">${tagsHtml}</div>` : ''}
+        </div>
+        <div class="content">
+          ${renderedHtml}
+        </div>
+        <div class="footer">
+          <span>Life OS Knowledge Base</span>
+          <span>Official Export</span>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Download raw markdown/text
+  const handleDownloadTxt = () => {
+    if (!fTitle) return;
+    const blob = new Blob([fContent], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fTitle.replace(/[^\w.-]+/g, '_')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Copy plain text to clipboard
+  const handleCopyText = async () => {
+    if (!fContent) return;
+    await navigator.clipboard.writeText(fContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Insert Formal Document Template
+  const handleInsertTemplate = () => {
+    const template = `## 1. Executive Summary
+Brief high-level summary of this document, objectives, and main takeaways.
+
+---
+
+## 2. Core Objectives & Scope
+- **Primary Goal**: Specify the core ambition.
+- **Key Success Metric**: How success is measured.
+
+---
+
+## 3. Action Items & Deliverables
+- [ ] Define initial requirements
+- [ ] Execute primary development sprint
+- [ ] Review progress and finalize documentation
+
+---
+
+## 4. Specifications & Reference Notes
+Detailed technical specifications, architecture overview, meeting minutes, and links.
+`;
+    setFContent((prev) => (prev ? prev + '\n\n' + template : `# ${fTitle || 'Formal Document'}\n\n` + template));
   };
 
   // Toolbar insert helpers
@@ -393,13 +633,45 @@ export default function KnowledgePage() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   {selectedDoc && (
                     <span className={styles.lastSavedText}>
                       <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                       Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
+                  
+                  {/* Export PDF Button */}
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={handleExportPdf}
+                    title="Export as Formal PDF Document"
+                  >
+                    <Printer size={12} /> PDF
+                  </button>
+
+                  {/* Export / Download Text Button */}
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={handleDownloadTxt}
+                    title="Download as .md / .txt"
+                  >
+                    <Download size={12} /> Text
+                  </button>
+
+                  {/* Copy Text Button */}
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={handleCopyText}
+                    title="Copy Document Text"
+                  >
+                    {copied ? <Check size={12} style={{ color: 'var(--color-success)' }} /> : <Copy size={12} />}
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+
                   {selectedDoc && (
                     <EntityFiles variant="button" entityType="knowledge" entityId={selectedDoc.id} title={selectedDoc.title} />
                   )}
@@ -498,7 +770,10 @@ export default function KnowledgePage() {
               />
 
               {editorMode === 'edit' && (
-                <MarkdownToolbar onInsert={handleInsert} />
+                <MarkdownToolbar
+                  onInsert={handleInsert}
+                  onInsertTemplate={handleInsertTemplate}
+                />
               )}
 
               {/* Writing Canvas */}

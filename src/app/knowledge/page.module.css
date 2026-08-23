@@ -428,6 +428,19 @@
   color: var(--color-text);
 }
 
+.templateBtn {
+  margin-left: auto;
+  color: var(--color-accent-light) !important;
+  background: var(--color-accent-dim);
+  display: flex;
+  align-items: center;
+}
+
+.templateBtn:hover {
+  background: var(--color-accent) !important;
+  color: white !important;
+}
+
 /* ── Writing Area & Preview ── */
 .writingArea {
   flex: 1;
