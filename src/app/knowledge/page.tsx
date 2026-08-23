@@ -6,6 +6,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
+import { extractTextFromFile } from '@/utils/fileImporter';
 import type { KnowledgeDocument, DocumentStatus } from '@/types';
 import {
   BookOpen,
@@ -30,6 +31,9 @@ import {
   Copy,
   Check,
   FileCode,
+  UploadCloud,
+  FileUp,
+  Loader2,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -135,6 +139,10 @@ export default function KnowledgePage() {
   const [tagFilter, setTagFilter]  = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
   const [copied, setCopied] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -153,6 +161,39 @@ export default function KnowledgePage() {
   const [fTaskId, setFTaskId]         = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Automatically import and extract text from uploaded PDF or Document
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    setIsImporting(true);
+    setImportStatus(`Extracting text from ${file.name}...`);
+    try {
+      const result = await extractTextFromFile(file);
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      const tags = isPdf ? ['pdf', 'imported'] : ['imported', 'notes'];
+      
+      const newDoc = addDoc({
+        title: result.title || file.name,
+        content: result.content || '',
+        status: 'active',
+        tags,
+      });
+
+      setSelectedId(newDoc.id);
+      setIsCreating(false);
+      setEditorMode('preview');
+      setImportStatus(null);
+    } catch (err) {
+      console.error('Import failed:', err);
+      alert('Could not extract text from this file. Please make sure the file contains readable text.');
+      setImportStatus(null);
+    } finally {
+      setIsImporting(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
 
   // Default select first doc on initial load if none selected
   useEffect(() => {
@@ -484,7 +525,24 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
             Formal reference notes, research, game designs, and documents connected directly to your life domains.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="file"
+            ref={importFileRef}
+            style={{ display: 'none' }}
+            accept=".pdf,.txt,.md,.doc,.docx,.csv,.json,.html"
+            onChange={handleImportFile}
+          />
+          <button
+            className={styles.btnSecondary}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={() => importFileRef.current?.click()}
+            disabled={isImporting}
+            title="Import PDF or text document and extract text automatically"
+          >
+            {isImporting ? <Loader2 size={15} className="animate-spin" /> : <FileUp size={15} />}
+            {isImporting ? (importStatus || 'Importing...') : 'Import PDF / File'}
+          </button>
           <button className={styles.btnCreate} onClick={handleNewDoc}>
             <Plus size={16} /> New Document
           </button>
@@ -597,11 +655,21 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
             <div className={styles.canvasEmpty}>
               <BookOpen size={44} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
               <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                Select a document or create a new entry
+                Select a document, create a new entry, or import a PDF
               </p>
-              <button className={styles.btnCreate} style={{ marginTop: '12px' }} onClick={handleNewDoc}>
-                <Plus size={15} /> New Document
-              </button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                <button
+                  className={styles.btnSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => importFileRef.current?.click()}
+                  disabled={isImporting}
+                >
+                  <FileUp size={14} /> Import PDF / File
+                </button>
+                <button className={styles.btnCreate} onClick={handleNewDoc}>
+                  <Plus size={15} /> New Document
+                </button>
+              </div>
             </div>
           ) : (
             <div className={styles.editorWrapper}>
