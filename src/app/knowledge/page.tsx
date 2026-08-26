@@ -434,85 +434,211 @@ export default function KnowledgePage() {
       linkedDream ? `Dream: ${linkedDream.title}` : '',
       linkedGoal ? `Goal: ${linkedGoal.title}` : '',
       linkedProject ? `Project: ${linkedProject.title}` : '',
-    ].filter(Boolean).join(' | ');
+    ].filter(Boolean).join(' &bull; ');
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${fTitle}</title>
+        <title>${fTitle} — Formal Document</title>
         <style>
-          @page { size: A4; margin: 18mm; }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #1e293b;
-            line-height: 1.65;
-            margin: 0;
-            padding: 24px;
+          @page {
+            size: A4;
+            margin: 20mm 16mm;
+            @bottom-right {
+              content: counter(page);
+              font-size: 9pt;
+              color: #64748b;
+            }
           }
-          .header {
-            border-bottom: 2px solid #6366f1;
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #0f172a;
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+          }
+          
+          /* ── Formal Executive Letterhead ── */
+          .executive-header {
+            border-bottom: 2px solid #1e293b;
             padding-bottom: 16px;
             margin-bottom: 24px;
           }
-          .doc-type {
-            font-size: 11px;
+          .header-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 8.5pt;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #6366f1;
-            font-weight: 700;
-            margin-bottom: 6px;
+            color: #475569;
+            margin-bottom: 12px;
           }
-          h1 {
-            font-size: 26px;
-            margin: 0 0 8px 0;
-            color: #0f172a;
+          .doc-classification {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            letter-spacing: 1px;
+          }
+          h1.doc-title {
+            font-size: 24pt;
             font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin: 0 0 12px 0;
+            line-height: 1.2;
           }
-          .meta {
-            font-size: 12px;
-            color: #64748b;
+          .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 9pt;
+            margin-top: 10px;
+          }
+          .meta-item {
             display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-top: 8px;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .meta-label {
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+          }
+          .meta-value {
+            font-weight: 600;
+            color: #1e293b;
           }
           .badge {
-            background: #f1f5f9;
-            color: #475569;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            background: #e2e8f0;
+            color: #334155;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
             display: inline-block;
             margin-right: 4px;
           }
+
+          /* ── Document Body Content ── */
           .content {
-            font-size: 14px;
+            font-size: 10.5pt;
+            line-height: 1.75;
+          }
+          h1 {
+            font-size: 18pt;
+            color: #0f172a;
+            margin: 22px 0 10px 0;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid #cbd5e1;
+            page-break-after: avoid;
           }
           h2 {
-            font-size: 18px;
-            color: #0f172a;
-            margin-top: 24px;
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 20px 0 8px 0;
+            padding-bottom: 4px;
             border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
+            page-break-after: avoid;
           }
           h3 {
-            font-size: 15px;
+            font-size: 12pt;
+            font-weight: 700;
             color: #334155;
-            margin-top: 18px;
+            margin: 16px 0 6px 0;
+            page-break-after: avoid;
           }
-          p { margin: 10px 0; }
-          ul { padding-left: 20px; }
-          li { margin-bottom: 5px; }
-          blockquote {
-            border-left: 3px solid #6366f1;
-            padding-left: 12px;
-            color: #475569;
-            margin: 14px 0;
-            font-style: italic;
-            background: #f8fafc;
-            padding: 8px 12px;
+          h4 {
+            font-size: 10.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin: 12px 0 4px 0;
+          }
+          p {
+            margin: 0 0 12px 0;
+          }
+          ul, ol {
+            margin: 0 0 12px 0;
+            padding-left: 20px;
+          }
+          li {
+            margin-bottom: 4px;
+          }
+          .ol-item {
+            display: flex;
+            gap: 8px;
+          }
+          .ol-num {
+            font-weight: 700;
+            color: #0f172a;
+          }
+          
+          /* ── Formal ADHD Callouts & Markers ── */
+          mark.highlight-mark {
+            background: rgba(253, 224, 71, 0.45) !important;
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-weight: 600;
+          }
+          .important-mark {
+            display: inline-block;
+            background: rgba(244, 63, 94, 0.12) !important;
+            color: #be123c !important;
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-weight: 700;
+            font-size: 9.5pt;
+          }
+          .key-idea {
+            display: block;
+            background: #f0fdfa !important;
+            border-left: 3.5px solid #0d9488 !important;
             border-radius: 0 6px 6px 0;
+            padding: 10px 14px;
+            margin: 14px 0;
+            font-weight: 600;
+            color: #134e4a;
+            page-break-inside: avoid;
+          }
+          blockquote.callout {
+            background: #f8fafc;
+            border-left: 3.5px solid #475569;
+            border-radius: 0 6px 6px 0;
+            padding: 10px 14px;
+            margin: 14px 0;
+            color: #334155;
+            font-style: italic;
+            page-break-inside: avoid;
+          }
+          .md-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            font-size: 10pt;
+          }
+          .md-check.done {
+            color: #94a3b8;
+            text-decoration: line-through;
           }
           pre {
             background: #f8fafc;
@@ -520,56 +646,69 @@ export default function KnowledgePage() {
             padding: 12px;
             border-radius: 6px;
             overflow-x: auto;
-            font-size: 12px;
+            font-size: 9pt;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            page-break-inside: avoid;
           }
-          code { font-family: monospace; }
           .inline-code {
             background: #f1f5f9;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 12px;
-          }
-          .md-check {
-            margin: 5px 0;
-            font-family: inherit;
-          }
-          .md-check.done {
-            color: #94a3b8;
-            text-decoration: line-through;
+            border: 1px solid #e2e8f0;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-family: monospace;
           }
           hr {
             border: 0;
-            border-top: 1px solid #e2e8f0;
-            margin: 24px 0;
+            border-top: 1px solid #cbd5e1;
+            margin: 20px 0;
           }
-          .footer {
+
+          /* ── Formal Footer ── */
+          .executive-footer {
             margin-top: 40px;
-            border-top: 1px solid #e2e8f0;
             padding-top: 12px;
-            font-size: 11px;
-            color: #94a3b8;
+            border-top: 1px solid #cbd5e1;
             display: flex;
             justify-content: space-between;
+            font-size: 8pt;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="doc-type">Life OS — Formal Document</div>
-          <h1>${fTitle}</h1>
-          <div class="meta">
-            <span><strong>Date:</strong> ${dateStr}</span>
-            <span><strong>Status:</strong> ${fStatus.toUpperCase()}</span>
-            ${linkedHtml ? `<span><strong>Connected:</strong> ${linkedHtml}</span>` : ''}
+        <div class="executive-header">
+          <div class="header-top-bar">
+            <span>Life OS &bull; Formal Knowledge Asset</span>
+            <span class="doc-classification">Official Record</span>
           </div>
-          ${tagsHtml ? `<div style="margin-top: 8px;">${tagsHtml}</div>` : ''}
+          <h1 class="doc-title">${fTitle}</h1>
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Date Generated</span>
+              <span class="meta-value">${dateStr}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Status</span>
+              <span class="meta-value">${fStatus.toUpperCase()}</span>
+            </div>
+            ${linkedHtml ? `
+              <div class="meta-item" style="grid-column: span 2;">
+                <span class="meta-label">Connected Context</span>
+                <span class="meta-value">${linkedHtml}</span>
+              </div>
+            ` : ''}
+          </div>
+          ${tagsHtml ? `<div style="margin-top: 10px;">${tagsHtml}</div>` : ''}
         </div>
         <div class="content">
           ${renderedHtml}
         </div>
-        <div class="footer">
-          <span>Life OS Knowledge Base</span>
-          <span>Official Export</span>
+        <div class="executive-footer">
+          <span>Life OS Formal Documentation System</span>
+          <span>Confidential &bull; Personal Executive Record</span>
         </div>
         <script>
           window.onload = function() {

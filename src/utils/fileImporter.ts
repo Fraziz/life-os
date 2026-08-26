@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Extracts clean text from PDF, Text, Markdown, and document files.
  * Works entirely client-side in the browser.
  * Auto-formats extracted content into clean Knowledge Base notes.
@@ -50,14 +50,14 @@ function extractRawPdfText(buffer: ArrayBuffer): string {
 }
 
 /**
- * Smart formatter: turns raw extracted text into clean notes markdown.
+ * Smart formatter: turns raw extracted text into an automatic formal executive document.
  * - Detects likely headings (ALL-CAPS or short title-case lines)
- * - Groups sentences into paragraphs
- * - Strips whitespace and PDF artifacts
- * - Appends a My Notes section for the user to annotate
+ * - Numbered section structure (1. Executive Summary, 2. Core Concepts, 3. Key Insights, etc.)
+ * - Formats list items, cleans whitespace and removes PDF junk artifacts
+ * - Adds a formal executive header, structured takeaways, and action items
  */
 export function formatAsNotes(raw: string, docTitle: string): string {
-  if (!raw || raw.trim().length < 10) return '';
+  if (!raw || raw.trim().length < 5) return `# ${docTitle}\n\n> Formal Document Record\n\n`;
 
   let text = raw
     .replace(/\r\n|\r/g, '\n')
@@ -97,7 +97,7 @@ export function formatAsNotes(raw: string, docTitle: string): string {
 
     if (isLikelyHeading(line)) {
       flushParagraph();
-      const level = line.length < 30 ? '##' : '###';
+      const level = line.length < 30 ? '###' : '####';
       const txt = line.charAt(0).toUpperCase() + line.slice(1).toLowerCase();
       formatted.push(`${level} ${txt}`);
       continue;
@@ -114,25 +114,49 @@ export function formatAsNotes(raw: string, docTitle: string): string {
   }
   flushParagraph();
 
-  const body = formatted.join('\n\n').trim();
+  // Extract first paragraph for executive summary if available
+  const firstPara = formatted.find((p) => !p.startsWith('#') && !p.startsWith('-')) || 'Comprehensive reference document and working notes.';
+  const bodyItems = formatted.filter((p) => p !== firstPara);
+  const bodyContent = bodyItems.join('\n\n').trim();
 
   return `# ${docTitle}
 
-> Imported document — auto-formatted as notes. Switch to **Book mode** to read cleanly, **Edit mode** to annotate.
+> **DOCUMENT TYPE**: Formal Executive Record & Knowledge Asset  
+> **CLASSIFICATION**: Official / Standard Operating Knowledge  
+> **READING FORMAT**: Formatted for Executive Review & Book Mode
 
 ---
 
-${body}
+## 1. Executive Summary
+${firstPara}
 
 ---
 
-## My Notes & Highlights
+## 2. Core Content & Structured Findings
 
-*Add your own takeaways, highlights, and key ideas here...*
+${bodyContent || '*Detailed reference content from source document.*'}
 
-- ==Key takeaway goes here==
-- !!Something important to remember!!
-- >>>Main idea from this document<<<
+---
+
+## 3. Key Takeaways & Strategic Insights
+- >>>Main strategic principle or core takeaway from this document<<<
+- !!Crucial rule, metric, or requirement to keep in mind!!
+- ==Key definition or important fact for reference==
+
+---
+
+## 4. Action Items & Execution Checklist
+- [ ] Review core findings and extract actionable next steps
+- [ ] Apply highlighted principles to relevant active projects
+- [ ] Annotate additional observations using the color highlight palette
+
+---
+
+## 5. Working Annotations & Research Notes
+*Personal working notes and colored highlights:*
+- =={yellow}Yellow for primary takeaways==
+- =={cyan}Cyan for technical concepts and terms==
+- =={purple}Purple for strategic ideas==
 `;
 }
 
