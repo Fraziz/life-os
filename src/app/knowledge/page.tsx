@@ -35,11 +35,19 @@ import {
   FileUp,
   Loader2,
   BookMarked,
-  Lightbulb,
-  Star,
-  Zap,
   Undo2,
   Redo2,
+  Bold,
+  Italic,
+  Underline,
+  Quote,
+  Code,
+  List,
+  ListOrdered,
+  Minus,
+  AlertCircle,
+  Wand2,
+  Lightbulb,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -135,6 +143,7 @@ function renderMarkdown(md: string): string {
 }
 
 // ── Live Rich Editor Toolbar (Google Docs / Word Style) ───────
+// ── Live Rich Editor Toolbar (Senior Dev / Linear & Notion Style) ───────
 function MarkdownToolbar({
   onFormat,
   onHighlight,
@@ -152,39 +161,20 @@ function MarkdownToolbar({
   onAiFormat: () => void;
   isAiFormatting: boolean;
 }) {
-  const tools = [
-    { label: 'H1',    cmd: 'h1',        title: 'Heading 1' },
-    { label: 'H2',    cmd: 'h2',        title: 'Heading 2' },
-    { label: 'H3',    cmd: 'h3',        title: 'Heading 3' },
-    { label: 'B',     cmd: 'bold',      title: 'Bold (Ctrl+B)' },
-    { label: 'I',     cmd: 'italic',    title: 'Italic (Ctrl+I)' },
-    { label: 'U',     cmd: 'underline', title: 'Underline (Ctrl+U)' },
-    { label: 'Quote', cmd: 'quote',     title: 'Blockquote' },
-    { label: 'Code',  cmd: 'code',      title: 'Inline Code' },
-    { label: 'List',  cmd: 'list',      title: 'Bullet List' },
-    { label: '1. List', cmd: 'numbered', title: 'Numbered List' },
-    { label: 'Task',  cmd: 'task',      title: 'Task Checkbox' },
-    { label: 'Divider', cmd: 'divider', title: 'Horizontal Divider' },
-  ];
-
-  const adhdTools = [
-    { label: '⚡ Important', cmd: 'important', title: 'Important Highlight', cls: styles.toolbarImportant },
-    { label: '💡 Key Idea',  cmd: 'key-idea',  title: 'Key Idea Box', cls: styles.toolbarKeyIdea },
-  ];
-
   const activeColorDef = HIGHLIGHT_COLORS.find((c) => c.name === activeColor) ?? HIGHLIGHT_COLORS[0];
 
   return (
     <div className={styles.toolbarWrapper}>
-      {/* Row 1: Undo/Redo + Formatting tools */}
+      {/* Row 1: Formal Editor Commands */}
       <div className={styles.toolbar}>
+        {/* Undo / Redo */}
         <button
           type="button"
           className={styles.toolbarBtn}
           onClick={() => onFormat('undo')}
           title="Undo (Ctrl+Z)"
         >
-          <Undo2 size={12} style={{ marginRight: 2 }} /> Undo
+          <Undo2 size={12} />
         </button>
         <button
           type="button"
@@ -192,55 +182,164 @@ function MarkdownToolbar({
           onClick={() => onFormat('redo')}
           title="Redo (Ctrl+Y)"
         >
-          <Redo2 size={12} style={{ marginRight: 2 }} /> Redo
+          <Redo2 size={12} />
         </button>
+
         <span className={styles.toolbarDivider} />
-        {tools.map((t) => (
-          <button
-            key={t.label}
-            type="button"
-            className={styles.toolbarBtn}
-            onClick={() => onFormat(t.cmd)}
-            title={t.title}
-          >
-            {t.label}
-          </button>
-        ))}
+
+        {/* Headings */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('h1')}
+          title="Heading 1"
+          style={{ fontWeight: 800 }}
+        >
+          H1
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('h2')}
+          title="Heading 2"
+          style={{ fontWeight: 700 }}
+        >
+          H2
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('h3')}
+          title="Heading 3"
+          style={{ fontWeight: 600 }}
+        >
+          H3
+        </button>
+
         <span className={styles.toolbarDivider} />
-        {adhdTools.map((t) => (
-          <button
-            key={t.label}
-            type="button"
-            className={`${styles.toolbarBtn} ${t.cls}`}
-            onClick={() => onFormat(t.cmd)}
-            title={t.title}
-          >
-            {t.label}
-          </button>
-        ))}
+
+        {/* Inline formatting */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('bold')}
+          title="Bold (Ctrl+B)"
+        >
+          <Bold size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('italic')}
+          title="Italic (Ctrl+I)"
+        >
+          <Italic size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('underline')}
+          title="Underline (Ctrl+U)"
+        >
+          <Underline size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('code')}
+          title="Inline Code"
+        >
+          <Code size={12} />
+        </button>
+
+        <span className={styles.toolbarDivider} />
+
+        {/* Lists & Blocks */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('list')}
+          title="Bullet List"
+        >
+          <List size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('numbered')}
+          title="Numbered List"
+        >
+          <ListOrdered size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('task')}
+          title="Checklist Task"
+        >
+          <CheckSquare size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('quote')}
+          title="Blockquote"
+        >
+          <Quote size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('divider')}
+          title="Horizontal Rule"
+        >
+          <Minus size={12} />
+        </button>
+
+        <span className={styles.toolbarDivider} />
+
+        {/* Formal Callouts */}
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${styles.toolbarImportant}`}
+          onClick={() => onFormat('important')}
+          title="Mark as Important requirement"
+        >
+          <AlertCircle size={12} style={{ marginRight: 3 }} /> Important
+        </button>
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${styles.toolbarKeyIdea}`}
+          onClick={() => onFormat('key-idea')}
+          title="Mark as Key Concept / Idea"
+        >
+          <Lightbulb size={12} style={{ marginRight: 3 }} /> Key Idea
+        </button>
+
+        {/* AI & Template Actions */}
         <button
           type="button"
           className={`${styles.toolbarBtn} ${styles.aiFormatBtn}`}
           onClick={onAiFormat}
           disabled={isAiFormatting}
-          title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
+          title="Auto-format and organize notes"
         >
-          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Sparkles size={11} />}
-          {isAiFormatting ? 'Formatting...' : '✨ AI Clean & Format'}
+          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Wand2 size={11} />}
+          <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
         </button>
         <button
           type="button"
           className={`${styles.toolbarBtn} ${styles.templateBtn}`}
           onClick={onInsertTemplate}
-          title="Insert Formal Executive Template"
+          title="Insert Executive Document Template"
         >
           <FileText size={11} style={{ marginRight: 3 }} /> Template
         </button>
       </div>
 
-      {/* Row 2: Live Color Highlight Swatches */}
+      {/* Row 2: Formal Color Highlight Palette */}
       <div className={styles.colorPaletteRow}>
-        <span className={styles.colorPaletteLabel}>Highlight Color</span>
+        <span className={styles.colorPaletteLabel}>Highlight</span>
         <div className={styles.colorSwatches}>
           {HIGHLIGHT_COLORS.map((c) => (
             <button
@@ -256,7 +355,7 @@ function MarkdownToolbar({
                 onSetActiveColor(c.name);
                 onHighlight(c.name, false);
               }}
-              title={`Highlight with ${c.label} (Select text and click to highlight)`}
+              title={`Highlight: ${c.label}`}
               aria-label={`Highlight ${c.label}`}
             />
           ))}
@@ -266,9 +365,9 @@ function MarkdownToolbar({
           className={styles.applyHighlightBtn}
           style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
           onClick={() => onHighlight(activeColor, true)}
-          title={`Highlight selected text with ${activeColorDef.label}`}
+          title={`Apply ${activeColorDef.label} highlight to selected text`}
         >
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
           Apply {activeColorDef.label}
         </button>
       </div>
