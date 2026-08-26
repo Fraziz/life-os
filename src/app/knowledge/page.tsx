@@ -43,6 +43,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import { useSettings } from '@/context/SettingsContext';
+import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 
 // ── Color Highlight Palette ───────────────────────────────────────
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
@@ -132,44 +134,42 @@ function renderMarkdown(md: string): string {
   return html;
 }
 
-// ── Markdown Toolbar ─────────────────────────────────────
+// ── Live Rich Editor Toolbar (Google Docs / Word Style) ───────
 function MarkdownToolbar({
-  onInsert,
-  onInsertTemplate,
+  onFormat,
   onHighlight,
   activeColor,
   onSetActiveColor,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
+  onInsertTemplate,
+  onAiFormat,
+  isAiFormatting,
 }: {
-  onInsert: (before: string, after?: string) => void;
-  onInsertTemplate: () => void;
+  onFormat: (cmd: string) => void;
   onHighlight: (colorName: string, forceApply?: boolean) => void;
   activeColor: string;
   onSetActiveColor: (colorName: string) => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
+  onInsertTemplate: () => void;
+  onAiFormat: () => void;
+  isAiFormatting: boolean;
 }) {
   const tools = [
-    { label: 'H1',      before: '# ',       after: '',    title: 'Heading 1' },
-    { label: 'H2',      before: '## ',      after: '',    title: 'Heading 2' },
-    { label: 'H3',      before: '### ',     after: '',    title: 'Heading 3' },
-    { label: 'B',       before: '**',       after: '**',  title: 'Bold' },
-    { label: 'I',       before: '*',        after: '*',   title: 'Italic' },
-    { label: 'Quote',   before: '> ',       after: '',    title: 'Blockquote' },
-    { label: 'Code',    before: '`',        after: '`',   title: 'Inline Code' },
-    { label: 'List',    before: '- ',       after: '',    title: 'Bullet List' },
-    { label: 'Task',    before: '- [ ] ',   after: '',    title: 'Task Checkbox' },
-    { label: 'Divider', before: '\n---\n',  after: '',    title: 'Horizontal Divider' },
+    { label: 'H1',    cmd: 'h1',        title: 'Heading 1' },
+    { label: 'H2',    cmd: 'h2',        title: 'Heading 2' },
+    { label: 'H3',    cmd: 'h3',        title: 'Heading 3' },
+    { label: 'B',     cmd: 'bold',      title: 'Bold (Ctrl+B)' },
+    { label: 'I',     cmd: 'italic',    title: 'Italic (Ctrl+I)' },
+    { label: 'U',     cmd: 'underline', title: 'Underline (Ctrl+U)' },
+    { label: 'Quote', cmd: 'quote',     title: 'Blockquote' },
+    { label: 'Code',  cmd: 'code',      title: 'Inline Code' },
+    { label: 'List',  cmd: 'list',      title: 'Bullet List' },
+    { label: '1. List', cmd: 'numbered', title: 'Numbered List' },
+    { label: 'Task',  cmd: 'task',      title: 'Task Checkbox' },
+    { label: 'Divider', cmd: 'divider', title: 'Horizontal Divider' },
   ];
 
   const adhdTools = [
-    { label: '⚡ Important', before: '!!',  after: '!!',  title: 'Important (!!text!!)', cls: styles.toolbarImportant },
-    { label: '💡 Key Idea',  before: '>>>', after: '<<<', title: 'Key Idea (>>>text<<<)', cls: styles.toolbarKeyIdea },
+    { label: '⚡ Important', cmd: 'important', title: 'Important Highlight', cls: styles.toolbarImportant },
+    { label: '💡 Key Idea',  cmd: 'key-idea',  title: 'Key Idea Box', cls: styles.toolbarKeyIdea },
   ];
 
   const activeColorDef = HIGHLIGHT_COLORS.find((c) => c.name === activeColor) ?? HIGHLIGHT_COLORS[0];
@@ -181,22 +181,18 @@ function MarkdownToolbar({
         <button
           type="button"
           className={styles.toolbarBtn}
-          onClick={onUndo}
-          disabled={!canUndo}
-          style={{ opacity: canUndo ? 1 : 0.4, cursor: canUndo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 3 }}
+          onClick={() => onFormat('undo')}
           title="Undo (Ctrl+Z)"
         >
-          <Undo2 size={12} /> Undo
+          <Undo2 size={12} style={{ marginRight: 2 }} /> Undo
         </button>
         <button
           type="button"
           className={styles.toolbarBtn}
-          onClick={onRedo}
-          disabled={!canRedo}
-          style={{ opacity: canRedo ? 1 : 0.4, cursor: canRedo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 3 }}
-          title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+          onClick={() => onFormat('redo')}
+          title="Redo (Ctrl+Y)"
         >
-          <Redo2 size={12} /> Redo
+          <Redo2 size={12} style={{ marginRight: 2 }} /> Redo
         </button>
         <span className={styles.toolbarDivider} />
         {tools.map((t) => (
@@ -204,7 +200,7 @@ function MarkdownToolbar({
             key={t.label}
             type="button"
             className={styles.toolbarBtn}
-            onClick={() => onInsert(t.before, t.after)}
+            onClick={() => onFormat(t.cmd)}
             title={t.title}
           >
             {t.label}
@@ -216,7 +212,7 @@ function MarkdownToolbar({
             key={t.label}
             type="button"
             className={`${styles.toolbarBtn} ${t.cls}`}
-            onClick={() => onInsert(t.before, t.after)}
+            onClick={() => onFormat(t.cmd)}
             title={t.title}
           >
             {t.label}
@@ -224,17 +220,27 @@ function MarkdownToolbar({
         ))}
         <button
           type="button"
+          className={`${styles.toolbarBtn} ${styles.aiFormatBtn}`}
+          onClick={onAiFormat}
+          disabled={isAiFormatting}
+          title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
+        >
+          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Sparkles size={11} />}
+          {isAiFormatting ? 'Formatting...' : '✨ AI Clean & Format'}
+        </button>
+        <button
+          type="button"
           className={`${styles.toolbarBtn} ${styles.templateBtn}`}
           onClick={onInsertTemplate}
-          title="Insert Formal Document Template"
+          title="Insert Formal Executive Template"
         >
-          <Sparkles size={11} style={{ marginRight: 3 }} /> Template
+          <FileText size={11} style={{ marginRight: 3 }} /> Template
         </button>
       </div>
 
-      {/* Row 2: Color highlight palette */}
+      {/* Row 2: Live Color Highlight Swatches */}
       <div className={styles.colorPaletteRow}>
-        <span className={styles.colorPaletteLabel}>Highlight</span>
+        <span className={styles.colorPaletteLabel}>Highlight Color</span>
         <div className={styles.colorSwatches}>
           {HIGHLIGHT_COLORS.map((c) => (
             <button
@@ -250,7 +256,7 @@ function MarkdownToolbar({
                 onSetActiveColor(c.name);
                 onHighlight(c.name, false);
               }}
-              title={`Highlight: ${c.label} (Click swatch to choose or highlight selection)`}
+              title={`Highlight with ${c.label} (Select text and click to highlight)`}
               aria-label={`Highlight ${c.label}`}
             />
           ))}
@@ -260,7 +266,7 @@ function MarkdownToolbar({
           className={styles.applyHighlightBtn}
           style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
           onClick={() => onHighlight(activeColor, true)}
-          title={`Apply ${activeColorDef.label} highlight to selected text`}
+          title={`Highlight selected text with ${activeColorDef.label}`}
         >
           <span style={{ width: 10, height: 10, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
           Apply {activeColorDef.label}
@@ -273,6 +279,7 @@ function MarkdownToolbar({
 
 export default function KnowledgePage() {
   const { docs, isLoaded, addDoc, updateDoc, deleteDoc, resetToDefaultDocs } = useKnowledge();
+  const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
   const { projects } = useProjects();
@@ -284,6 +291,7 @@ export default function KnowledgePage() {
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isAiFormatting, setIsAiFormatting] = useState(false);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -306,7 +314,8 @@ export default function KnowledgePage() {
   const [fProjectId, setFProjectId]   = useState('');
   const [fTaskId, setFTaskId]         = useState('');
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isInternalChange = useRef(false);
 
   // Automatically import and extract text from uploaded PDF or Document
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -350,13 +359,22 @@ export default function KnowledgePage() {
 
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
 
+  // Helper to convert content into rich HTML for live editing
+  const getRichHtml = (content: string) => {
+    if (!content) return '';
+    // If it already looks like HTML (has tags), return it directly
+    if (/<(p|h[1-6]|ul|ol|li|div|blockquote|mark|span|strong|em|table|hr)[^>]*>/i.test(content)) {
+      return content;
+    }
+    // Otherwise convert markdown to HTML
+    return renderMarkdown(content);
+  };
+
   // Load doc into editor
   useEffect(() => {
     if (selectedDoc) {
       setFTitle(selectedDoc.title);
       setFContent(selectedDoc.content);
-      setHistory([selectedDoc.content]);
-      setHistoryIndex(0);
       setFStatus(selectedDoc.status);
       setFTags(selectedDoc.tags.join(', '));
       setFDreamId(selectedDoc.linkedDreamId || '');
@@ -364,20 +382,42 @@ export default function KnowledgePage() {
       setFProjectId(selectedDoc.linkedProjectId || '');
       setFTaskId(selectedDoc.linkedTaskId || '');
       setEditorMode('edit');
+
+      // Populate rich editor with HTML
+      setTimeout(() => {
+        if (editorRef.current) {
+          isInternalChange.current = true;
+          editorRef.current.innerHTML = getRichHtml(selectedDoc.content || '');
+          isInternalChange.current = false;
+        }
+      }, 0);
     }
   }, [selectedDoc]);
+
+  // Keep editor innerHTML in sync if mode switches to 'edit'
+  useEffect(() => {
+    if (editorMode === 'edit' && editorRef.current) {
+      const html = getRichHtml(fContent || '');
+      if (editorRef.current.innerHTML !== html) {
+        isInternalChange.current = true;
+        editorRef.current.innerHTML = html;
+        isInternalChange.current = false;
+      }
+    }
+  }, [editorMode]);
 
   const clearEditor = () => {
     setFTitle('');
     setFContent('');
-    setHistory(['']);
-    setHistoryIndex(0);
     setFStatus('active');
     setFTags('');
     setFDreamId('');
     setFGoalId('');
     setFProjectId('');
     setFTaskId('');
+    if (editorRef.current) {
+      editorRef.current.innerHTML = '';
+    }
   };
 
   const handleNewDoc = () => {
@@ -427,7 +467,7 @@ export default function KnowledgePage() {
       alert('Please allow popups to export as PDF.');
       return;
     }
-    const renderedHtml = renderMarkdown(fContent || '');
+    const renderedHtml = getRichHtml(fContent || '');
     const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const tagsHtml = fTags ? fTags.split(',').map((t) => `<span class="badge">${t.trim()}</span>`).join(' ') : '';
     const linkedHtml = [
@@ -751,86 +791,172 @@ export default function KnowledgePage() {
   // Copy plain text to clipboard
   const handleCopyText = async () => {
     if (!fContent) return;
-    await navigator.clipboard.writeText(fContent);
+    // Extract readable text from HTML if it contains tags
+    const temp = document.createElement('div');
+    temp.innerHTML = fContent;
+    const plain = temp.innerText || temp.textContent || fContent;
+    await navigator.clipboard.writeText(plain);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Insert Formal Document Template
+  // Insert Formal Document Template in Live Rich Editor
   const handleInsertTemplate = () => {
-    const template = `## 1. Executive Summary
-Brief high-level summary of this document, objectives, and main takeaways.
+    const templateHtml = `
+      <h2>1. Executive Summary</h2>
+      <p>Brief high-level summary of this document, objectives, and main takeaways.</p>
+      <hr />
+      <h2>2. Core Objectives &amp; Scope</h2>
+      <ul>
+        <li><strong>Primary Goal</strong>: Specify the core ambition.</li>
+        <li><strong>Key Success Metric</strong>: How success is measured.</li>
+      </ul>
+      <hr />
+      <h2>3. Key Takeaways &amp; Strategic Insights</h2>
+      <div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border-left:3.5px solid #06b6d4;border-radius:0 6px 6px 0;padding:10px 14px;margin:12px 0;font-weight:600;">
+        💡 <strong>Key Idea:</strong> Core principle or foundational insight
+      </div>
+      <p><span class="important-mark" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);border-radius:4px;padding:2px 8px;font-weight:700;">⚡ Critical Requirement:</span> Must-know parameter or benchmark.</p>
+      <hr />
+      <h2>4. Action Items &amp; Execution Checklist</h2>
+      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Define initial project requirements</span></div>
+      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Execute primary development phase</span></div>
+      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Review progress and finalize documentation</span></div>
+      <hr />
+      <h2>5. Working Annotations &amp; Notes</h2>
+      <p>Highlight key words using the top color palette swatches: <mark class="highlight-mark" style="background:rgba(253,224,71,0.55);border:1px solid #fbbf24;color:#713f12;border-radius:3px;padding:1px 5px;font-weight:600;">Yellow for key notes</mark>, <mark class="highlight-mark" style="background:rgba(103,232,249,0.55);border:1px solid #22d3ee;color:#164e63;border-radius:3px;padding:1px 5px;font-weight:600;">Cyan for definitions</mark>.</p>
+    `;
 
----
-
-## 2. Core Objectives & Scope
-- **Primary Goal**: Specify the core ambition.
-- **Key Success Metric**: How success is measured.
-
----
-
-## 3. Action Items & Deliverables
-- [ ] Define initial requirements
-- [ ] Execute primary development sprint
-- [ ] Review progress and finalize documentation
-
----
-
-## 4. Specifications & Reference Notes
-Detailed technical specifications, architecture overview, meeting minutes, and links.
-`;
-    const newText = fContent ? fContent + '\n\n' + template : `# ${fTitle || 'Formal Document'}\n\n` + template;
-    updateContentWithHistory(newText);
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand('insertHTML', false, templateHtml);
+      setFContent(editorRef.current.innerHTML);
+    }
   };
 
-  // Toolbar insert helpers
-  const handleInsert = (before: string, after = '') => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end   = ta.selectionEnd;
-    const selected = fContent.slice(start, end);
+  // Live WYSIWYG formatting commands (Google Docs / Word style)
+  const handleFormat = (cmd: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
 
-    let textToInsert = selected;
-    if (!selected && after) {
-      if (before === '**') textToInsert = 'bold text';
-      else if (before === '*') textToInsert = 'italic text';
-      else if (before === '`') textToInsert = 'code';
-      else if (before === '!!') textToInsert = 'important text';
-      else if (before === '>>>') textToInsert = 'key idea text';
-      else textToInsert = 'text';
+    if (cmd === 'undo') {
+      document.execCommand('undo');
+    } else if (cmd === 'redo') {
+      document.execCommand('redo');
+    } else if (cmd === 'bold') {
+      document.execCommand('bold');
+    } else if (cmd === 'italic') {
+      document.execCommand('italic');
+    } else if (cmd === 'underline') {
+      document.execCommand('underline');
+    } else if (cmd === 'h1') {
+      document.execCommand('formatBlock', false, '<h1>');
+    } else if (cmd === 'h2') {
+      document.execCommand('formatBlock', false, '<h2>');
+    } else if (cmd === 'h3') {
+      document.execCommand('formatBlock', false, '<h3>');
+    } else if (cmd === 'quote') {
+      document.execCommand('formatBlock', false, '<blockquote>');
+    } else if (cmd === 'list') {
+      document.execCommand('insertUnorderedList');
+    } else if (cmd === 'numbered') {
+      document.execCommand('insertOrderedList');
+    } else if (cmd === 'divider') {
+      document.execCommand('insertHorizontalRule');
+    } else if (cmd === 'code') {
+      const sel = window.getSelection();
+      const txt = (sel && !sel.isCollapsed) ? sel.toString() : 'code';
+      document.execCommand('insertHTML', false, `<code>${txt}</code>&nbsp;`);
+    } else if (cmd === 'task') {
+      document.execCommand('insertHTML', false, '<div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Task item</span></div><p></p>');
+    } else if (cmd === 'important') {
+      const sel = window.getSelection();
+      const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Important concept';
+      document.execCommand('insertHTML', false, `<span class="important-mark" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);border-radius:4px;padding:2px 8px;font-weight:700;">⚡ ${text}</span>&nbsp;`);
+    } else if (cmd === 'key-idea') {
+      const sel = window.getSelection();
+      const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Core principle / key concept';
+      document.execCommand('insertHTML', false, `<div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border-left:3.5px solid #06b6d4;border-radius:0 6px 6px 0;padding:10px 14px;margin:12px 0;font-weight:600;color:var(--color-text);">💡 <strong>Key Idea:</strong> ${text}</div><p></p>`);
     }
 
-    const newContent = fContent.slice(0, start) + before + textToInsert + after + fContent.slice(end);
-    updateContentWithHistory(newContent);
-    setTimeout(() => {
-      ta.focus();
-      ta.setSelectionRange(start + before.length, start + before.length + textToInsert.length);
-    }, 0);
+    if (editorRef.current) {
+      setFContent(editorRef.current.innerHTML);
+    }
   };
 
+  // Live Color Highlighter (immediately shows full background and color right on the screen)
   const handleHighlight = (colorName: string, forceApply = false) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end   = ta.selectionEnd;
-    const selected = fContent.slice(start, end);
+    setActiveHighlightColor(colorName);
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
 
-    // If clicking a swatch and nothing is selected, ONLY change the active color — DO NOT dump raw tags
-    if (!forceApply && (!selected || start === end)) {
-      setActiveHighlightColor(colorName);
+    const sel = window.getSelection();
+    const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
+
+    // If nothing selected and forceApply clicked
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      if (forceApply) {
+        document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;">highlighted text</mark>&nbsp;`);
+        setFContent(editor.innerHTML);
+      }
       return;
     }
 
-    const before = `=={${colorName}}`;
-    const after = '==';
-    const textToWrap = selected || 'highlighted text';
-    const newContent = fContent.slice(0, start) + before + textToWrap + after + fContent.slice(end);
-    updateContentWithHistory(newContent);
-    setTimeout(() => {
-      ta.focus();
-      ta.setSelectionRange(start + before.length, start + before.length + textToWrap.length);
-    }, 0);
+    const range = sel.getRangeAt(0);
+    const mark = document.createElement('mark');
+    mark.className = 'highlight-mark';
+    mark.style.background = c.bg;
+    mark.style.border = `1px solid ${c.border}`;
+    mark.style.color = c.text;
+    mark.style.borderRadius = '3px';
+    mark.style.padding = '1px 5px';
+    mark.style.fontWeight = '600';
+    mark.style.boxDecorationBreak = 'clone';
+    (mark.style as any).webkitBoxDecorationBreak = 'clone';
+
+    try {
+      const frag = range.extractContents();
+      mark.appendChild(frag);
+      range.insertNode(mark);
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(mark);
+      sel.addRange(newRange);
+    } catch {
+      document.execCommand('hiliteColor', false, c.bg);
+    }
+
+    if (editorRef.current) {
+      setFContent(editorRef.current.innerHTML);
+    }
+  };
+
+  // AI Auto-Format and Structure Note
+  const handleAiFormat = async () => {
+    const raw = (editorRef.current ? editorRef.current.innerHTML : fContent) || '';
+    if (!raw.trim() || raw.trim().length < 5) {
+      alert('Please write or paste some notes first to format.');
+      return;
+    }
+
+    setIsAiFormatting(true);
+    try {
+      const result = await formatStudyNotesWithAI(raw, fTitle || 'Study Document', settings);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = result.formattedHtml;
+      }
+      setFContent(result.formattedHtml);
+
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: result.formattedHtml });
+      }
+    } catch (err) {
+      console.error('AI formatting failed:', err);
+    } finally {
+      setIsAiFormatting(false);
+    }
   };
 
   // Filter docs list
@@ -1054,6 +1180,18 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                     </span>
                   )}
                   
+                  {/* AI Format Button in Header */}
+                  <button
+                    type="button"
+                    className={`${styles.btnSecondary} ${styles.aiFormatBtn}`}
+                    onClick={handleAiFormat}
+                    disabled={isAiFormatting}
+                    title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
+                  >
+                    {isAiFormatting ? <Loader2 size={12} className={styles.spin} /> : <Sparkles size={12} />}
+                    {isAiFormatting ? 'Formatting...' : 'AI Format'}
+                  </button>
+
                   {/* Export PDF Button */}
                   <button
                     type="button"
@@ -1174,55 +1312,41 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
 
               {editorMode === 'edit' && (
                 <MarkdownToolbar
-                  onInsert={handleInsert}
-                  onInsertTemplate={handleInsertTemplate}
+                  onFormat={handleFormat}
                   onHighlight={handleHighlight}
                   activeColor={activeHighlightColor}
                   onSetActiveColor={setActiveHighlightColor}
-                  canUndo={historyIndex > 0}
-                  canRedo={historyIndex < history.length - 1}
-                  onUndo={handleUndo}
-                  onRedo={handleRedo}
+                  onInsertTemplate={handleInsertTemplate}
+                  onAiFormat={handleAiFormat}
+                  isAiFormatting={isAiFormatting}
                 />
               )}
 
-              {/* Writing Canvas */}
+              {/* Live WYSIWYG Rich Editor Canvas (Google Docs / Word Style) */}
               {editorMode === 'edit' ? (
-                <textarea
-                  ref={textareaRef}
-                  className={styles.writingArea}
-                  value={fContent}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFContent(val);
-                    setHistory((prev) => {
-                      const branch = prev.slice(0, historyIndex + 1);
-                      branch.push(val);
-                      return branch;
-                    });
-                    setHistoryIndex((prev) => prev + 1);
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                      e.preventDefault();
-                      if (e.shiftKey) {
-                        handleRedo();
-                      } else {
-                        handleUndo();
-                      }
-                    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-                      e.preventDefault();
-                      handleRedo();
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className={styles.richEditor}
+                  data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
+                  onInput={() => {
+                    if (editorRef.current && !isInternalChange.current) {
+                      setFContent(editorRef.current.innerHTML);
                     }
                   }}
-                  placeholder={`# Title\n\nStart writing...\n\n== highlight text == • !!important!! • >>>key idea<<<\n\nMarkdown: **Bold**, *Italic*, # Headings, - Lists, - [ ] Tasks`}
+                  onBlur={() => {
+                    if (editorRef.current) {
+                      setFContent(editorRef.current.innerHTML);
+                    }
+                  }}
                 />
               ) : editorMode === 'preview' ? (
                 <div
                   className={styles.previewCanvas}
                   dangerouslySetInnerHTML={{
                     __html: fContent
-                      ? renderMarkdown(fContent)
+                      ? getRichHtml(fContent)
                       : '<p style="color:var(--color-text-faint)">No content to preview.</p>',
                   }}
                 />
@@ -1243,7 +1367,7 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                       className={styles.bookContent}
                       dangerouslySetInnerHTML={{
                         __html: fContent
-                          ? renderMarkdown(fContent)
+                          ? getRichHtml(fContent)
                           : '<p style="opacity:0.4;font-style:italic">Empty document</p>',
                       }}
                     />

@@ -565,20 +565,127 @@
   color: white !important;
 }
 
-/* ── Writing Area & Preview ── */
-.writingArea {
+/* ── Writing Area & Live Rich Editor (Google Docs / Word Style) ── */
+.writingArea,
+.richEditor {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  resize: none;
   font-family: inherit;
   font-size: var(--text-sm);
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--color-text);
   min-height: 420px;
-  padding: 0;
+  padding: 4px 0;
   overflow-y: auto;
+}
+
+.richEditor:empty:before {
+  content: attr(data-placeholder);
+  color: var(--color-text-faint);
+  pointer-events: none;
+  display: block;
+}
+
+.richEditor :global(h1) {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 18px 0 10px 0;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.richEditor :global(h2) {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 4px;
+}
+
+.richEditor :global(h3) {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 14px 0 6px 0;
+  color: var(--color-accent);
+}
+
+.richEditor :global(p) {
+  margin: 0 0 12px 0;
+}
+
+.richEditor :global(ul) {
+  padding-left: 24px;
+  list-style: disc;
+  margin: 0 0 12px 0;
+}
+
+.richEditor :global(ol) {
+  padding-left: 24px;
+  margin: 0 0 12px 0;
+}
+
+.richEditor :global(li) {
+  margin-bottom: 4px;
+}
+
+.richEditor :global(blockquote) {
+  background: var(--color-surface-2);
+  border-left: 3.5px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 10px 14px;
+  margin: 14px 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.richEditor :global(.highlight-mark) {
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-weight: 600;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.richEditor :global(.important-mark) {
+  display: inline-block;
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 0.9em;
+}
+
+.richEditor :global(.key-idea) {
+  display: block;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(99, 102, 241, 0.08));
+  border-left: 3.5px solid #06b6d4;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 10px 14px;
+  margin: 14px 0;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.richEditor :global(hr) {
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: 20px 0;
+}
+
+.richEditor :global(code) {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--color-accent-light);
 }
 
 .writingArea::placeholder {
@@ -1096,4 +1203,34 @@
 .btnSecondary:hover {
   background: var(--color-surface-3);
   color: var(--color-text);
+}
+
+.aiFormatBtn {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(236, 72, 153, 0.15)) !important;
+  color: var(--color-accent-light) !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aiFormatBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(236, 72, 153, 0.3)) !important;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.aiFormatBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.spin {
+  animation: spinAnim 1s linear infinite;
+}
+
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
