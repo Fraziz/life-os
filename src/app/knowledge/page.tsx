@@ -38,6 +38,8 @@ import {
   Lightbulb,
   Star,
   Zap,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -137,12 +139,20 @@ function MarkdownToolbar({
   onHighlight,
   activeColor,
   onSetActiveColor,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: {
   onInsert: (before: string, after?: string) => void;
   onInsertTemplate: () => void;
-  onHighlight: (colorName: string) => void;
+  onHighlight: (colorName: string, forceApply?: boolean) => void;
   activeColor: string;
   onSetActiveColor: (colorName: string) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 }) {
   const tools = [
     { label: 'H1',      before: '# ',       after: '',    title: 'Heading 1' },
@@ -166,8 +176,29 @@ function MarkdownToolbar({
 
   return (
     <div className={styles.toolbarWrapper}>
-      {/* Row 1: Standard formatting */}
+      {/* Row 1: Undo/Redo + Formatting tools */}
       <div className={styles.toolbar}>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={onUndo}
+          disabled={!canUndo}
+          style={{ opacity: canUndo ? 1 : 0.4, cursor: canUndo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 3 }}
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 size={12} /> Undo
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={onRedo}
+          disabled={!canRedo}
+          style={{ opacity: canRedo ? 1 : 0.4, cursor: canRedo ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 3 }}
+          title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+        >
+          <Redo2 size={12} /> Redo
+        </button>
+        <span className={styles.toolbarDivider} />
         {tools.map((t) => (
           <button
             key={t.label}
@@ -217,9 +248,9 @@ function MarkdownToolbar({
               } as React.CSSProperties}
               onClick={() => {
                 onSetActiveColor(c.name);
-                onHighlight(c.name);
+                onHighlight(c.name, false);
               }}
-              title={`Highlight: ${c.label}`}
+              title={`Highlight: ${c.label} (Click swatch to choose or highlight selection)`}
               aria-label={`Highlight ${c.label}`}
             />
           ))}
@@ -228,7 +259,7 @@ function MarkdownToolbar({
           type="button"
           className={styles.applyHighlightBtn}
           style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
-          onClick={() => onHighlight(activeColor)}
+          onClick={() => onHighlight(activeColor, true)}
           title={`Apply ${activeColorDef.label} highlight to selected text`}
         >
           <span style={{ width: 10, height: 10, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
@@ -254,6 +285,8 @@ export default function KnowledgePage() {
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   const importFileRef = useRef<HTMLInputElement>(null);
 
@@ -322,6 +355,8 @@ export default function KnowledgePage() {
     if (selectedDoc) {
       setFTitle(selectedDoc.title);
       setFContent(selectedDoc.content);
+      setHistory([selectedDoc.content]);
+      setHistoryIndex(0);
       setFStatus(selectedDoc.status);
       setFTags(selectedDoc.tags.join(', '));
       setFDreamId(selectedDoc.linkedDreamId || '');
@@ -335,6 +370,8 @@ export default function KnowledgePage() {
   const clearEditor = () => {
     setFTitle('');
     setFContent('');
+    setHistory(['']);
+    setHistoryIndex(0);
     setFStatus('active');
     setFTags('');
     setFDreamId('');
@@ -545,16 +582,31 @@ export default function KnowledgePage() {
     printWindow.document.close();
   };
 
-  // Download raw markdown/text
-  const handleDownloadTxt = () => {
-    if (!fTitle) return;
-    const blob = new Blob([fContent], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fTitle.replace(/[^\w.-]+/g, '_')}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // History management helper
+  const updateContentWithHistory = (newContent: string) => {
+    setFContent(newContent);
+    setHistory((prev) => {
+      const branch = prev.slice(0, historyIndex + 1);
+      branch.push(newContent);
+      return branch;
+    });
+    setHistoryIndex((prev) => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevIdx = historyIndex - 1;
+      setHistoryIndex(prevIdx);
+      setFContent(history[prevIdx]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIdx = historyIndex + 1;
+      setHistoryIndex(nextIdx);
+      setFContent(history[nextIdx]);
+    }
   };
 
   // Copy plain text to clipboard
@@ -588,7 +640,8 @@ Brief high-level summary of this document, objectives, and main takeaways.
 ## 4. Specifications & Reference Notes
 Detailed technical specifications, architecture overview, meeting minutes, and links.
 `;
-    setFContent((prev) => (prev ? prev + '\n\n' + template : `# ${fTitle || 'Formal Document'}\n\n` + template));
+    const newText = fContent ? fContent + '\n\n' + template : `# ${fTitle || 'Formal Document'}\n\n` + template;
+    updateContentWithHistory(newText);
   };
 
   // Toolbar insert helpers
@@ -598,27 +651,46 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
     const start = ta.selectionStart;
     const end   = ta.selectionEnd;
     const selected = fContent.slice(start, end);
-    const newContent = fContent.slice(0, start) + before + selected + after + fContent.slice(end);
-    setFContent(newContent);
+
+    let textToInsert = selected;
+    if (!selected && after) {
+      if (before === '**') textToInsert = 'bold text';
+      else if (before === '*') textToInsert = 'italic text';
+      else if (before === '`') textToInsert = 'code';
+      else if (before === '!!') textToInsert = 'important text';
+      else if (before === '>>>') textToInsert = 'key idea text';
+      else textToInsert = 'text';
+    }
+
+    const newContent = fContent.slice(0, start) + before + textToInsert + after + fContent.slice(end);
+    updateContentWithHistory(newContent);
     setTimeout(() => {
       ta.focus();
-      ta.setSelectionRange(start + before.length, start + before.length + selected.length);
+      ta.setSelectionRange(start + before.length, start + before.length + textToInsert.length);
     }, 0);
   };
 
-  const handleHighlight = (colorName: string) => {
+  const handleHighlight = (colorName: string, forceApply = false) => {
     const ta = textareaRef.current;
     if (!ta) return;
     const start = ta.selectionStart;
     const end   = ta.selectionEnd;
     const selected = fContent.slice(start, end);
+
+    // If clicking a swatch and nothing is selected, ONLY change the active color — DO NOT dump raw tags
+    if (!forceApply && (!selected || start === end)) {
+      setActiveHighlightColor(colorName);
+      return;
+    }
+
     const before = `=={${colorName}}`;
     const after = '==';
-    const newContent = fContent.slice(0, start) + before + selected + after + fContent.slice(end);
-    setFContent(newContent);
+    const textToWrap = selected || 'highlighted text';
+    const newContent = fContent.slice(0, start) + before + textToWrap + after + fContent.slice(end);
+    updateContentWithHistory(newContent);
     setTimeout(() => {
       ta.focus();
-      ta.setSelectionRange(start + before.length, start + before.length + selected.length);
+      ta.setSelectionRange(start + before.length, start + before.length + textToWrap.length);
     }, 0);
   };
 
@@ -853,16 +925,6 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                     <Printer size={12} /> PDF
                   </button>
 
-                  {/* Export / Download Text Button */}
-                  <button
-                    type="button"
-                    className={styles.btnSecondary}
-                    onClick={handleDownloadTxt}
-                    title="Download as .md / .txt"
-                  >
-                    <Download size={12} /> Text
-                  </button>
-
                   {/* Copy Text Button */}
                   <button
                     type="button"
@@ -978,6 +1040,10 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                   onHighlight={handleHighlight}
                   activeColor={activeHighlightColor}
                   onSetActiveColor={setActiveHighlightColor}
+                  canUndo={historyIndex > 0}
+                  canRedo={historyIndex < history.length - 1}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
                 />
               )}
 
@@ -987,7 +1053,29 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                   ref={textareaRef}
                   className={styles.writingArea}
                   value={fContent}
-                  onChange={(e) => setFContent(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFContent(val);
+                    setHistory((prev) => {
+                      const branch = prev.slice(0, historyIndex + 1);
+                      branch.push(val);
+                      return branch;
+                    });
+                    setHistoryIndex((prev) => prev + 1);
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                      e.preventDefault();
+                      if (e.shiftKey) {
+                        handleRedo();
+                      } else {
+                        handleUndo();
+                      }
+                    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                      e.preventDefault();
+                      handleRedo();
+                    }
+                  }}
                   placeholder={`# Title\n\nStart writing...\n\n== highlight text == • !!important!! • >>>key idea<<<\n\nMarkdown: **Bold**, *Italic*, # Headings, - Lists, - [ ] Tasks`}
                 />
               ) : editorMode === 'preview' ? (
