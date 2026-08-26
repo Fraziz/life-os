@@ -50,38 +50,32 @@ function extractRawPdfText(buffer: ArrayBuffer): string {
 }
 
 /**
- * Smart formatter: turns raw extracted text into an automatic formal executive document.
- * - Detects likely headings (ALL-CAPS or short title-case lines)
- * - Numbered section structure (1. Executive Summary, 2. Core Concepts, 3. Key Insights, etc.)
- * - Formats list items, cleans whitespace and removes PDF junk artifacts
- * - Adds a formal executive header, structured takeaways, and action items
+ * Clean and structure extracted text into readable markdown with clean headings & spacing.
  */
 export function formatAsNotes(raw: string, docTitle: string): string {
-  if (!raw || raw.trim().length < 5) return `# ${docTitle}\n\n> Formal Document Record\n\n`;
+  if (!raw || raw.trim().length < 5) return `# ${docTitle}\n\n`;
 
   let text = raw
     .replace(/\r\n|\r/g, '\n')
     .replace(/\f/g, '\n\n')
+    .replace(/PAGE\s+\d+/gi, '')
     .replace(/[^\S\n]{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
     .replace(/([a-z,;])\n([A-Za-z])/g, '$1 $2')
-    .replace(/- \n/g, '')
+    .replace(/-\s*\n\s*([a-z])/gi, '$1')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
   const lines = text.split('\n');
   const formatted: string[] = [];
   let currentParagraph: string[] = [];
 
-  const isLikelyHeading = (line: string): boolean => {
-    const t = line.trim();
-    if (!t || t.length > 80) return false;
-    if (t === t.toUpperCase() && /[A-Z]/.test(t)) return true;
-    if (t.length < 60 && !/[.!?,;]$/.test(t) && /^[A-Z]/.test(t)) return true;
-    return false;
+  const titleCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((w) => (w.length > 2 || w === 'a' || w === 'an' || w === 'the' ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(' ');
   };
-
-  const isListItem = (line: string): boolean =>
-    /^[\u2022\u2013\u2014\-\*\u00b7]\s/.test(line.trim()) || /^\d+[.)]\s/.test(line.trim());
 
   const flushParagraph = () => {
     if (currentParagraph.length > 0) {
@@ -95,17 +89,35 @@ export function formatAsNotes(raw: string, docTitle: string): string {
     const line = rawLine.trim();
     if (!line) { flushParagraph(); continue; }
 
-    if (isLikelyHeading(line)) {
+    // Check for Section / Rule Headings like "7. CONNECT & LOVE", "13. THE CARD PILES"
+    const numHeadingMatch = line.match(/^(\d+)[\.\)]\s+(.+)$/);
+    if (numHeadingMatch) {
       flushParagraph();
-      const level = line.length < 30 ? '###' : '####';
-      const txt = line.charAt(0).toUpperCase() + line.slice(1).toLowerCase();
-      formatted.push(`${level} ${txt}`);
+      const num = numHeadingMatch[1];
+      const heading = titleCase(numHeadingMatch[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
+      formatted.push(`## ${num}. ${heading}`);
       continue;
     }
 
-    if (isListItem(line)) {
+    // Check for ALL CAPS titles
+    if (line.length > 3 && line.length < 60 && line === line.toUpperCase() && /[A-Z]/.test(line) && !line.includes(':')) {
       flushParagraph();
-      const bullet = line.replace(/^[\u2022\u2013\u2014\-\*\u00b7]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
+      formatted.push(`## ${titleCase(line)}`);
+      continue;
+    }
+
+    // Definition terms like "CONNECT: ...", "DRAW PILE: ..."
+    const termMatch = line.match(/^([A-Z\s]{2,25}):\s+(.+)$/);
+    if (termMatch) {
+      flushParagraph();
+      formatted.push(`**${termMatch[1].trim()}:** ${termMatch[2].trim()}`);
+      continue;
+    }
+
+    // Bullet items
+    if (/^[\u2022\u2013\u2014\-\*\u00b7]\s/.test(line)) {
+      flushParagraph();
+      const bullet = line.replace(/^[\u2022\u2013\u2014\-\*\u00b7]\s+/, '').trim();
       formatted.push(`- ${bullet}`);
       continue;
     }
@@ -114,50 +126,8 @@ export function formatAsNotes(raw: string, docTitle: string): string {
   }
   flushParagraph();
 
-  // Extract first paragraph for executive summary if available
-  const firstPara = formatted.find((p) => !p.startsWith('#') && !p.startsWith('-')) || 'Comprehensive reference document and working notes.';
-  const bodyItems = formatted.filter((p) => p !== firstPara);
-  const bodyContent = bodyItems.join('\n\n').trim();
-
-  return `# ${docTitle}
-
-> **DOCUMENT TYPE**: Formal Executive Record & Knowledge Asset  
-> **CLASSIFICATION**: Official / Standard Operating Knowledge  
-> **READING FORMAT**: Formatted for Executive Review & Book Mode
-
----
-
-## 1. Executive Summary
-${firstPara}
-
----
-
-## 2. Core Content & Structured Findings
-
-${bodyContent || '*Detailed reference content from source document.*'}
-
----
-
-## 3. Key Takeaways & Strategic Insights
-- >>>Main strategic principle or core takeaway from this document<<<
-- !!Crucial rule, metric, or requirement to keep in mind!!
-- ==Key definition or important fact for reference==
-
----
-
-## 4. Action Items & Execution Checklist
-- [ ] Review core findings and extract actionable next steps
-- [ ] Apply highlighted principles to relevant active projects
-- [ ] Annotate additional observations using the color highlight palette
-
----
-
-## 5. Working Annotations & Research Notes
-*Personal working notes and colored highlights:*
-- =={yellow}Yellow for primary takeaways==
-- =={cyan}Cyan for technical concepts and terms==
-- =={purple}Purple for strategic ideas==
-`;
+  const bodyContent = formatted.join('\n\n').trim();
+  return `# ${docTitle}\n\n${bodyContent}`;
 }
 
 /**
