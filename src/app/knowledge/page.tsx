@@ -34,24 +34,66 @@ import {
   UploadCloud,
   FileUp,
   Loader2,
+  BookMarked,
+  Lightbulb,
+  Star,
+  Zap,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 
-// ── Formal Markdown & Document Renderer ───────────────────
+// ── Color Highlight Palette ───────────────────────────────────────
+const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
+  { name: 'yellow',   bg: 'rgba(253, 224, 71,  0.55)', border: '#fbbf24', text: '#713f12', label: 'Yellow' },
+  { name: 'lime',     bg: 'rgba(134, 239, 172, 0.55)', border: '#4ade80', text: '#14532d', label: 'Lime' },
+  { name: 'cyan',     bg: 'rgba(103, 232, 249, 0.55)', border: '#22d3ee', text: '#164e63', label: 'Cyan' },
+  { name: 'blue',     bg: 'rgba(147, 197, 253, 0.55)', border: '#60a5fa', text: '#1e3a5f', label: 'Blue' },
+  { name: 'purple',   bg: 'rgba(196, 181, 253, 0.55)', border: '#a78bfa', text: '#3b0764', label: 'Purple' },
+  { name: 'pink',     bg: 'rgba(249, 168, 212, 0.55)', border: '#f472b6', text: '#831843', label: 'Pink' },
+  { name: 'orange',   bg: 'rgba(253, 186, 116, 0.55)', border: '#fb923c', text: '#7c2d12', label: 'Orange' },
+  { name: 'red',      bg: 'rgba(252, 165, 165, 0.55)', border: '#f87171', text: '#7f1d1d', label: 'Red' },
+  { name: 'mint',     bg: 'rgba(110, 231, 183, 0.55)', border: '#34d399', text: '#064e3b', label: 'Mint' },
+  { name: 'lavender', bg: 'rgba(167, 139, 250, 0.55)', border: '#8b5cf6', text: '#2e1065', label: 'Lavender' },
+];
+
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {};
+HIGHLIGHT_COLORS.forEach((c) => { COLOR_MAP[c.name] = { bg: c.bg, border: c.border, text: c.text }; });
+
+// ── ADHD-Friendly Markdown & Document Renderer ───────────────────
 function renderMarkdown(md: string): string {
   let html = md
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Code blocks
+  // Code blocks (before other replacements)
   html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
 
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
+  // ── ADHD Special Markers ──
+  // Key Ideas: >>>text<<< — bright teal callout card
+  html = html.replace(/>>>(.+?)<<</g, '<span class="key-idea"><span class="key-idea-icon">💡</span>$1</span>');
+
+  // Important: !!text!! — vivid warning highlight
+  html = html.replace(/!!(.+?)!!/g, '<span class="important-mark">⚡ $1</span>');
+
+  // Colored highlights: =={colorname}text== (must come before generic ==text==)
+  html = html.replace(/==\{([a-z]+)\}(.+?)==/g, (_, colorName, content) => {
+    const c = COLOR_MAP[colorName];
+    if (!c) return `<mark class="highlight-mark">${content}</mark>`;
+    return `<mark style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;box-decoration-break:clone;-webkit-box-decoration-break:clone">${content}</mark>`;
+  });
+
+  // Generic highlight: ==text== — default yellow
+  html = html.replace(/==(.+?)==/g, '<mark class="highlight-mark">$1</mark>');
+
+  // Starred/Remember: ~~text~~ → strikethrough
+  html = html.replace(/~~(.+?)~~/g, '<s>$1</s>');
+
   // Headings
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
@@ -59,24 +101,29 @@ function renderMarkdown(md: string): string {
   // Bold & italic
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
 
   // Checkboxes (before list items)
-  html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">&check; $1</div>');
-  html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">&square; $1</div>');
+  html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">✅ $1</div>');
+  html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">⬜ $1</div>');
+
+  // Numbered list items
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
+  html = html.replace(/(<li class="ol-item">[\s\S]*?<\/li>\n?)+/g, '<ol>$&</ol>');
 
   // Unordered list items
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
-  // Blockquotes
-  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  // Blockquotes → key callout style
+  html = html.replace(/^> (.+)$/gm, '<blockquote class="callout">$1</blockquote>');
 
   // Horizontal rule
   html = html.replace(/^---$/gm, '<hr/>');
 
   // Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
-    if (/^<(h[1-6]|ul|hr|div|pre|blockquote)/.test(block.trim())) return block;
+    if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote)/.test(block.trim())) return block;
     return block.trim() ? `<p>${block.trim()}</p>` : '';
   }).join('\n');
 
@@ -87,46 +134,111 @@ function renderMarkdown(md: string): string {
 function MarkdownToolbar({
   onInsert,
   onInsertTemplate,
+  onHighlight,
+  activeColor,
+  onSetActiveColor,
 }: {
   onInsert: (before: string, after?: string) => void;
   onInsertTemplate: () => void;
+  onHighlight: (colorName: string) => void;
+  activeColor: string;
+  onSetActiveColor: (colorName: string) => void;
 }) {
   const tools = [
-    { label: 'H1', before: '# ', after: '' },
-    { label: 'H2', before: '## ', after: '' },
-    { label: 'H3', before: '### ', after: '' },
-    { label: 'B',  before: '**', after: '**' },
-    { label: 'I',  before: '*', after: '*' },
-    { label: 'Quote', before: '> ', after: '' },
-    { label: 'Code', before: '`', after: '`' },
-    { label: 'List', before: '- ', after: '' },
-    { label: 'Task', before: '- [ ] ', after: '' },
-    { label: 'Divider', before: '\n---\n', after: '' },
+    { label: 'H1',      before: '# ',       after: '',    title: 'Heading 1' },
+    { label: 'H2',      before: '## ',      after: '',    title: 'Heading 2' },
+    { label: 'H3',      before: '### ',     after: '',    title: 'Heading 3' },
+    { label: 'B',       before: '**',       after: '**',  title: 'Bold' },
+    { label: 'I',       before: '*',        after: '*',   title: 'Italic' },
+    { label: 'Quote',   before: '> ',       after: '',    title: 'Blockquote' },
+    { label: 'Code',    before: '`',        after: '`',   title: 'Inline Code' },
+    { label: 'List',    before: '- ',       after: '',    title: 'Bullet List' },
+    { label: 'Task',    before: '- [ ] ',   after: '',    title: 'Task Checkbox' },
+    { label: 'Divider', before: '\n---\n',  after: '',    title: 'Horizontal Divider' },
   ];
+
+  const adhdTools = [
+    { label: '⚡ Important', before: '!!',  after: '!!',  title: 'Important (!!text!!)', cls: styles.toolbarImportant },
+    { label: '💡 Key Idea',  before: '>>>', after: '<<<', title: 'Key Idea (>>>text<<<)', cls: styles.toolbarKeyIdea },
+  ];
+
+  const activeColorDef = HIGHLIGHT_COLORS.find((c) => c.name === activeColor) ?? HIGHLIGHT_COLORS[0];
+
   return (
-    <div className={styles.toolbar}>
-      {tools.map((t) => (
+    <div className={styles.toolbarWrapper}>
+      {/* Row 1: Standard formatting */}
+      <div className={styles.toolbar}>
+        {tools.map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            className={styles.toolbarBtn}
+            onClick={() => onInsert(t.before, t.after)}
+            title={t.title}
+          >
+            {t.label}
+          </button>
+        ))}
+        <span className={styles.toolbarDivider} />
+        {adhdTools.map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            className={`${styles.toolbarBtn} ${t.cls}`}
+            onClick={() => onInsert(t.before, t.after)}
+            title={t.title}
+          >
+            {t.label}
+          </button>
+        ))}
         <button
-          key={t.label}
           type="button"
-          className={styles.toolbarBtn}
-          onClick={() => onInsert(t.before, t.after)}
-          title={`Insert ${t.label}`}
+          className={`${styles.toolbarBtn} ${styles.templateBtn}`}
+          onClick={onInsertTemplate}
+          title="Insert Formal Document Template"
         >
-          {t.label}
+          <Sparkles size={11} style={{ marginRight: 3 }} /> Template
         </button>
-      ))}
-      <button
-        type="button"
-        className={`${styles.toolbarBtn} ${styles.templateBtn}`}
-        onClick={onInsertTemplate}
-        title="Insert Formal Document Template"
-      >
-        <Sparkles size={11} style={{ marginRight: 3 }} /> Formal Template
-      </button>
+      </div>
+
+      {/* Row 2: Color highlight palette */}
+      <div className={styles.colorPaletteRow}>
+        <span className={styles.colorPaletteLabel}>Highlight</span>
+        <div className={styles.colorSwatches}>
+          {HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              className={`${styles.colorSwatch} ${activeColor === c.name ? styles.colorSwatchActive : ''}`}
+              style={{
+                background: c.bg,
+                borderColor: c.border,
+                '--swatch-border': c.border,
+              } as React.CSSProperties}
+              onClick={() => {
+                onSetActiveColor(c.name);
+                onHighlight(c.name);
+              }}
+              title={`Highlight: ${c.label}`}
+              aria-label={`Highlight ${c.label}`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className={styles.applyHighlightBtn}
+          style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
+          onClick={() => onHighlight(activeColor)}
+          title={`Apply ${activeColorDef.label} highlight to selected text`}
+        >
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
+          Apply {activeColorDef.label}
+        </button>
+      </div>
     </div>
   );
 }
+
 
 export default function KnowledgePage() {
   const { docs, isLoaded, addDoc, updateDoc, deleteDoc, resetToDefaultDocs } = useKnowledge();
@@ -141,12 +253,13 @@ export default function KnowledgePage() {
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
 
   const importFileRef = useRef<HTMLInputElement>(null);
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview'>('edit');
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book'>('edit');
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
 
@@ -493,6 +606,22 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
     }, 0);
   };
 
+  const handleHighlight = (colorName: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const selected = fContent.slice(start, end);
+    const before = `=={${colorName}}`;
+    const after = '==';
+    const newContent = fContent.slice(0, start) + before + selected + after + fContent.slice(end);
+    setFContent(newContent);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + before.length, start + before.length + selected.length);
+    }, 0);
+  };
+
   // Filter docs list
   const q = searchQ.toLowerCase();
   const filteredDocs = docs.filter((d) => {
@@ -675,26 +804,31 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
             <div className={styles.editorWrapper}>
               {/* Document Action Header */}
               <div className={styles.canvasHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <button
-                    className={styles.modeToggle}
-                    style={editorMode === 'edit' ? { color: 'var(--color-accent)', fontWeight: 700 } : {}}
+                    className={`${styles.modeToggle} ${editorMode === 'edit' ? styles.modeToggleActive : ''}`}
                     onClick={() => setEditorMode('edit')}
                   >
                     <Edit2 size={13} /> Edit
                   </button>
                   <span style={{ color: 'var(--color-border)' }}>|</span>
                   <button
-                    className={styles.modeToggle}
-                    style={editorMode === 'preview' ? { color: 'var(--color-accent)', fontWeight: 700 } : {}}
+                    className={`${styles.modeToggle} ${editorMode === 'preview' ? styles.modeToggleActive : ''}`}
                     onClick={() => setEditorMode('preview')}
                   >
                     <Eye size={13} /> Preview
                   </button>
                   <span style={{ color: 'var(--color-border)' }}>|</span>
                   <button
-                    className={styles.modeToggle}
-                    style={showMetaSettings ? { color: 'var(--color-accent)', fontWeight: 700 } : {}}
+                    className={`${styles.modeToggle} ${editorMode === 'book' ? styles.modeToggleActive : ''}`}
+                    onClick={() => setEditorMode('book')}
+                    title="Book reading mode — clean, distraction-free"
+                  >
+                    <BookMarked size={13} /> Book
+                  </button>
+                  <span style={{ color: 'var(--color-border)' }}>|</span>
+                  <button
+                    className={`${styles.modeToggle} ${showMetaSettings ? styles.modeToggleActive : ''}`}
                     onClick={() => setShowMetaSettings(!showMetaSettings)}
                   >
                     <Link2 size={13} /> Properties {showMetaSettings ? '▴' : '▾'}
@@ -841,6 +975,9 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                 <MarkdownToolbar
                   onInsert={handleInsert}
                   onInsertTemplate={handleInsertTemplate}
+                  onHighlight={handleHighlight}
+                  activeColor={activeHighlightColor}
+                  onSetActiveColor={setActiveHighlightColor}
                 />
               )}
 
@@ -851,17 +988,52 @@ Detailed technical specifications, architecture overview, meeting minutes, and l
                   className={styles.writingArea}
                   value={fContent}
                   onChange={(e) => setFContent(e.target.value)}
-                  placeholder={`# Title\n\nStart writing formal document notes, concepts, and specifications here...\n\nMarkdown supported: **Bold**, *Italic*, # Headings, - Lists, - [ ] Checkboxes.`}
+                  placeholder={`# Title\n\nStart writing...\n\n== highlight text == • !!important!! • >>>key idea<<<\n\nMarkdown: **Bold**, *Italic*, # Headings, - Lists, - [ ] Tasks`}
                 />
-              ) : (
+              ) : editorMode === 'preview' ? (
                 <div
                   className={styles.previewCanvas}
                   dangerouslySetInnerHTML={{
                     __html: fContent
                       ? renderMarkdown(fContent)
-                      : '<p style="color:var(--color-text-faint)">No document content to preview.</p>',
+                      : '<p style="color:var(--color-text-faint)">No content to preview.</p>',
                   }}
                 />
+              ) : (
+                /* ── Book Mode ── */
+                <div className={styles.bookWrapper}>
+                  <div className={styles.bookPage}>
+                    <div className={styles.bookTitle}>{fTitle || 'Untitled'}</div>
+                    {fTags && (
+                      <div className={styles.bookMeta}>
+                        {fTags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                          <span key={t} className={styles.bookTag}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className={styles.bookDivider} />
+                    <div
+                      className={styles.bookContent}
+                      dangerouslySetInnerHTML={{
+                        __html: fContent
+                          ? renderMarkdown(fContent)
+                          : '<p style="opacity:0.4;font-style:italic">Empty document</p>',
+                      }}
+                    />
+                    <div className={styles.bookFooter}>
+                      <span>Life OS · Knowledge Base</span>
+                      <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+                    </div>
+                  </div>
+
+                  {/* ADHD Legend */}
+                  <div className={styles.adhdLegend}>
+                    <span className={styles.legendTitle}>Color Guide</span>
+                    <span className={styles.legendItem}><mark className={styles.legendHighlight}>==highlight==</mark> Remember this</span>
+                    <span className={styles.legendItem}><span className={styles.legendImportant}>⚡ !!important!!</span> Must know</span>
+                    <span className={styles.legendItem}><span className={styles.legendKeyIdea}>💡 &gt;&gt;&gt;key idea&lt;&lt;&lt;</span> Core concept</span>
+                  </div>
+                </div>
               )}
             </div>
           )}

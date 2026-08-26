@@ -131,19 +131,19 @@
 
 /* ── Light Theme (Warm Paper & Slate, Zero-Glare) ── */
 [data-theme='light'] {
-  --color-bg:             #f8fafc;
+  --color-bg:             #f4f6fb;
   --color-surface:        #ffffff;
-  --color-surface-2:      #f1f5f9;
+  --color-surface-2:      #eef1f8;
   --color-surface-3:      #e2e8f0;
-  --color-surface-hover:  #e2e8f0;
+  --color-surface-hover:  #dde3f0;
 
-  --color-border:         #cbd5e1;
-  --color-border-subtle:  #e2e8f0;
+  --color-border:         #c8d3e8;
+  --color-border-subtle:  #dde3f0;
   --color-border-focus:   #4f46e5;
 
   --color-text:           #0f172a;
-  --color-text-muted:     #475569;
-  --color-text-faint:     #94a3b8;
+  --color-text-muted:     #3d4f6e;
+  --color-text-faint:     #7a91b8;
   --color-text-inverse:   #ffffff;
 
   --color-accent:         #4f46e5;
@@ -152,10 +152,37 @@
   --color-accent-glow:    rgba(79, 70, 229, 0.2);
   --color-accent-hover:   #4338ca;
 
-  --shadow-sm:            0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md:            0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg:            0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-  --shadow-xl:            0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --shadow-sm:            0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md:            0 4px 12px rgba(15, 23, 42, 0.1);
+  --shadow-lg:            0 10px 24px rgba(15, 23, 42, 0.12);
+  --shadow-xl:            0 20px 40px rgba(15, 23, 42, 0.14);
+}
+
+/* ── System preference fallback (before JS theme loads) ── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --color-bg:             #f4f6fb;
+    --color-surface:        #ffffff;
+    --color-surface-2:      #eef1f8;
+    --color-surface-3:      #e2e8f0;
+    --color-surface-hover:  #dde3f0;
+    --color-border:         #c8d3e8;
+    --color-border-subtle:  #dde3f0;
+    --color-border-focus:   #4f46e5;
+    --color-text:           #0f172a;
+    --color-text-muted:     #3d4f6e;
+    --color-text-faint:     #7a91b8;
+    --color-text-inverse:   #ffffff;
+    --color-accent:         #4f46e5;
+    --color-accent-light:   #6366f1;
+    --color-accent-dim:     rgba(79, 70, 229, 0.1);
+    --color-accent-glow:    rgba(79, 70, 229, 0.2);
+    --color-accent-hover:   #4338ca;
+    --shadow-sm:            0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-md:            0 4px 12px rgba(15, 23, 42, 0.1);
+    --shadow-lg:            0 10px 24px rgba(15, 23, 42, 0.12);
+    --shadow-xl:            0 20px 40px rgba(15, 23, 42, 0.14);
+  }
 }
 
 /* ── Reset ── */

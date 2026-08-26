@@ -35,8 +35,8 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" style={{ background: '#0b0d17' }}>
-      <body style={{ background: '#0b0d17' }}>
+    <html lang="en">
+      <body>
         {/* Skip to main content — accessibility (Client Component for event handlers) */}
         <SkipLink />
 
