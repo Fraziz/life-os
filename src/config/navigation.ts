@@ -166,6 +166,14 @@ export const NAV_SECTIONS: NavSection[] = [
         phase: 16,
       },
       {
+        id: 'workout',
+        label: 'Workout',
+        href: '/workout',
+        icon: 'workout',
+        isAvailable: true,
+        phase: 20,
+      },
+      {
         id: 'knowledge',
         label: 'Knowledge',
         href: '/knowledge',

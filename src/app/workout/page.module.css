@@ -1,0 +1,1194 @@
+/* ── Workout Tracker — Premium Design System ─────────────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-6) var(--space-10);
+  max-width: 1100px;
+  margin: 0 auto;
+  gap: var(--space-5);
+}
+
+/* ── Page Header ─────────────────────────────────────────────────────────────── */
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pageIcon {
+  color: var(--color-accent);
+}
+
+.pageTitle {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  font-weight: 500;
+  margin: 2px 0 0 0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Stats Bar ───────────────────────────────────────────────────────────────── */
+
+.statsBar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.statCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.statCard:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.statIcon {
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+/* ── Weekly Strip ────────────────────────────────────────────────────────────── */
+
+.weekStrip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-2);
+}
+
+.weekDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 72px;
+  position: relative;
+}
+
+.weekDay:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+  transform: translateY(-1px);
+}
+
+.weekDayToday {
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+}
+
+.weekDayDone {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.weekDayRest {
+  background: var(--color-surface-2);
+  opacity: 0.7;
+}
+
+.weekDayLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-faint);
+}
+
+.weekDayNum {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.weekDayDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.weekDayRestLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+}
+
+.weekDayPlan {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-accent-light);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 2px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.tab:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.tabActive {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: transparent;
+}
+
+.tabContent {
+  min-height: 400px;
+}
+
+/* ── Today / Session View ────────────────────────────────────────────────────── */
+
+.sessionView {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sessionViewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sessionViewTitle {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.sessionViewMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  margin-top: 4px;
+}
+
+.sessionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── Progress Bar ────────────────────────────────────────────────────────────── */
+
+.progressBarWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.progressBarTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--color-surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), #22d3ee);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.progressLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+/* ── Exercise Card ───────────────────────────────────────────────────────────── */
+
+.exerciseList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.exerciseCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color var(--transition-fast);
+}
+
+.exerciseCard:hover {
+  border-color: var(--color-border-strong);
+}
+
+.exerciseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.exerciseMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.muscleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--color-accent-dim);
+  color: var(--color-accent-light);
+  white-space: nowrap;
+}
+
+.equipTag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  padding: 2px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.exerciseActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.setsProgress {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.exerciseName {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ── Sets Table ──────────────────────────────────────────────────────────────── */
+
+.setsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setsTableHead {
+  display: grid;
+  grid-template-columns: 32px 1fr 1fr 36px 24px;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.setRow {
+  display: grid;
+  grid-template-columns: 32px 1fr 1fr 36px 24px;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 4px;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.setRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.setDone {
+  opacity: 0.55;
+}
+
+.setNum {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+.setInput {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  transition: border-color var(--transition-fast);
+}
+
+.setInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.setCheck {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  color: white;
+}
+
+.setCheck:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+}
+
+.setCheckDone {
+  border-color: #22c55e;
+  background: #22c55e;
+}
+
+.setRemoveBtn {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.setRow:hover .setRemoveBtn {
+  opacity: 1;
+}
+
+.setRemoveBtn:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+}
+
+.addSetBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: fit-content;
+}
+
+.addSetBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
+}
+
+/* ── Empty States ────────────────────────────────────────────────────────────── */
+
+.emptyExercises {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-4);
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+.emptyExercises p {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.noSessionToday {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-16) var(--space-4);
+  text-align: center;
+}
+
+.noSessionIcon {
+  color: var(--color-text-faint);
+  opacity: 0.4;
+}
+
+.noSessionTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.noSessionSub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  max-width: 380px;
+  margin: 0;
+  line-height: 1.7;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-4);
+  color: var(--color-text-faint);
+}
+
+.emptyState p {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+/* ── Log Tab ─────────────────────────────────────────────────────────────────── */
+
+.logList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.logItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.logItem:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+  transform: translateX(2px);
+}
+
+.logItemDone {
+  border-left: 3px solid #22c55e;
+}
+
+.logItemLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.logItemName {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.logItemMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+
+.logItemRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.logItemArrow {
+  color: var(--color-text-faint);
+}
+
+/* ── Schedule Tab ────────────────────────────────────────────────────────────── */
+
+.scheduleTab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.scheduleHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scheduleSubtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-3);
+}
+
+.scheduleDay {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: border-color var(--transition-fast);
+}
+
+.scheduleDayRest {
+  background: var(--color-surface-2);
+  border-style: dashed;
+}
+
+.scheduleDayActive {
+  border-color: var(--color-border-strong);
+}
+
+.scheduleDayLabel {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text);
+}
+
+.scheduleDayControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.restToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.restToggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.scheduleInput {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+  width: 100%;
+  transition: border-color var(--transition-fast);
+}
+
+.scheduleInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* ── Library Tab ─────────────────────────────────────────────────────────────── */
+
+.libraryTab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.libraryHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.libraryFilters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.librarySearch {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  width: 100%;
+  max-width: 400px;
+  transition: border-color var(--transition-fast);
+}
+
+.librarySearch:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.libraryMuscleFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.muscleFilterBtn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.muscleFilterBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.muscleFilterActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.libraryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2);
+}
+
+.libraryCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.libraryCard:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+  transform: translateY(-1px);
+}
+
+.libraryCardName {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.libraryCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.libraryCardStats {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.btnPrimary {
+  background: var(--color-accent);
+  color: white;
+  border-color: transparent;
+}
+
+.btnPrimary:hover {
+  background: var(--color-accent-hover);
+  color: white;
+  border-color: transparent;
+}
+
+.btnSecondary {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.btnDanger {
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.2);
+}
+
+.btnDanger:hover {
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #f43f5e;
+}
+
+.btnLg {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  border-radius: var(--radius-xl);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.iconBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/* ── Status Badges ───────────────────────────────────────────────────────────── */
+
+.completedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  white-space: nowrap;
+}
+
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--color-accent-dim);
+  color: var(--color-accent-light);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* ── Section Title ───────────────────────────────────────────────────────────── */
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--space-4);
+}
+
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-2xl);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalLg {
+  max-width: 720px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.modalBody {
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────────────── */
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.formRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.formLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+}
+
+.formInput {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  width: 100%;
+  transition: border-color var(--transition-fast);
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.formInput:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.formSelect {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  width: 100%;
+  transition: border-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* ── Add Exercise Mode Tabs ───────────────────────────────────────────────────── */
+
+.addModeTabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-6);
+}
+
+.addModeTab {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.addModeTab:hover {
+  color: var(--color-text);
+}
+
+.addModeTabActive {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+/* ── Exercise Picker List ─────────────────────────────────────────────────────── */
+
+.exercisePickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.exercisePickerList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.exercisePickerList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.exercisePickerList::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+
+.exercisePickerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+  gap: var(--space-3);
+}
+
+.exercisePickerItem:hover {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.pickerName {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  flex: 1;
+  text-align: left;
+}
+
+.pickerMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pickerSets {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────────── */
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  font-style: italic;
+  margin: 0;
+}

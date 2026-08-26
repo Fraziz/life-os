@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
   LogOut,
   Paperclip,
+  Dumbbell,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -65,6 +66,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   knowledge: BookOpen,
   roadmap: GitBranch,
   files: Paperclip,
+  workout: Dumbbell,
 };
 
 // ── Collapse icon ──────────────────────────────────────────
