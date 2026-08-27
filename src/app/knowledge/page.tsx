@@ -48,6 +48,19 @@ import {
   AlertCircle,
   Wand2,
   Lightbulb,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  Type,
+  Heading1,
+  Heading2,
+  Heading3,
+  Highlighter,
+  Eraser,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -135,8 +148,25 @@ function renderMarkdown(md: string): string {
 
   // Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
-    if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote)/.test(block.trim())) return block;
-    return block.trim() ? `<p>${block.trim()}</p>` : '';
+    const trimmed = block.trim();
+    if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote)/.test(trimmed)) return trimmed;
+
+    // Process arrow flow (A -> B -> C or A → B → C)
+    if ((trimmed.includes('→') || trimmed.includes('->')) && trimmed.length < 350) {
+      const steps = trimmed.split(/→|->/).map((s) => s.trim().replace(/\.$/, '')).filter(Boolean);
+      if (steps.length >= 2) {
+        const stepHtml = steps.map((st) => `<span class="flow-step">${st}</span>`).join(' <span class="flow-arrow">&rarr;</span> ');
+        return `<div class="process-flow">${stepHtml}</div>`;
+      }
+    }
+
+    // Formula line
+    if ((trimmed.includes('+') && trimmed.includes('=')) || /^Formula:\s*/i.test(trimmed)) {
+      const clean = trimmed.replace(/^Formula:\s*/i, '');
+      return `<div class="formula-box"><strong>Formula:</strong> <code>${clean}</code></div>`;
+    }
+
+    return trimmed ? `<p>${trimmed}</p>` : '';
   }).join('\n');
 
   return html;
@@ -147,6 +177,7 @@ function renderMarkdown(md: string): string {
 function MarkdownToolbar({
   onFormat,
   onHighlight,
+  onRemoveHighlight,
   activeColor,
   onSetActiveColor,
   onInsertTemplate,
@@ -155,6 +186,7 @@ function MarkdownToolbar({
 }: {
   onFormat: (cmd: string) => void;
   onHighlight: (colorName: string, forceApply?: boolean) => void;
+  onRemoveHighlight: () => void;
   activeColor: string;
   onSetActiveColor: (colorName: string) => void;
   onInsertTemplate: () => void;
@@ -246,10 +278,54 @@ function MarkdownToolbar({
         <button
           type="button"
           className={styles.toolbarBtn}
+          onClick={() => onFormat('strikethrough')}
+          title="Strikethrough"
+        >
+          <Strikethrough size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
           onClick={() => onFormat('code')}
           title="Inline Code"
         >
           <Code size={12} />
+        </button>
+
+        <span className={styles.toolbarDivider} />
+
+        {/* Text Alignment */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('alignLeft')}
+          title="Align Left"
+        >
+          <AlignLeft size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('alignCenter')}
+          title="Align Center"
+        >
+          <AlignCenter size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('alignRight')}
+          title="Align Right"
+        >
+          <AlignRight size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('alignJustify')}
+          title="Justify"
+        >
+          <AlignJustify size={12} />
         </button>
 
         <span className={styles.toolbarDivider} />
@@ -360,16 +436,26 @@ function MarkdownToolbar({
             />
           ))}
         </div>
-        <button
-          type="button"
-          className={styles.applyHighlightBtn}
-          style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
-          onClick={() => onHighlight(activeColor, true)}
-          title={`Apply ${activeColorDef.label} highlight to selected text`}
-        >
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
-          Apply {activeColorDef.label}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <button
+            type="button"
+            className={styles.clearHighlightBtn}
+            onClick={onRemoveHighlight}
+            title="Remove highlight from selected text"
+          >
+            <Eraser size={12} style={{ marginRight: 4 }} /> Clear
+          </button>
+          <button
+            type="button"
+            className={styles.applyHighlightBtn}
+            style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
+            onClick={() => onHighlight(activeColor, true)}
+            title={`Apply ${activeColorDef.label} highlight to selected text`}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
+            Apply {activeColorDef.label}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -414,6 +500,7 @@ export default function KnowledgePage() {
   const [fTaskId, setFTaskId]         = useState('');
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const bookEditorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
 
   // Automatically import and extract text from uploaded PDF or Document
@@ -482,28 +569,38 @@ export default function KnowledgePage() {
       setFTaskId(selectedDoc.linkedTaskId || '');
       setEditorMode('edit');
 
-      // Populate rich editor with HTML
+      // Populate rich editor and book view with HTML
       setTimeout(() => {
+        const html = getRichHtml(selectedDoc.content || '');
+        isInternalChange.current = true;
         if (editorRef.current) {
-          isInternalChange.current = true;
-          editorRef.current.innerHTML = getRichHtml(selectedDoc.content || '');
-          isInternalChange.current = false;
+          editorRef.current.innerHTML = html;
         }
+        if (bookEditorRef.current) {
+          bookEditorRef.current.innerHTML = html;
+        }
+        isInternalChange.current = false;
       }, 0);
     }
   }, [selectedDoc]);
 
-  // Keep editor innerHTML in sync if mode switches to 'edit'
+  // Keep editor & book innerHTML in sync when mode or content changes
   useEffect(() => {
+    const html = getRichHtml(fContent || '');
     if (editorMode === 'edit' && editorRef.current) {
-      const html = getRichHtml(fContent || '');
       if (editorRef.current.innerHTML !== html) {
         isInternalChange.current = true;
         editorRef.current.innerHTML = html;
         isInternalChange.current = false;
       }
+    } else if (editorMode === 'book' && bookEditorRef.current) {
+      if (bookEditorRef.current.innerHTML !== html) {
+        isInternalChange.current = true;
+        bookEditorRef.current.innerHTML = html;
+        isInternalChange.current = false;
+      }
     }
-  }, [editorMode]);
+  }, [editorMode, fContent]);
 
   const clearEditor = () => {
     setFTitle('');
@@ -977,6 +1074,16 @@ export default function KnowledgePage() {
       const sel = window.getSelection();
       const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Core principle / key concept';
       document.execCommand('insertHTML', false, `<div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border-left:3.5px solid #06b6d4;border-radius:0 6px 6px 0;padding:10px 14px;margin:12px 0;font-weight:600;color:var(--color-text);">💡 <strong>Key Idea:</strong> ${text}</div><p></p>`);
+    } else if (cmd === 'strikethrough') {
+      document.execCommand('strikeThrough');
+    } else if (cmd === 'alignLeft') {
+      document.execCommand('justifyLeft');
+    } else if (cmd === 'alignCenter') {
+      document.execCommand('justifyCenter');
+    } else if (cmd === 'alignRight') {
+      document.execCommand('justifyRight');
+    } else if (cmd === 'alignJustify') {
+      document.execCommand('justifyFull');
     }
 
     if (editorRef.current) {
@@ -984,10 +1091,10 @@ export default function KnowledgePage() {
     }
   };
 
-  // Live Color Highlighter (immediately shows full background and color right on the screen)
+  // Live Color Highlighter (works in both Live Editor and Book View)
   const handleHighlight = (colorName: string, forceApply = false) => {
     setActiveHighlightColor(colorName);
-    const editor = editorRef.current;
+    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
     editor.focus();
 
@@ -999,6 +1106,9 @@ export default function KnowledgePage() {
       if (forceApply) {
         document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;">highlighted text</mark>&nbsp;`);
         setFContent(editor.innerHTML);
+        if (selectedDoc) {
+          updateDoc(selectedDoc.id, { content: editor.innerHTML });
+        }
       }
       return;
     }
@@ -1027,14 +1137,68 @@ export default function KnowledgePage() {
       document.execCommand('hiliteColor', false, c.bg);
     }
 
-    if (editorRef.current) {
-      setFContent(editorRef.current.innerHTML);
+    setFContent(editor.innerHTML);
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, { content: editor.innerHTML });
     }
   };
 
-  // AI Auto-Format and Structure Note
+  // Remove highlight on selection in Editor or Book Mode
+  const handleRemoveHighlight = () => {
+    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    try {
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      
+      // If common ancestor or parent is MARK
+      let cur: Node | null = container;
+      while (cur && cur !== editor) {
+        if (cur.nodeName === 'MARK') {
+          const parent = cur.parentNode;
+          while (cur.firstChild) {
+            parent?.insertBefore(cur.firstChild, cur);
+          }
+          parent?.removeChild(cur);
+          break;
+        }
+        cur = cur.parentNode;
+      }
+
+      // Also unwrap any marks within the selection range
+      const marks = editor.querySelectorAll('mark');
+      marks.forEach((m) => {
+        if (sel.containsNode(m, true)) {
+          const parent = m.parentNode;
+          while (m.firstChild) {
+            parent?.insertBefore(m.firstChild, m);
+          }
+          parent?.removeChild(m);
+        }
+      });
+    } catch {
+      // Fallback
+    }
+
+    try {
+      document.execCommand('hiliteColor', false, 'transparent');
+      document.execCommand('removeFormat');
+    } catch {}
+
+    setFContent(editor.innerHTML);
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, { content: editor.innerHTML });
+    }
+  };
+
+  // AI Auto-Format and Structure Note (supports both Editor and Book Mode)
   const handleAiFormat = async () => {
-    const raw = (editorRef.current ? editorRef.current.innerHTML : fContent) || '';
+    const activeEditor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
+    const raw = (activeEditor ? activeEditor.innerHTML : fContent) || '';
     if (!raw.trim() || raw.trim().length < 5) {
       alert('Please write or paste some notes first to format.');
       return;
@@ -1045,6 +1209,9 @@ export default function KnowledgePage() {
       const result = await formatStudyNotesWithAI(raw, fTitle || 'Study Document', settings);
       if (editorRef.current) {
         editorRef.current.innerHTML = result.formattedHtml;
+      }
+      if (bookEditorRef.current) {
+        bookEditorRef.current.innerHTML = result.formattedHtml;
       }
       setFContent(result.formattedHtml);
 
@@ -1413,6 +1580,7 @@ export default function KnowledgePage() {
                 <MarkdownToolbar
                   onFormat={handleFormat}
                   onHighlight={handleHighlight}
+                  onRemoveHighlight={handleRemoveHighlight}
                   activeColor={activeHighlightColor}
                   onSetActiveColor={setActiveHighlightColor}
                   onInsertTemplate={handleInsertTemplate}
@@ -1450,8 +1618,64 @@ export default function KnowledgePage() {
                   }}
                 />
               ) : (
-                /* ── Book Mode ── */
+                /* ── Book Mode with Live Highlighter ── */
                 <div className={styles.bookWrapper}>
+                  {/* Sticky Book Highlighter Bar */}
+                  <div className={styles.bookHighlighterBar}>
+                    <div className={styles.bookHighlighterGroup}>
+                      <span className={styles.bookHighlighterLabel}>
+                        <Highlighter size={13} style={{ color: 'var(--color-accent)' }} /> Highlighter
+                      </span>
+                      <div className={styles.bookSwatches}>
+                        {HIGHLIGHT_COLORS.map((c) => (
+                          <button
+                            key={c.name}
+                            type="button"
+                            className={`${styles.bookSwatch} ${activeHighlightColor === c.name ? styles.bookSwatchActive : ''}`}
+                            style={{
+                              background: c.bg,
+                              borderColor: c.border,
+                              '--swatch-border': c.border,
+                            } as React.CSSProperties}
+                            onClick={() => handleHighlight(c.name, false)}
+                            title={`Highlight selected text: ${c.label}`}
+                            aria-label={`Highlight ${c.label}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.bookHighlighterGroup}>
+                      <button
+                        type="button"
+                        className={styles.bookBtnSmall}
+                        onClick={() => handleHighlight(activeHighlightColor, true)}
+                        title="Apply active highlight"
+                      >
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR_MAP[activeHighlightColor]?.border || '#fbbf24', display: 'inline-block' }} />
+                        Highlight
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.bookBtnSmall}
+                        onClick={handleRemoveHighlight}
+                        title="Remove highlight from selection"
+                      >
+                        <Eraser size={12} /> Clear
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.bookBtnSmall} ${styles.aiFormatBtn}`}
+                        onClick={handleAiFormat}
+                        disabled={isAiFormatting}
+                        title="AI Organize & Format Document"
+                      >
+                        {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Wand2 size={11} />}
+                        <span>AI Format</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className={styles.bookPage}>
                     <div className={styles.bookTitle}>{fTitle || 'Untitled'}</div>
                     {fTags && (
@@ -1463,11 +1687,26 @@ export default function KnowledgePage() {
                     )}
                     <div className={styles.bookDivider} />
                     <div
+                      ref={bookEditorRef}
+                      contentEditable
+                      suppressContentEditableWarning
                       className={styles.bookContent}
-                      dangerouslySetInnerHTML={{
-                        __html: fContent
-                          ? getRichHtml(fContent)
-                          : '<p style="opacity:0.4;font-style:italic">Empty document</p>',
+                      data-placeholder="Start typing or select text to highlight..."
+                      onInput={() => {
+                        if (bookEditorRef.current && !isInternalChange.current) {
+                          setFContent(bookEditorRef.current.innerHTML);
+                          if (selectedDoc) {
+                            updateDoc(selectedDoc.id, { content: bookEditorRef.current.innerHTML });
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (bookEditorRef.current) {
+                          setFContent(bookEditorRef.current.innerHTML);
+                          if (selectedDoc) {
+                            updateDoc(selectedDoc.id, { content: bookEditorRef.current.innerHTML });
+                          }
+                        }
                       }}
                     />
                     <div className={styles.bookFooter}>

@@ -2,111 +2,205 @@ import { executeOptionalAICall } from './aiEngine';
 import type { UserSettings } from '@/types';
 
 /**
- * Clean & Format Document Content into Professional, Readable Study Notes.
- * - Strips all recursive/repeating artifacts (like duplicate "💡 Core Takeaway:")
- * - Promotes real section titles (e.g. "7. CONNECT & LOVE", "THE GOLDEN RULE") into clean <h2> / <h3>
- * - Converts term definitions (e.g. "CONNECT: ...", "DRAW PILE: ...") into bold labels <strong>TERM:</strong>
- * - Cleans up broken sentence wraps, extra spacing, and page number noise
- * - Never injects fake hardcoded boilerplate sections
+ * Capitalizes string nicely in Title Case for formal headings
+ */
+function toTitleCase(str: string): string {
+  const minorWords = new Set(['and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'as']);
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((w, idx) => {
+      if (idx === 0 || !minorWords.has(w)) {
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      }
+      return w;
+    })
+    .join(' ');
+}
+
+/**
+ * Intelligent Document & Note Formatter
+ * Breaks walls of messy/unorganized text into clean, formal, beautifully spaced book/executive documents.
  */
 export function formatNotesLocally(rawText: string, docTitle = 'Document'): string {
   if (!rawText || rawText.trim().length === 0) {
     return `<p>Start typing or pasting your notes here...</p>`;
   }
 
-  // 1. Clean up HTML and recursive duplicate icons/tags
+  // 1. Initial cleanup of dirty HTML/spam markers
   let text = rawText
-    // Remove repeated takeaway spam
     .replace(/(💡\s*(Core Takeaway|Key Idea):\s*)+/gi, '')
     .replace(/(⚡\s*(Must-Know Rule|Important):\s*)+/gi, '')
-    .replace(/<div class="key-idea"[^>]*>[\s\S]*?<\/div>/gi, (match) => {
-      return match.replace(/<[^>]+>/g, ' ').trim() + '\n\n';
-    })
+    .replace(/<div class="key-idea"[^>]*>([\s\S]*?)<\/div>/gi, (_, inner) => inner.replace(/<[^>]+>/g, ' ').trim() + '\n\n')
+    .replace(/<div class="process-flow"[^>]*>([\s\S]*?)<\/div>/gi, (_, inner) => inner.replace(/<[^>]+>/g, ' ').trim() + '\n\n')
+    .replace(/<div class="formula-box"[^>]*>([\s\S]*?)<\/div>/gi, (_, inner) => inner.replace(/<[^>]+>/g, ' ').trim() + '\n\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
     .replace(/<\/h[1-6]>/gi, '\n\n')
     .replace(/<\/li>/gi, '\n')
-    .replace(/<[^>]+>/g, '') // remove HTML tags
+    .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/\r\n|\r/g, '\n');
+
+  // 2. Intelligent Boundary Splitting for Clumped Text Walls & Headings
+  // Split before numbered section headings: " 7. CONNECT & LOVE", "24.Daily Learning", " 1. WHAT ENTREPRENEURSHIP..."
+  text = text.replace(/([.!?\w])\s*(\b\d{1,3}\.\s*[A-Za-z])/g, '$1\n\n$2');
+  
+  // Split before keyword/definition terms: " CONNECT:", " A simple formula:"
+  text = text.replace(/([.!?])\s+([A-Z\s]{2,24}:)/g, '$1\n\n$2');
+  text = text.replace(/([.!?])\s+(For example:\s*|Examples:\s*|Example:\s*)/gi, '$1\n\n$2');
+  text = text.replace(/([.!?])\s+(A simple formula:\s*|Formula:\s*)/gi, '$1\n\n$2');
+
+  // Normalize spaces
+  text = text
+    .replace(/[^\S\n]{2,}/g, ' ')
+    .replace(/([a-z,;])\n([A-Za-z])/g, '$1 $2') // rejoin mid-sentence accidental line-wraps
+    .replace(/-\s*\n\s*([a-z])/gi, '$1')         // rejoin hyphenated broken words
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  // 2. Fix broken spacing, mid-sentence line breaks, and page header noise
-  text = text
-    .replace(/\r\n|\r/g, '\n')
-    .replace(/PAGE\s+\d+/gi, '')                    // remove page numbers like "PAGE 2"
-    .replace(/[^\S\n]{2,}/g, ' ')                  // collapse spaces
-    .replace(/([a-z,;])\n([A-Za-z])/g, '$1 $2')   // rejoin mid-sentence broken lines
-    .replace(/-\s*\n\s*([a-z])/gi, '$1')           // rejoin hyphenated words
-    .replace(/\n{3,}/g, '\n\n');                   // normalize line breaks
+  const rawBlocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const outputBlocks: string[] = [];
 
-  const rawLines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-  const formattedBlocks: string[] = [];
+  for (let bIndex = 0; bIndex < rawBlocks.length; bIndex++) {
+    const block = rawBlocks[bIndex];
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
 
-  const titleCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map((w) => (w.length > 2 || w === 'a' || w === 'an' || w === 'the' ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-      .join(' ');
-  };
+    // If block has multiple lines that look like a list or sub-steps (e.g. under "For example:")
+    if (lines.length > 1) {
+      let isProcessed = false;
+      const firstLine = lines[0];
 
-  for (let i = 0; i < rawLines.length; i++) {
-    const line = rawLines[i];
+      // Check if first line is a header/prompt like "For example:" or "Entrepreneurship is the ability to:"
+      if (/^(For example|Examples|Example|Steps|Key takeaways|Key principles):\s*$/i.test(firstLine)) {
+        outputBlocks.push(`<p><strong>${firstLine}</strong></p>`);
+        const listItems = lines.slice(1).map((l) => `<li>${l.replace(/^[-*•]\s*/, '')}</li>`).join('');
+        outputBlocks.push(`<ul>${listItems}</ul>`);
+        isProcessed = true;
+      } else if (lines.every((l) => /^[-*•]\s+/.test(l) || /^\d+\.\s+/.test(l))) {
+        // All lines are explicit bullets
+        const isNum = /^\d+\./.test(lines[0]);
+        const tag = isNum ? 'ol' : 'ul';
+        const listItems = lines.map((l) => `<li>${l.replace(/^[-*•]\s*|^\d+\.\s*/, '')}</li>`).join('');
+        outputBlocks.push(`<${tag}>${listItems}</${tag}>`);
+        isProcessed = true;
+      }
 
-    // Check for Section / Rule Headings like "7. CONNECT & LOVE", "13. THE CARD PILES", "THE GOLDEN RULE"
-    const isNumberedHeading = /^(\d+)[\.\)]\s+(.+)$/.test(line);
-    const isAllCapsHeading = line.length > 3 && line.length < 60 && line === line.toUpperCase() && /[A-Z]/.test(line) && !line.includes(':');
-    const isRuleHeading = /^(RULE|SECTION|CHAPTER|PART)\s+\d+/i.test(line);
+      if (isProcessed) continue;
+    }
 
-    if (isNumberedHeading) {
-      const match = line.match(/^(\d+)[\.\)]\s+(.+)$/);
-      if (match) {
-        const num = match[1];
-        const headingText = titleCase(match[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
-        formattedBlocks.push(`<h2>${num}. ${headingText}</h2>`);
+    const singleLine = block.replace(/\s+/g, ' ').trim();
+
+    // 1. Numbered Heading: "1. WHAT ENTREPRENEURSHIP REALLY IS" or "24.Daily Learning System"
+    const numHeadingMatch = singleLine.match(/^(\d{1,3})\.\s*([A-Za-z0-9\s&,—–-]{3,70})$/);
+    if (numHeadingMatch) {
+      const num = numHeadingMatch[1];
+      const title = toTitleCase(numHeadingMatch[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
+      outputBlocks.push(`<h2>${num}. ${title}</h2>`);
+      continue;
+    }
+
+    // Numbered Heading with trailing sentence: "8. CHAOS, TOGETHER & CREATE Follow the instructions..."
+    const numHeadingWithTextMatch = singleLine.match(/^(\d{1,3})\.\s*([A-Z\s&,—–-]{3,40})\s+([A-Z][a-z].+)$/);
+    if (numHeadingWithTextMatch) {
+      const num = numHeadingWithTextMatch[1];
+      const title = toTitleCase(numHeadingWithTextMatch[2]);
+      const rest = numHeadingWithTextMatch[3];
+      outputBlocks.push(`<h2>${num}. ${title}</h2>`);
+      outputBlocks.push(`<p>${rest}</p>`);
+      continue;
+    }
+
+    // 2. Standalone ALL-CAPS Major Heading: "THE GOLDEN RULE"
+    if (
+      singleLine.length > 3 &&
+      singleLine.length < 55 &&
+      singleLine === singleLine.toUpperCase() &&
+      /[A-Z]/.test(singleLine) &&
+      !singleLine.includes(':') &&
+      !singleLine.includes('.')
+    ) {
+      outputBlocks.push(`<h2>${toTitleCase(singleLine)}</h2>`);
+      continue;
+    }
+
+    // 3. Blockquote: Starts with > or surrounded by quote marks
+    if (singleLine.startsWith('>')) {
+      const quoteText = singleLine.replace(/^>\s*/, '').trim();
+      outputBlocks.push(`<blockquote class="callout">${quoteText}</blockquote>`);
+      continue;
+    }
+
+    // 4. Process Flow: Contains arrows (→, ->, -->)
+    if ((singleLine.includes('→') || singleLine.includes('->') || singleLine.includes('-->')) && singleLine.length < 350) {
+      const steps = singleLine
+        .split(/→|->|-->/)
+        .map((s) => s.trim().replace(/\.$/, ''))
+        .filter(Boolean);
+
+      if (steps.length >= 2) {
+        const stepHtml = steps
+          .map((st) => `<span class="flow-step">${st}</span>`)
+          .join(' <span class="flow-arrow">&rarr;</span> ');
+        outputBlocks.push(`<div class="process-flow">${stepHtml}</div>`);
         continue;
       }
     }
 
-    if (isAllCapsHeading || isRuleHeading) {
-      const headingText = titleCase(line);
-      formattedBlocks.push(`<h2>${headingText}</h2>`);
+    // 5. Formula / Equation Line: (e.g. "Problem + Customer + Solution + Value + Distribution = Business")
+    if (
+      (singleLine.includes('+') && singleLine.includes('=')) ||
+      /^A simple formula:\s*/i.test(singleLine) ||
+      /^Formula:\s*/i.test(singleLine)
+    ) {
+      const cleanFormula = singleLine.replace(/^(A simple formula:\s*|Formula:\s*)/i, '').trim();
+      outputBlocks.push(`<div class="formula-box"><strong>Formula:</strong> <code>${cleanFormula}</code></div>`);
       continue;
     }
 
-    // Check for Definition / Term blocks like "CONNECT: ...", "DRAW PILE: ...", "LOVE: ...", "TIE: ..."
-    const termMatch = line.match(/^([A-Z\s]{2,25}):\s+(.+)$/);
+    // 6. Definition / Term Line: "CONNECT: The card player answers..."
+    const termMatch = singleLine.match(/^([A-Z\s]{2,24}):\s*(.+)$/);
     if (termMatch) {
       const term = termMatch[1].trim();
       const desc = termMatch[2].trim();
-      formattedBlocks.push(`<p><strong>${term}:</strong> ${desc}</p>`);
+      outputBlocks.push(`<p><strong>${term}:</strong> ${desc}</p>`);
       continue;
     }
 
-    // Bullet items
-    if (/^[\u2022\u2013\u2014\-\*]\s/.test(line)) {
-      const bullet = line.replace(/^[\u2022\u2013\u2014\-\*]\s+/, '').trim();
-      formattedBlocks.push(`<ul><li>${bullet}</li></ul>`);
+    // 7. Example Line with bullet separator
+    const exampleMatch = singleLine.match(/^(Example|Examples):\s*(.+)$/i);
+    if (exampleMatch) {
+      const label = exampleMatch[1];
+      const content = exampleMatch[2];
+      if (content.includes('•')) {
+        const items = content.split('•').map((it) => it.replace(/\s*\.\s*$/, '').trim()).filter(Boolean);
+        outputBlocks.push(`<p><strong>${label}:</strong></p>`);
+        outputBlocks.push(`<ul>${items.map((it) => `<li>${it}</li>`).join('')}</ul>`);
+        continue;
+      }
+      outputBlocks.push(`<p><strong>${label}:</strong> ${content}</p>`);
       continue;
     }
 
-    // Standard Clean Paragraph
-    formattedBlocks.push(`<p>${line}</p>`);
+    // 8. Bullet items block
+    if (singleLine.includes('•') && singleLine.length < 280) {
+      const items = singleLine.split('•').map((it) => it.trim()).filter(Boolean);
+      outputBlocks.push(`<ul>${items.map((it) => `<li>${it}</li>`).join('')}</ul>`);
+      continue;
+    }
+
+    // 9. Standard Clean Paragraph
+    outputBlocks.push(`<p>${singleLine}</p>`);
   }
 
-  // Merge adjacent <ul> tags into a single clean <ul>
-  let finalHtml = formattedBlocks.join('\n');
-  finalHtml = finalHtml.replace(/<\/ul>\s*<ul>/g, '\n');
-
-  return finalHtml;
+  return outputBlocks.join('\n');
 }
 
 /**
  * Main AI Note Formatter
- * Uses Cloud Gemini if configured, or uses the clean local structure organizer.
  */
 export async function formatStudyNotesWithAI(
   rawContent: string,
@@ -117,22 +211,27 @@ export async function formatStudyNotesWithAI(
 
   if (aiSettings?.apiKey && aiSettings?.provider) {
     try {
-      const systemPrompt = `You are a professional document and study note editor.
-Your job is to format the user's text into clean, formal, perfectly spaced HTML.
-Rules:
-1. Fix all spacing errors, broken sentence wraps, and messy formatting.
-2. Promote numbered sections or titles into <h2> headings with clean Title Case (e.g. <h2>7. Connect & Love</h2>).
-3. Format definitions as <p><strong>TERM:</strong> Description...</p>.
-4. Format lists with clean <ul><li>...</li></ul>.
-5. NEVER invent fake summary sections or repeat emoji headers like "Core Takeaway".
-6. Preserve all original content and meaning accurately.
-7. Return ONLY the clean HTML string without any markdown code block wrappers.`;
+      const systemPrompt = `You are a world-class executive document designer and note architect.
+Your job is to format the given raw notes into a formal, beautifully organized, magazine-grade HTML document.
 
-      const prompt = `Document Title: "${docTitle}"\n\nContent to Format:\n${rawContent}`;
+Formatting Rules:
+1. Fix all clumping, messy linebreaks, and awkward formatting.
+2. Structure sections using clean <h2> headings in Title Case (e.g. <h2>1. What Entrepreneurship Really Is</h2>, <h2>2. How A Business Works</h2>).
+3. Align all body text, lists, and paragraphs to the LEFT with formal line spacing.
+4. Format quotes/mantras as <blockquote class="callout">“...”</blockquote>.
+5. Format business formulas or equations as: <div class="formula-box"><strong>Formula:</strong> <code>Problem + Customer + Solution = Business</code></div>.
+6. Format step sequences or chains (A → B → C) as: <div class="process-flow"><span class="flow-step">Step 1</span> <span class="flow-arrow">&rarr;</span> <span class="flow-step">Step 2</span></div>.
+7. Format examples, sub-points, and instructions into clean bulleted <ul><li>...</li></ul> or numbered <ol><li>...</li></ol> lists.
+8. Format definitions as <p><strong>TERM:</strong> Description...</p>.
+9. Mark critical takeaways with <div class="key-idea">💡 <strong>Key Idea:</strong> ...</div> or <span class="important-mark">⚡ Important</span>.
+10. NEVER wrap your answer in markdown code fences (\`\`\`html or \`\`\`). Return ONLY the pure HTML body.
+11. Preserve 100% of the original meaning and content faithfully.`;
+
+      const prompt = `Document Title: "${docTitle}"\n\nRaw Notes to Format:\n${rawContent}`;
       const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
 
       let cleanHtml = result.text.trim();
-      cleanHtml = cleanHtml.replace(/^```html/i, '').replace(/```$/i, '').trim();
+      cleanHtml = cleanHtml.replace(/^```html\s*/i, '').replace(/```\s*$/i, '').trim();
 
       if (cleanHtml.length > 20) {
         return { formattedHtml: cleanHtml, isAI: true };
