@@ -4,68 +4,20 @@ import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Sparkles,
-  Headphones,
-  Inbox,
-  Target,
-  Flag,
-  FolderKanban,
-  CheckSquare,
-  GitBranch,
-  CloudSun,
-  LayoutGrid,
-  Calendar,
-  TrendingUp,
-  RefreshCw,
-  RotateCcw,
-  Repeat,
-  Dumbbell,
-  BookOpen,
-  Paperclip,
-  Settings,
-  Search,
-  Compass,
-  Bell,
-  Bot,
   ChevronDown,
-  ChevronRight,
   Sun,
   LogOut,
-  LucideIcon,
   PanelLeftClose,
+  Settings,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
 import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
-import { useSearch } from '@/context/SearchContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useAuth } from '@/context/AuthContext';
+import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
-
-// ── Icon map matching exact names & keys ─────────────────────
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  today: Sparkles,
-  focus: Headphones,
-  inbox: Inbox,
-  goals: Target,
-  milestones: Flag,
-  projects: FolderKanban,
-  tasks: CheckSquare,
-  roadmap: GitBranch,
-  dreams: CloudSun,
-  areas: LayoutGrid,
-  calendar: Calendar,
-  progress: TrendingUp,
-  review: RefreshCw,
-  reset: RotateCcw,
-  habits: Repeat,
-  workout: Dumbbell,
-  knowledge: BookOpen,
-  files: Paperclip,
-  settings: Settings,
-};
 
 interface SidebarProps {
   collapsed: boolean;
@@ -88,7 +40,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { settings } = useSettings();
-  const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
   const { logout, user } = useAuth();
 
@@ -121,14 +72,13 @@ export default function Sidebar({
       <aside className={sidebarClass} aria-label="Main navigation">
         {/* Brand Header */}
         <div className={styles.header}>
-          <Link href="/" className={styles.brand}>
-            <div className={styles.brandTitleRow}>
-              <span className={styles.brandName}>Sariling Mundo</span>
-              <span className={styles.sparkleIcon}>✦</span>
-            </div>
-            {!collapsed && (
-              <span className={styles.brandTagline}>Better habits. A freer you.</span>
-            )}
+          <Link href="/" className={styles.brand} title="Sariling Mundo">
+            <Logo
+              iconOnly={collapsed}
+              size={22}
+              showTagline={!collapsed}
+              taglineText="Better habits. A freer you."
+            />
           </Link>
           <button
             type="button"
@@ -141,22 +91,8 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Quick Action Top Bar (Search, What to do, Alerts, Assistant) */}
+        {/* Quick Action Top Bar (What to do, Alerts, Assistant) */}
         <div className={styles.topActionsGroup}>
-          {/* Search Trigger */}
-          <button
-            type="button"
-            onClick={openSearch}
-            className={styles.searchTriggerBtn}
-            title="Search everything (Ctrl+K / ⌘K)"
-          >
-            <span className={styles.navIcon}>
-              <Search size={16} strokeWidth={2} />
-            </span>
-            {!collapsed && <span className={styles.navLabel}>Search</span>}
-            {!collapsed && <kbd className={styles.shortcutKbd}>⌘K</kbd>}
-          </button>
-
           {/* What to do? Trigger */}
           <button
             type="button"
@@ -167,10 +103,7 @@ export default function Sidebar({
             className={styles.whatToDoTriggerBtn}
             title="What should I do right now? (Ctrl+J / ⌘J)"
           >
-            <span className={styles.navIcon}>
-              <Compass size={16} strokeWidth={2} className={styles.compassIcon} />
-            </span>
-            {!collapsed && <span className={styles.whatToDoLabel}>What to do?</span>}
+            <span className={styles.whatToDoLabel}>What to do?</span>
             {!collapsed && <kbd className={styles.shortcutKbd}>⌘J</kbd>}
           </button>
 
@@ -185,13 +118,10 @@ export default function Sidebar({
               className={styles.utilityPillBtn}
               title="Alerts & Reminders"
             >
-              <div className={styles.bellIconWrap}>
-                <Bell size={14} />
-                {unreadCount > 0 && (
-                  <span className={styles.bellCountBadge}>{unreadCount}</span>
-                )}
-              </div>
-              {!collapsed && <span>Alerts</span>}
+              <span>Alerts</span>
+              {unreadCount > 0 && (
+                <span className={styles.bellCountBadge}>{unreadCount}</span>
+              )}
             </button>
 
             <button
@@ -203,8 +133,7 @@ export default function Sidebar({
               className={styles.utilityPillBtn}
               title="Sariling Mundo Assistant"
             >
-              <Bot size={14} />
-              {!collapsed && <span>Assistant</span>}
+              <span>Assistant</span>
             </button>
           </div>
         </div>
@@ -237,7 +166,6 @@ export default function Sidebar({
                   {moreOpen && (
                     <div className={styles.sectionItemsList}>
                       {section.items.map((item) => {
-                        const IconComp = ICON_MAP[item.icon] || Sparkles;
                         const isActive = pathname === item.href;
 
                         return (
@@ -249,15 +177,7 @@ export default function Sidebar({
                               isActive ? styles.activeItem : ''
                             }`}
                           >
-                            <span className={styles.navIcon}>
-                              <IconComp
-                                size={17}
-                                strokeWidth={isActive ? 2.2 : 1.8}
-                              />
-                            </span>
-                            {!collapsed && (
-                              <span className={styles.navLabel}>{item.label}</span>
-                            )}
+                            <span className={styles.navLabel}>{item.label}</span>
                           </Link>
                         );
                       })}
@@ -274,7 +194,6 @@ export default function Sidebar({
                 )}
                 <div className={styles.sectionItemsList}>
                   {section.items.map((item) => {
-                    const IconComp = ICON_MAP[item.icon] || Sparkles;
                     const isActive =
                       item.href === '/'
                         ? pathname === '/'
@@ -289,15 +208,7 @@ export default function Sidebar({
                           isActive ? styles.activeItem : ''
                         }`}
                       >
-                        <span className={styles.navIcon}>
-                          <IconComp
-                            size={17}
-                            strokeWidth={isActive ? 2.2 : 1.8}
-                          />
-                        </span>
-                        {!collapsed && (
-                          <span className={styles.navLabel}>{item.label}</span>
-                        )}
+                        <span className={styles.navLabel}>{item.label}</span>
                       </Link>
                     );
                   })}

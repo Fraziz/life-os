@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, LogIn, Eye, EyeOff, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Lock, LogIn, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import Logo from '@/components/ui/Logo';
 import styles from './page.module.css';
 
 export default function LoginPage() {
@@ -38,12 +39,10 @@ export default function LoginPage() {
     <div className={styles.wrap}>
       <div className={styles.card}>
         <div className={styles.badgeRow}>
-          <div className={styles.lock}>
-            <Lock size={22} />
-          </div>
+          <Logo size={28} showTagline taglineText="Personal Operating System" />
           <span className={styles.privateTag}>
-            <Sparkles size={13} />
-            Private Life OS
+            <Lock size={12} />
+            Private & Secure
           </span>
         </div>
 

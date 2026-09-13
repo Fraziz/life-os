@@ -1,0 +1,94 @@
+/* ── Sariling Mundo Logo Styles ─────────────────────────── */
+
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity var(--transition-fast, 0.2s ease);
+}
+
+.brandLink:hover {
+  opacity: 0.92;
+}
+
+.logoContainer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.iconBadge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(168, 85, 247, 0.08) 100%);
+  border: 1px solid rgba(165, 148, 255, 0.22);
+  box-shadow: 0 3px 12px -2px rgba(99, 102, 241, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  padding: 4px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+  flex-shrink: 0;
+}
+
+.brandLink:hover .iconBadge,
+.logoContainer:hover .iconBadge {
+  transform: translateY(-1px) scale(1.02);
+  border-color: rgba(165, 148, 255, 0.45);
+  box-shadow: 0 6px 18px -2px rgba(99, 102, 241, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.svgIcon {
+  display: block;
+  overflow: visible;
+  transition: transform 0.4s ease;
+}
+
+.brandLink:hover .svgIcon,
+.logoContainer:hover .svgIcon {
+  transform: rotate(4deg);
+}
+
+.textGroup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brandTitle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--color-text, #f1f5f9);
+}
+
+.wordSariling {
+  color: var(--color-text, #f1f5f9);
+}
+
+.wordMundo {
+  background: linear-gradient(135deg, #a594ff 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+}
+
+.tagline {
+  font-size: 0.73rem;
+  color: var(--color-text-muted, #94a3b8);
+  letter-spacing: 0.01em;
+  margin-top: 2px;
+  font-weight: 400;
+  line-height: 1.2;
+}
