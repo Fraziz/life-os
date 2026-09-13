@@ -123,7 +123,7 @@ export default function Sidebar({
         <div className={styles.header}>
           <Link href="/" className={styles.brand}>
             <div className={styles.brandTitleRow}>
-              <span className={styles.brandName}>Life OS</span>
+              <span className={styles.brandName}>Sariling Mundo</span>
               <span className={styles.sparkleIcon}>✦</span>
             </div>
             {!collapsed && (
@@ -201,7 +201,7 @@ export default function Sidebar({
                 else window.dispatchEvent(new CustomEvent('open-assistant'));
               }}
               className={styles.utilityPillBtn}
-              title="Life OS Assistant"
+              title="Sariling Mundo Assistant"
             >
               <Bot size={14} />
               {!collapsed && <span>Assistant</span>}

@@ -602,19 +602,13 @@ export default function KnowledgePage() {
   // Helper to convert content into rich HTML for live editing and book reading
   const getRichHtml = (content: string) => {
     if (!content) return '';
-    // If it already has structured headings or semantic blocks
-    if (/<(h[1-6]|blockquote|table|pre)[^>]*>/i.test(content)) {
+    // If content already has HTML tags (marked up, highlighted, formatted), return as-is.
+    // This is critical — re-processing HTML through renderMarkdown strips <mark> and other tags.
+    if (/<[a-z][^>]*>/i.test(content)) {
       return content;
     }
-    // Convert newlines/divs/paragraphs from contentEditable into clean markdown/HTML
-    let clean = content
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<div>/gi, '')
-      .replace(/<p>/gi, '')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/&nbsp;/g, ' ');
-    return renderMarkdown(clean);
+    // Plain markdown text — convert to HTML
+    return renderMarkdown(content);
   };
 
   // Load doc into editor
@@ -647,7 +641,9 @@ export default function KnowledgePage() {
   }, [selectedDoc]);
 
   // Keep editor & book innerHTML in sync when mode or content changes
+  // Only fire when not in the middle of an internal highlight save
   useEffect(() => {
+    if (isInternalChange.current) return;
     const html = getRichHtml(fContent || '');
     if (editorMode === 'edit' && editorRef.current) {
       if (editorRef.current.innerHTML !== html) {
@@ -979,7 +975,7 @@ export default function KnowledgePage() {
       <body>
         <div class="executive-header">
           <div class="header-top-bar">
-            <span>Life OS &bull; Formal Knowledge Asset</span>
+            <span>Sariling Mundo &bull; Formal Knowledge Asset</span>
             <span class="doc-classification">Official Record</span>
           </div>
           <h1 class="doc-title">${fTitle}</h1>
@@ -1005,7 +1001,7 @@ export default function KnowledgePage() {
           ${renderedHtml}
         </div>
         <div class="executive-footer">
-          <span>Life OS Formal Documentation System</span>
+          <span>Sariling Mundo Formal Documentation System</span>
           <span>Confidential &bull; Personal Executive Record</span>
         </div>
         <script>
@@ -1202,9 +1198,14 @@ export default function KnowledgePage() {
       document.execCommand('hiliteColor', false, c.bg);
     }
 
-    setFContent(editor.innerHTML);
+    // Save directly from DOM to avoid the fContent→useEffect re-render loop
+    // which would re-process HTML through getRichHtml and strip <mark> elements
+    const saved = editor.innerHTML;
+    isInternalChange.current = true;
+    setFContent(saved);
+    isInternalChange.current = false;
     if (selectedDoc) {
-      updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      updateDoc(selectedDoc.id, { content: saved });
     }
   };
 
@@ -1773,7 +1774,7 @@ export default function KnowledgePage() {
                       }}
                     />
                     <div className={styles.bookFooter}>
-                      <span>Life OS · Knowledge Base</span>
+                      <span>Sariling Mundo · Knowledge Base</span>
                       <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
                     </div>
                   </div>
@@ -1784,99 +1785,44 @@ export default function KnowledgePage() {
         </main>
       </div>
 
-      {/* Floating Selection Highlight & Format Toolbar */}
+      {/* Floating Selection Highlight Toolbar — colors only, clean */}
       {floatingMenu && (
         <div
           data-floating-toolbar="true"
           className={styles.floatingHighlightMenu}
           style={{ left: `${floatingMenu.x}px`, top: `${floatingMenu.y}px` }}
         >
-          <div className={styles.floatingSwatchGroup}>
-            {HIGHLIGHT_COLORS.slice(0, 4).map((c) => (
-              <button
-                key={c.name}
-                type="button"
-                className={styles.floatingSwatch}
-                style={{
-                  background: c.bg,
-                  borderColor: c.border,
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  handleHighlight(c.name, false);
-                  setFloatingMenu(null);
-                }}
-                title={`Highlight ${c.label}`}
-                aria-label={`Highlight ${c.label}`}
-              />
-            ))}
-          </div>
-
-          <div className={styles.floatingActionGroup}>
+          {HIGHLIGHT_COLORS.slice(0, 8).map((c) => (
             <button
+              key={c.name}
               type="button"
-              className={styles.floatingBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleFormat('bold')}
-              title="Bold"
-            >
-              <Bold size={12} />
-            </button>
-            <button
-              type="button"
-              className={styles.floatingBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleFormat('italic')}
-              title="Italic"
-            >
-              <Italic size={12} />
-            </button>
-            <button
-              type="button"
-              className={styles.floatingBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleFormat('underline')}
-              title="Underline"
-            >
-              <Underline size={12} />
-            </button>
-            <button
-              type="button"
-              className={styles.floatingBtn}
+              className={styles.floatingSwatch}
+              style={{
+                background: c.bg,
+                borderColor: c.border,
+              }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                handleFormat('important');
+                handleHighlight(c.name, false);
                 setFloatingMenu(null);
               }}
-              title="Important Callout"
-            >
-              <span style={{ fontSize: 11 }}>⚡</span>
-            </button>
-            <button
-              type="button"
-              className={styles.floatingBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                handleFormat('key-idea');
-                setFloatingMenu(null);
-              }}
-              title="Key Idea Callout"
-            >
-              <span style={{ fontSize: 11 }}>💡</span>
-            </button>
-            <button
-              type="button"
-              className={styles.floatingBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                handleRemoveHighlight();
-                setFloatingMenu(null);
-              }}
-              title="Clear Highlight"
-            >
-              <Eraser size={12} />
-            </button>
-          </div>
+              title={`Highlight ${c.label}`}
+              aria-label={`Highlight ${c.label}`}
+            />
+          ))}
+          {/* Eraser — remove highlight */}
+          <button
+            type="button"
+            className={styles.floatingEraserBtn}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              handleRemoveHighlight();
+              setFloatingMenu(null);
+            }}
+            title="Remove highlight"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

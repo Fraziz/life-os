@@ -9,14 +9,14 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Life OS — Turn Dreams Into Action',
-    template: '%s | Life OS',
+    default: 'Sariling Mundo — Turn Dreams Into Action',
+    template: '%s | Sariling Mundo',
   },
   description:
-    'Life OS helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions. Your ADHD-friendly personal operating system for life.',
+    'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions. Your personal operating system for life.',
   keywords: ['goal setting', 'productivity', 'life planning', 'habits', 'focus', 'task management', 'adhd'],
-  authors: [{ name: 'Life OS' }],
-  creator: 'Life OS',
+  authors: [{ name: 'Sariling Mundo' }],
+  creator: 'Sariling Mundo',
   robots: 'noindex, nofollow', // Private app — not for search indexing
   icons: {
     icon: '/favicon.ico',
