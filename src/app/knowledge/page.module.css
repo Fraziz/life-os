@@ -1147,9 +1147,9 @@
 }
 
 [data-theme='light'] .bookPage {
-  background: #fffef9;
-  border-color: #e8dfc0;
-  box-shadow: 0 8px 40px rgba(100, 80, 20, 0.12);
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
 }
 
 .bookTitle {
@@ -1186,10 +1186,41 @@
   margin-bottom: var(--space-6);
 }
 
+.bookLockBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+[data-theme='light'] .bookLockBadge {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+  border-color: rgba(5, 150, 105, 0.28);
+}
+
+.bookHighlighterDivider {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
 .bookContent {
   font-size: 1rem;
   line-height: 1.9;
   color: var(--color-text);
+  user-select: text;
+  cursor: text;
+  outline: none;
 }
 
 [data-theme='light'] .bookContent {

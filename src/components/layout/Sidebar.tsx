@@ -119,9 +119,7 @@ export default function Sidebar({
               title="Alerts & Reminders"
             >
               <span>Alerts</span>
-              {unreadCount > 0 && (
-                <span className={styles.bellCountBadge}>{unreadCount}</span>
-              )}
+
             </button>
 
             <button

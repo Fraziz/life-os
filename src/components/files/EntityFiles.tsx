@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FilePlus, FolderUp, Image as ImageIcon, Paperclip, Trash2, Video, X, FileText, FolderOpen } from 'lucide-react';
+import {
+  FilePlus,
+  FolderUp,
+  Image as ImageIcon,
+  Paperclip,
+  Trash2,
+  Video,
+  X,
+  FileText,
+  FolderOpen,
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  Eye,
+} from 'lucide-react';
 import { useAttachments } from '@/context/AttachmentContext';
 import type { FileEntityType, LifeFile } from '@/types';
 import styles from './EntityFiles.module.css';
@@ -20,6 +34,56 @@ function formatSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getBlobFromDataUrl(dataUrl: string, fallbackMime?: string): Blob {
+  const parts = dataUrl.split(',');
+  if (parts.length < 2) {
+    return new Blob([], { type: fallbackMime || 'application/octet-stream' });
+  }
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : fallbackMime || 'application/octet-stream';
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+function saveBlobToSystem(blob: Blob, fileName: string) {
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+}
+
+export async function downloadLifeFile(file: LifeFile) {
+  if (file.downloadUrl.startsWith('data:')) {
+    const blob = getBlobFromDataUrl(file.downloadUrl, file.mimeType);
+    saveBlobToSystem(blob, file.name);
+  } else if (file.downloadUrl.startsWith('http')) {
+    try {
+      const res = await fetch(file.downloadUrl);
+      if (!res.ok) throw new Error('Fetch failed');
+      const blob = await res.blob();
+      saveBlobToSystem(blob, file.name);
+    } catch {
+      const a = document.createElement('a');
+      a.href = file.downloadUrl;
+      a.download = file.name;
+      a.target = '_blank';
+      a.rel = 'noopener,noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  }
+}
+
 function Preview({ file }: { file: LifeFile }) {
   if (file.kind === 'image') {
     return <img src={file.downloadUrl} alt={file.name} className={styles.preview} />;
@@ -27,9 +91,36 @@ function Preview({ file }: { file: LifeFile }) {
   if (file.kind === 'video') {
     return <video src={file.downloadUrl} className={styles.preview} muted playsInline />;
   }
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const isDoc = ext === 'doc' || ext === 'docx';
+  const isSheet = ext === 'xls' || ext === 'xlsx' || ext === 'csv';
+  const isPdf = ext === 'pdf';
+
   return (
     <div className={styles.previewIcon}>
-      <FileText size={32} />
+      {isPdf ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <FileText size={32} style={{ color: '#ef4444' }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>PDF</span>
+        </div>
+      ) : isDoc ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <FileText size={32} style={{ color: '#3b82f6' }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#3b82f6', letterSpacing: '0.05em' }}>WORD</span>
+        </div>
+      ) : isSheet ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <FileSpreadsheet size={32} style={{ color: '#10b981' }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981', letterSpacing: '0.05em' }}>SHEET</span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <FileText size={32} style={{ color: 'var(--color-accent-light)' }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+            {ext || 'FILE'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -56,6 +147,10 @@ export function FilesDrawer({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkName, setLinkName] = useState('');
+
+  const [previewFile, setPreviewFile] = useState<LifeFile | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewTextContent, setPreviewTextContent] = useState<string | null>(null);
 
   useEffect(() => {
     const el = folderRef.current;
@@ -96,6 +191,46 @@ export function FilesDrawer({
     setLinkUrl('');
     setLinkName('');
     setShowLinkInput(false);
+  };
+
+  const closePreview = () => {
+    if (previewBlobUrl && previewBlobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewBlobUrl);
+    }
+    setPreviewBlobUrl(null);
+    setPreviewTextContent(null);
+    setPreviewFile(null);
+  };
+
+  const handleOpenFile = async (file: LifeFile) => {
+    if (file.folder === 'Links' || file.downloadUrl.startsWith('http://') || file.downloadUrl.startsWith('https://')) {
+      window.open(file.downloadUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (file.downloadUrl.startsWith('data:')) {
+      const blob = getBlobFromDataUrl(file.downloadUrl, file.mimeType);
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewBlobUrl(blobUrl);
+      setPreviewFile(file);
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (['txt', 'md', 'json', 'csv', 'html', 'css', 'js', 'ts'].includes(ext)) {
+        try {
+          const text = await blob.text();
+          setPreviewTextContent(text);
+        } catch {
+          setPreviewTextContent(null);
+        }
+      }
+    } else {
+      setPreviewBlobUrl(file.downloadUrl);
+      setPreviewFile(file);
+    }
+  };
+
+  const handleDownloadFile = async (file: LifeFile) => {
+    await downloadLifeFile(file);
   };
 
   return (
@@ -223,7 +358,9 @@ export function FilesDrawer({
           <div className={styles.grid}>
             {visible.map((file) => (
               <article key={file.id} className={styles.card}>
-                <Preview file={file} />
+                <div onClick={() => void handleOpenFile(file)} style={{ cursor: 'pointer' }} title="Click to open or preview">
+                  <Preview file={file} />
+                </div>
                 <div className={styles.meta}>
                   <div className={styles.name} title={file.name}>
                     {file.name}
@@ -235,9 +372,18 @@ export function FilesDrawer({
                     <button
                       type="button"
                       className={`${styles.smallBtn} ${styles.openBtn}`}
-                      onClick={() => window.open(file.downloadUrl, '_blank', 'noopener,noreferrer')}
+                      onClick={() => void handleOpenFile(file)}
+                      title="Open or preview this file"
                     >
-                      Open
+                      <Eye size={13} /> Open
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.smallBtn} ${styles.saveBtn}`}
+                      onClick={() => void handleDownloadFile(file)}
+                      title="Save file to your computer / system so you can open it anywhere"
+                    >
+                      <Download size={13} /> Save
                     </button>
                     <button
                       type="button"
@@ -247,13 +393,132 @@ export function FilesDrawer({
                           void deleteFile(file);
                         }
                       }}
+                      title="Delete file"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* ── In-App File Preview Modal ── */}
+        {previewFile && (
+          <div className={styles.previewModalOverlay} onClick={closePreview}>
+            <div className={styles.previewModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.previewModalHeader}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{previewFile.name}</h3>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                    {previewFile.folder} · {formatSize(previewFile.size)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
+                  aria-label="Close preview"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className={styles.previewModalBody}>
+                {previewFile.kind === 'image' ? (
+                  <img
+                    src={previewBlobUrl || previewFile.downloadUrl}
+                    alt={previewFile.name}
+                    style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: 10 }}
+                  />
+                ) : previewFile.kind === 'video' ? (
+                  <video
+                    src={previewBlobUrl || previewFile.downloadUrl}
+                    controls
+                    autoPlay
+                    style={{ maxWidth: '100%', maxHeight: '65vh', borderRadius: 10 }}
+                  />
+                ) : (previewFile.name.toLowerCase().endsWith('.pdf') || previewFile.mimeType?.includes('pdf')) ? (
+                  <iframe
+                    src={previewBlobUrl || previewFile.downloadUrl}
+                    title={previewFile.name}
+                    style={{ width: '100%', height: '65vh', border: 'none', borderRadius: 10, background: '#ffffff' }}
+                  />
+                ) : previewTextContent !== null ? (
+                  <pre style={{
+                    width: '100%',
+                    maxHeight: '65vh',
+                    overflow: 'auto',
+                    background: 'var(--color-surface-2)',
+                    padding: 16,
+                    borderRadius: 10,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>
+                    {previewTextContent}
+                  </pre>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '32px 16px', textAlign: 'center' }}>
+                    <FileText size={64} style={{ color: 'var(--color-accent)' }} />
+                    <div>
+                      <h4 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700 }}>{previewFile.name}</h4>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>
+                        {formatSize(previewFile.size)} · Ready to save to your device
+                      </p>
+                    </div>
+                    <p style={{ maxWidth: 420, margin: 0, fontSize: 13, color: 'var(--color-text-faint)', lineHeight: 1.6 }}>
+                      This file is securely stored in your personal cloud. Click below to save it directly to your computer so you can open it anytime in Microsoft Word, Excel, or any local app.
+                    </p>
+                    <button
+                      type="button"
+                      className={styles.bigSaveBtn}
+                      onClick={() => void handleDownloadFile(previewFile)}
+                    >
+                      <Download size={16} /> Save to My System (PC)
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.previewModalFooter}>
+                <button
+                  type="button"
+                  className={`${styles.smallBtn} ${styles.saveBtn}`}
+                  style={{ minWidth: 120, height: 38 }}
+                  onClick={() => void handleDownloadFile(previewFile)}
+                >
+                  <Download size={14} /> Save to PC
+                </button>
+                {previewBlobUrl && (
+                  <button
+                    type="button"
+                    className={`${styles.smallBtn} ${styles.openBtn}`}
+                    style={{ minWidth: 130, height: 38 }}
+                    onClick={() => window.open(previewBlobUrl, '_blank', 'noopener,noreferrer')}
+                  >
+                    <ExternalLink size={14} /> Open in Tab
+                  </button>
+                )}
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 10,
+                    background: 'var(--color-surface-3)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                  onClick={closePreview}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

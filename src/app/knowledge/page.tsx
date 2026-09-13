@@ -61,6 +61,7 @@ import {
   Heading3,
   Highlighter,
   Eraser,
+  Lock,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -1090,7 +1091,8 @@ export default function KnowledgePage() {
 
   // Live WYSIWYG formatting commands (Google Docs / Word style)
   const handleFormat = (cmd: string) => {
-    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
+    if (editorMode === 'book') return; // Book mode is locked for reading
+    const editor = editorRef.current;
     if (!editor) return;
     editor.focus();
 
@@ -1157,14 +1159,17 @@ export default function KnowledgePage() {
     setActiveHighlightColor(colorName);
     const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
-    editor.focus();
+    if (editorMode !== 'book') {
+      editor.focus();
+    }
 
     const sel = window.getSelection();
     const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
 
-    // If nothing selected and forceApply clicked
+    // If nothing selected
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-      if (forceApply) {
+      // In book mode, never insert dummy text or push content
+      if (forceApply && editorMode !== 'book') {
         document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;">highlighted text</mark>&nbsp;`);
         setFContent(editor.innerHTML);
         if (selectedDoc) {
@@ -1175,6 +1180,31 @@ export default function KnowledgePage() {
     }
 
     const range = sel.getRangeAt(0);
+    // Ensure selection is inside the editor/book container
+    if (!editor.contains(range.commonAncestorContainer)) {
+      return;
+    }
+
+    // If selection is already inside an existing highlight mark, update its color directly
+    let cur: Node | null = range.commonAncestorContainer;
+    while (cur && cur !== editor) {
+      if (cur.nodeName === 'MARK') {
+        const markEl = cur as HTMLElement;
+        markEl.style.background = c.bg;
+        markEl.style.border = `1px solid ${c.border}`;
+        markEl.style.color = c.text;
+        const saved = editor.innerHTML;
+        isInternalChange.current = true;
+        setFContent(saved);
+        isInternalChange.current = false;
+        if (selectedDoc) {
+          updateDoc(selectedDoc.id, { content: saved });
+        }
+        return;
+      }
+      cur = cur.parentNode;
+    }
+
     const mark = document.createElement('mark');
     mark.className = 'highlight-mark';
     mark.style.background = c.bg;
@@ -1188,6 +1218,15 @@ export default function KnowledgePage() {
 
     try {
       const frag = range.extractContents();
+      // Remove any nested marks in extracted content
+      const innerMarks = frag.querySelectorAll ? frag.querySelectorAll('mark') : [];
+      innerMarks.forEach((m: Element) => {
+        const parent = m.parentNode;
+        while (m.firstChild) {
+          parent?.insertBefore(m.firstChild, m);
+        }
+        parent?.removeChild(m);
+      });
       mark.appendChild(frag);
       range.insertNode(mark);
       sel.removeAllRanges();
@@ -1195,11 +1234,12 @@ export default function KnowledgePage() {
       newRange.selectNodeContents(mark);
       sel.addRange(newRange);
     } catch {
-      document.execCommand('hiliteColor', false, c.bg);
+      try {
+        document.execCommand('hiliteColor', false, c.bg);
+      } catch {}
     }
 
-    // Save directly from DOM to avoid the fContent→useEffect re-render loop
-    // which would re-process HTML through getRichHtml and strip <mark> elements
+    // Save directly from DOM to persist highlight
     const saved = editor.innerHTML;
     isInternalChange.current = true;
     setFContent(saved);
@@ -1213,7 +1253,9 @@ export default function KnowledgePage() {
   const handleRemoveHighlight = () => {
     const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
-    editor.focus();
+    if (editorMode !== 'book') {
+      editor.focus();
+    }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
 
@@ -1250,14 +1292,12 @@ export default function KnowledgePage() {
       // Fallback
     }
 
-    try {
-      document.execCommand('hiliteColor', false, 'transparent');
-      document.execCommand('removeFormat');
-    } catch {}
-
-    setFContent(editor.innerHTML);
+    const saved = editor.innerHTML;
+    isInternalChange.current = true;
+    setFContent(saved);
+    isInternalChange.current = false;
     if (selectedDoc) {
-      updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      updateDoc(selectedDoc.id, { content: saved });
     }
   };
 
@@ -1512,17 +1552,19 @@ export default function KnowledgePage() {
                     </span>
                   )}
                   
-                  {/* AI Format Button in Header */}
-                  <button
-                    type="button"
-                    className={styles.headerBtn}
-                    onClick={handleAiFormat}
-                    disabled={isAiFormatting}
-                    title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
-                  >
-                    {isAiFormatting ? <Loader2 size={12} className={styles.spin} /> : <Sparkles size={12} />}
-                    {isAiFormatting ? 'Formatting...' : 'AI Format'}
-                  </button>
+                  {/* AI Format Button in Header (edit mode only) */}
+                  {editorMode === 'edit' && (
+                    <button
+                      type="button"
+                      className={styles.headerBtn}
+                      onClick={handleAiFormat}
+                      disabled={isAiFormatting}
+                      title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
+                    >
+                      {isAiFormatting ? <Loader2 size={12} className={styles.spin} /> : <Sparkles size={12} />}
+                      {isAiFormatting ? 'Formatting...' : 'AI Format'}
+                    </button>
+                  )}
 
                   {/* Export PDF Button */}
                   <button
@@ -1639,14 +1681,16 @@ export default function KnowledgePage() {
                 </div>
               )}
 
-              {/* Document Title (Formal Distraction-Free Typography) */}
-              <input
-                type="text"
-                className={styles.docTitle}
-                placeholder="Untitled Document"
-                value={fTitle}
-                onChange={(e) => setFTitle(e.target.value)}
-              />
+              {/* Document Title (hidden in Book Mode to keep reading view locked & clean) */}
+              {editorMode !== 'book' && (
+                <input
+                  type="text"
+                  className={styles.docTitle}
+                  placeholder="Untitled Document"
+                  value={fTitle}
+                  onChange={(e) => setFTitle(e.target.value)}
+                />
+              )}
 
               {editorMode === 'edit' && (
                 <MarkdownToolbar
@@ -1691,16 +1735,20 @@ export default function KnowledgePage() {
                   }}
                 />
               ) : (
-                /* ── Book Mode with Live Highlighter ── */
+                /* ── Book Mode with Live Highlighter (Locked / Read-Only) ── */
                 <div className={styles.bookWrapper}>
                   {/* Sticky Book Highlighter Bar */}
                   <div className={styles.bookHighlighterBar}>
                     <div className={styles.bookHighlighterGroup}>
+                      <span className={styles.bookLockBadge} title="Book Mode is locked for reading. Edits are disabled, highlighting is enabled.">
+                        <Lock size={12} /> Locked · Read Only
+                      </span>
+                      <div className={styles.bookHighlighterDivider} />
                       <span className={styles.bookHighlighterLabel}>
                         <Highlighter size={12} style={{ color: 'var(--color-accent)' }} /> Highlighter
                       </span>
                       <div className={styles.bookSwatches}>
-                        {HIGHLIGHT_COLORS.slice(0, 4).map((c) => (
+                        {HIGHLIGHT_COLORS.slice(0, 5).map((c) => (
                           <button
                             key={c.name}
                             type="button"
@@ -1710,6 +1758,7 @@ export default function KnowledgePage() {
                               borderColor: c.border,
                               '--swatch-border': c.border,
                             } as React.CSSProperties}
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleHighlight(c.name, false)}
                             title={`Highlight selected text: ${c.label}`}
                             aria-label={`Highlight ${c.label}`}
@@ -1722,15 +1771,17 @@ export default function KnowledgePage() {
                       <button
                         type="button"
                         className={styles.bookBtnSmall}
-                        onClick={() => handleHighlight(activeHighlightColor, true)}
-                        title="Apply active highlight"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleHighlight(activeHighlightColor, false)}
+                        title="Highlight selected text"
                       >
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR_MAP[activeHighlightColor]?.border || '#fbbf24', display: 'inline-block' }} />
-                        Highlight
+                        Highlight Selection
                       </button>
                       <button
                         type="button"
                         className={styles.bookBtnSmall}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={handleRemoveHighlight}
                         title="Remove highlight from selection"
                       >
@@ -1751,27 +1802,9 @@ export default function KnowledgePage() {
                     <div className={styles.bookDivider} />
                     <div
                       ref={bookEditorRef}
-                      contentEditable
-                      suppressContentEditableWarning
+                      contentEditable={false}
                       className={styles.bookContent}
-                      data-placeholder="Start typing or select text to highlight..."
                       dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
-                      onInput={() => {
-                        if (bookEditorRef.current && !isInternalChange.current) {
-                          setFContent(bookEditorRef.current.innerHTML);
-                          if (selectedDoc) {
-                            updateDoc(selectedDoc.id, { content: bookEditorRef.current.innerHTML });
-                          }
-                        }
-                      }}
-                      onBlur={() => {
-                        if (bookEditorRef.current) {
-                          setFContent(bookEditorRef.current.innerHTML);
-                          if (selectedDoc) {
-                            updateDoc(selectedDoc.id, { content: bookEditorRef.current.innerHTML });
-                          }
-                        }
-                      }}
                     />
                     <div className={styles.bookFooter}>
                       <span>Sariling Mundo · Knowledge Base</span>

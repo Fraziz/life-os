@@ -19,6 +19,8 @@ import {
   Flame,
   Moon,
   Battery,
+  Flag,
+  Clock,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -27,6 +29,7 @@ import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
+import { useCalendar } from '@/context/CalendarContext';
 import { playSuccessChime, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import RightSidebar from '@/components/layout/RightSidebar';
 import styles from './page.module.css';
@@ -38,6 +41,7 @@ export default function TodayDashboardContent() {
   const { activeGoals } = useGoals();
   const { quickDump, activeItems: brainDumpItems, deleteInboxItem } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
+  const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
 
   // ── Greeting & Date ──────────────────────────────────────────
   const [greeting, setGreeting] = useState('Good morning');
@@ -60,6 +64,11 @@ export default function TodayDashboardContent() {
 
   const userName = settings?.profile?.displayName || 'Aaron';
   const todayStr = new Date().toISOString().split('T')[0];
+
+  const todayDeadlines = getDeadlinesForDate(todayStr);
+  const todayEvents = getEventsForDate(todayStr);
+  const todayBlocks = getScheduledBlocksForDate(todayStr);
+  const totalTodayCalendarMarks = todayDeadlines.length + todayEvents.length + todayBlocks.length;
 
   // ── Energy Mode (reactive from Sidebar or localStorage) ──────
   const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high'>('normal');
@@ -234,10 +243,93 @@ export default function TodayDashboardContent() {
             <Flame size={13} className={styles.pillIconOrange} />
             <span><strong>{habitsCompletedToday}</strong> / {todayHabits.length} habits</span>
           </div>
+          {totalTodayCalendarMarks > 0 && (
+            <Link href="/calendar" className={styles.summaryPill}>
+              <Calendar size={13} className={styles.pillIconSky} />
+              <span><strong>{totalTodayCalendarMarks}</strong> calendar marks</span>
+            </Link>
+          )}
           <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>
             <span>Focus Mode</span>
           </Link>
         </div>
+
+        {/* Today's Schedule & Deadlines */}
+        {totalTodayCalendarMarks > 0 && (
+          <div className={styles.scheduleSectionCard}>
+            <div className={styles.sectionHeaderRow}>
+              <div className={styles.sectionHeaderLeft}>
+                <Calendar size={17} style={{ color: '#0ea5e9' }} />
+                <h2 className={styles.sectionHeading}>Today&apos;s Schedule</h2>
+                <span className={styles.calendarMarksCountBadge}>
+                  {totalTodayCalendarMarks} mark{totalTodayCalendarMarks !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <Link href="/calendar" className={styles.viewAllNotesLink}>Full calendar →</Link>
+            </div>
+
+            <div className={styles.scheduleItemsGrid}>
+              {todayDeadlines.map((dl) => (
+                <div key={dl.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardDeadline}`}>
+                  <div className={styles.scheduleItemIconWrap}>
+                    <Flag size={14} style={{ color: '#ef4444' }} />
+                  </div>
+                  <div className={styles.scheduleItemBody}>
+                    <div className={styles.scheduleItemTitleRow}>
+                      <span className={styles.scheduleItemTitle}>{dl.title}</span>
+                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(239,68,68,0.3)', color: '#ef4444' }}>
+                        deadline
+                      </span>
+                    </div>
+                    <div className={styles.scheduleItemMeta}>
+                      {dl.sourceType} {dl.priority ? `· ${dl.priority} priority` : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {todayEvents.map((evt) => (
+                <div key={evt.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardEvent}`}>
+                  <div className={styles.scheduleItemIconWrap}>
+                    <Calendar size={14} style={{ color: '#0ea5e9' }} />
+                  </div>
+                  <div className={styles.scheduleItemBody}>
+                    <div className={styles.scheduleItemTitleRow}>
+                      <span className={styles.scheduleItemTitle}>{evt.title}</span>
+                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(14,165,233,0.3)', color: '#0ea5e9' }}>
+                        event
+                      </span>
+                    </div>
+                    <div className={styles.scheduleItemMeta}>
+                      {evt.startTime}{evt.endTime ? ` – ${evt.endTime}` : ''}
+                      {evt.notes ? ` · ${evt.notes}` : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {todayBlocks.map((blk) => (
+                <div key={blk.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardBlock}`}>
+                  <div className={styles.scheduleItemIconWrap}>
+                    <Clock size={14} style={{ color: '#a855f7' }} />
+                  </div>
+                  <div className={styles.scheduleItemBody}>
+                    <div className={styles.scheduleItemTitleRow}>
+                      <span className={styles.scheduleItemTitle}>{blk.taskTitle}</span>
+                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(168,85,247,0.3)', color: '#a855f7' }}>
+                        focus
+                      </span>
+                    </div>
+                    <div className={styles.scheduleItemMeta}>
+                      {blk.startTime} · {blk.durationMinutes}m
+                      {blk.notes ? ` · ${blk.notes}` : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className={styles.quickActionsGrid}>

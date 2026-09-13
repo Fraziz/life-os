@@ -463,3 +463,190 @@
     min-height: 80px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   AUTHENTIC LIGHT NEUMORPHISM (Tactile Luminous Slate Console)
+   ══════════════════════════════════════════════════════════════ */
+:global([data-theme='light']) .softCard,
+:global([data-theme='light']) .focusTile,
+:global([data-theme='light']) .knobsTile {
+  background: linear-gradient(145deg, #ffffff, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    -5px -5px 14px rgba(255, 255, 255, 1),
+    6px 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+:global([data-theme='light']) .softCard:hover,
+:global([data-theme='light']) .focusTile:hover,
+:global([data-theme='light']) .knobsTile:hover {
+  box-shadow:
+    -6px -6px 16px rgba(255, 255, 255, 1),
+    8px 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='light']) .cardLabel,
+:global([data-theme='light']) .tileEyebrow {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .numberCyan {
+  color: #0284c7;
+  text-shadow: 0 0 16px rgba(2, 132, 199, 0.25);
+}
+
+:global([data-theme='light']) .softCircleBtn {
+  background: linear-gradient(145deg, #ffffff, #e2e8f0);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    -3px -3px 7px rgba(255, 255, 255, 1),
+    3px 3px 8px rgba(15, 23, 42, 0.08);
+  color: #0284c7;
+}
+
+:global([data-theme='light']) .softCircleBtn:hover {
+  color: #0369a1;
+  box-shadow:
+    -4px -4px 9px rgba(255, 255, 255, 1),
+    4px 4px 10px rgba(15, 23, 42, 0.12),
+    0 0 12px rgba(2, 132, 199, 0.2);
+}
+
+:global([data-theme='light']) .softCircleBtn:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(15, 23, 42, 0.12),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+:global([data-theme='light']) .numberOrange {
+  color: #ea580c;
+  text-shadow: 0 0 16px rgba(234, 88, 12, 0.25);
+}
+
+:global([data-theme='light']) .stepIconBtn {
+  background: linear-gradient(145deg, #ffffff, #e2e8f0);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    -3px -3px 7px rgba(255, 255, 255, 1),
+    3px 3px 7px rgba(15, 23, 42, 0.08);
+  color: #ea580c;
+}
+
+:global([data-theme='light']) .stepIconBtn:hover {
+  color: #c2410c;
+  box-shadow:
+    -4px -4px 9px rgba(255, 255, 255, 1),
+    4px 4px 10px rgba(15, 23, 42, 0.12),
+    0 0 12px rgba(234, 88, 12, 0.2);
+}
+
+:global([data-theme='light']) .stepIconBtn:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(15, 23, 42, 0.12),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+:global([data-theme='light']) .meterSegments {
+  background: #e2e8f0;
+  box-shadow:
+    inset 2px 2px 5px rgba(15, 23, 42, 0.08),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.9);
+}
+
+:global([data-theme='light']) .segment {
+  background: #cbd5e1;
+}
+
+:global([data-theme='light']) .segment.active {
+  background: #ea580c;
+  box-shadow: 0 0 8px rgba(234, 88, 12, 0.5);
+}
+
+:global([data-theme='light']) .tileActionBtn {
+  color: #0284c7;
+}
+
+:global([data-theme='light']) .tileActionBtn:hover {
+  color: #0369a1;
+  text-shadow: 0 0 8px rgba(2, 132, 199, 0.35);
+}
+
+:global([data-theme='light']) .taskTitleText {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .taskSubMeta {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .taskCheckBtn {
+  background: linear-gradient(145deg, #ffffff, #e2e8f0);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    -2px -2px 6px rgba(255, 255, 255, 1),
+    2px 2px 6px rgba(15, 23, 42, 0.08);
+  color: #0284c7;
+}
+
+:global([data-theme='light']) .tileDumpInputWrap {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    inset 2px 2px 5px rgba(15, 23, 42, 0.05),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+}
+
+:global([data-theme='light']) .tileDumpInputWrap:focus-within {
+  border-color: #0284c7;
+}
+
+:global([data-theme='light']) .tileDumpInput {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .tileDumpInput::placeholder {
+  color: #94a3b8;
+}
+
+:global([data-theme='light']) .tileDumpSendBtn {
+  color: #0284c7;
+}
+
+:global([data-theme='light']) .softDialRaised {
+  background: linear-gradient(145deg, #ffffff, #e2e8f0);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 1),
+    3px 3px 8px rgba(15, 23, 42, 0.08);
+  color: #64748b;
+}
+
+:global([data-theme='light']) .softDialRaised:hover {
+  color: #0f172a;
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 1),
+    4px 4px 10px rgba(15, 23, 42, 0.12);
+}
+
+:global([data-theme='light']) .softDialRaised.active {
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.3);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 1),
+    3px 3px 8px rgba(15, 23, 42, 0.08),
+    0 0 12px rgba(2, 132, 199, 0.25);
+}
+
+:global([data-theme='light']) .softDialRaised:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(15, 23, 42, 0.12),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}
+
+:global([data-theme='light']) .softDialSunken {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    inset 3px 3px 6px rgba(15, 23, 42, 0.07),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+}

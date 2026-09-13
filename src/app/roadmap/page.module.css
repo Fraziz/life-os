@@ -632,3 +632,46 @@
   color: var(--color-text);
   border-color: var(--color-accent);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT THEME ROADMAP STYLES
+   ══════════════════════════════════════════════════════════════ */
+:global([data-theme='light']) .floatingHeader {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='light']) .navToggleBtn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme='light']) .navToggleBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .pageSub {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+:global([data-theme='light']) .filterPill:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .filterPill.filterActive {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+:global([data-theme='light']) .ctrlBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}

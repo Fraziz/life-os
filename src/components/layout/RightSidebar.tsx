@@ -19,6 +19,8 @@ import {
   BatteryCharging,
   BatteryMedium,
   Battery,
+  Flag,
+  Clock,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -28,6 +30,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useHabits } from '@/context/HabitContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
+import { useCalendar } from '@/context/CalendarContext';
 import styles from './RightSidebar.module.css';
 
 export default function RightSidebar() {
@@ -38,11 +41,33 @@ export default function RightSidebar() {
   const { habits, isHabitCompletedOnDate } = useHabits();
   const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
+  const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
 
   // ── Theme toggle ─────────────────────────────────────────────
   const isDark = settings.theme === 'dark';
   const toggleTheme = () => {
     updateSettings({ theme: isDark ? 'light' : 'dark' });
+  };
+
+  // ── Selected Date for Agenda Inspection ──────────────────────
+  const [selectedDate, setSelectedDate] = useState<string>(
+    () => new Date().toISOString().split('T')[0]
+  );
+
+  const formatDayDateStr = (y: number, m: number, d: number) => {
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const formatFriendlyDate = (dateStr: string) => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
   };
 
   // ── Calendar Month Navigation ────────────────────────────────
@@ -186,17 +211,188 @@ export default function RightSidebar() {
             if (d === null) {
               return <div key={`empty-${index}`} className={styles.calEmptyCell} />;
             }
+
+            const dayDateStr = formatDayDateStr(year, month, d);
+            const dayDeadlines = getDeadlinesForDate(dayDateStr);
+            const dayEvents = getEventsForDate(dayDateStr);
+            const dayBlocks = getScheduledBlocksForDate(dayDateStr);
+
+            const hasDeadline = dayDeadlines.length > 0;
+            const hasEvent = dayEvents.length > 0;
+            const hasBlock = dayBlocks.length > 0;
+            const isSelected = dayDateStr === selectedDate;
             const active = isToday(d);
+
+            const tooltipParts: string[] = [];
+            if (hasDeadline) {
+              tooltipParts.push(
+                `🚩 ${dayDeadlines.length} deadline${dayDeadlines.length > 1 ? 's' : ''}: ${dayDeadlines.map((i) => i.title).join(', ')}`
+              );
+            }
+            if (hasEvent) {
+              tooltipParts.push(
+                `📅 ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}: ${dayEvents.map((i) => i.title).join(', ')}`
+              );
+            }
+            if (hasBlock) {
+              tooltipParts.push(
+                `⏳ ${dayBlocks.length} focus block${dayBlocks.length > 1 ? 's' : ''}: ${dayBlocks.map((i) => i.taskTitle).join(', ')}`
+              );
+            }
+            const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('\n') : undefined;
+
             return (
               <div
                 key={`day-${d}`}
-                className={`${styles.calDayCell} ${active ? styles.calActiveDay : ''}`}
+                onClick={() => setSelectedDate(dayDateStr)}
+                className={`${styles.calDayCell} ${active ? styles.calActiveDay : ''} ${isSelected ? styles.calSelectedDay : ''} ${hasDeadline ? styles.calHasDeadline : ''}`}
+                title={tooltipText}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setSelectedDate(dayDateStr);
+                  }
+                }}
+                aria-label={`${dayDateStr} ${tooltipParts.join('. ')}`}
               >
-                <span>{d}</span>
+                <span className={styles.calDayNumber}>{d}</span>
+                <div className={styles.calDotsRow}>
+                  {hasDeadline && <span className={`${styles.calDot} ${styles.calDotDeadline}`} />}
+                  {hasEvent && <span className={`${styles.calDot} ${styles.calDotEvent}`} />}
+                  {hasBlock && <span className={`${styles.calDot} ${styles.calDotBlock}`} />}
+                </div>
               </div>
             );
           })}
         </div>
+
+        {/* ── Legend ── */}
+        <div className={styles.calLegendRow}>
+          <span className={styles.legendItem}>
+            <span className={`${styles.calDot} ${styles.calDotDeadline}`} /> Deadline
+          </span>
+          <span className={styles.legendItem}>
+            <span className={`${styles.calDot} ${styles.calDotEvent}`} /> Event
+          </span>
+          <span className={styles.legendItem}>
+            <span className={`${styles.calDot} ${styles.calDotBlock}`} /> Focus
+          </span>
+        </div>
+
+        {/* ── Selected Day Marks & Agenda ── */}
+        {(() => {
+          const selectedDeadlines = getDeadlinesForDate(selectedDate);
+          const selectedEvents = getEventsForDate(selectedDate);
+          const selectedBlocks = getScheduledBlocksForDate(selectedDate);
+          const totalSelectedMarks =
+            selectedDeadlines.length + selectedEvents.length + selectedBlocks.length;
+
+          return (
+            <div className={styles.selectedDayAgenda}>
+              <div className={styles.agendaHeader}>
+                <div className={styles.agendaDateTitle}>
+                  <span>{formatFriendlyDate(selectedDate)}</span>
+                  {selectedDate === todayStr && (
+                    <span className={styles.todayBadge}>Today</span>
+                  )}
+                </div>
+                {selectedDate !== todayStr && (
+                  <button
+                    type="button"
+                    className={styles.jumpTodayBtn}
+                    onClick={() => {
+                      setSelectedDate(todayStr);
+                      setViewDate(new Date());
+                    }}
+                  >
+                    Jump to Today
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.agendaItemsList}>
+                {selectedDeadlines.map((dl) => (
+                  <div
+                    key={dl.id}
+                    className={`${styles.agendaItem} ${styles.agendaDeadlineItem}`}
+                  >
+                    <div className={styles.agendaItemIconWrap}>
+                      <Flag size={12} className={styles.deadlineIcon} />
+                    </div>
+                    <div className={styles.agendaItemContent}>
+                      <span className={styles.agendaItemTitle} title={dl.title}>
+                        {dl.title}
+                      </span>
+                      <div className={styles.agendaItemMetaRow}>
+                        <span className={styles.agendaSourceBadge}>{dl.sourceType}</span>
+                        {dl.priority && (
+                          <span style={{ textTransform: 'capitalize' }}>{dl.priority}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {selectedEvents.map((evt) => (
+                  <div
+                    key={evt.id}
+                    className={`${styles.agendaItem} ${styles.agendaEventItem}`}
+                  >
+                    <div className={styles.agendaItemIconWrap}>
+                      <CalendarIcon size={12} className={styles.eventIcon} />
+                    </div>
+                    <div className={styles.agendaItemContent}>
+                      <span className={styles.agendaItemTitle} title={evt.title}>
+                        {evt.title}
+                      </span>
+                      <div className={styles.agendaItemMetaRow}>
+                        <span>
+                          {evt.startTime}
+                          {evt.endTime ? ` - ${evt.endTime}` : ''}
+                        </span>
+                        {evt.notes && <span>• {evt.notes}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {selectedBlocks.map((blk) => (
+                  <div
+                    key={blk.id}
+                    className={`${styles.agendaItem} ${styles.agendaBlockItem}`}
+                  >
+                    <div className={styles.agendaItemIconWrap}>
+                      <Clock size={12} className={styles.blockIcon} />
+                    </div>
+                    <div className={styles.agendaItemContent}>
+                      <span className={styles.agendaItemTitle} title={blk.taskTitle}>
+                        {blk.taskTitle}
+                      </span>
+                      <div className={styles.agendaItemMetaRow}>
+                        <span>
+                          {blk.startTime} ({blk.durationMinutes}m)
+                        </span>
+                        {blk.notes && <span>• {blk.notes}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {totalSelectedMarks === 0 && (
+                  <div className={styles.agendaEmptyState}>
+                    No deadlines or scheduled marks on this date
+                  </div>
+                )}
+              </div>
+
+              <Link href="/calendar" className={styles.openCalendarLink}>
+                <span>Open Full Calendar</span>
+                <ArrowRight size={12} />
+              </Link>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Daily Momentum Card (Real Synced Data) ─────────────── */}

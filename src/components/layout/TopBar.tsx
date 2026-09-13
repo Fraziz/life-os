@@ -70,7 +70,6 @@ export default function TopBar({
             aria-label="Reminders"
           >
             <Bell size={18} />
-            {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
           </button>
         )}
 
