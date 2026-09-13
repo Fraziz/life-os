@@ -1,62 +1,69 @@
 /* ============================================================
-   LIFE OS — ADHD-FRIENDLY GLOBAL DESIGN SYSTEM
-   Calming contrast, focus-enhancing tokens, zero-glare dark mode,
-   dopamine-rewarding micro-cues, and accessible typography
+   LIFE OS — ELEGANT WARM PAPER & CHARCOAL DESIGN SYSTEM
+   Modern, calm, distraction-free aesthetic with high contrast,
+   handcrafted details, and responsive layouts.
    ============================================================ */
 
 /* ── Google Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── ADHD-Optimized Design Tokens (Dark Theme Default) ── */
+/* ── Design Tokens ── */
 :root {
-  /* Background layers — deep slate obsidian (calm, low sensory load) */
-  --color-bg:             #0b0d17;
-  --color-surface:        #111424;
-  --color-surface-2:      #171b30;
-  --color-surface-3:      #1f2440;
-  --color-surface-hover:  #252b4c;
+  /* Warm cream paper theme (Default) */
+  --color-bg:             #f5f4ef;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f0eee6;
+  --color-surface-3:      #e7e3d8;
+  --color-surface-hover:  #eae6dc;
 
-  /* Borders — distinct visual chunking to reduce overwhelm */
-  --color-border:         #232946;
-  --color-border-subtle:  #181c33;
-  --color-border-focus:   #6366f1;
+  /* Borders */
+  --color-border:         #e8e4dc;
+  --color-border-subtle:  #f0eee8;
+  --color-border-focus:   #2d3748;
 
-  /* Text — high-contrast, effortless legibility */
-  --color-text:           #f1f5f9;
-  --color-text-muted:     #94a3b8;
-  --color-text-faint:     #64748b;
-  --color-text-inverse:   #0b0d17;
+  /* Text — deep charcoal for effortless reading */
+  --color-text:           #1f2937;
+  --color-text-muted:     #6b7280;
+  --color-text-faint:     #9ca3af;
+  --color-text-inverse:   #ffffff;
 
-  /* Accent — soothing Royal Indigo / Periwinkle (promotes calm hyperfocus) */
-  --color-accent:         #6366f1;
-  --color-accent-light:   #818cf8;
-  --color-accent-dim:     rgba(99, 102, 241, 0.16);
-  --color-accent-glow:    rgba(99, 102, 241, 0.28);
-  --color-accent-hover:   #4f46e5;
+  /* Accent */
+  --color-accent:         #2d3748;
+  --color-accent-light:   #4a5568;
+  --color-accent-dim:     rgba(45, 55, 72, 0.08);
+  --color-accent-glow:    rgba(45, 55, 72, 0.15);
+  --color-accent-hover:   #1a202c;
 
-  /* Semantic feedback colors (gentle, rewarding, non-alarming) */
-  --color-success:        #10b981; /* Dopamine Mint / Emerald */
-  --color-success-dim:    rgba(16, 185, 129, 0.14);
-  --color-warning:        #f59e0b; /* Warm Honey Amber (gentle attention) */
-  --color-warning-dim:    rgba(245, 158, 11, 0.14);
-  --color-danger:         #f43f5e; /* Soft Coral Rose (clear, non-panic) */
-  --color-danger-dim:     rgba(244, 63, 94, 0.14);
-  --color-info:           #38bdf8; /* Serene Sky Blue */
-  --color-info-dim:       rgba(56, 189, 248, 0.14);
+  /* Badges & semantic feedback */
+  --color-badge-blue-bg:  #dbeafe;
+  --color-badge-blue-txt: #1e40af;
+  --color-badge-purple-bg:#ede9fe;
+  --color-badge-purple-txt:#6b21a8;
+  --color-badge-green-bg: #dcfce7;
+  --color-badge-green-txt:#166534;
+  --color-badge-amber-bg: #fef3c7;
+  --color-badge-amber-txt:#92400e;
 
-  /* Life area colors (harmonious, distinguishable without sensory overload) */
-  --color-area-health:    #10b981;
-  --color-area-career:    #6366f1;
-  --color-area-finance:   #f59e0b;
-  --color-area-learning:  #06b6d4;
-  --color-area-social:    #f472b6;
-  --color-area-creative:  #fb7185;
-  --color-area-mindset:   #a855f7;
-  --color-area-family:    #fb923c;
+  --color-success:        #10b981;
+  --color-success-dim:    rgba(16, 185, 129, 0.12);
+  --color-warning:        #f59e0b;
+  --color-warning-dim:    rgba(245, 158, 11, 0.12);
+  --color-danger:         #ef4444;
+  --color-danger-dim:     rgba(239, 68, 68, 0.12);
+  --color-info:           #3b82f6;
+  --color-info-dim:       rgba(59, 130, 246, 0.12);
+
+  /* Special Card Tints */
+  --color-lavender-card:  #f4f1fd;
+  --color-lavender-border:#e5defa;
+  --color-mint-card:      #effaf3;
+  --color-mint-border:    #d3f2e0;
 
   /* Typography */
-  --font-sans:            'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono:            'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif:           'Playfair Display', Georgia, serif;
+  --font-handwriting:     'Caveat', cursive, sans-serif;
+  --font-mono:            'JetBrains Mono', monospace;
 
   /* Font sizes */
   --text-xs:   0.75rem;   /* 12px */
@@ -129,59 +136,84 @@
   --z-toast:    500;
 }
 
-/* ── Light Theme (Warm Paper & Slate, Zero-Glare) ── */
+/* ── Light Theme (Warm Paper & Charcoal Default) ── */
 [data-theme='light'] {
-  --color-bg:             #f4f6fb;
+  --color-bg:             #f7f5f0;
   --color-surface:        #ffffff;
-  --color-surface-2:      #eef1f8;
-  --color-surface-3:      #e2e8f0;
-  --color-surface-hover:  #dde3f0;
+  --color-surface-2:      #f1eee7;
+  --color-surface-3:      #e6e2d8;
+  --color-surface-hover:  #eae6dc;
 
-  --color-border:         #c8d3e8;
-  --color-border-subtle:  #dde3f0;
-  --color-border-focus:   #4f46e5;
+  --color-border:         #e8e4dc;
+  --color-border-subtle:  #f0eee8;
+  --color-border-focus:   #2d3748;
 
-  --color-text:           #0f172a;
-  --color-text-muted:     #3d4f6e;
-  --color-text-faint:     #7a91b8;
+  --color-text:           #1f2937;
+  --color-text-muted:     #64748b;
+  --color-text-faint:     #94a3b8;
   --color-text-inverse:   #ffffff;
 
-  --color-accent:         #4f46e5;
-  --color-accent-light:   #6366f1;
-  --color-accent-dim:     rgba(79, 70, 229, 0.1);
-  --color-accent-glow:    rgba(79, 70, 229, 0.2);
-  --color-accent-hover:   #4338ca;
+  --color-accent:         #2d3748;
+  --color-accent-light:   #4a5568;
+  --color-accent-dim:     rgba(45, 55, 72, 0.08);
+  --color-accent-glow:    rgba(45, 55, 72, 0.15);
+  --color-accent-hover:   #1a202c;
 
-  --shadow-sm:            0 1px 3px rgba(15, 23, 42, 0.08);
-  --shadow-md:            0 4px 12px rgba(15, 23, 42, 0.1);
-  --shadow-lg:            0 10px 24px rgba(15, 23, 42, 0.12);
-  --shadow-xl:            0 20px 40px rgba(15, 23, 42, 0.14);
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md:            0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg:            0 10px 24px rgba(0, 0, 0, 0.07);
+  --shadow-xl:            0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
-/* ── System preference fallback (before JS theme loads) ── */
+/* ── Dark Theme (Sleek Charcoal) ── */
+[data-theme='dark'] {
+  --color-bg:             #12141a;
+  --color-surface:        #1a1d26;
+  --color-surface-2:      #222632;
+  --color-surface-3:      #2b3040;
+  --color-surface-hover:  #33394c;
+
+  --color-border:         #2a2f40;
+  --color-border-subtle:  #1e2230;
+  --color-border-focus:   #818cf8;
+
+  --color-text:           #f3f4f6;
+  --color-text-muted:     #9ca3af;
+  --color-text-faint:     #6b7280;
+  --color-text-inverse:   #111424;
+
+  --color-accent:         #818cf8;
+  --color-accent-light:   #a5b4fc;
+  --color-accent-dim:     rgba(129, 140, 248, 0.16);
+  --color-accent-glow:    rgba(129, 140, 248, 0.28);
+  --color-accent-hover:   #6366f1;
+
+  --color-lavender-card:  #1e1b2e;
+  --color-lavender-border:#332e4d;
+  --color-mint-card:      #13251c;
+  --color-mint-border:    #1f3d2e;
+
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg:            0 8px 30px rgba(0, 0, 0, 0.55);
+  --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.65);
+}
+
+/* ── System preference fallback ── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
-    --color-bg:             #f4f6fb;
+    --color-bg:             #f7f5f0;
     --color-surface:        #ffffff;
-    --color-surface-2:      #eef1f8;
-    --color-surface-3:      #e2e8f0;
-    --color-surface-hover:  #dde3f0;
-    --color-border:         #c8d3e8;
-    --color-border-subtle:  #dde3f0;
-    --color-border-focus:   #4f46e5;
-    --color-text:           #0f172a;
-    --color-text-muted:     #3d4f6e;
-    --color-text-faint:     #7a91b8;
+    --color-surface-2:      #f1eee7;
+    --color-surface-3:      #e6e2d8;
+    --color-surface-hover:  #eae6dc;
+    --color-border:         #e8e4dc;
+    --color-border-subtle:  #f0eee8;
+    --color-border-focus:   #2d3748;
+    --color-text:           #1f2937;
+    --color-text-muted:     #64748b;
+    --color-text-faint:     #94a3b8;
     --color-text-inverse:   #ffffff;
-    --color-accent:         #4f46e5;
-    --color-accent-light:   #6366f1;
-    --color-accent-dim:     rgba(79, 70, 229, 0.1);
-    --color-accent-glow:    rgba(79, 70, 229, 0.2);
-    --color-accent-hover:   #4338ca;
-    --shadow-sm:            0 1px 3px rgba(15, 23, 42, 0.08);
-    --shadow-md:            0 4px 12px rgba(15, 23, 42, 0.1);
-    --shadow-lg:            0 10px 24px rgba(15, 23, 42, 0.12);
-    --shadow-xl:            0 20px 40px rgba(15, 23, 42, 0.14);
   }
 }
 

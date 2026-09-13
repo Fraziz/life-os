@@ -8,9 +8,9 @@ const SETTINGS_STORAGE_KEY = 'life_os_user_settings_v1';
 export const DEFAULT_SETTINGS: UserSettings = {
   profile: {
     id: 'personal-owner',
-    name: 'Life OS User',
-    displayName: 'Alex',
-    avatarInitials: 'A',
+    name: 'BSIT 3E · SSU',
+    displayName: 'Aaron Paul',
+    avatarInitials: 'AP',
   },
   timeZone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC',
   workingHours: {
@@ -51,7 +51,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     totalTokensUsed: 0,
     temperature: 0.7,
   },
-  theme: 'dark',
+  theme: 'light',
   updatedAt: new Date().toISOString(),
 };
 

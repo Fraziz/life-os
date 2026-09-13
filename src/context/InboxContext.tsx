@@ -12,24 +12,53 @@ const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
 
 export const DEFAULT_INBOX_ITEMS: InboxItem[] = [
   {
-    id: 'inbox-1',
-    content: 'Need to finish game, learn Blender, research clothing, fix computer, create music...',
+    id: 'inbox-link-questions',
+    content:
+      'LINK: CLASSROOM For school-safe questions, teamwork, communication, confidence, and friendship. LINK: TEENS More personal, funny, challenging, and relationship-oriented questions. LINK: AFTER HOURS Your more mature/social version for adults and older audiences.',
     status: 'inbox',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-2',
-    content: 'Explore low-poly hand-painted gradient texture palettes for Blobbit',
+    id: 'inbox-test-people',
+    content: 'Is this good enough to test with real people?',
+    status: 'inbox',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'inbox-app-ideas',
+    content: 'App ideas (inner child / fun)',
+    status: 'inbox',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'inbox-biz-ideas',
+    content: 'Business name ideas (Groovy Club, etc.)',
+    status: 'inbox',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'inbox-motorcycle',
+    content: 'Motorcycle research (XSR155 / Click / ADV)',
     status: 'inbox',
     createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-3',
-    content: 'Check high-yield savings interest compounding frequency',
+    id: 'inbox-future-plans',
+    content: 'Future plans / graduation anxiety',
     status: 'inbox',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'inbox-random',
+    content: 'Random ideas / dreams',
+    status: 'inbox',
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];

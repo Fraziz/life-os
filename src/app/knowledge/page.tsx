@@ -132,12 +132,12 @@ function renderMarkdown(md: string): string {
   html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">✅ $1</div>');
   html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">⬜ $1</div>');
 
-  // Numbered list items
-  html = html.replace(/^(\d+)\. (.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
+  // Numbered list items (supports 1. and 1) formats)
+  html = html.replace(/^(\d+)[\.\)]\s+(.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
   html = html.replace(/(<li class="ol-item">[\s\S]*?<\/li>\n?)+/g, '<ol>$&</ol>');
 
-  // Unordered list items
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  // Unordered list items (supports -, *, and literal • bullet characters)
+  html = html.replace(/^([•\*\-])\s+(.+)$/gm, '<li>$2</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
   // Blockquotes → key callout style
@@ -392,17 +392,46 @@ function MarkdownToolbar({
           <Lightbulb size={12} style={{ marginRight: 3 }} /> Key Idea
         </button>
 
-        {/* AI & Template Actions */}
-        <button
-          type="button"
-          className={`${styles.toolbarBtn} ${styles.aiFormatBtn}`}
-          onClick={onAiFormat}
-          disabled={isAiFormatting}
-          title="Auto-format and organize notes"
-        >
-          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Wand2 size={11} />}
-          <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
-        </button>
+        <span className={styles.toolbarDivider} />
+
+        {/* Executive Compact Highlighter */}
+        <div className={styles.inlineHighlightGroup} title="Select text and click a color to highlight">
+          <Highlighter size={12} className={styles.highlighterIcon} />
+          {[
+            { name: 'yellow', bg: '#fef08a', border: '#eab308', label: 'Yellow' },
+            { name: 'mint',   bg: '#bbf7d0', border: '#22c55e', label: 'Green' },
+            { name: 'cyan',   bg: '#bae6fd', border: '#0284c7', label: 'Blue' },
+            { name: 'purple', bg: '#e9d5ff', border: '#a855f7', label: 'Purple' },
+          ].map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              className={`${styles.compactSwatch} ${activeColor === c.name ? styles.compactSwatchActive : ''}`}
+              style={{
+                background: c.bg,
+                borderColor: c.border,
+                color: c.border,
+              }}
+              onClick={() => {
+                onSetActiveColor(c.name);
+                onHighlight(c.name, true);
+              }}
+              title={`Highlight: ${c.label}`}
+              aria-label={`Highlight ${c.label}`}
+            />
+          ))}
+          <button
+            type="button"
+            className={styles.clearHighlightBtn}
+            onClick={onRemoveHighlight}
+            title="Remove highlight from selected text"
+            aria-label="Remove highlight"
+          >
+            <Eraser size={12} />
+          </button>
+        </div>
+
+        {/* Template Action */}
         <button
           type="button"
           className={`${styles.toolbarBtn} ${styles.templateBtn}`}
@@ -411,51 +440,6 @@ function MarkdownToolbar({
         >
           <FileText size={11} style={{ marginRight: 3 }} /> Template
         </button>
-      </div>
-
-      {/* Row 2: Formal Color Highlight Palette */}
-      <div className={styles.colorPaletteRow}>
-        <span className={styles.colorPaletteLabel}>Highlight</span>
-        <div className={styles.colorSwatches}>
-          {HIGHLIGHT_COLORS.map((c) => (
-            <button
-              key={c.name}
-              type="button"
-              className={`${styles.colorSwatch} ${activeColor === c.name ? styles.colorSwatchActive : ''}`}
-              style={{
-                background: c.bg,
-                borderColor: c.border,
-                '--swatch-border': c.border,
-              } as React.CSSProperties}
-              onClick={() => {
-                onSetActiveColor(c.name);
-                onHighlight(c.name, false);
-              }}
-              title={`Highlight: ${c.label}`}
-              aria-label={`Highlight ${c.label}`}
-            />
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-          <button
-            type="button"
-            className={styles.clearHighlightBtn}
-            onClick={onRemoveHighlight}
-            title="Remove highlight from selected text"
-          >
-            <Eraser size={12} style={{ marginRight: 4 }} /> Clear
-          </button>
-          <button
-            type="button"
-            className={styles.applyHighlightBtn}
-            style={{ background: activeColorDef.bg, borderColor: activeColorDef.border, color: activeColorDef.text }}
-            onClick={() => onHighlight(activeColor, true)}
-            title={`Apply ${activeColorDef.label} highlight to selected text`}
-          >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: activeColorDef.border, display: 'inline-block', marginRight: 5 }} />
-            Apply {activeColorDef.label}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -485,7 +469,7 @@ export default function KnowledgePage() {
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book'>('edit');
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book'>('book');
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
 
@@ -502,6 +486,76 @@ export default function KnowledgePage() {
   const editorRef = useRef<HTMLDivElement>(null);
   const bookEditorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
+  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Floating highlight & format toolbar when selecting text with mouse
+  useEffect(() => {
+    const handleSelection = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        setFloatingMenu(null);
+        return;
+      }
+
+      const text = sel.toString().trim();
+      if (text.length === 0) {
+        setFloatingMenu(null);
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      const editorEl = editorRef.current;
+      const bookEl = bookEditorRef.current;
+
+      const isInside =
+        (editorEl && editorEl.contains(container)) ||
+        (bookEl && bookEl.contains(container));
+
+      if (!isInside) {
+        setFloatingMenu(null);
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        setFloatingMenu(null);
+        return;
+      }
+
+      const x = Math.max(130, Math.min(window.innerWidth - 130, rect.left + rect.width / 2));
+      const y = Math.max(12, rect.top - 44);
+
+      setFloatingMenu({ x, y });
+    };
+
+    const handleMouseUp = () => {
+      setTimeout(handleSelection, 20);
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.closest?.('[data-floating-toolbar]')) {
+        return;
+      }
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) {
+          setFloatingMenu(null);
+        }
+      }, 50);
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('scroll', () => setFloatingMenu(null), true);
+
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('scroll', () => setFloatingMenu(null), true);
+    };
+  }, []);
 
   // Automatically import and extract text from uploaded PDF or Document
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -524,7 +578,7 @@ export default function KnowledgePage() {
 
       setSelectedId(newDoc.id);
       setIsCreating(false);
-      setEditorMode('preview');
+      setEditorMode('book');
       setImportStatus(null);
     } catch (err) {
       console.error('Import failed:', err);
@@ -545,15 +599,22 @@ export default function KnowledgePage() {
 
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
 
-  // Helper to convert content into rich HTML for live editing
+  // Helper to convert content into rich HTML for live editing and book reading
   const getRichHtml = (content: string) => {
     if (!content) return '';
-    // If it already looks like HTML (has tags), return it directly
-    if (/<(p|h[1-6]|ul|ol|li|div|blockquote|mark|span|strong|em|table|hr)[^>]*>/i.test(content)) {
+    // If it already has structured headings or semantic blocks
+    if (/<(h[1-6]|blockquote|table|pre)[^>]*>/i.test(content)) {
       return content;
     }
-    // Otherwise convert markdown to HTML
-    return renderMarkdown(content);
+    // Convert newlines/divs/paragraphs from contentEditable into clean markdown/HTML
+    let clean = content
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<div>/gi, '')
+      .replace(/<p>/gi, '')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/&nbsp;/g, ' ');
+    return renderMarkdown(clean);
   };
 
   // Load doc into editor
@@ -567,7 +628,8 @@ export default function KnowledgePage() {
       setFGoalId(selectedDoc.linkedGoalId || '');
       setFProjectId(selectedDoc.linkedProjectId || '');
       setFTaskId(selectedDoc.linkedTaskId || '');
-      setEditorMode('edit');
+      // When opening a document on first click, show clean, structured Book view
+      setEditorMode('book');
 
       // Populate rich editor and book view with HTML
       setTimeout(() => {
@@ -1032,7 +1094,7 @@ export default function KnowledgePage() {
 
   // Live WYSIWYG formatting commands (Google Docs / Word style)
   const handleFormat = (cmd: string) => {
-    const editor = editorRef.current;
+    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
     editor.focus();
 
@@ -1086,8 +1148,11 @@ export default function KnowledgePage() {
       document.execCommand('justifyFull');
     }
 
-    if (editorRef.current) {
-      setFContent(editorRef.current.innerHTML);
+    if (editor) {
+      setFContent(editor.innerHTML);
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
     }
   };
 
@@ -1407,34 +1472,34 @@ export default function KnowledgePage() {
             <div className={styles.editorWrapper}>
               {/* Document Action Header */}
               <div className={styles.canvasHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div className={styles.segmentedControl}>
+                    <button
+                      className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('edit')}
+                    >
+                      <Edit2 size={12} /> Edit
+                    </button>
+                    <button
+                      className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('preview')}
+                    >
+                      <Eye size={12} /> Preview
+                    </button>
+                    <button
+                      className={`${styles.segmentBtn} ${editorMode === 'book' ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('book')}
+                      title="Book reading mode — clean, distraction-free"
+                    >
+                      <BookMarked size={12} /> Book
+                    </button>
+                  </div>
+
                   <button
-                    className={`${styles.modeToggle} ${editorMode === 'edit' ? styles.modeToggleActive : ''}`}
-                    onClick={() => setEditorMode('edit')}
-                  >
-                    <Edit2 size={13} /> Edit
-                  </button>
-                  <span style={{ color: 'var(--color-border)' }}>|</span>
-                  <button
-                    className={`${styles.modeToggle} ${editorMode === 'preview' ? styles.modeToggleActive : ''}`}
-                    onClick={() => setEditorMode('preview')}
-                  >
-                    <Eye size={13} /> Preview
-                  </button>
-                  <span style={{ color: 'var(--color-border)' }}>|</span>
-                  <button
-                    className={`${styles.modeToggle} ${editorMode === 'book' ? styles.modeToggleActive : ''}`}
-                    onClick={() => setEditorMode('book')}
-                    title="Book reading mode — clean, distraction-free"
-                  >
-                    <BookMarked size={13} /> Book
-                  </button>
-                  <span style={{ color: 'var(--color-border)' }}>|</span>
-                  <button
-                    className={`${styles.modeToggle} ${showMetaSettings ? styles.modeToggleActive : ''}`}
+                    className={`${styles.propertiesToggleBtn} ${showMetaSettings ? styles.propertiesToggleBtnActive : ''}`}
                     onClick={() => setShowMetaSettings(!showMetaSettings)}
                   >
-                    <Link2 size={13} /> Properties {showMetaSettings ? '▴' : '▾'}
+                    <Link2 size={12} /> Properties {showMetaSettings ? '▴' : '▾'}
                   </button>
                 </div>
 
@@ -1449,7 +1514,7 @@ export default function KnowledgePage() {
                   {/* AI Format Button in Header */}
                   <button
                     type="button"
-                    className={`${styles.btnSecondary} ${styles.aiFormatBtn}`}
+                    className={styles.headerBtn}
                     onClick={handleAiFormat}
                     disabled={isAiFormatting}
                     title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
@@ -1461,7 +1526,7 @@ export default function KnowledgePage() {
                   {/* Export PDF Button */}
                   <button
                     type="button"
-                    className={styles.btnSecondary}
+                    className={styles.headerBtn}
                     onClick={handleExportPdf}
                     title="Export as Formal PDF Document"
                   >
@@ -1471,7 +1536,7 @@ export default function KnowledgePage() {
                   {/* Copy Text Button */}
                   <button
                     type="button"
-                    className={styles.btnSecondary}
+                    className={styles.headerBtn}
                     onClick={handleCopyText}
                     title="Copy Document Text"
                   >
@@ -1480,7 +1545,13 @@ export default function KnowledgePage() {
                   </button>
 
                   {selectedDoc && (
-                    <EntityFiles variant="button" entityType="knowledge" entityId={selectedDoc.id} title={selectedDoc.title} />
+                    <EntityFiles
+                      variant="button"
+                      className={styles.headerBtn}
+                      entityType="knowledge"
+                      entityId={selectedDoc.id}
+                      title={selectedDoc.title}
+                    />
                   )}
                   <button className={styles.btnSave} onClick={handleSave}>
                     <Save size={13} /> Save
@@ -1597,6 +1668,7 @@ export default function KnowledgePage() {
                   suppressContentEditableWarning
                   className={styles.richEditor}
                   data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
+                  dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
                   onInput={() => {
                     if (editorRef.current && !isInternalChange.current) {
                       setFContent(editorRef.current.innerHTML);
@@ -1624,10 +1696,10 @@ export default function KnowledgePage() {
                   <div className={styles.bookHighlighterBar}>
                     <div className={styles.bookHighlighterGroup}>
                       <span className={styles.bookHighlighterLabel}>
-                        <Highlighter size={13} style={{ color: 'var(--color-accent)' }} /> Highlighter
+                        <Highlighter size={12} style={{ color: 'var(--color-accent)' }} /> Highlighter
                       </span>
                       <div className={styles.bookSwatches}>
-                        {HIGHLIGHT_COLORS.map((c) => (
+                        {HIGHLIGHT_COLORS.slice(0, 4).map((c) => (
                           <button
                             key={c.name}
                             type="button"
@@ -1663,16 +1735,6 @@ export default function KnowledgePage() {
                       >
                         <Eraser size={12} /> Clear
                       </button>
-                      <button
-                        type="button"
-                        className={`${styles.bookBtnSmall} ${styles.aiFormatBtn}`}
-                        onClick={handleAiFormat}
-                        disabled={isAiFormatting}
-                        title="AI Organize & Format Document"
-                      >
-                        {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Wand2 size={11} />}
-                        <span>AI Format</span>
-                      </button>
                     </div>
                   </div>
 
@@ -1692,6 +1754,7 @@ export default function KnowledgePage() {
                       suppressContentEditableWarning
                       className={styles.bookContent}
                       data-placeholder="Start typing or select text to highlight..."
+                      dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
                       onInput={() => {
                         if (bookEditorRef.current && !isInternalChange.current) {
                           setFContent(bookEditorRef.current.innerHTML);
@@ -1714,20 +1777,108 @@ export default function KnowledgePage() {
                       <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
                     </div>
                   </div>
-
-                  {/* ADHD Legend */}
-                  <div className={styles.adhdLegend}>
-                    <span className={styles.legendTitle}>Color Guide</span>
-                    <span className={styles.legendItem}><mark className={styles.legendHighlight}>==highlight==</mark> Remember this</span>
-                    <span className={styles.legendItem}><span className={styles.legendImportant}>⚡ !!important!!</span> Must know</span>
-                    <span className={styles.legendItem}><span className={styles.legendKeyIdea}>💡 &gt;&gt;&gt;key idea&lt;&lt;&lt;</span> Core concept</span>
-                  </div>
                 </div>
               )}
             </div>
           )}
         </main>
       </div>
+
+      {/* Floating Selection Highlight & Format Toolbar */}
+      {floatingMenu && (
+        <div
+          data-floating-toolbar="true"
+          className={styles.floatingHighlightMenu}
+          style={{ left: `${floatingMenu.x}px`, top: `${floatingMenu.y}px` }}
+        >
+          <div className={styles.floatingSwatchGroup}>
+            {HIGHLIGHT_COLORS.slice(0, 4).map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                className={styles.floatingSwatch}
+                style={{
+                  background: c.bg,
+                  borderColor: c.border,
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  handleHighlight(c.name, false);
+                  setFloatingMenu(null);
+                }}
+                title={`Highlight ${c.label}`}
+                aria-label={`Highlight ${c.label}`}
+              />
+            ))}
+          </div>
+
+          <div className={styles.floatingActionGroup}>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat('bold')}
+              title="Bold"
+            >
+              <Bold size={12} />
+            </button>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat('italic')}
+              title="Italic"
+            >
+              <Italic size={12} />
+            </button>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleFormat('underline')}
+              title="Underline"
+            >
+              <Underline size={12} />
+            </button>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                handleFormat('important');
+                setFloatingMenu(null);
+              }}
+              title="Important Callout"
+            >
+              <span style={{ fontSize: 11 }}>⚡</span>
+            </button>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                handleFormat('key-idea');
+                setFloatingMenu(null);
+              }}
+              title="Key Idea Callout"
+            >
+              <span style={{ fontSize: 11 }}>💡</span>
+            </button>
+            <button
+              type="button"
+              className={styles.floatingBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                handleRemoveHighlight();
+                setFloatingMenu(null);
+              }}
+              title="Clear Highlight"
+            >
+              <Eraser size={12} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

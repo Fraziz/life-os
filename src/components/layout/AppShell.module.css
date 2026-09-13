@@ -14,16 +14,50 @@
 }
 
 .main.sidebarCollapsed {
-  margin-left: var(--sidebar-collapsed-width);
+  margin-left: 0;
+}
+
+/* ── Floating show sidebar button when hidden ── */
+.expandSidebarBtn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.expandSidebarBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  transform: scale(1.04);
 }
 
 /* ── Page content wrapper ── */
 .content {
   flex: 1;
-  padding: var(--space-8);
+  padding: 20px 24px;
   max-width: 100%;
   width: 100%;
+  box-sizing: border-box;
   animation: fadeIn 0.3s ease forwards;
+}
+
+.content.noPadding {
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
 }
 
 /* ── Mobile adjustments ── */
@@ -47,6 +81,51 @@
   .content {
     padding: var(--space-3);
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+  }
+}
+
+/* ── Global Floating Back to Top Button ─────────────────── */
+.backToTopBtn {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backToTopBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+:global([data-theme='dark']) .backToTopBtn {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .backToTopBtn {
+    bottom: 84px;
+    right: 16px;
+    padding: 7px 11px;
+    font-size: 0.75rem;
   }
 }
 

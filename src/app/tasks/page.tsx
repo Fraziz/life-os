@@ -20,6 +20,7 @@ import {
   X,
   RotateCcw,
   Sparkles,
+  Search,
   ChevronRight,
   ListTodo,
   ListTree,
@@ -70,6 +71,8 @@ export default function TasksPage() {
   // Filters & Views
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [taskSearch, setTaskSearch] = useState<string>('');
+  const [hideDone, setHideDone] = useState<boolean>(false);
 
   // Breakdown Modal State
   const [breakdownModalOpen, setBreakdownModalOpen] = useState(false);
@@ -255,8 +258,16 @@ export default function TasksPage() {
   };
 
   const filteredTasks = tasks.filter((t) => {
+    if (hideDone && t.status === 'done') return false;
     if (projectFilter !== 'all' && t.projectId !== projectFilter) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+    if (taskSearch.trim()) {
+      const q = taskSearch.toLowerCase();
+      const matchTitle = t.title.toLowerCase().includes(q);
+      const matchDesc = t.description?.toLowerCase().includes(q);
+      const matchTags = t.tags.some((tag) => tag.toLowerCase().includes(q));
+      if (!matchTitle && !matchDesc && !matchTags) return false;
+    }
     return true;
   });
 
@@ -341,6 +352,27 @@ export default function TasksPage() {
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
+          <div className={styles.searchWrap}>
+            <Search size={14} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={taskSearch}
+              onChange={(e) => setTaskSearch(e.target.value)}
+              className={styles.searchInput}
+            />
+            {taskSearch && (
+              <button
+                type="button"
+                onClick={() => setTaskSearch('')}
+                className={styles.clearSearchBtn}
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
           <select
             className={styles.selectFilter}
             value={projectFilter}
@@ -365,6 +397,15 @@ export default function TasksPage() {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
+
+          <button
+            type="button"
+            className={`${styles.tab} ${hideDone ? styles.activeTab : ''}`}
+            onClick={() => setHideDone(!hideDone)}
+            title="Toggle completed tasks"
+          >
+            {hideDone ? 'Show Done' : 'Hide Done'}
+          </button>
         </div>
       </div>
 
@@ -397,6 +438,15 @@ export default function TasksPage() {
                 ) : (
                   colTasks.map((task) => {
                     const parentProject = projects.find((p) => p.id === task.projectId);
+
+                    // Resolve Goal: task's direct goalId OR from parent project
+                    const goalId = task.goalId || parentProject?.goalId;
+                    const parentGoal = goalId ? goals.find((g) => g.id === goalId) : null;
+
+                    // Resolve Milestone: task's direct milestoneId OR from parent project
+                    const milestoneId = task.milestoneId || parentProject?.milestoneId;
+                    const parentMilestone = milestoneId ? milestones.find((m) => m.id === milestoneId) : null;
+
                     const isDone = task.status === 'done';
                     const isCompound = task.isCompound || task.subtasks.length > 0;
                     const completedSubs = task.subtasks.filter((s) => s.completed).length;
@@ -587,12 +637,33 @@ export default function TasksPage() {
                           </button>
                         </div>
 
-                        {/* ── Chips & Project Tags ── */}
-                        {(parentProject || task.tags.length > 0) && (
+                        {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
+                        {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
                           <div className={styles.tagsRow}>
-                            {parentProject && (
-                              <span className={styles.parentProjectChip}>
-                                {parentProject.title}
+                            {/* Breadcrumb chain */}
+                            {(parentGoal || parentMilestone || parentProject) && (
+                              <span className={styles.breadcrumbChain}>
+                                {parentGoal && (
+                                  <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
+                                    {parentGoal.title}
+                                  </span>
+                                )}
+                                {parentGoal && parentMilestone && (
+                                  <span className={styles.breadcrumbArrow}>›</span>
+                                )}
+                                {parentMilestone && (
+                                  <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
+                                    {parentMilestone.title}
+                                  </span>
+                                )}
+                                {(parentGoal || parentMilestone) && parentProject && (
+                                  <span className={styles.breadcrumbArrow}>›</span>
+                                )}
+                                {parentProject && (
+                                  <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
+                                    {parentProject.title}
+                                  </span>
+                                )}
                               </span>
                             )}
                             {task.tags.map((tg) => (

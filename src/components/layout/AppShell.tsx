@@ -20,6 +20,7 @@ import { CalendarProvider } from '@/context/CalendarContext';
 import { HabitProvider } from '@/context/HabitContext';
 import { ReviewProvider } from '@/context/ReviewContext';
 import { KnowledgeProvider } from '@/context/KnowledgeContext';
+import { QuickNotesProvider } from '@/context/QuickNotesContext';
 import { ReminderProvider, useReminders } from '@/context/ReminderContext';
 import { SearchProvider, useSearch } from '@/context/SearchContext';
 import SearchModal from '@/components/search/SearchModal';
@@ -31,6 +32,7 @@ import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
+import { ArrowUp, PanelLeft } from 'lucide-react';
 
 /**
  * Derives a human-readable page title from the current pathname.
@@ -61,6 +63,20 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // Floating Back to Top state
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Restore persisted sidebar preference on mount
   useEffect(() => {
@@ -83,15 +99,24 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     const handleOpenNextAction = () => setNextActionOpen(true);
     const handleOpenAssistant = () => setAssistantOpen(true);
     const handleOpenReminders = () => setRemindersOpen(true);
+    const handleToggleSidebar = () => {
+      setCollapsed(prev => {
+        const next = !prev;
+        try { localStorage.setItem('life_os_sidebar_collapsed', String(next)); } catch {}
+        return next;
+      });
+    };
 
     window.addEventListener('open-next-action', handleOpenNextAction);
     window.addEventListener('open-assistant', handleOpenAssistant);
     window.addEventListener('open-reminders', handleOpenReminders);
+    window.addEventListener('toggle-sidebar', handleToggleSidebar);
 
     return () => {
       window.removeEventListener('open-next-action', handleOpenNextAction);
       window.removeEventListener('open-assistant', handleOpenAssistant);
       window.removeEventListener('open-reminders', handleOpenReminders);
+      window.removeEventListener('toggle-sidebar', handleToggleSidebar);
     };
   }, []);
 
@@ -115,6 +140,15 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && mobileOpen) {
         setMobileOpen(false);
+      }
+      // Ctrl+B or Cmd+B → Toggle Sidebar / Hide Navigation
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setCollapsed(prev => {
+          const next = !prev;
+          try { localStorage.setItem('life_os_sidebar_collapsed', String(next)); } catch {}
+          return next;
+        });
       }
       // Ctrl+K or Cmd+K → open search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -144,6 +178,17 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className={styles.shell}>
+        {collapsed && (
+          <button
+            type="button"
+            onClick={() => handleCollapse(false)}
+            className={styles.expandSidebarBtn}
+            title="Show navigation (Ctrl+B)"
+            aria-label="Show navigation"
+          >
+            <PanelLeft size={16} />
+          </button>
+        )}
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -163,7 +208,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
             onOpenNextAction={() => setNextActionOpen(true)}
           />
 
-          <main className={styles.content} id="main-content" tabIndex={-1}>
+          <main
+            className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''}`}
+            id="main-content"
+            tabIndex={-1}
+          >
             {children}
           </main>
 
@@ -185,7 +234,23 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       <NextActionModal isOpen={nextActionOpen} onClose={() => setNextActionOpen(false)} />
 
       {/* Keyboard Shortcuts Reference */}
-      <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      {shortcutsOpen && (
+        <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      )}
+
+      {/* Global Floating Back to Top Button */}
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className={styles.backToTopBtn}
+          aria-label="Scroll back to top"
+          title="Back to top"
+        >
+          <ArrowUp size={15} strokeWidth={2.5} />
+          <span>Top</span>
+        </button>
+      )}
     </>
   );
 }
@@ -214,13 +279,15 @@ function withAppProviders(content: React.ReactNode) {
                           <HabitProvider>
                             <ReviewProvider>
                               <KnowledgeProvider>
-                                <ReminderProvider>
-                                  <SearchProvider>
-                                    <ShellContent>
-                                      {content}
-                                    </ShellContent>
-                                  </SearchProvider>
-                                </ReminderProvider>
+                                <QuickNotesProvider>
+                                  <ReminderProvider>
+                                    <SearchProvider>
+                                      <ShellContent>
+                                        {content}
+                                      </ShellContent>
+                                    </SearchProvider>
+                                  </ReminderProvider>
+                                </QuickNotesProvider>
                               </KnowledgeProvider>
                             </ReviewProvider>
                           </HabitProvider>

@@ -1,0 +1,465 @@
+/* ══════════════════════════════════════════════════════════════
+   AUTHENTIC DARK NEUMORPHISM (Tactile Dark Slate Console)
+   Deep dark obsidian base (#121522) with high contrast & soft lighting:
+   - NO "boxes inside boxes": clean grid layout, no redundant outer wrap
+   - Card 1: Focus Min counter (Cyan #00f0ff glow with dual tactile chevrons)
+   - Card 2: Primary Objective (focus task with quick dump inset tray)
+   - Card 3: Energy Index (Orange #ff7e00 glow with 5-step luminous meter)
+   - Card 4: Tactile Control Station (3 convex/concave dials directly carved)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 2x2 Grid Layout (NO enclosing outer box border/shadow) ── */
+.consoleFrame {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  width: 100%;
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ── Dark Neumorphic Tactile Card Base ── */
+.softCard {
+  background: linear-gradient(145deg, #161928, #11131f);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  box-shadow:
+    -5px -5px 14px rgba(255, 255, 255, 0.035),
+    7px 7px 18px rgba(0, 0, 0, 0.65);
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 165px;
+  user-select: none;
+  transition: box-shadow var(--transition-base), transform var(--transition-fast);
+}
+
+.softCard:hover {
+  box-shadow:
+    -6px -6px 16px rgba(255, 255, 255, 0.05),
+    9px 9px 22px rgba(0, 0, 0, 0.75);
+}
+
+/* Crisp, high-contrast label */
+.cardLabel {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+/* ── Card 1: Cyan Metric (25 Focus Min) ── */
+.numberCyan {
+  font-size: 3.5rem;
+  font-weight: 300;
+  color: #00f0ff;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(0, 240, 255, 0.55), 0 0 6px rgba(0, 240, 255, 0.3);
+  font-family: var(--font-sans);
+  margin-top: 14px;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+.chevronRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+}
+
+.softCircleBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #181b2c, #10121e);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 0.04),
+    4px 4px 10px rgba(0, 0, 0, 0.65);
+  color: #00f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all var(--transition-fast);
+}
+
+.softCircleBtn:hover {
+  color: #38d3ff;
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.06),
+    5px 5px 12px rgba(0, 0, 0, 0.75),
+    0 0 12px rgba(0, 240, 255, 0.25);
+}
+
+.softCircleBtn:active {
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.8),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.04);
+  transform: translateY(1px);
+}
+
+/* ── Card 2: Orange Index (23° Energy) ── */
+.numberOrange {
+  font-size: 3.5rem;
+  font-weight: 300;
+  color: #ff7e00;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(255, 126, 0, 0.55), 0 0 6px rgba(255, 126, 0, 0.3);
+  font-family: var(--font-sans);
+  margin-top: 14px;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+.thermostatRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.stepIconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #181b2c, #10121e);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    -3px -3px 7px rgba(255, 255, 255, 0.04),
+    4px 4px 9px rgba(0, 0, 0, 0.65);
+  color: #ff7e00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.stepIconBtn:hover {
+  color: #ffa33b;
+  box-shadow:
+    -4px -4px 9px rgba(255, 255, 255, 0.06),
+    5px 5px 12px rgba(0, 0, 0, 0.75),
+    0 0 12px rgba(255, 126, 0, 0.25);
+}
+
+.stepIconBtn:active {
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.8),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.04);
+  transform: translateY(1px);
+}
+
+.meterSegments {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0d0f18;
+  padding: 6px 10px;
+  border-radius: 12px;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.7),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+}
+
+.segment {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: #1e2235;
+  transition: all var(--transition-fast);
+}
+
+.segment.active {
+  background: #ff7e00;
+  box-shadow: 0 0 10px rgba(255, 126, 0, 0.75);
+}
+
+/* ── Card 3: Top-Right Primary Objective & Quick Dump ── */
+.focusTile {
+  background: linear-gradient(145deg, #161928, #11131f);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  box-shadow:
+    -5px -5px 14px rgba(255, 255, 255, 0.035),
+    7px 7px 18px rgba(0, 0, 0, 0.65);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 165px;
+  position: relative;
+  transition: box-shadow var(--transition-base);
+}
+
+.focusTile:hover {
+  box-shadow:
+    -6px -6px 16px rgba(255, 255, 255, 0.05),
+    9px 9px 22px rgba(0, 0, 0, 0.75);
+}
+
+.tileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tileEyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.tileActionBtn {
+  font-size: 11px;
+  color: #00f0ff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all var(--transition-fast);
+}
+
+.tileActionBtn:hover {
+  color: #38d3ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.taskDisplay {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.taskCheckBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #181b2c, #10121e);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    -2px -2px 6px rgba(255, 255, 255, 0.04),
+    3px 3px 8px rgba(0, 0, 0, 0.65);
+  color: #00f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.taskCheckBtn:hover {
+  color: var(--color-success);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 0.06),
+    4px 4px 10px rgba(0, 0, 0, 0.75),
+    0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.taskCheckBtn:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.8),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.04);
+}
+
+.taskTextWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.taskTitleText {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.35;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.taskSubMeta {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+  display: inline-block;
+}
+
+/* Sunken Inset Brain Dump Bar */
+.tileDumpInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0d0f18;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-xl);
+  padding: 8px 14px;
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.75),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.025);
+  transition: border-color var(--transition-fast);
+}
+
+.tileDumpInputWrap:focus-within {
+  border-color: rgba(0, 240, 255, 0.35);
+}
+
+.tileDumpInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: #f8fafc;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.tileDumpInput::placeholder {
+  color: #64748b;
+}
+
+.tileDumpSendBtn {
+  background: transparent;
+  border: none;
+  color: #00f0ff;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: transform var(--transition-fast);
+}
+
+.tileDumpSendBtn:hover {
+  transform: scale(1.15);
+}
+
+/* ── Card 4 / Bottom-Right: Tactile Control Station ── */
+.knobsTile {
+  background: linear-gradient(145deg, #161928, #11131f);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  box-shadow:
+    -5px -5px 14px rgba(255, 255, 255, 0.035),
+    7px 7px 18px rgba(0, 0, 0, 0.65);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 165px;
+  position: relative;
+}
+
+/* Raised convex dial (Zen / Ambient) */
+.softDialRaised {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #191d30, #10121e);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.04),
+    5px 5px 12px rgba(0, 0, 0, 0.7);
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all var(--transition-fast);
+}
+
+.softDialRaised:hover {
+  color: #cbd5e1;
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.06),
+    6px 6px 14px rgba(0, 0, 0, 0.8);
+}
+
+.softDialRaised.active {
+  color: #00f0ff;
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.04),
+    5px 5px 12px rgba(0, 0, 0, 0.7),
+    0 0 16px rgba(0, 240, 255, 0.35);
+}
+
+.softDialRaised:active {
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.8),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.03);
+  transform: translateY(1px);
+}
+
+/* Sunken concave socket with glowing indicator */
+.softDialSunken {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #0d0f18;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.8),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all var(--transition-fast);
+}
+
+.softDialSunken:hover {
+  border-color: rgba(255, 126, 0, 0.3);
+}
+
+.dialIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 12px currentColor;
+  transition: all var(--transition-fast);
+}
+
+/* ── Mobile Responsive ── */
+@media (max-width: 768px) {
+  .consoleFrame {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .knobsTile {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: var(--space-3) var(--space-4);
+    min-height: 80px;
+  }
+}

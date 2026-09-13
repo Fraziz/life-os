@@ -1,174 +1,71 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Logo from '@/components/ui/Logo';
-import { NAV_SECTIONS } from '@/config/navigation';
-import type { NavItem } from '@/types';
-
 import {
   Sparkles,
-  LayoutGrid,
-  CloudSun,
+  Headphones,
+  Inbox,
   Target,
   Flag,
   FolderKanban,
   CheckSquare,
-  Calendar,
-  RefreshCw,
-  Repeat,
-  Headphones,
-  Settings,
-  Inbox,
-  RotateCcw,
-  TrendingUp,
-  Search,
-  BookOpen,
   GitBranch,
-  LucideIcon,
-  Bell,
+  CloudSun,
+  LayoutGrid,
+  Calendar,
+  TrendingUp,
+  RefreshCw,
+  RotateCcw,
+  Repeat,
+  Dumbbell,
+  BookOpen,
+  Paperclip,
+  Settings,
+  Search,
   Compass,
+  Bell,
   Bot,
   ChevronDown,
-  MoreHorizontal,
+  ChevronRight,
+  Sun,
   LogOut,
-  Paperclip,
-  Dumbbell,
+  LucideIcon,
+  PanelLeftClose,
 } from 'lucide-react';
 
+import { NAV_SECTIONS } from '@/config/navigation';
+import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useAuth } from '@/context/AuthContext';
-
 import styles from './Sidebar.module.css';
 
-// ── Icon map ───────────────────────────────────────────────
+// ── Icon map matching exact names & keys ─────────────────────
 
 const ICON_MAP: Record<string, LucideIcon> = {
   today: Sparkles,
+  focus: Headphones,
   inbox: Inbox,
-  areas: LayoutGrid,
-  dreams: CloudSun,
   goals: Target,
   milestones: Flag,
   projects: FolderKanban,
   tasks: CheckSquare,
-  reset: RotateCcw,
+  roadmap: GitBranch,
+  dreams: CloudSun,
+  areas: LayoutGrid,
   calendar: Calendar,
   progress: TrendingUp,
   review: RefreshCw,
+  reset: RotateCcw,
   habits: Repeat,
-  focus: Headphones,
-  settings: Settings,
-  search: Search,
-  knowledge: BookOpen,
-  roadmap: GitBranch,
-  files: Paperclip,
   workout: Dumbbell,
+  knowledge: BookOpen,
+  files: Paperclip,
+  settings: Settings,
 };
-
-// ── Collapse icon ──────────────────────────────────────────
-
-function CollapseIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      {collapsed ? (
-        <path d="M6 3l5 5-5 5V3z" />
-      ) : (
-        <path d="M10 3L5 8l5 5V3z" />
-      )}
-    </svg>
-  );
-}
-
-// ── Nav item ────────────────────────────────────────────────
-
-interface NavItemProps {
-  item: NavItem;
-  isActive: boolean;
-  sidebarCollapsed: boolean;
-  onClick?: () => void;
-}
-
-function NavItemRow({
-  item,
-  isActive,
-  sidebarCollapsed,
-  onClick,
-}: NavItemProps) {
-  const IconComponent = ICON_MAP[item.icon];
-
-  const classNames = [
-    styles.navItem,
-    isActive ? styles.active : '',
-    !item.isAvailable ? styles.unavailable : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const content = (
-    <>
-      <span className={styles.navItemIcon} aria-hidden="true">
-        {IconComponent && (
-          <IconComponent size={18} strokeWidth={1.8} />
-        )}
-      </span>
-
-      <span className={styles.navItemLabel}>
-        {item.label}
-      </span>
-
-      {item.badge !== undefined && (
-        <span className={styles.navItemBadge}>
-          {item.badge}
-        </span>
-      )}
-
-      {sidebarCollapsed && (
-        <span className={styles.tooltip}>
-          {item.label}
-          {!item.isAvailable && ` · Phase ${item.phase}`}
-        </span>
-      )}
-    </>
-  );
-
-  if (!item.isAvailable) {
-    return (
-      <div
-        className={classNames}
-        role="menuitem"
-        aria-disabled="true"
-        aria-label={`${item.label} — available in Phase ${item.phase}`}
-        title={`Coming in Phase ${item.phase}`}
-      >
-        {content}
-      </div>
-    );
-  }
-
-  return (
-    <Link
-      href={item.href}
-      className={classNames}
-      role="menuitem"
-      aria-current={isActive ? 'page' : undefined}
-      onClick={onClick}
-    >
-      {content}
-    </Link>
-  );
-}
-
-// ── Sidebar component ──────────────────────────────────────
 
 interface SidebarProps {
   collapsed: boolean;
@@ -190,34 +87,13 @@ export default function Sidebar({
   onOpenNextAction,
 }: SidebarProps) {
   const pathname = usePathname();
-
   const { settings } = useSettings();
   const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
   const { logout, user } = useAuth();
 
-  // ── More section state ───────────────────────────────────
-
-  const moreSection = NAV_SECTIONS.find(
-    (section) => section.id === 'more'
-  );
-
-  const isMorePage = Boolean(
-    moreSection?.items.some((item) =>
-      item.href === '/'
-        ? pathname === '/'
-        : pathname.startsWith(item.href)
-    )
-  );
-
-  const [moreOpen, setMoreOpen] = useState(isMorePage);
-
-  // Automatically open More when navigating to a secondary page.
-  useEffect(() => {
-    if (isMorePage) {
-      setMoreOpen(true);
-    }
-  }, [isMorePage]);
+  const [moreOpen, setMoreOpen] = useState(true);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const sidebarClass = [
     styles.sidebar,
@@ -227,334 +103,296 @@ export default function Sidebar({
     .filter(Boolean)
     .join(' ');
 
-  // ── Render normal navigation section ──────────────────────
-
-  const renderSection = (section: (typeof NAV_SECTIONS)[number]) => {
-    const isMore = section.id === 'more';
-
-    // MORE gets special collapsible behavior.
-    if (isMore) {
-      return (
-        <div key={section.id} className={styles.section}>
-          <button
-            type="button"
-            className={styles.moreToggle}
-            onClick={() => setMoreOpen((open) => !open)}
-            aria-expanded={moreOpen}
-            aria-controls="life-os-more-navigation"
-            title={moreOpen ? 'Hide more options' : 'Show more options'}
-          >
-            <span className={styles.sectionLabel}>
-              {section.label}
-            </span>
-
-            {!collapsed && (
-              <ChevronDown
-                size={15}
-                strokeWidth={1.8}
-                className={`${styles.moreChevron} ${moreOpen ? styles.moreChevronOpen : ''
-                  }`}
-              />
-            )}
-
-            {collapsed && (
-              <span className={styles.moreCollapsedIcon}>
-                <MoreHorizontal
-                  size={18}
-                  strokeWidth={1.8}
-                />
-              </span>
-            )}
-          </button>
-
-          {moreOpen && (
-            <div
-              id="life-os-more-navigation"
-              className={styles.moreItems}
-            >
-              {section.items.map((item) => (
-                <NavItemRow
-                  key={item.id}
-                  item={item}
-                  isActive={
-                    item.href === '/'
-                      ? pathname === '/'
-                      : pathname.startsWith(item.href)
-                  }
-                  sidebarCollapsed={collapsed}
-                  onClick={
-                    mobileOpen
-                      ? onMobileClose
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      );
+  const handleNavClick = () => {
+    if (mobileOpen) {
+      onMobileClose();
     }
-
-    return (
-      <div key={section.id} className={styles.section}>
-        <span
-          className={styles.sectionLabel}
-          aria-hidden={collapsed}
-        >
-          {section.label}
-        </span>
-
-        {section.items.map((item) => (
-          <NavItemRow
-            key={item.id}
-            item={item}
-            isActive={
-              item.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(item.href)
-            }
-            sidebarCollapsed={collapsed}
-            onClick={
-              mobileOpen
-                ? onMobileClose
-                : undefined
-            }
-          />
-        ))}
-      </div>
-    );
   };
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile backdrop */}
       <div
-        className={`${styles.overlay} ${mobileOpen ? styles.visible : ''
-          }`}
+        className={`${styles.overlay} ${mobileOpen ? styles.visible : ''}`}
         onClick={onMobileClose}
         aria-hidden="true"
       />
 
-      <aside
-        className={sidebarClass}
-        aria-label="Main navigation"
-      >
-        {/* Header */}
+      <aside className={sidebarClass} aria-label="Main navigation">
+        {/* Brand Header */}
         <div className={styles.header}>
-          <div className={styles.logoArea}>
-            <Logo
-              iconOnly={collapsed}
-              size={28}
-            />
-          </div>
-
-          <button
-            className={styles.collapseButton}
-            onClick={() => onCollapse(!collapsed)}
-            aria-label={
-              collapsed
-                ? 'Expand sidebar'
-                : 'Collapse sidebar'
-            }
-            title={
-              collapsed
-                ? 'Expand sidebar'
-                : 'Collapse sidebar'
-            }
-          >
-            <CollapseIcon collapsed={collapsed} />
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav
-          className={styles.nav}
-          role="menu"
-          aria-label="Site navigation"
-        >
-          {/* Search */}
-          <button
-            onClick={openSearch}
-            className={styles.searchTrigger}
-            title="Search everything (Ctrl+K)"
-          >
-            <span
-              className={styles.navItemIcon}
-              aria-hidden="true"
-            >
-              <Search
-                size={18}
-                strokeWidth={1.8}
-              />
-            </span>
-
-            <span className={styles.navItemLabel}>
-              Search
-            </span>
-
+          <Link href="/" className={styles.brand}>
+            <div className={styles.brandTitleRow}>
+              <span className={styles.brandName}>Life OS</span>
+              <span className={styles.sparkleIcon}>✦</span>
+            </div>
             {!collapsed && (
-              <kbd className={styles.searchKbd}>
-                ⌘K
-              </kbd>
+              <span className={styles.brandTagline}>Better habits. A freer you.</span>
             )}
-
-            {collapsed && (
-              <span className={styles.tooltip}>
-                Search (⌘K)
-              </span>
-            )}
-          </button>
-
-          {/* What To Do */}
-          {onOpenNextAction && (
-            <button
-              onClick={onOpenNextAction}
-              className={styles.nextActionTrigger}
-              title="What should I do right now? (Ctrl+J)"
-            >
-              <span
-                className={styles.navItemIcon}
-                aria-hidden="true"
-              >
-                <Compass
-                  size={18}
-                  strokeWidth={1.8}
-                  style={{
-                    color: 'var(--color-accent)',
-                  }}
-                />
-              </span>
-
-              <span className={styles.navItemLabel}>
-                What to do?
-              </span>
-
-              {!collapsed && (
-                <kbd className={styles.searchKbd}>
-                  ⌘J
-                </kbd>
-              )}
-
-              {collapsed && (
-                <span className={styles.tooltip}>
-                  What to do? (⌘J)
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Alerts + Assistant */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '4px',
-              marginBottom: '8px',
-            }}
-          >
-            {onOpenReminders && (
-              <button
-                onClick={onOpenReminders}
-                className={styles.quickActionBtn}
-                title="Reminders & Alerts"
-              >
-                <span
-                  className={styles.navItemIcon}
-                  style={{
-                    position: 'relative',
-                  }}
-                >
-                  <Bell size={16} />
-
-                  {unreadCount > 0 && (
-                    <span className={styles.bellBadge}>
-                      {unreadCount}
-                    </span>
-                  )}
-                </span>
-
-                {!collapsed && (
-                  <span className={styles.navItemLabel}>
-                    Alerts
-                  </span>
-                )}
-
-                {collapsed && (
-                  <span className={styles.tooltip}>
-                    Reminders ({unreadCount})
-                  </span>
-                )}
-              </button>
-            )}
-
-            {onOpenAssistant && (
-              <button
-                onClick={onOpenAssistant}
-                className={styles.quickActionBtn}
-                title="Life OS Assistant"
-              >
-                <span
-                  className={styles.navItemIcon}
-                  aria-hidden="true"
-                >
-                  <Bot size={16} />
-                </span>
-
-                {!collapsed && (
-                  <span className={styles.navItemLabel}>
-                    Assistant
-                  </span>
-                )}
-
-                {collapsed && (
-                  <span className={styles.tooltip}>
-                    Assistant
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Main navigation */}
-          {NAV_SECTIONS.map(renderSection)}
-        </nav>
-
-        {/* User footer */}
-        <footer className={styles.footer}>
-          <Link
-            href="/settings"
-            className={styles.userCard}
-            aria-label="Personal settings"
-            title="Personal settings & profile"
-          >
-            <div
-              className={styles.userAvatar}
-              aria-hidden="true"
-            >
-              {settings?.profile?.avatarInitials || 'A'}
-            </div>
-
-            <div className={styles.userInfo}>
-              <div className={styles.userName}>
-                {settings?.profile?.displayName ||
-                  settings?.profile?.name ||
-                  'Personal User'}
-              </div>
-
-              <div className={styles.userStatus}>
-                {user?.email || 'Private account'}
-              </div>
-            </div>
           </Link>
           <button
             type="button"
-            className={styles.logoutBtn}
-            onClick={() => void logout()}
-            title="Log out"
+            className={styles.hideSidebarBtn}
+            onClick={() => onCollapse(true)}
+            title="Hide navigation (Ctrl+B)"
+            aria-label="Hide navigation"
           >
-            <LogOut size={16} />
-            {!collapsed && <span>Log out</span>}
+            <PanelLeftClose size={16} />
           </button>
-        </footer>
+        </div>
+
+        {/* Quick Action Top Bar (Search, What to do, Alerts, Assistant) */}
+        <div className={styles.topActionsGroup}>
+          {/* Search Trigger */}
+          <button
+            type="button"
+            onClick={openSearch}
+            className={styles.searchTriggerBtn}
+            title="Search everything (Ctrl+K / ⌘K)"
+          >
+            <span className={styles.navIcon}>
+              <Search size={16} strokeWidth={2} />
+            </span>
+            {!collapsed && <span className={styles.navLabel}>Search</span>}
+            {!collapsed && <kbd className={styles.shortcutKbd}>⌘K</kbd>}
+          </button>
+
+          {/* What to do? Trigger */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenNextAction) onOpenNextAction();
+              else window.dispatchEvent(new CustomEvent('open-next-action'));
+            }}
+            className={styles.whatToDoTriggerBtn}
+            title="What should I do right now? (Ctrl+J / ⌘J)"
+          >
+            <span className={styles.navIcon}>
+              <Compass size={16} strokeWidth={2} className={styles.compassIcon} />
+            </span>
+            {!collapsed && <span className={styles.whatToDoLabel}>What to do?</span>}
+            {!collapsed && <kbd className={styles.shortcutKbd}>⌘J</kbd>}
+          </button>
+
+          {/* Alerts + Assistant quick row */}
+          <div className={styles.quickUtilityRow}>
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenReminders) onOpenReminders();
+                else window.dispatchEvent(new CustomEvent('open-reminders'));
+              }}
+              className={styles.utilityPillBtn}
+              title="Alerts & Reminders"
+            >
+              <div className={styles.bellIconWrap}>
+                <Bell size={14} />
+                {unreadCount > 0 && (
+                  <span className={styles.bellCountBadge}>{unreadCount}</span>
+                )}
+              </div>
+              {!collapsed && <span>Alerts</span>}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenAssistant) onOpenAssistant();
+                else window.dispatchEvent(new CustomEvent('open-assistant'));
+              }}
+              className={styles.utilityPillBtn}
+              title="Life OS Assistant"
+            >
+              <Bot size={14} />
+              {!collapsed && <span>Assistant</span>}
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Sections */}
+        <nav className={styles.nav}>
+          {NAV_SECTIONS.map((section) => {
+            const isMore = section.id === 'more';
+
+            if (isMore) {
+              return (
+                <div key={section.id} className={styles.sectionGroup}>
+                  <button
+                    type="button"
+                    className={styles.sectionHeaderBtn}
+                    onClick={() => setMoreOpen(!moreOpen)}
+                    aria-expanded={moreOpen}
+                  >
+                    {!collapsed && (
+                      <span className={styles.sectionTitle}>{section.label}</span>
+                    )}
+                    <ChevronDown
+                      size={14}
+                      className={`${styles.moreChevron} ${
+                        moreOpen ? styles.moreChevronOpen : ''
+                      }`}
+                    />
+                  </button>
+
+                  {moreOpen && (
+                    <div className={styles.sectionItemsList}>
+                      {section.items.map((item) => {
+                        const IconComp = ICON_MAP[item.icon] || Sparkles;
+                        const isActive = pathname === item.href;
+
+                        return (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            onClick={handleNavClick}
+                            className={`${styles.navItem} ${
+                              isActive ? styles.activeItem : ''
+                            }`}
+                          >
+                            <span className={styles.navIcon}>
+                              <IconComp
+                                size={17}
+                                strokeWidth={isActive ? 2.2 : 1.8}
+                              />
+                            </span>
+                            {!collapsed && (
+                              <span className={styles.navLabel}>{item.label}</span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div key={section.id} className={styles.sectionGroup}>
+                {!collapsed && (
+                  <div className={styles.sectionTitle}>{section.label}</div>
+                )}
+                <div className={styles.sectionItemsList}>
+                  {section.items.map((item) => {
+                    const IconComp = ICON_MAP[item.icon] || Sparkles;
+                    const isActive =
+                      item.href === '/'
+                        ? pathname === '/'
+                        : pathname.startsWith(item.href);
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        onClick={handleNavClick}
+                        className={`${styles.navItem} ${
+                          isActive ? styles.activeItem : ''
+                        }`}
+                      >
+                        <span className={styles.navIcon}>
+                          <IconComp
+                            size={17}
+                            strokeWidth={isActive ? 2.2 : 1.8}
+                          />
+                        </span>
+                        {!collapsed && (
+                          <span className={styles.navLabel}>{item.label}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Handwritten Motivational Sticky Note */}
+        {!collapsed && (
+          <div className={styles.stickyQuoteWrapper}>
+            <div className={styles.stickyQuote}>
+              <p className={styles.handwrittenText}>
+                Small steps<br />
+                every day<br />
+                build the life<br />
+                you want.
+              </p>
+              <svg className={styles.handwrittenDoodle} viewBox="0 0 100 20" fill="none">
+                <path
+                  d="M10 14 Q 30 8, 55 12 T 90 10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M18 17 Q 40 12, 65 15 T 85 14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  opacity="0.6"
+                />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* User Profile Footer */}
+        <div className={styles.footer}>
+          <div
+            className={styles.userCard}
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            role="button"
+            tabIndex={0}
+          >
+            <div className={styles.userAvatar}>
+              <Sun size={18} className={styles.sunIcon} />
+            </div>
+
+            {!collapsed && (
+              <div className={styles.userInfo}>
+                <span className={styles.userName}>
+                  {settings?.profile?.displayName || 'Aaron Paul'}
+                </span>
+                <span className={styles.userRole}>
+                  {settings?.profile?.name || 'BSIT 3E · SSU'}
+                </span>
+              </div>
+            )}
+
+            {!collapsed && (
+              <ChevronDown
+                size={14}
+                className={`${styles.userChevron} ${
+                  profileMenuOpen ? styles.userChevronOpen : ''
+                }`}
+              />
+            )}
+          </div>
+
+          {profileMenuOpen && (
+            <div className={styles.profileDropdown}>
+              <Link
+                href="/settings"
+                className={styles.dropdownItem}
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <Settings size={14} />
+                <span>Settings</span>
+              </Link>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  void logout();
+                }}
+              >
+                <LogOut size={14} />
+                <span>Log out</span>
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

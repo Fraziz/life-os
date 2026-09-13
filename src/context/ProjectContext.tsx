@@ -8,61 +8,24 @@ const PROJECTS_STORAGE_KEY = 'life_os_projects_v1';
 
 export const DEFAULT_PROJECTS: Project[] = [
   {
-    id: 'project-1',
-    title: 'Blobbit Game',
-    description: 'Active development of the core gameplay prototype, character movement mechanics, and physics demo.',
+    id: 'project-link-or-dare',
+    title: 'LINK OR DARE',
+    description: 'Social card game development, question decks, and card prototyping.',
     status: 'active',
     priority: 'high',
-    startDate: '2026-08-01',
-    dueDate: '2026-11-30',
-    progress: 50,
-    goalId: 'goal-1', // Develop 2D Movement Prototype
-    milestoneId: 'milestone-2', // Wall-Slide & Dash
-    notes: 'Next focus: fine-tune wall jump force vectors and dash acceleration curve.',
+    progress: 100,
+    notes: 'Next: Finalize card designs. 75 / 75 cards ready.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'project-2',
-    title: 'Blender Learning',
-    description: 'Hands-on practice modeling stylized low-poly environmental assets and studying material nodes.',
+    id: 'project-gainroot',
+    title: 'GAINROOT',
+    description: 'Sweet potato nutrition product planning, shelf life research, and FDA registration.',
     status: 'active',
-    priority: 'medium',
-    startDate: '2026-08-15',
-    dueDate: '2026-10-01',
-    progress: 35,
-    goalId: 'goal-3', // Complete 3D Fundamentals
-    milestoneId: 'milestone-6', // Model Base Terrain
-    notes: 'Working on tree generators and water ripple shaders in EEVEE.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'project-3',
-    title: 'Music Project',
-    description: 'Composition and synthesis of atmospheric ambient soundtracks for the game universe.',
-    status: 'planning',
-    priority: 'low',
-    startDate: '2026-09-01',
-    dueDate: '2026-12-15',
-    progress: 10,
-    goalId: 'goal-1', // Link to creative game vision
-    notes: 'Gather synth references: Disasterpeace (Fez), Lena Raine (Celeste).',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'project-4',
-    title: 'Business Project',
-    description: 'Structure MVP value proposition, build landing page, and prepare discovery interview pipeline.',
-    status: 'planning',
     priority: 'high',
-    startDate: '2026-09-15',
-    dueDate: '2027-01-31',
-    progress: 20,
-    goalId: 'goal-4', // Validate MVP
-    milestoneId: 'milestone-7', // User interviews
-    notes: 'Draft interview questions around time management friction and weekly review consistency.',
+    progress: 40,
+    notes: 'Next: Finalize packaging design. Product Plan in progress.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

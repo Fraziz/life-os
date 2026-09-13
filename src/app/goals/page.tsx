@@ -15,6 +15,7 @@ import {
   Sparkles,
   CloudSun,
   CheckCircle2,
+  Search,
   X,
   RotateCcw,
   Sliders,
@@ -46,6 +47,7 @@ export default function GoalsPage() {
   const [horizonFilter, setHorizonFilter] = useState<'all' | GoalHorizon>('all');
   const [dreamFilter, setDreamFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('active');
+  const [goalSearch, setGoalSearch] = useState<string>('');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -141,6 +143,13 @@ export default function GoalsPage() {
     if (statusFilter === 'completed' && g.status !== 'completed') return false;
     if (horizonFilter !== 'all' && g.horizon !== horizonFilter) return false;
     if (dreamFilter !== 'all' && g.parentDreamId !== dreamFilter) return false;
+    if (goalSearch.trim()) {
+      const q = goalSearch.toLowerCase();
+      const matchTitle = g.title.toLowerCase().includes(q);
+      const matchDesc = g.description?.toLowerCase().includes(q);
+      const matchWhy = g.why.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchWhy) return false;
+    }
     return true;
   });
 
@@ -163,6 +172,26 @@ export default function GoalsPage() {
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
+          <div className={styles.searchWrap}>
+            <Search size={14} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search goals..."
+              value={goalSearch}
+              onChange={(e) => setGoalSearch(e.target.value)}
+              className={styles.searchInput}
+            />
+            {goalSearch && (
+              <button
+                type="button"
+                onClick={() => setGoalSearch('')}
+                className={styles.clearSearchBtn}
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${statusFilter === 'active' ? styles.activeTab : ''}`}

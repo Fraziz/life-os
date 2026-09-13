@@ -1,166 +1,176 @@
 /* ══════════════════════════════════════════════════════════════
-   LIFE ROADMAP — Node Graph / Blueprint Canvas
+   LIFE ROADMAP — Full-Screen Blueprint & Node Graph
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Page wrapper ── */
+/* ── Full-screen page container ── */
 .roadmapPage {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - var(--topbar-height, 0px) - var(--space-8) * 2);
-  min-height: 500px;
-  gap: 0;
   position: relative;
-  margin: calc(-1 * var(--space-8));  /* Bleed to edge of content area */
-  animation: fadeIn 0.4s ease forwards;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg);
+  user-select: none;
 }
 
-/* ── Top bar ── */
-.topBar {
+/* ── Floating Minimal Header (Linear / Figma style HUD) ── */
+.floatingHeader {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  right: 20px;
+  z-index: 30;
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  z-index: 10;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px 14px;
+  background: rgba(13, 14, 21, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
 }
 
-.topBarLeft {
+.headerLeft {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
+}
+
+.navToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.navToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.headerDivider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .pageTitle {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
+  font-size: 13px;
+  font-weight: 700;
   color: var(--color-text);
   letter-spacing: -0.01em;
-}
-
-.pageSub {
-  font-size: var(--text-xs);
-  color: var(--color-text-faint);
-  padding: 1px 6px;
-  background: var(--color-surface-2);
-  border-radius: var(--radius-full);
-}
-
-/* ── Filter pills ── */
-.filterRow {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  flex: 1;
+}
+
+.pageSub {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+/* ── Center filters ── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
 }
 
 .filterPill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-muted);
-  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-faint);
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   font-size: 11px;
-  font-weight: var(--weight-medium);
+  font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .filterPill:hover {
-  border-color: var(--color-accent);
   color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .filterPill.filterActive {
-  background: var(--color-accent-dim);
-  border-color: var(--color-accent);
-  color: var(--color-accent-light);
-  font-weight: var(--weight-semibold);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
-/* ── Zoom controls ── */
-.zoomControls {
+/* ── Right controls ── */
+.headerRight {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.zoomBtn {
+.ctrlBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.zoomBtn:hover {
-  background: var(--color-surface-hover);
+.ctrlBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--color-text);
-  border-color: var(--color-accent);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .zoomLabel {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-text-muted);
-  min-width: 36px;
+  color: var(--color-text-faint);
+  min-width: 34px;
   text-align: center;
 }
 
-/* ── Column headers (pinned, not scaled) ── */
-.columnHeaders {
-  position: relative;
-  height: 32px;
-  flex-shrink: 0;
-  background: rgba(7, 7, 14, 0.6);
-  border-bottom: 1px solid var(--color-border-subtle);
-  overflow: hidden;
-}
-
-.colHeader {
-  position: absolute;
-  transform: translateX(-50%);
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-faint);
-  white-space: nowrap;
-  transition: left var(--transition-fast);
-}
-
-/* ── Canvas viewport (clipping area) ── */
+/* ── Canvas Viewport ── */
 .canvasViewport {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   position: relative;
   background: var(--color-bg);
   cursor: grab;
-  user-select: none;
 }
 
 .canvasViewport.dragging {
   cursor: grabbing;
 }
 
-/* ── Canvas (scaled & panned) ── */
+/* ── Canvas ── */
 .canvas {
   position: relative;
   will-change: transform;
@@ -185,47 +195,60 @@
   to   { stroke-dashoffset: 0; }
 }
 
-/* ── Node card ── */
+/* ── Column Headers on Canvas ── */
+.canvasColHeader {
+  position: absolute;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-faint);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+/* ── Node Card: Formal, Clean, Polished ── */
 .nodeCard {
   position: absolute;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 4px);
+  background: rgba(17, 18, 27, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
-    transform 0.15s ease;
-  cursor: default;
+    transform 0.15s ease,
+    opacity 0.2s ease;
+  cursor: pointer;
   overflow: visible;
 }
 
 .nodeCard:hover {
   transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.nodeHovered {
-  transform: translateY(-2px) !important;
-}
-
-.nodeConnected {
-  opacity: 1;
-}
-
-/* Accent bar on left edge */
 .nodeAccentBar {
   position: absolute;
   left: 0;
-  top: 12px;
-  bottom: 12px;
+  top: 10px;
+  bottom: 10px;
   width: 3px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 2px 2px 0;
 }
 
-/* ── Node header ── */
 .nodeHeader {
   display: flex;
   align-items: center;
@@ -236,19 +259,19 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   border: 1px solid;
   padding: 1px 6px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
 .nodeStatusDot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -263,22 +286,26 @@
 }
 
 .nodeCard:hover .nodeExternalLink {
-  opacity: 1;
+  opacity: 0.8;
 }
 
-/* ── Node title ── */
+.nodeExternalLink:hover {
+  opacity: 1;
+  color: var(--color-text);
+}
+
 .nodeTitle {
   font-size: 12px;
-  font-weight: var(--weight-semibold);
+  font-weight: 600;
   color: var(--color-text);
-  line-height: 1.35;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.01em;
 }
 
-/* ── Progress bar ── */
 .nodeProgressArea {
   display: flex;
   align-items: center;
@@ -297,7 +324,7 @@
 .nodeProgressFill {
   height: 100%;
   border-radius: var(--radius-full);
-  transition: width 0.5s ease;
+  transition: width 0.4s ease;
 }
 
 .nodeProgressLabel {
@@ -305,14 +332,14 @@
   font-weight: 700;
   min-width: 26px;
   text-align: right;
+  letter-spacing: -0.02em;
 }
 
-/* ── Connection port dots ── */
 .portOut,
 .portIn {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   border: 2px solid var(--color-bg);
   top: 50%;
@@ -327,50 +354,213 @@
 }
 
 .portOut {
-  right: -5px;
+  right: -4px;
 }
 
 .portIn {
-  left: -5px;
+  left: -4px;
 }
 
-/* ── Legend bar ── */
-.legend {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 6px var(--space-5);
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border-subtle);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
-.legendLabel {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-faint);
+/* ── Minimal Floating Hint (Bottom Right) ── */
+.canvasHintBadge {
+  position: absolute;
+  bottom: 14px;
+  right: 18px;
+  z-index: 20;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 3px 10px;
+  background: rgba(13, 14, 21, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  color: var(--color-text-faint);
+  pointer-events: none;
 }
 
-.legendItem {
+/* ── ADHD Controls in Floating Header ── */
+.adhdBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  padding: 3px 9px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.legendHint {
+.adhdBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.adhdBtnActive {
+  background: rgba(34, 211, 165, 0.12);
+  border-color: rgba(34, 211, 165, 0.4);
+  color: #22d3a5;
+}
+
+.unlinkedChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: var(--radius-full);
   font-size: 10px;
-  color: var(--color-text-faint);
-  margin-left: auto;
-  font-style: italic;
+  font-weight: 600;
+  color: #f5a623;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.unlinkedChip:hover {
+  background: rgba(245, 166, 35, 0.2);
+}
+
+/* ── ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center) ── */
+.adhdFloatingPill {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 12px;
+  background: rgba(13, 14, 21, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: calc(100vw - 32px);
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.adhdTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: rgba(124, 111, 255, 0.15);
+  border: 1px solid rgba(124, 111, 255, 0.4);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  color: #a59bff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.adhdPathText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 440px;
+}
+
+.adhdHighlight {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.adhdFocusBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.adhdFocusBtn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.adhdDoneBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(34, 211, 165, 0.15);
+  border: 1px solid rgba(34, 211, 165, 0.4);
+  border-radius: var(--radius-full);
+  color: #22d3a5;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.adhdDoneBtn:hover {
+  background: #22d3a5;
+  color: #0c1017;
+  transform: scale(1.03);
+}
+
+.adhdCelebration {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #22d3a5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.adhdUndoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-full);
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.adhdUndoBtn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 /* ── Loading screen ── */
@@ -380,32 +570,65 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  height: 400px;
+  height: 100vh;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
 
-/* ── Mobile tweaks ── */
-@media (max-width: 768px) {
-  .roadmapPage {
-    margin: calc(-1 * var(--space-4));
-    height: calc(100dvh - var(--topbar-height, 56px) - 72px);
-  }
+/* ── Empty canvas state ── */
+.emptyCanvas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: var(--space-8);
+  text-align: center;
+}
 
-  .topBar {
-    padding: var(--space-2) var(--space-3);
-    gap: var(--space-2);
-  }
+.emptyTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
 
-  .filterRow {
-    display: none; /* Show only zoom on mobile */
-  }
+.emptySubtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 380px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
 
-  .colHeader {
-    font-size: 9px;
-  }
+.emptyActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 
-  .legend {
-    padding: 4px var(--space-3);
-  }
+.emptyActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.emptyActionBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-accent);
 }

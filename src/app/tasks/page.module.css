@@ -126,11 +126,57 @@
 
 /* ── Controls & View Tabs ── */
 .controlsBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-background);
+  padding: var(--space-2) 0 var(--space-3) 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  position: relative;
+}
+
+.searchIcon {
+  color: var(--color-text-faint);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  width: 140px;
+  transition: width var(--transition-fast);
+}
+
+.searchInput:focus {
+  width: 190px;
+}
+
+.clearSearchBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filtersGroup {
@@ -465,6 +511,42 @@
   border-radius: var(--radius-full);
 }
 
+.goalBreadcrumbChip {
+  font-size: 10px;
+  font-weight: 600;
+  color: #f5a623;
+  background: rgba(245, 166, 35, 0.1);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  white-space: nowrap;
+}
+
+.milestoneBreadcrumbChip {
+  font-size: 10px;
+  font-weight: 600;
+  color: #22d3a5;
+  background: rgba(34, 211, 165, 0.1);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(34, 211, 165, 0.25);
+  white-space: nowrap;
+}
+
+.breadcrumbChain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.breadcrumbArrow {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  line-height: 1;
+  user-select: none;
+}
+
 .parentProjectChip {
   font-size: 10px;
   font-weight: 500;
@@ -473,6 +555,7 @@
   padding: 1px 6px;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(165, 148, 255, 0.2);
+  white-space: nowrap;
 }
 
 .taskFooter {

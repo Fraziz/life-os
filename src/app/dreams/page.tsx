@@ -13,6 +13,7 @@ import {
   Calendar,
   Heart,
   CheckCircle2,
+  Search,
   X,
   RotateCcw,
   CloudSun,
@@ -34,6 +35,7 @@ export default function DreamsPage() {
   const { activeAreas } = useLifeAreas();
 
   const [activeFilter, setActiveFilter] = useState<'all' | DreamStatus>('all');
+  const [dreamSearch, setDreamSearch] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
 
@@ -114,8 +116,19 @@ export default function DreamsPage() {
   };
 
   const filteredDreams = dreams.filter((d) => {
-    if (activeFilter === 'all') return d.status !== 'archived';
-    return d.status === activeFilter;
+    if (activeFilter === 'all') {
+      if (d.status === 'archived') return false;
+    } else if (d.status !== activeFilter) {
+      return false;
+    }
+    if (dreamSearch.trim()) {
+      const q = dreamSearch.toLowerCase();
+      const matchTitle = d.title.toLowerCase().includes(q);
+      const matchDesc = d.description?.toLowerCase().includes(q);
+      const matchWhy = d.whyItMatters.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchWhy) return false;
+    }
+    return true;
   });
 
   return (
@@ -136,12 +149,33 @@ export default function DreamsPage() {
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
+        <div className={styles.searchWrap}>
+          <Search size={14} className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search dreams..."
+            value={dreamSearch}
+            onChange={(e) => setDreamSearch(e.target.value)}
+            className={styles.searchInput}
+          />
+          {dreamSearch && (
+            <button
+              type="button"
+              onClick={() => setDreamSearch('')}
+              className={styles.clearSearchBtn}
+              aria-label="Clear search"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeFilter === 'all' ? styles.activeTab : ''}`}
             onClick={() => setActiveFilter('all')}
           >
-            All Active ({dreams.filter((d) => d.status !== 'archived').length})
+            All ({dreams.filter((d) => d.status !== 'archived').length})
           </button>
           <button
             className={`${styles.tab} ${activeFilter === 'dream' ? styles.activeTab : ''}`}

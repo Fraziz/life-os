@@ -11,6 +11,7 @@ interface EntityFilesProps {
   entityId: string;
   title: string;
   variant?: 'strip' | 'icon' | 'button';
+  className?: string;
 }
 
 function formatSize(size: number): string {
@@ -260,7 +261,7 @@ export function FilesDrawer({
   );
 }
 
-export default function EntityFiles({ entityType, entityId, title, variant = 'strip' }: EntityFilesProps) {
+export default function EntityFiles({ entityType, entityId, title, variant = 'strip', className }: EntityFilesProps) {
   const { filesFor } = useAttachments();
   const [open, setOpen] = useState(false);
   const files = filesFor(entityType, entityId);
@@ -271,19 +272,23 @@ export default function EntityFiles({ entityType, entityId, title, variant = 'st
       {variant === 'icon' && (
         <button
           type="button"
-          className={styles.iconTrigger}
+          className={className ? `${styles.iconTrigger} ${className}` : styles.iconTrigger}
           onClick={() => setOpen(true)}
           title="Files"
           aria-label={`Files for ${title}`}
         >
-          <Paperclip size={15} />
+          <Paperclip size={14} />
           {files.length > 0 && <span className={styles.dot} />}
         </button>
       )}
 
       {variant === 'button' && (
-        <button type="button" className={styles.trigger} onClick={() => setOpen(true)}>
-          <Paperclip size={16} />
+        <button
+          type="button"
+          className={className ? `${styles.trigger} ${className}` : styles.trigger}
+          onClick={() => setOpen(true)}
+        >
+          <Paperclip size={12} />
           Files
           {files.length > 0 && <span className={styles.count}>{files.length}</span>}
         </button>

@@ -1,21 +1,13 @@
 import type { NavSection } from '@/types';
 
 /**
- * Navigation configuration for the Life OS sidebar.
- *
- * ADHD-friendly structure:
- * - TODAY      → What matters right now
- * - CAPTURE    → Get thoughts out of your head
- * - ORGANIZE   → Turn thoughts into actionable work
- * - DIRECTION  → Connect daily work to your bigger life
- * - MORE       → Secondary tools that don't need to compete for attention
- *
- * This is the single source of truth for navigation.
+ * Single source of truth for Life OS navigation.
+ * Matches all ADHD-focused categories and item names exactly.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'today',
-    label: 'Today',
+    label: 'TODAY',
     items: [
       {
         id: 'today',
@@ -23,7 +15,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/',
         icon: 'today',
         isAvailable: true,
-        phase: 1,
       },
       {
         id: 'focus',
@@ -31,14 +22,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/focus',
         icon: 'focus',
         isAvailable: true,
-        phase: 12,
       },
     ],
   },
-
   {
     id: 'capture',
-    label: 'Capture',
+    label: 'CAPTURE',
     items: [
       {
         id: 'inbox',
@@ -46,14 +35,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/inbox',
         icon: 'inbox',
         isAvailable: true,
-        phase: 13,
       },
     ],
   },
-
   {
     id: 'organize',
-    label: 'Organize',
+    label: 'ORGANIZE',
     items: [
       {
         id: 'goals',
@@ -61,7 +48,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/goals',
         icon: 'goals',
         isAvailable: true,
-        phase: 5,
       },
       {
         id: 'milestones',
@@ -69,7 +55,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/milestones',
         icon: 'milestones',
         isAvailable: true,
-        phase: 6,
       },
       {
         id: 'projects',
@@ -77,7 +62,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/projects',
         icon: 'projects',
         isAvailable: true,
-        phase: 7,
       },
       {
         id: 'tasks',
@@ -85,14 +69,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/tasks',
         icon: 'tasks',
         isAvailable: true,
-        phase: 8,
       },
     ],
   },
-
   {
     id: 'direction',
-    label: 'Direction',
+    label: 'DIRECTION',
     items: [
       {
         id: 'roadmap',
@@ -100,7 +82,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/roadmap',
         icon: 'roadmap',
         isAvailable: true,
-        phase: 30,
       },
       {
         id: 'dreams',
@@ -108,7 +89,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/dreams',
         icon: 'dreams',
         isAvailable: true,
-        phase: 4,
       },
       {
         id: 'areas',
@@ -116,14 +96,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/areas',
         icon: 'areas',
         isAvailable: true,
-        phase: 3,
       },
     ],
   },
-
   {
     id: 'more',
-    label: 'More',
+    label: 'MORE',
     items: [
       {
         id: 'calendar',
@@ -131,7 +109,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/calendar',
         icon: 'calendar',
         isAvailable: true,
-        phase: 15,
       },
       {
         id: 'progress',
@@ -139,7 +116,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/progress',
         icon: 'progress',
         isAvailable: true,
-        phase: 17,
       },
       {
         id: 'review',
@@ -147,7 +123,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/review',
         icon: 'review',
         isAvailable: true,
-        phase: 18,
       },
       {
         id: 'reset',
@@ -155,7 +130,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/reset',
         icon: 'reset',
         isAvailable: true,
-        phase: 14,
       },
       {
         id: 'habits',
@@ -163,7 +137,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/habits',
         icon: 'habits',
         isAvailable: true,
-        phase: 16,
       },
       {
         id: 'workout',
@@ -171,7 +144,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/workout',
         icon: 'workout',
         isAvailable: true,
-        phase: 20,
       },
       {
         id: 'knowledge',
@@ -179,7 +151,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/knowledge',
         icon: 'knowledge',
         isAvailable: true,
-        phase: 23,
       },
       {
         id: 'files',
@@ -187,7 +158,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/files',
         icon: 'files',
         isAvailable: true,
-        phase: 31,
       },
       {
         id: 'settings',
@@ -195,7 +165,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/settings',
         icon: 'settings',
         isAvailable: true,
-        phase: 2,
       },
     ],
   },
