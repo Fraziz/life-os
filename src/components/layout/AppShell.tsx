@@ -272,13 +272,13 @@ function withAppProviders(content: React.ReactNode) {
             <MilestoneProvider>
               <ProjectProvider>
                 <TaskProvider>
-                  <TodayPlanProvider>
-                    <FocusProvider>
-                      <InboxProvider>
-                        <CalendarProvider>
-                          <HabitProvider>
-                            <ReviewProvider>
-                              <KnowledgeProvider>
+                  <KnowledgeProvider>
+                    <TodayPlanProvider>
+                      <FocusProvider>
+                        <InboxProvider>
+                          <CalendarProvider>
+                            <HabitProvider>
+                              <ReviewProvider>
                                 <QuickNotesProvider>
                                   <ReminderProvider>
                                     <SearchProvider>
@@ -288,13 +288,13 @@ function withAppProviders(content: React.ReactNode) {
                                     </SearchProvider>
                                   </ReminderProvider>
                                 </QuickNotesProvider>
-                              </KnowledgeProvider>
-                            </ReviewProvider>
-                          </HabitProvider>
-                        </CalendarProvider>
-                      </InboxProvider>
-                    </FocusProvider>
-                  </TodayPlanProvider>
+                              </ReviewProvider>
+                            </HabitProvider>
+                          </CalendarProvider>
+                        </InboxProvider>
+                      </FocusProvider>
+                    </TodayPlanProvider>
+                  </KnowledgeProvider>
                 </TaskProvider>
               </ProjectProvider>
             </MilestoneProvider>

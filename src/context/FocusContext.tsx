@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import type { Task, FocusModeType, FocusSession } from '@/types';
+import type { Task, FocusModeType, FocusSession, KnowledgeDocument } from '@/types';
 import { useTasks } from './TaskContext';
 import { useSettings } from './SettingsContext';
+import { useKnowledge } from './KnowledgeContext';
 
 const FOCUS_HISTORY_KEY = 'life_os_focus_history_v1';
 
@@ -32,6 +33,8 @@ export const DEFAULT_FOCUS_HISTORY: FocusSession[] = [
 
 interface FocusContextType {
   activeTask: Task | null;
+  activeDoc: KnowledgeDocument | null;
+  activeTargetType: 'task' | 'knowledge';
   customTaskTitle: string;
   mode: FocusModeType;
   timerDurationSeconds: number;
@@ -45,6 +48,7 @@ interface FocusContextType {
   resetTimer: () => void;
   finishSession: (notes?: string, markTaskCompleted?: boolean) => void;
   selectFocusTask: (task: Task | null, customTitle?: string) => void;
+  selectFocusDoc: (doc: KnowledgeDocument | null) => void;
   setTimerMode: (newMode: FocusModeType, customMinutes?: number) => void;
   toggleZenMode: () => void;
   clearFocusHistory: () => void;
@@ -57,8 +61,11 @@ const FocusContext = createContext<FocusContextType | undefined>(undefined);
 export function FocusProvider({ children }: { children: React.ReactNode }) {
   const { tasks, updateTask, toggleTaskDone } = useTasks();
   const { settings } = useSettings();
+  const { docs } = useKnowledge();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeDoc, setActiveDoc] = useState<KnowledgeDocument | null>(null);
+  const [activeTargetType, setActiveTargetType] = useState<'task' | 'knowledge'>('task');
   const [customTaskTitle, setCustomTaskTitle] = useState<string>('Create Blobbit environment');
   const [mode, setMode] = useState<FocusModeType>('pomodoro');
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(25 * 60);
@@ -92,16 +99,27 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
-  // Sync default active task from tasks list
+  // Sync default active task from tasks list (only if no activeDoc is set)
   useEffect(() => {
-    if (!activeTask && tasks.length > 0) {
+    if (!activeTask && !activeDoc && tasks.length > 0) {
       const candidate = tasks.find((t) => t.status === 'doing') || tasks[0];
       if (candidate) {
         setActiveTask(candidate);
+        setActiveTargetType('task');
         setCustomTaskTitle(candidate.title);
       }
     }
-  }, [tasks, activeTask]);
+  }, [tasks, activeTask, activeDoc]);
+
+  // Keep activeDoc synced if knowledge doc content is updated
+  useEffect(() => {
+    if (activeDoc) {
+      const fresh = docs.find((d) => d.id === activeDoc.id);
+      if (fresh && fresh !== activeDoc) {
+        setActiveDoc(fresh);
+      }
+    }
+  }, [docs, activeDoc]);
 
   const saveHistory = (newHistory: FocusSession[]) => {
     setFocusHistory(newHistory);
@@ -191,6 +209,8 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 
   const selectFocusTask = (task: Task | null, customTitle?: string) => {
     setActiveTask(task);
+    setActiveDoc(null);
+    setActiveTargetType('task');
     if (task) {
       setCustomTaskTitle(task.title);
       if (task.estimatedDuration && task.estimatedDuration > 0) {
@@ -201,13 +221,28 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const selectFocusDoc = (doc: KnowledgeDocument | null) => {
+    setActiveDoc(doc);
+    setActiveTask(null);
+    if (doc) {
+      setActiveTargetType('knowledge');
+      setCustomTaskTitle(`Reading: ${doc.title}`);
+    } else {
+      setActiveTargetType('task');
+    }
+  };
+
   const finishSession = (notes?: string, markTaskCompleted = false) => {
     const elapsedMinutes = Math.max(1, Math.round(secondsElapsed / 60));
-    const title = activeTask ? activeTask.title : customTaskTitle || 'Focus Session';
+    const title = activeDoc
+      ? `Reading: ${activeDoc.title}`
+      : activeTask
+      ? activeTask.title
+      : customTaskTitle || 'Focus Session';
 
     const newSession: FocusSession = {
       id: `foc-${Date.now()}`,
-      taskId: activeTask?.id,
+      taskId: activeDoc ? activeDoc.id : activeTask?.id,
       taskTitle: title,
       durationMinutes: elapsedMinutes,
       mode,
@@ -218,7 +253,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 
     saveHistory([newSession, ...focusHistory]);
 
-    // Update actual duration on task if linked
+    // Update actual duration on task if linked to a task
     if (activeTask) {
       const currentActual = activeTask.actualDuration || 0;
       updateTask(activeTask.id, {
@@ -247,6 +282,8 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     <FocusContext.Provider
       value={{
         activeTask,
+        activeDoc,
+        activeTargetType,
         customTaskTitle,
         mode,
         timerDurationSeconds,
@@ -260,6 +297,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
         resetTimer,
         finishSession,
         selectFocusTask,
+        selectFocusDoc,
         setTimerMode,
         toggleZenMode,
         clearFocusHistory,

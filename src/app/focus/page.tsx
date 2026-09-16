@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Play,
@@ -28,12 +28,22 @@ import {
   CloudRain,
   Waves,
   Radio,
+  BookOpen,
+  BookMarked,
+  Highlighter,
+  Eraser,
+  Lock,
+  Check,
+  Search,
+  ExternalLink,
+  FileText,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
 import { useTasks } from '@/context/TaskContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useInbox } from '@/context/InboxContext';
+import { useKnowledge } from '@/context/KnowledgeContext';
 import {
   playSuccessChime,
   playSubtaskTick,
@@ -45,7 +55,7 @@ import {
   type AmbientSoundType,
 } from '@/utils/soundAndDopamine';
 import { generateMicroBreakdown } from '@/utils/adhdBreakdown';
-import type { Task, FocusModeType } from '@/types';
+import type { Task, FocusModeType, KnowledgeDocument } from '@/types';
 import styles from './page.module.css';
 
 function formatTimer(seconds: number): string {
@@ -54,9 +64,29 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+const HIGHLIGHT_COLORS = [
+  { name: 'yellow', label: 'Yellow', bg: 'rgba(251, 191, 36, 0.35)', border: '#f59e0b', text: 'inherit' },
+  { name: 'green', label: 'Green', bg: 'rgba(52, 211, 153, 0.35)', border: '#10b981', text: 'inherit' },
+  { name: 'blue', label: 'Blue', bg: 'rgba(96, 165, 250, 0.35)', border: '#3b82f6', text: 'inherit' },
+  { name: 'pink', label: 'Pink', bg: 'rgba(244, 114, 182, 0.35)', border: '#ec4899', text: 'inherit' },
+  { name: 'purple', label: 'Purple', bg: 'rgba(192, 132, 252, 0.35)', border: '#a855f7', text: 'inherit' },
+  { name: 'orange', label: 'Orange', bg: 'rgba(251, 146, 60, 0.35)', border: '#f97316', text: 'inherit' },
+];
+
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {
+  yellow: HIGHLIGHT_COLORS[0],
+  green: HIGHLIGHT_COLORS[1],
+  blue: HIGHLIGHT_COLORS[2],
+  pink: HIGHLIGHT_COLORS[3],
+  purple: HIGHLIGHT_COLORS[4],
+  orange: HIGHLIGHT_COLORS[5],
+};
+
 export default function FocusPage() {
   const {
     activeTask,
+    activeDoc,
+    activeTargetType,
     customTaskTitle,
     mode,
     timerDurationSeconds,
@@ -70,22 +100,34 @@ export default function FocusPage() {
     resetTimer,
     finishSession,
     selectFocusTask,
+    selectFocusDoc,
     setTimerMode,
     toggleZenMode,
     clearFocusHistory,
     isLoaded,
   } = useFocus();
 
+  const { docs, updateDoc } = useKnowledge();
   const { tasks, toggleSubtask, breakdownTask } = useTasks();
   const { goals } = useGoals();
   const { projects } = useProjects();
   const { quickDump } = useInbox();
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
+  const [targetTab, setTargetTab] = useState<'tasks' | 'knowledge'>('tasks');
+  const [targetSearchQuery, setTargetSearchQuery] = useState('');
+
+  const [focusViewMode, setFocusViewMode] = useState<'timer' | 'book'>('book');
   const [customMinInput, setCustomMinInput] = useState('30');
   const [finishNotes, setFinishNotes] = useState('');
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [markDoneOnFinish, setMarkDoneOnFinish] = useState(true);
+
+  // Live Highlighter State in Focus Mode
+  const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
+  const [showSaveToast, setShowSaveToast] = useState(false);
+  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
+  const bookContainerRef = useRef<HTMLDivElement>(null);
 
   // ADHD Superpowers state
   const [ambientSound, setAmbientSound] = useState<AmbientSoundType>('off');
@@ -99,6 +141,157 @@ export default function FocusPage() {
       stopAmbientSound();
     };
   }, []);
+
+  // Sync content into book container ref whenever activeDoc or focusViewMode changes
+  const getRichHtml = (content: string) => {
+    if (!content) return '';
+    if (/<[a-z][^>]*>/i.test(content)) return content;
+    let html = content
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br/>');
+    return `<p>${html}</p>`;
+  };
+
+  useEffect(() => {
+    if (activeDoc && bookContainerRef.current) {
+      bookContainerRef.current.innerHTML = getRichHtml(activeDoc.content || '');
+    }
+  }, [activeDoc, focusViewMode]);
+
+  // Floating mouse selection toolbar handler
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const sel = window.getSelection();
+      if (
+        sel &&
+        !sel.isCollapsed &&
+        sel.rangeCount > 0 &&
+        bookContainerRef.current &&
+        bookContainerRef.current.contains(sel.getRangeAt(0).commonAncestorContainer)
+      ) {
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setFloatingMenu({
+          x: Math.max(10, rect.left + rect.width / 2 - 100),
+          y: Math.max(10, rect.top - 48 + window.scrollY),
+        });
+      } else {
+        setFloatingMenu(null);
+      }
+    };
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  const triggerSaveToast = () => {
+    setShowSaveToast(true);
+    setTimeout(() => setShowSaveToast(false), 2000);
+  };
+
+  const handleHighlightInFocus = (colorName: string) => {
+    setActiveHighlightColor(colorName);
+    const container = bookContainerRef.current;
+    if (!container || !activeDoc) return;
+
+    const sel = window.getSelection();
+    const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
+
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+    const range = sel.getRangeAt(0);
+    if (!container.contains(range.commonAncestorContainer)) return;
+
+    let cur: Node | null = range.commonAncestorContainer;
+    while (cur && cur !== container) {
+      if (cur.nodeName === 'MARK') {
+        const markEl = cur as HTMLElement;
+        markEl.style.background = c.bg;
+        markEl.style.border = `1px solid ${c.border}`;
+        markEl.style.color = c.text;
+        const saved = container.innerHTML;
+        updateDoc(activeDoc.id, { content: saved });
+        triggerSaveToast();
+        return;
+      }
+      cur = cur.parentNode;
+    }
+
+    const mark = document.createElement('mark');
+    mark.className = 'highlight-mark';
+    mark.style.background = c.bg;
+    mark.style.border = `1px solid ${c.border}`;
+    mark.style.color = c.text;
+    mark.style.borderRadius = '3px';
+    mark.style.padding = '1px 5px';
+    mark.style.fontWeight = '600';
+    mark.style.boxDecorationBreak = 'clone';
+    (mark.style as any).webkitBoxDecorationBreak = 'clone';
+
+    try {
+      const frag = range.extractContents();
+      const innerMarks = frag.querySelectorAll ? frag.querySelectorAll('mark') : [];
+      innerMarks.forEach((m: Element) => {
+        const parent = m.parentNode;
+        while (m.firstChild) {
+          parent?.insertBefore(m.firstChild, m);
+        }
+        parent?.removeChild(m);
+      });
+      mark.appendChild(frag);
+      range.insertNode(mark);
+      sel.removeAllRanges();
+    } catch {
+      try {
+        document.execCommand('hiliteColor', false, c.bg);
+      } catch {}
+    }
+
+    const saved = container.innerHTML;
+    updateDoc(activeDoc.id, { content: saved });
+    triggerSaveToast();
+  };
+
+  const handleRemoveHighlightInFocus = () => {
+    const container = bookContainerRef.current;
+    if (!container || !activeDoc) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!container.contains(range.commonAncestorContainer)) return;
+
+    let cur: Node | null = range.commonAncestorContainer;
+    while (cur && cur !== container) {
+      if (cur.nodeName === 'MARK') {
+        const markEl = cur as HTMLElement;
+        const parent = markEl.parentNode;
+        while (markEl.firstChild) {
+          parent?.insertBefore(markEl.firstChild, markEl);
+        }
+        parent?.removeChild(markEl);
+        const saved = container.innerHTML;
+        updateDoc(activeDoc.id, { content: saved });
+        triggerSaveToast();
+        return;
+      }
+      cur = cur.parentNode;
+    }
+  };
+
+  const handleManualSave = () => {
+    const container = bookContainerRef.current;
+    if (container && activeDoc) {
+      updateDoc(activeDoc.id, { content: container.innerHTML });
+      triggerSaveToast();
+    }
+  };
 
   const handleAmbientToggle = (type: AmbientSoundType) => {
     if (ambientSound === type) {
@@ -118,274 +311,421 @@ export default function FocusPage() {
 
   const handleMagicBreakdown = () => {
     if (!activeTask) return;
-    const microSteps = generateMicroBreakdown(activeTask.title, activeTask.description);
-    breakdownTask(activeTask.id, microSteps);
-    triggerDopamineBurst();
+    const generated = generateMicroBreakdown(activeTask.title, activeTask.description);
+    breakdownTask(activeTask.id, generated);
     playSuccessChime();
+    triggerDopamineBurst();
   };
 
   const handleSubtaskCheck = (e: React.MouseEvent, subtaskId: string) => {
+    e.stopPropagation();
     if (!activeTask) return;
     toggleSubtask(activeTask.id, subtaskId);
     playSubtaskTick();
-    triggerDopamineBurst(e.clientX, e.clientY);
   };
 
   const handleParkDistraction = (e: React.FormEvent) => {
     e.preventDefault();
     if (!parkingLotInput.trim()) return;
-    quickDump(`[Focus Distraction] ${parkingLotInput.trim()}`);
+    quickDump(parkingLotInput.trim());
     setParkingLotInput('');
     setParkedNotice(true);
-    setTimeout(() => setParkedNotice(false), 2500);
+    setTimeout(() => setParkedNotice(false), 3000);
   };
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Preparing your Focus environment...
-        </p>
-      </div>
-    );
-  }
-
-  const parentGoal = activeTask?.goalId ? goals.find((g) => g.id === activeTask.goalId) : null;
-  const parentProject = activeTask?.projectId ? projects.find((p) => p.id === activeTask.projectId) : null;
-
-  const handleCustomTimeApply = (e: React.FormEvent) => {
+  const handleCustomMinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const mins = parseInt(customMinInput);
-    if (!isNaN(mins) && mins > 0) {
-      setTimerMode('custom', mins);
+    const min = parseInt(customMinInput, 10);
+    if (!isNaN(min) && min > 0) {
+      setTimerMode('custom', min);
     }
   };
 
   const handleFinishSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    finishSession(finishNotes, markDoneOnFinish);
     playTimerCompleteFanfare();
     triggerDopamineBurst();
-    finishSession(finishNotes, markDoneOnFinish);
     setFinishModalOpen(false);
     setFinishNotes('');
   };
 
-  // ADHD Time Timer Ring calculations (Formal Swiss Precision Gauge)
-  const totalDuration = timerDurationSeconds || 25 * 60;
-  const timerProgress = Math.max(0, Math.min(1, secondsRemaining / totalDuration));
-  const circleRadius = 125;
-  const circleCircumference = 2 * Math.PI * circleRadius;
-  const strokeDashoffset = circleCircumference * (1 - timerProgress);
+  // Hierarchy Lookup
+  const parentProject = activeTask?.projectId
+    ? projects.find((p) => p.id === activeTask.projectId)
+    : null;
+  const parentGoal = parentProject?.goalId
+    ? goals.find((g) => g.id === parentProject.goalId)
+    : null;
+
+  // Filter tasks & docs for target selector
+  const filteredTasks = tasks
+    .filter((t) => t.status !== 'done')
+    .filter((t) => t.title.toLowerCase().includes(targetSearchQuery.toLowerCase()));
+
+  const filteredDocs = docs.filter(
+    (d) =>
+      d.title.toLowerCase().includes(targetSearchQuery.toLowerCase()) ||
+      d.tags.some((tag) => tag.toLowerCase().includes(targetSearchQuery.toLowerCase()))
+  );
 
   return (
     <div className={`${styles.page} ${isZenMode ? styles.zenMode : ''}`}>
-      {/* ── Header (Hidden in Zen Mode) ── */}
+      {/* ── Top Header ── */}
       {!isZenMode && (
         <header className={styles.header}>
           <div className={styles.titleArea}>
-            <h1 className={styles.title}>Focus Session</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 className={styles.title}>Focus Space</h1>
+              {activeDoc && (
+                <span className={styles.toastSaved}>
+                  <BookMarked size={12} /> Book Reader Active
+                </span>
+              )}
+            </div>
             <p className={styles.subtitle}>
-              Lock in your attention on one priority outcome. Eliminate distractions and track deep work time.
+              Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.
             </p>
           </div>
 
           <div className={styles.headerActions}>
+            {/* View Mode Toggle when reading a Knowledge Book */}
+            {activeDoc && (
+              <div className={styles.targetTabGroup} style={{ margin: 0 }}>
+                <button
+                  type="button"
+                  className={`${styles.targetTab} ${focusViewMode === 'book' ? styles.targetTabActive : ''}`}
+                  onClick={() => setFocusViewMode('book')}
+                >
+                  <BookOpen size={13} /> Book View
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.targetTab} ${focusViewMode === 'timer' ? styles.targetTabActive : ''}`}
+                  onClick={() => setFocusViewMode('timer')}
+                >
+                  <Clock size={13} /> Timer View
+                </button>
+              </div>
+            )}
+
             <button
-              className={styles.btnReset}
+              className={styles.btnZen}
               onClick={toggleZenMode}
-              title="Full screen Zen Mode"
+              title="Toggle Zen Mode (Distraction-Free)"
             >
-              <Maximize2 size={14} /> Fullscreen
+              {isZenMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              <span>{isZenMode ? 'Exit Zen' : 'Zen Mode'}</span>
             </button>
           </div>
         </header>
       )}
 
-      {/* ── Zen Floating Close Button ── */}
-      {isZenMode && (
-        <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 10 }}>
-          <button
-            className={styles.btnReset}
-            onClick={toggleZenMode}
-            style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}
-          >
-            <Minimize2 size={16} /> Exit Fullscreen
-          </button>
-        </div>
-      )}
-
-      {/* ── Main Focus Container ── */}
+      {/* Main Focus Container */}
       <div className={styles.focusContainer}>
-        {/* Left: Giant Centerpiece Card */}
-        <section className={styles.focusCard} aria-labelledby="focus-task-title">
-          {/* ── Formal Circular Precision Timer (Numbers 100% Centered Inside Circle) ── */}
-          <div className={styles.timeTimerContainer}>
-            <svg className={styles.timeTimerSvg} width="280" height="280" viewBox="0 0 280 280">
-              {/* Outer Subtle Frame */}
-              <circle
-                cx="140"
-                cy="140"
-                r="136"
-                fill="none"
-                stroke="rgba(255, 255, 255, 0.03)"
-                strokeWidth="1"
-              />
-              {/* Background Track Ring */}
-              <circle
-                cx="140"
-                cy="140"
-                r={circleRadius}
-                fill="rgba(15, 15, 26, 0.4)"
-                stroke="rgba(255, 255, 255, 0.06)"
-                strokeWidth="8"
-              />
-              {/* Active Progress Ring */}
-              <circle
-                cx="140"
-                cy="140"
-                r={circleRadius}
-                fill="none"
-                stroke={timerProgress < 0.2 ? 'var(--color-danger)' : 'var(--color-accent)'}
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={circleCircumference}
-                strokeDashoffset={strokeDashoffset}
-                style={{
-                  transition: isRunning ? 'stroke-dashoffset 1s linear, stroke 0.3s ease' : 'stroke-dashoffset 0.3s ease',
-                  transform: 'rotate(-90deg)',
-                  transformOrigin: '50% 50%',
-                  filter: `drop-shadow(0 0 6px ${timerProgress < 0.2 ? 'rgba(255, 107, 107, 0.4)' : 'rgba(124, 111, 255, 0.35)'})`,
-                }}
-              />
-            </svg>
-
-            {/* Inner Formal Digits & Status */}
-            <div className={styles.timeTimerCenter}>
-              <div className={`${styles.timerDisplay} ${isRunning ? styles.activeTick : ''}`}>
-                {formatTimer(secondsRemaining)}
-              </div>
-              <span className={styles.timerSubtitle}>
-                {isRunning ? (
-                  <span style={{ color: 'var(--color-success)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <span className={styles.livePulse} /> Active
+        {/* Left / Main Section */}
+        <section className={styles.focusMain} style={{ width: '100%' }}>
+          {/* If a Knowledge document is active AND we are in Book View */}
+          {activeDoc && focusViewMode === 'book' ? (
+            <div className={styles.focusBookWrapper}>
+              {/* Sticky Reading & Control Bar */}
+              <div className={styles.focusBookHeaderBar}>
+                <div className={styles.focusBookHighlighterGroup}>
+                  <span className={styles.focusBookTimerPill}>
+                    <Clock size={14} />
+                    {formatTimer(secondsRemaining)}
+                    <button
+                      type="button"
+                      style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex' }}
+                      onClick={isRunning ? pauseTimer : startTimer}
+                      title={isRunning ? 'Pause Timer' : 'Start Timer'}
+                    >
+                      {isRunning ? <Pause size={13} /> : <Play size={13} />}
+                    </button>
                   </span>
-                ) : (
-                  'Ready'
-                )}
-              </span>
-            </div>
-          </div>
 
-          {/* Current Task Details */}
-          <div className={styles.currentTaskArea}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <span className={styles.taskTagPill}>
-                <Target size={12} /> Current Target
-              </span>
-              {parentProject && (
-                <span style={{ fontSize: '11px', color: 'var(--color-accent-light)', background: 'var(--color-surface-2)', padding: '2px 8px', borderRadius: '4px' }}>
-                  Project: {parentProject.title}
-                </span>
-              )}
-              {activeTask?.estimatedDuration && (
-                <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-                  Est: {activeTask.estimatedDuration}m • Act: {Math.round((activeTask.actualDuration || 0) + secondsElapsed / 60)}m
-                </span>
-              )}
-            </div>
+                  <span className={styles.bookHighlighterLabel}>
+                    <Highlighter size={12} style={{ color: 'var(--color-accent)' }} /> Swatches:
+                  </span>
 
-            <h2 className={styles.taskTitle} id="focus-task-title">
-              {activeTask ? activeTask.title : customTaskTitle || 'Focus Session'}
-            </h2>
+                  <div className={styles.focusBookSwatches}>
+                    {HIGHLIGHT_COLORS.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        className={`${styles.focusBookSwatch} ${activeHighlightColor === c.name ? styles.focusBookSwatchActive : ''}`}
+                        style={{
+                          background: c.bg,
+                          borderColor: c.border,
+                          '--swatch-border': c.border,
+                        } as React.CSSProperties}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleHighlightInFocus(c.name)}
+                        title={`Highlight selected text in ${c.label}`}
+                      />
+                    ))}
+                  </div>
 
-            {/* Why It Matters */}
-            {parentGoal?.why && (
-              <p className={styles.taskWhy}>
-                &ldquo;{parentGoal.why}&rdquo;
-              </p>
-            )}
-            {activeTask?.description && (
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-                {activeTask.description}
-              </p>
-            )}
-          </div>
-
-          {/* ── Subtasks checklist & 1-Click Magic Breakdown ── */}
-          <div className={styles.subtasksBox}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Micro-Steps ({activeTask?.subtasks?.filter((s) => s.completed).length || 0}/{activeTask?.subtasks?.length || 0}):
-              </span>
-
-              {activeTask && (
-                <button
-                  className={styles.btnMagicBreakdown}
-                  onClick={handleMagicBreakdown}
-                  title="Break this task down into tiny 2-to-5 minute steps"
-                >
-                  Break into 5-Min Steps
-                </button>
-              )}
-            </div>
-
-            {activeTask?.subtasks && activeTask.subtasks.length > 0 ? (
-              activeTask.subtasks.map((sub) => (
-                <div
-                  key={sub.id}
-                  className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
-                >
                   <button
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
-                    onClick={(e) => handleSubtaskCheck(e, sub.id)}
+                    type="button"
+                    className={styles.focusBookBtn}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleHighlightInFocus(activeHighlightColor)}
+                    title="Highlight selection"
                   >
-                    {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+                    Highlight
                   </button>
-                  <span style={{ flex: 1, textAlign: 'left' }}>{sub.title}</span>
-                </div>
-              ))
-            ) : (
-              <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0, padding: '4px 0', textAlign: 'left' }}>
-                Feeling stuck? Click <strong>Break into 5-Min Steps</strong> to break this into easy bite-sized actions.
-              </p>
-            )}
-          </div>
 
-          {/* Zen Mode Only Controls */}
-          {isZenMode && (
-            <div className={styles.controlsRow}>
-              {isRunning ? (
-                <button className={styles.btnPause} onClick={pauseTimer}>
-                  <Pause size={18} /> Pause
+                  <button
+                    type="button"
+                    className={styles.focusBookBtn}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleRemoveHighlightInFocus}
+                    title="Clear highlight"
+                  >
+                    <Eraser size={12} /> Clear
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.focusBookBtn} ${styles.focusBookSaveBtn}`}
+                    onClick={handleManualSave}
+                    title="Save highlights to Knowledge Base"
+                  >
+                    💾 Save Highlights
+                  </button>
+
+                  {showSaveToast && (
+                    <span className={styles.toastSaved}>
+                      <Check size={12} /> Saved!
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={styles.focusBookBtn}
+                    onClick={() => setTaskPickerOpen(true)}
+                    title="Switch focus target"
+                  >
+                    <Target size={12} /> Switch Target
+                  </button>
+                  <Link
+                    href={`/knowledge`}
+                    className={styles.focusBookBtn}
+                    title="Open in Knowledge base"
+                  >
+                    <ExternalLink size={12} /> Knowledge
+                  </Link>
+                </div>
+              </div>
+
+              {/* Book Page Card */}
+              <div className={styles.focusBookPageCard}>
+                <div className={styles.focusBookTitle}>{activeDoc.title}</div>
+                {activeDoc.tags && activeDoc.tags.length > 0 && (
+                  <div className={styles.bookMeta}>
+                    {activeDoc.tags.map((t) => (
+                      <span key={t} className={styles.bookTag}>#{t}</span>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.bookDivider} />
+
+                <div
+                  ref={bookContainerRef}
+                  contentEditable={false}
+                  className={styles.focusBookBody}
+                  dangerouslySetInnerHTML={{ __html: getRichHtml(activeDoc.content || '') }}
+                />
+
+                <div className={styles.bookFooter}>
+                  <span>Reading Target in Focus Mode · Sariling Mundo</span>
+                  <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Standard Focus Timer Card */
+            <div className={styles.focusCard}>
+              {/* Presets Bar */}
+              <div className={styles.presetsBar}>
+                <button
+                  className={`${styles.presetBtn} ${mode === 'pomodoro' ? styles.activePreset : ''}`}
+                  onClick={() => setTimerMode('pomodoro')}
+                >
+                  <Flame size={13} /> Pomodoro
                 </button>
-              ) : (
-                <button className={styles.btnStart} onClick={startTimer}>
-                  <Play size={18} /> {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
+                <button
+                  className={`${styles.presetBtn} ${mode === 'short_break' ? styles.activePreset : ''}`}
+                  onClick={() => setTimerMode('short_break')}
+                >
+                  <Coffee size={13} /> Short Break
                 </button>
+                <button
+                  className={`${styles.presetBtn} ${mode === 'long_break' ? styles.activePreset : ''}`}
+                  onClick={() => setTimerMode('long_break')}
+                >
+                  <Zap size={13} /> Long Break
+                </button>
+                <button
+                  className={`${styles.presetBtn} ${mode === 'flow' ? styles.activePreset : ''}`}
+                  onClick={() => setTimerMode('flow')}
+                >
+                  <Sparkles size={13} /> Flow Mode
+                </button>
+              </div>
+
+              {/* Circular Timer Visual */}
+              <div className={styles.timerDisplayArea}>
+                <div className={styles.timerCircle}>
+                  <div className={styles.timerNumber}>
+                    {mode === 'flow'
+                      ? formatTimer(secondsElapsed)
+                      : formatTimer(secondsRemaining)}
+                  </div>
+                  <span className={styles.timerSublabel}>
+                    {mode === 'flow' ? 'Time Elapsed' : mode.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <span className={styles.timerStateBadge}>
+                    {isRunning ? (
+                      <span className={styles.liveBadge}>
+                        <span className={styles.livePulse} /> Active
+                      </span>
+                    ) : (
+                      'Ready'
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Current Task / Target Details */}
+              <div className={styles.currentTaskArea}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <span className={styles.taskTagPill}>
+                    <Target size={12} /> {activeDoc ? 'Reading Target' : 'Current Target'}
+                  </span>
+                  {parentProject && (
+                    <span style={{ fontSize: '11px', color: 'var(--color-accent-light)', background: 'var(--color-surface-2)', padding: '2px 8px', borderRadius: '4px' }}>
+                      Project: {parentProject.title}
+                    </span>
+                  )}
+                  {activeTask?.estimatedDuration && (
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+                      Est: {activeTask.estimatedDuration}m • Act: {Math.round((activeTask.actualDuration || 0) + secondsElapsed / 60)}m
+                    </span>
+                  )}
+                </div>
+
+                <h2 className={styles.taskTitle} id="focus-task-title">
+                  {activeDoc ? `📖 ${activeDoc.title}` : activeTask ? activeTask.title : customTaskTitle || 'Focus Session'}
+                </h2>
+
+                {activeDoc && (
+                  <div style={{ margin: '8px 0' }}>
+                    <button
+                      type="button"
+                      className={styles.focusBookBtn}
+                      onClick={() => setFocusViewMode('book')}
+                    >
+                      <BookOpen size={13} /> Open Book Reader with Highlighter
+                    </button>
+                  </div>
+                )}
+
+                {/* Why It Matters */}
+                {parentGoal?.why && (
+                  <p className={styles.taskWhy}>
+                    &ldquo;{parentGoal.why}&rdquo;
+                  </p>
+                )}
+                {activeTask?.description && (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
+                    {activeTask.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Subtasks checklist (for tasks) */}
+              {!activeDoc && (
+                <div className={styles.subtasksBox}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Micro-Steps ({activeTask?.subtasks?.filter((s) => s.completed).length || 0}/{activeTask?.subtasks?.length || 0}):
+                    </span>
+
+                    {activeTask && (
+                      <button
+                        className={styles.btnMagicBreakdown}
+                        onClick={handleMagicBreakdown}
+                        title="Break this task down into tiny 2-to-5 minute steps"
+                      >
+                        Break into 5-Min Steps
+                      </button>
+                    )}
+                  </div>
+
+                  {activeTask?.subtasks && activeTask.subtasks.length > 0 ? (
+                    activeTask.subtasks.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
+                      >
+                        <button
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                          }}
+                          onClick={(e) => handleSubtaskCheck(e, sub.id)}
+                        >
+                          {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+                        </button>
+                        <span style={{ flex: 1, textAlign: 'left' }}>{sub.title}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0, padding: '4px 0', textAlign: 'left' }}>
+                      Feeling stuck? Click <strong>Break into 5-Min Steps</strong> to break this into easy bite-sized actions.
+                    </p>
+                  )}
+                </div>
               )}
-              <button className={styles.btnReset} onClick={resetTimer} title="Reset timer">
-                <RotateCcw size={16} /> Reset
-              </button>
-              <button
-                className={styles.btnFinish}
-                onClick={() => setFinishModalOpen(true)}
-                title="Finish session and log actual time"
-              >
-                <CheckCircle2 size={16} /> Finish Session
-              </button>
+
+              {/* Zen Mode Only Controls */}
+              {isZenMode && (
+                <div className={styles.controlsRow}>
+                  {isRunning ? (
+                    <button className={styles.btnPause} onClick={pauseTimer}>
+                      <Pause size={18} /> Pause
+                    </button>
+                  ) : (
+                    <button className={styles.btnStart} onClick={startTimer}>
+                      <Play size={18} /> {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
+                    </button>
+                  )}
+                  <button className={styles.btnReset} onClick={resetTimer} title="Reset timer">
+                    <RotateCcw size={16} /> Reset
+                  </button>
+                  <button
+                    className={styles.btnFinish}
+                    onClick={() => setFinishModalOpen(true)}
+                    title="Finish session and log actual time"
+                  >
+                    <CheckCircle2 size={16} /> Finish Session
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>
 
-        {/* Right Sidebar: Controls, Presets, Parking Lot, Ambient Soundscapes & Focus History */}
+        {/* Right Sidebar: Controls, Parking Lot, Ambient Soundscapes & History */}
         {!isZenMode && (
           <aside className={styles.sideSection}>
             {/* ── 1. Focus Controls (Right Side) ── */}
@@ -414,7 +754,7 @@ export default function FocusPage() {
                   <button
                     className={styles.sideActionBtn}
                     onClick={() => setTaskPickerOpen(true)}
-                    title="Switch task"
+                    title="Switch focus target"
                   >
                     Switch Target
                   </button>
@@ -450,199 +790,69 @@ export default function FocusPage() {
                   <Send size={12} /> Park ↵
                 </button>
               </form>
+
               {parkedNotice && (
-                <span style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600, display: 'block', textAlign: 'center', marginTop: '4px' }}>
-                  ✓ Safely parked in your Inbox! Back to flow.
-                </span>
+                <p style={{ fontSize: '11px', color: 'var(--color-success)', margin: '6px 0 0 0', fontWeight: 600 }}>
+                  ✓ Saved to Brain Dump! Back to focusing!
+                </p>
               )}
             </div>
 
-            {/* ── 3. Focus Mode Presets ── */}
+            {/* ── 3. Ambient Soundscapes ── */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
-                  <Clock size={14} /> Timer Presets
+                  <Volume2 size={14} /> Ambient Soundscapes
                 </span>
-              </div>
-
-              <div className={styles.sideModeGrid}>
-                <button
-                  className={`${styles.sideModeBtn} ${mode === 'pomodoro' ? styles.activeSideMode : ''}`}
-                  onClick={() => setTimerMode('pomodoro')}
-                >
-                  Pomodoro 25m
-                </button>
-                <button
-                  className={`${styles.sideModeBtn} ${mode === 'custom' ? styles.activeSideMode : ''}`}
-                  onClick={() => setTimerMode('custom', parseInt(customMinInput) || 30)}
-                >
-                  Custom {customMinInput}m
-                </button>
-                <button
-                  className={`${styles.sideModeBtn} ${mode === 'short_break' ? styles.activeSideMode : ''}`}
-                  onClick={() => setTimerMode('short_break')}
-                >
-                  Short Break 5m
-                </button>
-                <button
-                  className={`${styles.sideModeBtn} ${mode === 'long_break' ? styles.activeSideMode : ''}`}
-                  onClick={() => setTimerMode('long_break')}
-                >
-                  Long Break 15m
-                </button>
-                <button
-                  className={`${styles.sideModeBtn} ${mode === 'flow' ? styles.activeSideMode : ''}`}
-                  onClick={() => setTimerMode('flow')}
-                >
-                  Flow
-                </button>
-              </div>
-            </div>
-
-            {/* ── Procedural Ambient Sound Generator ── */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  <Volume2 size={14} style={{ color: 'var(--color-accent-light)' }} /> ADHD Ambient Flow Sound
-                </span>
-                {ambientSound !== 'off' && (
-                  <span style={{ fontSize: '10px', color: 'var(--color-success)', fontWeight: 700 }}>
-                    PLAYING
-                  </span>
-                )}
               </div>
 
               <div className={styles.ambientBtnGrid}>
                 <button
+                  className={`${styles.ambientPill} ${ambientSound === 'rain' ? styles.activeAmbient : ''}`}
+                  onClick={() => handleAmbientToggle('rain')}
+                >
+                  <CloudRain size={13} /> Rain
+                </button>
+                <button
                   className={`${styles.ambientPill} ${ambientSound === 'brown' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('brown')}
-                  title="Deep Brown Noise (silences racing thoughts)"
                 >
                   <Waves size={13} /> Brown Noise
                 </button>
                 <button
-                  className={`${styles.ambientPill} ${ambientSound === 'rain' ? styles.activeAmbient : ''}`}
-                  onClick={() => handleAmbientToggle('rain')}
-                  title="Soft soothing rain"
-                >
-                  <CloudRain size={13} /> Soft Rain
-                </button>
-                <button
                   className={`${styles.ambientPill} ${ambientSound === 'drone' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('drone')}
-                  title="14Hz Alpha wave focus drone"
                 >
-                  <Radio size={13} /> Alpha Drone
+                  <Radio size={13} /> Deep Drone
                 </button>
                 <button
                   className={`${styles.ambientPill} ${ambientSound === 'off' ? styles.activeAmbient : ''}`}
-                  onClick={() => {
-                    setAmbientSound('off');
-                    stopAmbientSound();
-                  }}
-                  title="Mute ambient sound"
+                  onClick={() => handleAmbientToggle('off')}
                 >
                   <VolumeX size={13} /> Mute
                 </button>
               </div>
 
               {ambientSound !== 'off' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                  <Volume2 size={12} style={{ color: 'var(--color-text-faint)' }} />
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '10px', color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>Vol</span>
                   <input
                     type="range"
-                    min="0.05"
+                    min="0"
                     max="1"
                     step="0.05"
                     value={ambientVol}
                     onChange={handleVolumeChange}
                     style={{ flex: 1, accentColor: 'var(--color-accent)' }}
                   />
-                  <span style={{ fontSize: '10px', color: 'var(--color-text-faint)', minWidth: '24px' }}>
-                    {Math.round(ambientVol * 100)}%
-                  </span>
                 </div>
               )}
-            </div>
-
-            {/* Quick Time Customizer */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  <Clock size={14} /> Custom Timer Length
-                </span>
-              </div>
-
-              <form onSubmit={handleCustomTimeApply} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="number"
-                  min="1"
-                  max="300"
-                  step="5"
-                  value={customMinInput}
-                  onChange={(e) => setCustomMinInput(e.target.value)}
-                  style={{
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '6px 10px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    width: '80px',
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>minutes</span>
-                <button type="submit" className={styles.btnReset} style={{ padding: '6px 10px', fontSize: '11px' }}>
-                  Set
-                </button>
-              </form>
-            </div>
-
-            {/* Focus History */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  <History size={14} /> Focus History ({focusHistory.length})
-                </span>
-                {focusHistory.length > 0 && (
-                  <button
-                    style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', fontSize: '10px', cursor: 'pointer' }}
-                    onClick={clearFocusHistory}
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <div className={styles.historyList}>
-                {focusHistory.length === 0 ? (
-                  <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-4) 0' }}>
-                    No sessions logged yet today.
-                  </p>
-                ) : (
-                  focusHistory.map((sess) => (
-                    <div key={sess.id} className={styles.historyItem}>
-                      <span className={styles.historyItemTitle}>{sess.taskTitle}</span>
-                      <div className={styles.historyItemMeta}>
-                        <span>{sess.durationMinutes} mins • {sess.mode}</span>
-                        <span>{new Date(sess.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      {sess.notes && (
-                        <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', margin: 0, fontStyle: 'italic' }}>
-                          &ldquo;{sess.notes}&rdquo;
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
           </aside>
         )}
       </div>
 
-      {/* ── Modal: Task Picker ── */}
+      {/* ── Modal: Target Picker (Tasks & Knowledge Books) ── */}
       {taskPickerOpen && (
         <div className={styles.modalOverlay} onClick={() => setTaskPickerOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -655,42 +865,116 @@ export default function FocusPage() {
               </button>
             </div>
 
+            {/* Tabs: Tasks vs Knowledge & Books */}
+            <div className={styles.targetTabGroup}>
+              <button
+                type="button"
+                className={`${styles.targetTab} ${targetTab === 'tasks' ? styles.targetTabActive : ''}`}
+                onClick={() => setTargetTab('tasks')}
+              >
+                <Target size={13} /> Tasks ({filteredTasks.length})
+              </button>
+              <button
+                type="button"
+                className={`${styles.targetTab} ${targetTab === 'knowledge' ? styles.targetTabActive : ''}`}
+                onClick={() => setTargetTab('knowledge')}
+              >
+                <BookOpen size={13} /> Knowledge & Books ({filteredDocs.length})
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder={targetTab === 'tasks' ? 'Search tasks...' : 'Search books, notes, documents...'}
+                value={targetSearchQuery}
+                onChange={(e) => setTargetSearchQuery(e.target.value)}
+                className={styles.targetSearchInput}
+                autoFocus
+              />
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
-              {tasks
-                .filter((t) => t.status !== 'done')
-                .map((task) => (
+              {targetTab === 'tasks' ? (
+                filteredTasks.length > 0 ? (
+                  filteredTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: 'var(--color-surface-2)',
+                        padding: 'var(--space-3)',
+                        borderRadius: 'var(--radius-lg)',
+                        cursor: 'pointer',
+                        border: activeTask?.id === task.id ? '1px solid var(--color-accent)' : '1px solid var(--color-border-subtle)',
+                      }}
+                      onClick={() => {
+                        selectFocusTask(task);
+                        setFocusViewMode('timer');
+                        setTaskPickerOpen(false);
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text)' }}>
+                          {task.title}
+                        </span>
+                        {task.estimatedDuration && (
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginLeft: '6px' }}>
+                            • {task.estimatedDuration}m
+                          </span>
+                        )}
+                      </div>
+                      <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px' }}>
+                        Select Task
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
+                    No pending tasks found.
+                  </p>
+                )
+              ) : filteredDocs.length > 0 ? (
+                filteredDocs.map((doc) => (
                   <div
-                    key={task.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: 'var(--color-surface-2)',
-                      padding: 'var(--space-3)',
-                      borderRadius: 'var(--radius-lg)',
-                      cursor: 'pointer',
-                      border: activeTask?.id === task.id ? '1px solid var(--color-accent)' : '1px solid var(--color-border-subtle)',
-                    }}
+                    key={doc.id}
+                    className={`${styles.knowledgeTargetItem} ${activeDoc?.id === doc.id ? styles.knowledgeTargetActive : ''}`}
                     onClick={() => {
-                      selectFocusTask(task);
+                      selectFocusDoc(doc);
+                      setFocusViewMode('book');
                       setTaskPickerOpen(false);
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text)' }}>
-                        {task.title}
-                      </span>
-                      {task.estimatedDuration && (
-                        <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginLeft: '6px' }}>
-                          • {task.estimatedDuration}m
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <BookOpen size={14} style={{ color: 'var(--color-accent)' }} />
+                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
+                          {doc.title}
                         </span>
+                      </div>
+                      {doc.tags && doc.tags.length > 0 && (
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {doc.tags.map((t) => (
+                            <span key={t} style={{ fontSize: '10px', color: 'var(--color-text-faint)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px' }}>
+                              #{t}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px' }}>
-                      Select
+                    <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                      Select Book Target
                     </button>
                   </div>
-                ))}
+                ))
+              ) : (
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
+                  No knowledge documents found.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -710,7 +994,7 @@ export default function FocusPage() {
             </div>
 
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Log {Math.max(1, Math.round(secondsElapsed / 60))} minutes of deep focus to {activeTask ? `"${activeTask.title}"` : customTaskTitle}.
+              Log {Math.max(1, Math.round(secondsElapsed / 60))} minutes of deep focus to {activeDoc ? `Reading: "${activeDoc.title}"` : activeTask ? `"${activeTask.title}"` : customTaskTitle}.
             </p>
 
             <form onSubmit={handleFinishSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -721,7 +1005,7 @@ export default function FocusPage() {
                 <textarea
                   value={finishNotes}
                   onChange={(e) => setFinishNotes(e.target.value)}
-                  placeholder="What did you accomplish during this focus block?"
+                  placeholder={activeDoc ? "What key insights or ideas did you highlight?" : "What did you accomplish during this focus block?"}
                   style={{
                     width: '100%',
                     background: 'var(--color-surface-2)',
@@ -758,6 +1042,32 @@ export default function FocusPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Floating Mouse Selection Toolbar in Focus Book Mode */}
+      {floatingMenu && activeDoc && (
+        <div
+          className={styles.floatingHighlightMenu}
+          style={{ left: `${floatingMenu.x}px`, top: `${floatingMenu.y}px` }}
+        >
+          {HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              className={styles.floatingSwatch}
+              style={{
+                background: c.bg,
+                borderColor: c.border,
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                handleHighlightInFocus(c.name);
+                setFloatingMenu(null);
+              }}
+              title={`Highlight in ${c.label}`}
+            />
+          ))}
         </div>
       )}
     </div>
