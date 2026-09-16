@@ -17,6 +17,7 @@ import {
   Headphones,
   Bot,
   Moon,
+  Leaf,
   Download,
   Trash2,
   AlertOctagon,
@@ -150,7 +151,7 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {(['dark', 'light', 'system'] as const).map((t) => (
+            {(['dark', 'light', 'nature', 'system'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -181,8 +182,9 @@ export default function SettingsPage() {
               >
                 {t === 'dark' && <Moon size={16} />}
                 {t === 'light' && <Sun size={16} />}
+                {t === 'nature' && <Leaf size={16} />}
                 {t === 'system' && <Sliders size={16} />}
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'nature' ? 'Nature' : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>

@@ -129,3 +129,46 @@
   }
 }
 
+
+/* ================================================================
+   NATURE THEME — Shell transparency so background shows through
+   ================================================================ */
+:global([data-theme='nature']) .shell {
+  background: transparent;
+}
+
+:global([data-theme='nature']) .main {
+  background: transparent;
+}
+
+:global([data-theme='nature']) .content {
+  /* Slight warm-tint glass so text is readable against the nature BG */
+  background: rgba(248, 246, 235, 0.52);
+  backdrop-filter: blur(0px);
+}
+
+:global([data-theme='nature']) .backToTopBtn {
+  background: rgba(243, 241, 232, 0.92);
+  border-color: rgba(45, 90, 63, 0.30);
+  color: #2d5a3f;
+  box-shadow: 0 4px 14px rgba(28, 43, 30, 0.18);
+}
+
+:global([data-theme='nature']) .backToTopBtn:hover {
+  background: rgba(220, 232, 212, 0.95);
+  border-color: #4a7c59;
+  color: #1b3a27;
+  box-shadow: 0 6px 20px rgba(45, 90, 63, 0.25);
+}
+
+:global([data-theme='nature']) .expandSidebarBtn {
+  background: rgba(243, 241, 232, 0.92);
+  border-color: rgba(45, 90, 63, 0.22);
+  color: #4a5e4d;
+}
+
+:global([data-theme='nature']) .expandSidebarBtn:hover {
+  background: rgba(220, 232, 212, 0.95);
+  border-color: #2d5a3f;
+  color: #1b3a27;
+}

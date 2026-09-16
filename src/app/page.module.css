@@ -1737,3 +1737,21 @@
   }
 }
 
+
+/* Nature Theme Overrides - Today Dashboard */
+:global([data-theme='nature']) .summaryPillFocus {
+  background: linear-gradient(135deg, #2d5a3f, #4a7c59);
+}
+:global([data-theme='nature']) .pillIconGreen { color: #3a7d44; }
+:global([data-theme='nature']) .pillIconOrange { color: #c8852a; }
+:global([data-theme='nature']) .scheduleSectionCard,
+:global([data-theme='nature']) .scheduleCardItem {
+  background: #faf8f0;
+  border-color: #d4cfc0;
+}
+:global([data-theme='nature']) .energyBanner,
+:global([data-theme='nature']) .lowEnergyBanner {
+  background: #edf5e8;
+  border-color: #b8dcac;
+  color: #1c2b1e;
+}

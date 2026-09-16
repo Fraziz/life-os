@@ -222,6 +222,81 @@
   --shadow-glow-sm:       0 0 10px var(--color-accent-glow);
 }
 
+/* ── Nature Theme (Organic Forest & Parchment) ── */
+[data-theme='nature'] {
+  /* — Backgrounds: warm parchment & linen */
+  --color-bg:             #f3f1e8;
+  --color-surface:        #faf8f0;
+  --color-surface-2:      #ece9dc;
+  --color-surface-3:      #e0dccf;
+  --color-surface-hover:  #e6e2d4;
+
+  /* — Borders: organic warm */
+  --color-border:         #d4cfc0;
+  --color-border-subtle:  #e8e4d6;
+  --color-border-focus:   #2d5a3f;
+
+  /* — Text: deep ink on parchment */
+  --color-text:           #1c2b1e;
+  --color-text-muted:     #4a5e4d;
+  --color-text-faint:     #7a9078;
+  --color-text-inverse:   #faf8f0;
+
+  /* — Accent: forest sage & deep pine */
+  --color-accent:         #2d5a3f;
+  --color-accent-light:   #4a7c59;
+  --color-accent-dim:     rgba(45, 90, 63, 0.10);
+  --color-accent-glow:    rgba(45, 90, 63, 0.22);
+  --color-accent-hover:   #1b3a27;
+
+  /* — Semantic card tints: earthy naturals */
+  --color-lavender-card:  #e8f0e4;
+  --color-lavender-border:#c3d9bb;
+  --color-mint-card:      #edf5e8;
+  --color-mint-border:    #b8dcac;
+  --color-amber-card:     #faf3e0;
+  --color-amber-border:   #e8d49a;
+  --color-rose-card:      #f5ede0;
+  --color-rose-border:    #d9b896;
+  --color-cyan-card:      #e6f0eb;
+  --color-cyan-border:    #a8ccb4;
+
+  /* — Semantic feedback */
+  --color-success:        #3a7d44;
+  --color-success-dim:    rgba(58, 125, 68, 0.12);
+  --color-warning:        #c8852a;
+  --color-warning-dim:    rgba(200, 133, 42, 0.12);
+  --color-danger:         #a83232;
+  --color-danger-dim:     rgba(168, 50, 50, 0.12);
+  --color-info:           #2c6e8a;
+  --color-info-dim:       rgba(44, 110, 138, 0.12);
+
+  /* Badge overrides */
+  --color-badge-green-bg: #d6edcc;
+  --color-badge-green-txt:#1e5c28;
+  --color-badge-amber-bg: #f5e8c0;
+  --color-badge-amber-txt:#7a4c10;
+
+  /* — Soft organic shadows */
+  --shadow-sm:            0 1px 3px rgba(28, 43, 30, 0.10);
+  --shadow-md:            0 4px 14px rgba(28, 43, 30, 0.12);
+  --shadow-lg:            0 8px 30px rgba(28, 43, 30, 0.16);
+  --shadow-xl:            0 16px 50px rgba(28, 43, 30, 0.20);
+  --shadow-glow:          0 0 24px rgba(45, 90, 63, 0.28);
+  --shadow-glow-sm:       0 0 10px rgba(45, 90, 63, 0.20);
+
+  /* — Nature-specific extra tokens */
+  --nature-leaf:          #5a8f6e;
+  --nature-bark:          #8b6347;
+  --nature-moss:          #3d6b45;
+  --nature-petal:         #d4a57a;
+  --nature-sky:           #7ab3c8;
+  --nature-gold:          #d4973b;
+  --nature-deep:          #1b3a27;
+  --nature-surface-card:  #f0edd8;
+  --nature-hero-overlay:  linear-gradient(to bottom, rgba(28, 43, 30, 0.18) 0%, rgba(28, 43, 30, 0.52) 100%);
+}
+
 /* ── System preference fallback ── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
@@ -269,6 +344,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
+  /* Smooth theme transitions */
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 img, video, svg {
@@ -488,3 +565,154 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+
+/* Nature theme scrollbar */
+[data-theme='nature'] ::-webkit-scrollbar-thumb {
+  background: #c8c3b0;
+}
+[data-theme='nature'] ::-webkit-scrollbar-thumb:hover {
+  background: #7a9078;
+}
+
+/* Nature theme selection */
+[data-theme='nature'] ::selection {
+  background: rgba(45, 90, 63, 0.18);
+  color: #1c2b1e;
+}
+
+/* Nature theme glass effect */
+[data-theme='nature'] .glass {
+  background: rgba(240, 237, 216, 0.80);
+  border-color: #d4cfc0;
+}
+
+/* Nature gradient text */
+[data-theme='nature'] .gradient-text {
+  background: linear-gradient(135deg, #4a7c59, #2d5a3f, #1b3a27);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ================================================================
+   NATURE THEME � IMMERSIVE BACKGROUND SYSTEM
+   Rich forest atmosphere with botanical SVG patterns, organic
+   gradients, and gentle animated elements that make every page
+   feel like you're working from inside a sunlit woodland.
+   ================================================================ */
+
+/* -- Root-level nature background on html element -- */
+[data-theme='nature'] {
+  /* Multi-layer nature background:
+     1. Diagonal leaf vein pattern (repeating SVG)
+     2. Soft radial glow (sunlight through trees, top-right)
+     3. Deep forest gradient base
+  */
+  background-color: #e8e4d4;
+  background-image:
+    /* Layer 1: Tiny repeating leaf cell texture */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%232d5a3f' stroke-opacity='0.055' stroke-width='1'%3E%3Cpath d='M60 5 C60 5 30 40 60 60 C90 40 60 5 60 5Z'/%3E%3Cpath d='M60 5 L60 60' stroke-width='0.8'/%3E%3Cpath d='M60 60 C60 60 35 80 40 100' stroke-width='0.8'/%3E%3C/g%3E%3Ccircle cx='10' cy='10' r='1.2' fill='%232d5a3f' fill-opacity='0.06'/%3E%3Ccircle cx='110' cy='110' r='1.2' fill='%232d5a3f' fill-opacity='0.06'/%3E%3Ccircle cx='10' cy='110' r='0.8' fill='%232d5a3f' fill-opacity='0.04'/%3E%3Ccircle cx='110' cy='10' r='0.8' fill='%232d5a3f' fill-opacity='0.04'/%3E%3C/svg%3E"),
+    /* Layer 2: Large botanical branch, top-right corner */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%232d5a3f' stroke-opacity='0.07' stroke-linecap='round'%3E%3Cpath d='M520 10 C480 80 440 160 400 220 C370 260 340 290 300 310' stroke-width='2.5'/%3E%3Cpath d='M400 220 C380 190 350 165 330 145' stroke-width='1.5'/%3E%3Cellipse cx='345' cy='138' rx='22' ry='35' transform='rotate(-35 345 138)' fill='%232d5a3f' fill-opacity='0.05'/%3E%3Cpath d='M370 255 C345 230 320 210 295 200' stroke-width='1.5'/%3E%3Cellipse cx='282' cy='196' rx='18' ry='28' transform='rotate(-50 282 196)' fill='%232d5a3f' fill-opacity='0.05'/%3E%3Cpath d='M430 200 C455 175 470 150 480 120' stroke-width='1.5'/%3E%3Cellipse cx='484' cy='110' rx='20' ry='30' transform='rotate(15 484 110)' fill='%232d5a3f' fill-opacity='0.05'/%3E%3Cpath d='M300 310 C270 340 240 380 220 420' stroke-width='2'/%3E%3Cpath d='M260 355 C230 335 200 325 175 320' stroke-width='1.2'/%3E%3Cellipse cx='162' cy='318' rx='16' ry='24' transform='rotate(-70 162 318)' fill='%232d5a3f' fill-opacity='0.04'/%3E%3C/g%3E%3C/svg%3E"),
+    /* Layer 3: Bottom-left eucalyptus sprigs */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500' viewBox='0 0 500 500'%3E%3Cg fill='none' stroke='%232d5a3f' stroke-opacity='0.06' stroke-linecap='round'%3E%3Cpath d='M0 500 C40 440 90 380 130 330 C160 295 185 265 200 235' stroke-width='2.5'/%3E%3Cpath d='M130 330 C105 305 80 290 55 285' stroke-width='1.5'/%3E%3Cellipse cx='44' cy='283' rx='18' ry='28' transform='rotate(60 44 283)' fill='%232d5a3f' fill-opacity='0.06'/%3E%3Cpath d='M160 295 C175 265 178 238 172 210' stroke-width='1.3'/%3E%3Cellipse cx='171' cy='198' rx='15' ry='24' transform='rotate(-10 171 198)' fill='%232d5a3f' fill-opacity='0.05'/%3E%3Cpath d='M100 380 C70 360 45 345 20 340' stroke-width='1.2'/%3E%3Cellipse cx='10' cy='339' rx='14' ry='20' transform='rotate(75 10 339)' fill='%232d5a3f' fill-opacity='0.04'/%3E%3C/g%3E%3C/svg%3E"),
+    /* Layer 4: Warm sunlight radial glow top-right */
+    radial-gradient(ellipse 70% 60% at 85% 5%, rgba(212,151,59,0.13) 0%, transparent 65%),
+    /* Layer 5: Cool forest mist bottom-left */
+    radial-gradient(ellipse 60% 50% at 10% 95%, rgba(74,124,89,0.12) 0%, transparent 60%),
+    /* Layer 6: Base linen gradient */
+    linear-gradient(160deg, #f0edd8 0%, #e8e4d0 35%, #ddd9c8 70%, #d4cfc0 100%);
+
+  background-attachment: fixed;
+  background-size:
+    120px 120px,
+    600px 600px,
+    500px 500px,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  background-position:
+    0 0,
+    right top,
+    left bottom,
+    0 0,
+    0 0,
+    0 0;
+  background-repeat:
+    repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat;
+}
+
+/* -- Body in nature: stays transparent so html bg shows through -- */
+[data-theme='nature'] body {
+  background: transparent;
+}
+
+/* -- Shell, main, content: subtle frosted glass so bg stays visible -- */
+[data-theme='nature'] .shell {
+  background: transparent;
+  min-height: 100vh;
+}
+
+/* -- Floating leaf particle decorations (CSS-only animation) -- */
+[data-theme='nature'] body::before {
+  content: '';
+  position: fixed;
+  top: -60px;
+  right: 15%;
+  width: 18px;
+  height: 28px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 28'%3E%3Cpath d='M9 26 C9 26 1 18 2 12 C3 6 9 1 9 1 C9 1 15 6 16 12 C17 18 9 26 9 26Z' fill='%232d5a3f' fill-opacity='0.18'/%3E%3Cpath d='M9 26 L9 1' stroke='%232d5a3f' stroke-opacity='0.15' stroke-width='0.8' fill='none'/%3E%3C/svg%3E") center/contain no-repeat;
+  animation: leaffall1 18s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme='nature'] body::after {
+  content: '';
+  position: fixed;
+  top: -40px;
+  right: 55%;
+  width: 12px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 20'%3E%3Cpath d='M6 18 C6 18 1 12 2 8 C3 4 6 1 6 1 C6 1 9 4 10 8 C11 12 6 18 6 18Z' fill='%234a7c59' fill-opacity='0.15'/%3E%3C/svg%3E") center/contain no-repeat;
+  animation: leaffall2 24s ease-in-out 6s infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes leaffall1 {
+  0%   { transform: translateY(0) rotate(-10deg) translateX(0);   opacity: 0; }
+  5%   { opacity: 0.8; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(110vh) rotate(30deg) translateX(-80px); opacity: 0; }
+}
+
+@keyframes leaffall2 {
+  0%   { transform: translateY(0) rotate(5deg) translateX(0);    opacity: 0; }
+  8%   { opacity: 0.6; }
+  80%  { opacity: 0.5; }
+  100% { transform: translateY(110vh) rotate(-20deg) translateX(60px); opacity: 0; }
+}
+
+/* -- Nature cards: warm frosted parchment glass -- */
+[data-theme='nature'] .widgetCard,
+[data-theme='nature'] [class*="card"],
+[data-theme='nature'] [class*="Card"] {
+  background: rgba(250, 248, 240, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-color: rgba(212, 207, 192, 0.7);
+}
+
+/* -- Nature surfaces: translucent parchment -- */
+[data-theme='nature'] [class*="surface"],
+[data-theme='nature'] [class*="sidebar"] {
+  background: rgba(243, 241, 232, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}

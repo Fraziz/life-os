@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {
   Search,
   Sun,
+  Moon,
+  Leaf,
   Bell,
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -43,11 +45,25 @@ export default function RightSidebar() {
   const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
 
-  // ── Theme toggle ─────────────────────────────────────────────
-  const isDark = settings.theme === 'dark';
+  // ── Theme toggle (cycles: light → dark → nature → light) ────
+  const currentTheme = settings.theme;
   const toggleTheme = () => {
-    updateSettings({ theme: isDark ? 'light' : 'dark' });
+    const cycle: Record<string, 'dark' | 'light' | 'nature'> = {
+      light: 'dark',
+      dark: 'nature',
+      nature: 'light',
+      system: 'dark',
+    };
+    updateSettings({ theme: cycle[currentTheme] ?? 'dark' });
   };
+  const themeIcon =
+    currentTheme === 'dark' ? <Moon size={17} /> :
+    currentTheme === 'nature' ? <Leaf size={17} /> :
+    <Sun size={17} />;
+  const themeTitle =
+    currentTheme === 'light' ? 'Switch to Dark Theme' :
+    currentTheme === 'dark' ? 'Switch to Nature Theme' :
+    'Switch to Light Theme';
 
   // ── Selected Date for Agenda Inspection ──────────────────────
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -160,10 +176,10 @@ export default function RightSidebar() {
             type="button"
             className={styles.iconBtn}
             onClick={toggleTheme}
-            title={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            title={themeTitle}
             aria-label="Toggle theme"
           >
-            <Sun size={17} />
+            {themeIcon}
           </button>
 
           <button
