@@ -37,7 +37,7 @@
   to   { transform: translateY(0); opacity: 1; }
 }
 
-/* ── Input Row ── */
+/*  Input Row  */
 .inputRow {
   display: flex;
   align-items: center;
@@ -92,7 +92,7 @@
   font-family: monospace;
 }
 
-/* ── Type Filters ── */
+/*  Type Filters  */
 .filters {
   display: flex;
   align-items: center;
@@ -136,7 +136,7 @@
   font-weight: 700;
 }
 
-/* ── Results ── */
+/*  Results  */
 .results {
   flex: 1;
   overflow-y: auto;
@@ -257,7 +257,7 @@
   align-self: flex-start;
 }
 
-/* ── Footer ── */
+/*  Footer  */
 .footer {
   display: flex;
   align-items: center;

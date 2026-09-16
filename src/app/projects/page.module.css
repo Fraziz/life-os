@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Controls Bar ── */
+/*  Controls Bar  */
 .controlsBar {
   display: flex;
   align-items: center;
@@ -112,7 +112,7 @@
   background: #6a5cff;
 }
 
-/* ── Projects Grid ── */
+/*  Projects Grid  */
 .projectsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -137,7 +137,7 @@
   box-shadow: var(--shadow-md);
 }
 
-/* ── Full Hierarchy Chain Banner ── */
+/*  Full Hierarchy Chain Banner  */
 .hierarchyChain {
   display: flex;
   flex-direction: column;
@@ -303,7 +303,7 @@
   color: var(--color-text-muted);
 }
 
-/* ── Progress Section ── */
+/*  Progress Section  */
 .progressSection {
   display: flex;
   flex-direction: column;
@@ -354,7 +354,7 @@
   gap: 4px;
 }
 
-/* ── Modal Overlay & Card ── */
+/*  Modal Overlay & Card  */
 .modalOverlay {
   position: fixed;
   inset: 0;

@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── View Controls Bar ── */
+/*  View Controls Bar  */
 .controlsBar {
   display: flex;
   align-items: center;
@@ -129,7 +129,7 @@
   gap: 4px;
 }
 
-/* ── Distinct Deadlines Top Banner (Must be completed by...) ── */
+/*  Distinct Deadlines Top Banner (Must be completed by...)  */
 .deadlinesBanner {
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.05) 100%);
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -177,7 +177,7 @@
   gap: 5px;
 }
 
-/* ── Day View Timeline ── */
+/*  Day View Timeline  */
 .dayViewContainer {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
@@ -216,7 +216,7 @@
   min-height: 48px;
 }
 
-/* ── Scheduled Task Block vs Event Pill ── */
+/*  Scheduled Task Block vs Event Pill  */
 .scheduledWorkCard {
   background: rgba(124, 106, 255, 0.15);
   border-left: 3px solid var(--color-accent);
@@ -243,7 +243,7 @@
   color: var(--color-text);
 }
 
-/* ── Week View Grid ── */
+/*  Week View Grid  */
 .weekGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -289,7 +289,7 @@
   flex: 1;
 }
 
-/* ── Month View Grid ── */
+/*  Month View Grid  */
 .monthGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -361,7 +361,7 @@
   border-left: 2px solid #38bdf8;
 }
 
-/* ── Modal ── */
+/*  Modal  */
 .modalOverlay {
   position: fixed;
   inset: 0;

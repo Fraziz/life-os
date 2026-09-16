@@ -1,4 +1,4 @@
-/* ── Sidebar Component Styles ────────────────────────── */
+/*  Sidebar Component Styles  */
 
 .sidebar {
   position: fixed;
@@ -33,7 +33,7 @@
   visibility: hidden;
 }
 
-/* ── Brand Header ────────────────────────────────────────── */
+/*  Brand Header  */
 
 .header {
   display: flex;
@@ -72,7 +72,7 @@
   outline: none;
 }
 
-/* ── Quick Action Top Bar ────────────────────────────────── */
+/*  Quick Action Top Bar  */
 
 .topActionsGroup {
   display: flex;
@@ -161,7 +161,7 @@
   line-height: 1.2;
 }
 
-/* ── Navigation Sections ─────────────────────────────────── */
+/*  Navigation Sections  */
 
 .nav {
   display: flex;
@@ -249,7 +249,7 @@
   letter-spacing: -0.01em;
 }
 
-/* ── Handwritten Sticky Note ─────────────────────────────── */
+/*  Handwritten Sticky Note  */
 
 .stickyQuoteWrapper {
   margin: 20px 4px 14px 6px;
@@ -291,7 +291,7 @@
   color: #a8a29e;
 }
 
-/* ── User Footer ─────────────────────────────────────────── */
+/*  User Footer  */
 
 .footer {
   position: relative;
@@ -407,7 +407,7 @@
   background-color: var(--color-surface-2);
 }
 
-/* ── Mobile Overlay ──────────────────────────────────────── */
+/*  Mobile Overlay  */
 
 .overlay {
   display: none;
@@ -441,9 +441,9 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NATURE THEME OVERRIDES — Sidebar
-   ═══════════════════════════════════════════════════════════ */
+/* 
+   NATURE THEME OVERRIDES  Sidebar
+    */
 
 :global([data-theme='nature']) .sidebar {
   background: rgba(243, 241, 232, 0.88);
@@ -506,7 +506,7 @@
   color: #4a5e4d;
 }
 
-/* Botanical leaf decoration — positioned bottom right of sidebar */
+/* Botanical leaf decoration  positioned bottom right of sidebar */
 :global([data-theme='nature']) .sidebar::after {
   content: '';
   position: absolute;

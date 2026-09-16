@@ -1,8 +1,8 @@
-/* ══════════════════════════════════════════════════════════════
-   LIFE ROADMAP — Full-Screen Blueprint & Node Graph
-   ══════════════════════════════════════════════════════════════ */
+/* 
+   LIFE ROADMAP  Full-Screen Blueprint & Node Graph
+    */
 
-/* ── Full-screen page container ── */
+/*  Full-screen page container  */
 .roadmapPage {
   position: relative;
   width: 100%;
@@ -12,7 +12,7 @@
   user-select: none;
 }
 
-/* ── Floating Minimal Header (Linear / Figma style HUD) ── */
+/*  Floating Minimal Header (Linear / Figma style HUD)  */
 .floatingHeader {
   position: absolute;
   top: 14px;
@@ -86,7 +86,7 @@
   font-weight: 500;
 }
 
-/* ── Center filters ── */
+/*  Center filters  */
 .filterRow {
   display: flex;
   align-items: center;
@@ -121,7 +121,7 @@
   font-weight: 600;
 }
 
-/* ── Right controls ── */
+/*  Right controls  */
 .headerRight {
   display: flex;
   align-items: center;
@@ -156,7 +156,7 @@
   text-align: center;
 }
 
-/* ── Canvas Viewport ── */
+/*  Canvas Viewport  */
 .canvasViewport {
   width: 100%;
   height: 100%;
@@ -170,18 +170,18 @@
   cursor: grabbing;
 }
 
-/* ── Canvas ── */
+/*  Canvas  */
 .canvas {
   position: relative;
   will-change: transform;
 }
 
-/* ── Dot grid ── */
+/*  Dot grid  */
 .dotGrid {
   pointer-events: none;
 }
 
-/* ── SVG connection curves ── */
+/*  SVG connection curves  */
 .svgOverlay {
   pointer-events: none;
 }
@@ -195,7 +195,7 @@
   to   { stroke-dashoffset: 0; }
 }
 
-/* ── Column Headers on Canvas ── */
+/*  Column Headers on Canvas  */
 .canvasColHeader {
   position: absolute;
   transform: translateX(-50%);
@@ -214,7 +214,7 @@
   pointer-events: none;
 }
 
-/* ── Node Card: Formal, Clean, Polished ── */
+/*  Node Card: Formal, Clean, Polished  */
 .nodeCard {
   position: absolute;
   background: rgba(17, 18, 27, 0.94);
@@ -361,7 +361,7 @@
   left: -4px;
 }
 
-/* ── Minimal Floating Hint (Bottom Right) ── */
+/*  Minimal Floating Hint (Bottom Right)  */
 .canvasHintBadge {
   position: absolute;
   bottom: 14px;
@@ -380,7 +380,7 @@
   pointer-events: none;
 }
 
-/* ── ADHD Controls in Floating Header ── */
+/*  ADHD Controls in Floating Header  */
 .adhdBtn {
   display: inline-flex;
   align-items: center;
@@ -427,7 +427,7 @@
   background: rgba(245, 166, 35, 0.2);
 }
 
-/* ── ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center) ── */
+/*  ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center)  */
 .adhdFloatingPill {
   position: absolute;
   bottom: 14px;
@@ -563,7 +563,7 @@
   transform: translateY(-1px);
 }
 
-/* ── Loading screen ── */
+/*  Loading screen  */
 .loadingScreen {
   display: flex;
   flex-direction: column;
@@ -575,7 +575,7 @@
   font-size: var(--text-sm);
 }
 
-/* ── Empty canvas state ── */
+/*  Empty canvas state  */
 .emptyCanvas {
   position: absolute;
   inset: 0;
@@ -633,9 +633,9 @@
   border-color: var(--color-accent);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* 
    LIGHT THEME ROADMAP STYLES
-   ══════════════════════════════════════════════════════════════ */
+    */
 :global([data-theme='light']) .floatingHeader {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.95);

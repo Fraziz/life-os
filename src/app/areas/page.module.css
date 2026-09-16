@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Tabs & Filter ── */
+/*  Tabs & Filter  */
 .controlsBar {
   display: flex;
   align-items: center;
@@ -93,7 +93,7 @@
   background: #6a5cff;
 }
 
-/* ── Areas Grid ── */
+/*  Areas Grid  */
 .areasGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -192,7 +192,7 @@
   padding-top: var(--space-3);
 }
 
-/* ── Modal Overlay & Dialog ── */
+/*  Modal Overlay & Dialog  */
 .modalOverlay {
   position: fixed;
   inset: 0;

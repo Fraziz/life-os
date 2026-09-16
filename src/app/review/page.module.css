@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Weekly Performance Summary Grid ── */
+/*  Weekly Performance Summary Grid  */
 .metricsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -87,7 +87,7 @@
   font-weight: 500;
 }
 
-/* ── Wins Callout Banner ── */
+/*  Wins Callout Banner  */
 .winsBanner {
   background: linear-gradient(135deg, rgba(34, 211, 165, 0.08) 0%, rgba(124, 106, 255, 0.05) 100%);
   border: 1px solid rgba(34, 211, 165, 0.25);
@@ -123,7 +123,7 @@
   color: var(--color-text);
 }
 
-/* ── The 4 Guided Prompts Form ── */
+/*  The 4 Guided Prompts Form  */
 .reviewForm {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
@@ -196,7 +196,7 @@
   transform: translateY(-1px);
 }
 
-/* ── Past Reviews Archive Drawer ── */
+/*  Past Reviews Archive Drawer  */
 .archiveSection {
   display: flex;
   flex-direction: column;

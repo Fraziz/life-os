@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   flex-direction: column;
@@ -29,7 +29,7 @@
   line-height: 1.5;
 }
 
-/* ── Status Banner ── */
+/*  Status Banner  */
 .saveBanner {
   display: flex;
   align-items: center;
@@ -44,7 +44,7 @@
   animation: fadeIn 0.2s ease forwards;
 }
 
-/* ── Section Cards ── */
+/*  Section Cards  */
 .sectionCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
@@ -87,7 +87,7 @@
   margin-top: 2px;
 }
 
-/* ── Form Layout ── */
+/*  Form Layout  */
 .gridTwo {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -133,7 +133,7 @@
   line-height: 1.4;
 }
 
-/* ── Checkboxes & Toggles ── */
+/*  Checkboxes & Toggles  */
 .toggleRow {
   display: flex;
   align-items: center;
@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 
-/* ── Workdays Picker ── */
+/*  Workdays Picker  */
 .daysGrid {
   display: flex;
   gap: var(--space-2);
@@ -195,7 +195,7 @@
   color: var(--color-accent-light);
 }
 
-/* ── Action buttons ── */
+/*  Action buttons  */
 .actions {
   display: flex;
   align-items: center;
@@ -237,7 +237,7 @@
   background: rgba(248, 113, 113, 0.1);
 }
 
-/* ── Privacy Badge ── */
+/*  Privacy Badge  */
 .privacyNotice {
   display: flex;
   align-items: flex-start;

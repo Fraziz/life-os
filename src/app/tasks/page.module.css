@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Quick Add Bar ── */
+/*  Quick Add Bar  */
 .quickAddCard {
   background: var(--color-surface);
   border: 1px solid var(--color-accent);
@@ -124,7 +124,7 @@
   background: #6a5cff;
 }
 
-/* ── Controls & View Tabs ── */
+/*  Controls & View Tabs  */
 .controlsBar {
   position: sticky;
   top: 0;
@@ -225,7 +225,7 @@
   outline: none;
 }
 
-/* ── Kanban Columns Grid ── */
+/*  Kanban Columns Grid  */
 .kanbanGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -288,7 +288,7 @@
   gap: var(--space-3);
 }
 
-/* ── Formal Task Card ── */
+/*  Formal Task Card  */
 .taskCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
@@ -452,7 +452,7 @@
   color: #94a3b8;
 }
 
-/* ── Formal Subtasks List (Clean & Integrated, No Nested Box) ── */
+/*  Formal Subtasks List (Clean & Integrated, No Nested Box)  */
 .subtasksBox {
   background: transparent;
   border: none;
@@ -602,7 +602,7 @@
   background: rgba(248, 113, 113, 0.1);
 }
 
-/* ── Modal Overlay & Card ── */
+/*  Modal Overlay & Card  */
 .modalOverlay {
   position: fixed;
   inset: 0;

@@ -3,7 +3,7 @@
   min-height: 100vh;
 }
 
-/* ── Main content area ── */
+/*  Main content area  */
 .main {
   flex: 1;
   margin-left: var(--sidebar-width);
@@ -17,7 +17,7 @@
   margin-left: 0;
 }
 
-/* ── Floating show sidebar button when hidden ── */
+/*  Floating show sidebar button when hidden  */
 .expandSidebarBtn {
   position: fixed;
   top: 14px;
@@ -44,7 +44,7 @@
   transform: scale(1.04);
 }
 
-/* ── Page content wrapper ── */
+/*  Page content wrapper  */
 .content {
   flex: 1;
   padding: 20px 24px;
@@ -60,7 +60,7 @@
   height: 100vh;
 }
 
-/* ── Mobile adjustments ── */
+/*  Mobile adjustments  */
 @media (max-width: 768px) {
   .main {
     margin-left: 0;
@@ -84,7 +84,7 @@
   }
 }
 
-/* ── Global Floating Back to Top Button ─────────────────── */
+/*  Global Floating Back to Top Button  */
 .backToTopBtn {
   position: fixed;
   bottom: 24px;
@@ -131,7 +131,7 @@
 
 
 /* ================================================================
-   NATURE THEME � Shell transparency so background shows through
+   NATURE THEME  -  Shell transparency so background shows through
    ================================================================ */
 :global([data-theme='nature']) .shell {
   background: transparent;

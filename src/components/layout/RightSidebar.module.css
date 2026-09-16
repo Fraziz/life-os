@@ -1,4 +1,4 @@
-/* ── Right Sidebar Widget Column Styles ──────────────────── */
+/*  Right Sidebar Widget Column Styles  */
 
 .rightSidebar {
   width: 320px;
@@ -9,7 +9,7 @@
   user-select: none;
 }
 
-/* ── Top Utility Search & Actions ────────────────────────── */
+/*  Top Utility Search & Actions  */
 
 .topUtilityRow {
   display: flex;
@@ -84,7 +84,7 @@
   background-color: #ef4444;
 }
 
-/* ── Generic Widget Card ─────────────────────────────────── */
+/*  Generic Widget Card  */
 
 .widgetCard {
   background-color: var(--color-surface);
@@ -127,7 +127,7 @@
   text-decoration: underline;
 }
 
-/* ── Clock & Date Card ───────────────────────────────────── */
+/*  Clock & Date Card  */
 
 .clockHeaderRow {
   display: flex;
@@ -170,7 +170,7 @@
   color: #94a3b8;
 }
 
-/* ── Calendar Card ───────────────────────────────────────── */
+/*  Calendar Card  */
 
 .calendarHeader {
   display: flex;
@@ -345,7 +345,7 @@
   font-weight: 500;
 }
 
-/* ── Selected Day Marks & Agenda ─────────────────────────── */
+/*  Selected Day Marks & Agenda  */
 .selectedDayAgenda {
   margin-top: 10px;
   padding-top: 10px;
@@ -522,7 +522,7 @@
   text-decoration: underline;
 }
 
-/* ── What's next? Card ───────────────────────────────────── */
+/*  What's next? Card  */
 
 .bulbIcon {
   color: #f59e0b;
@@ -567,7 +567,7 @@
   margin-top: 1px;
 }
 
-/* ── Brain Dump Card (Lavender) ──────────────────────────── */
+/*  Brain Dump Card (Lavender)  */
 
 .brainDumpCard {
   background-color: var(--color-lavender-card);
@@ -648,7 +648,7 @@
   cursor: pointer;
 }
 
-/* ── Daily Momentum Card ─────────────────────────────────── */
+/*  Daily Momentum Card  */
 
 .momentumCard {
   background-color: var(--color-surface);
@@ -727,7 +727,7 @@
   margin-top: 2px;
 }
 
-/* ── Energy Check-In Card (ADHD Support) ─────────────────── */
+/*  Energy Check-In Card (ADHD Support)  */
 
 .energyCard {
   background-color: var(--color-surface);
@@ -784,7 +784,7 @@
   border-left: 3px solid #6366f1;
 }
 
-/* ── Quick Shortcuts Card ────────────────────────────────── */
+/*  Quick Shortcuts Card  */
 
 .shortcutsCard {
   background-color: var(--color-surface);
@@ -829,7 +829,7 @@
   gap: 8px;
 }
 
-/* ── Responsive Polish ───────────────────────────────────── */
+/*  Responsive Polish  */
 
 @media (max-width: 1200px) {
   .rightSidebar {

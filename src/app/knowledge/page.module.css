@@ -6,7 +6,7 @@
   animation: fadeIn 0.3s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   margin: 0;
 }
 
-/* ── Workbench Split (Hairline Divider, No Outer Box) ── */
+/*  Workbench Split (Hairline Divider, No Outer Box)  */
 .workbench {
   display: grid;
   grid-template-columns: 290px 1fr;
@@ -54,7 +54,7 @@
   }
 }
 
-/* ── Sidebar (Document Navigation) ── */
+/*  Sidebar (Document Navigation)  */
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -247,7 +247,7 @@
   margin-left: auto;
 }
 
-/* ── Editor Canvas (Clean, Distraction-Free) ── */
+/*  Editor Canvas (Clean, Distraction-Free)  */
 .editorCanvas {
   display: flex;
   flex-direction: column;
@@ -292,7 +292,7 @@
   gap: var(--space-2);
 }
 
-/* ── Mode Toggle Segmented Control ── */
+/*  Mode Toggle Segmented Control  */
 .segmentedControl {
   display: inline-flex;
   align-items: center;
@@ -400,7 +400,7 @@
   opacity: 0.9;
 }
 
-/* ── Properties Bar (Clean Horizontal Controls) ── */
+/*  Properties Bar (Clean Horizontal Controls)  */
 .propertiesBar {
   display: flex;
   align-items: center;
@@ -436,7 +436,7 @@
   outline: none;
 }
 
-/* ── Connected Badges Bar ── */
+/*  Connected Badges Bar  */
 .linkedBadgesBar {
   display: flex;
   align-items: center;
@@ -458,7 +458,7 @@
   border: 1px solid rgba(124, 111, 255, 0.2);
 }
 
-/* ── Document Title (Formal Distraction-Free) ── */
+/*  Document Title (Formal Distraction-Free)  */
 .docTitle {
   background: transparent;
   border: none;
@@ -484,7 +484,7 @@
   padding-bottom: var(--space-2);
 }
 
-/* ── Formal Single-Row Toolbar ── */
+/*  Formal Single-Row Toolbar  */
 .toolbar {
   display: flex;
   gap: 3px;
@@ -619,7 +619,7 @@
   border-color: var(--color-border);
 }
 
-/* ── Writing Area & Live Rich Editor (Google Docs / Word Style) ── */
+/*  Writing Area & Live Rich Editor (Google Docs / Word Style)  */
 .writingArea,
 .richEditor {
   flex: 1;
@@ -807,7 +807,7 @@
   color: var(--color-text-faint);
 }
 
-/* ── Preview Canvas with ADHD colors ── */
+/*  Preview Canvas with ADHD colors  */
 .previewCanvas {
   flex: 1;
   font-size: var(--text-sm);
@@ -1041,7 +1041,7 @@
   margin: 24px 0;
 }
 
-/* ── Book Mode ─────────────────────────────────────────────── */
+/*  Book Mode  */
 .bookWrapper {
   flex: 1;
   overflow-y: auto;
@@ -1448,7 +1448,7 @@
   font-style: italic;
 }
 
-/* ── ADHD Color Guide Legend ── */
+/*  ADHD Color Guide Legend  */
 .adhdLegend {
   display: flex;
   align-items: center;
@@ -1499,7 +1499,7 @@
   font-size: 10px;
 }
 
-/* ── Buttons ── */
+/*  Buttons  */
 .btnCreate {
   display: flex;
   align-items: center;
@@ -1568,7 +1568,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Floating Selection Highlight Menu ── */
+/*  Floating Selection Highlight Menu  */
 .floatingHighlightMenu {
   position: fixed;
   z-index: 9999;

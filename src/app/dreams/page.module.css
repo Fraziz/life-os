@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Controls Bar ── */
+/*  Controls Bar  */
 .controlsBar {
   position: sticky;
   top: 0;
@@ -141,7 +141,7 @@
   background: #6a5cff;
 }
 
-/* ── Dreams Grid ── */
+/*  Dreams Grid  */
 .dreamsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -336,7 +336,7 @@
   gap: 4px;
 }
 
-/* ── Modal Overlay & Card ── */
+/*  Modal Overlay & Card  */
 .modalOverlay {
   position: fixed;
   inset: 0;

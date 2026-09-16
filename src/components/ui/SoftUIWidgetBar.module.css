@@ -1,4 +1,4 @@
-/* ══════════════════════════════════════════════════════════════
+/* 
    AUTHENTIC DARK NEUMORPHISM (Tactile Dark Slate Console)
    Deep dark obsidian base (#121522) with high contrast & soft lighting:
    - NO "boxes inside boxes": clean grid layout, no redundant outer wrap
@@ -6,9 +6,9 @@
    - Card 2: Primary Objective (focus task with quick dump inset tray)
    - Card 3: Energy Index (Orange #ff7e00 glow with 5-step luminous meter)
    - Card 4: Tactile Control Station (3 convex/concave dials directly carved)
-   ══════════════════════════════════════════════════════════════ */
+    */
 
-/* ── 2x2 Grid Layout (NO enclosing outer box border/shadow) ── */
+/*  2x2 Grid Layout (NO enclosing outer box border/shadow)  */
 .consoleFrame {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -21,7 +21,7 @@
   padding: 0;
 }
 
-/* ── Dark Neumorphic Tactile Card Base ── */
+/*  Dark Neumorphic Tactile Card Base  */
 .softCard {
   background: linear-gradient(145deg, #161928, #11131f);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -58,7 +58,7 @@
   color: #94a3b8;
 }
 
-/* ── Card 1: Cyan Metric (25 Focus Min) ── */
+/*  Card 1: Cyan Metric (25 Focus Min)  */
 .numberCyan {
   font-size: 3.5rem;
   font-weight: 300;
@@ -112,7 +112,7 @@
   transform: translateY(1px);
 }
 
-/* ── Card 2: Orange Index (23° Energy) ── */
+/*  Card 2: Orange Index (23 Energy)  */
 .numberOrange {
   font-size: 3.5rem;
   font-weight: 300;
@@ -191,7 +191,7 @@
   box-shadow: 0 0 10px rgba(255, 126, 0, 0.75);
 }
 
-/* ── Card 3: Top-Right Primary Objective & Quick Dump ── */
+/*  Card 3: Top-Right Primary Objective & Quick Dump  */
 .focusTile {
   background: linear-gradient(145deg, #161928, #11131f);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -360,7 +360,7 @@
   transform: scale(1.15);
 }
 
-/* ── Card 4 / Bottom-Right: Tactile Control Station ── */
+/*  Card 4 / Bottom-Right: Tactile Control Station  */
 .knobsTile {
   background: linear-gradient(145deg, #161928, #11131f);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -449,7 +449,7 @@
   transition: all var(--transition-fast);
 }
 
-/* ── Mobile Responsive ── */
+/*  Mobile Responsive  */
 @media (max-width: 768px) {
   .consoleFrame {
     grid-template-columns: 1fr;
@@ -464,9 +464,9 @@
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* 
    AUTHENTIC LIGHT NEUMORPHISM (Tactile Luminous Slate Console)
-   ══════════════════════════════════════════════════════════════ */
+    */
 :global([data-theme='light']) .softCard,
 :global([data-theme='light']) .focusTile,
 :global([data-theme='light']) .knobsTile {

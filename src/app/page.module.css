@@ -1,4 +1,4 @@
-/* ── Today Dashboard Styles ──────────────────────────────── */
+/*  Today Dashboard Styles  */
 
 .dashboardContainer {
   display: flex;
@@ -17,7 +17,7 @@
   gap: 16px;
 }
 
-/* ── Daily Summary Row ───────────────────────────────────── */
+/*  Daily Summary Row  */
 
 .dailySummaryRow {
   display: flex;
@@ -55,7 +55,7 @@
 .pillIconYellow { color: #eab308; }
 .pillIconSky { color: #0ea5e9; }
 
-/* ── Today's Schedule & Deadlines Section ───────────────── */
+/*  Today's Schedule & Deadlines Section  */
 .scheduleSectionCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
@@ -162,7 +162,7 @@
   white-space: nowrap;
 }
 
-/* ── sectionHeaderRight ─────────────────────────────────── */
+/*  sectionHeaderRight  */
 
 .sectionHeaderRight {
   display: flex;
@@ -170,7 +170,7 @@
   gap: 10px;
 }
 
-/* ── Inline Brain Dump Card ─────────────────────────────── */
+/*  Inline Brain Dump Card  */
 
 .inlineDumpCard {
   background: var(--color-surface);
@@ -266,7 +266,7 @@
   color: var(--color-text-muted);
 }
 
-/* ── Habits Quick Check Grid ─────────────────────────────── */
+/*  Habits Quick Check Grid  */
 
 .habitsGrid {
   display: flex;
@@ -326,7 +326,7 @@
 }
 
 
-/* ── Hero Greeting Banner ────────────────────────────────── */
+/*  Hero Greeting Banner  */
 
 .heroBanner {
   position: relative;
@@ -435,7 +435,7 @@
   margin-top: 6px;
 }
 
-/* ── 4 Quick Actions Grid ────────────────────────────────── */
+/*  4 Quick Actions Grid  */
 
 .quickActionsGrid {
   display: grid;
@@ -528,7 +528,7 @@
   margin-top: 2px;
 }
 
-/* ── Content Section Card ────────────────────────────────── */
+/*  Content Section Card  */
 
 .contentSectionCard {
   background-color: var(--color-surface);
@@ -587,7 +587,7 @@
   text-decoration: underline;
 }
 
-/* ── Top 3 Priorities ────────────────────────────────────── */
+/*  Top 3 Priorities  */
 
 .subSectionWrap {
   display: flex;
@@ -839,7 +839,7 @@
   font-weight: 600;
 }
 
-/* ── Wrap Up Day & Shutdown Modal ────────────────────────── */
+/*  Wrap Up Day & Shutdown Modal  */
 
 .wrapUpContainer {
   display: flex;
@@ -974,7 +974,7 @@
   opacity: 0.9;
 }
 
-/* ── Other Tasks ─────────────────────────────────────────── */
+/*  Other Tasks  */
 
 .otherTasksWrap {
   margin-top: 18px;
@@ -1120,7 +1120,7 @@
   cursor: pointer;
 }
 
-/* ── Projects & Goals ────────────────────────────────────── */
+/*  Projects & Goals  */
 
 .projectGoalsGrid {
   display: grid;
@@ -1253,7 +1253,7 @@
   color: var(--color-text-faint);
 }
 
-/* ── Quick Notes ─────────────────────────────────────────── */
+/*  Quick Notes  */
 
 .notesList {
   display: flex;
@@ -1303,7 +1303,7 @@
   color: #ef4444;
 }
 
-/* ── Empty state ─────────────────────────────────────────── */
+/*  Empty state  */
 
 .emptyState {
   font-size: 0.82rem;
@@ -1322,7 +1322,7 @@
   padding: 0;
 }
 
-/* ── Progress bar fill variants ─────────────────────────── */
+/*  Progress bar fill variants  */
 
 .progressBarFillBlue {
   height: 100%;
@@ -1331,7 +1331,7 @@
   transition: width 0.4s ease;
 }
 
-/* ── Bottom Motto Footer ─────────────────────────────────── */
+/*  Bottom Motto Footer  */
 
 .bottomMottoFooter {
   display: flex;
@@ -1349,7 +1349,7 @@
   color: var(--color-text-faint);
 }
 
-/* ── Segmented Tab Switcher ──────────────────────────────── */
+/*  Segmented Tab Switcher  */
 
 .tabSwitcher {
   display: flex;
@@ -1432,7 +1432,7 @@
   color: var(--color-text);
 }
 
-/* ── Habits Tab ──────────────────────────────────────────── */
+/*  Habits Tab  */
 
 .habitsTabWrap {
   display: flex;
@@ -1498,7 +1498,7 @@
   background-color: #3b2315;
 }
 
-/* ── Budget Tab ──────────────────────────────────────────── */
+/*  Budget Tab  */
 
 .budgetTabWrap {
   display: flex;
@@ -1585,7 +1585,7 @@
   color: var(--color-text);
 }
 
-/* ── Curate Modal ────────────────────────────────────────── */
+/*  Curate Modal  */
 
 .modalOverlay {
   position: fixed;
@@ -1703,7 +1703,7 @@
   cursor: pointer;
 }
 
-/* ── Responsive Layout ───────────────────────────────────── */
+/*  Responsive Layout  */
 
 @media (max-width: 1200px) {
   .dashboardContainer {

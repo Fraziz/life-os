@@ -35,7 +35,7 @@
   width: 100%;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -72,7 +72,7 @@
   gap: var(--space-3);
 }
 
-/* ── Zen Focus Container ── */
+/*  Zen Focus Container  */
 .focusContainer {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -86,7 +86,7 @@
   }
 }
 
-/* ── Left: Central Focus Card ── */
+/*  Left: Central Focus Card  */
 .focusCard {
   background: linear-gradient(180deg, var(--color-surface) 0%, rgba(124, 106, 255, 0.04) 100%);
   border: 1px solid rgba(124, 106, 255, 0.25);
@@ -138,7 +138,7 @@
   box-shadow: 0 2px 8px rgba(124, 106, 255, 0.3);
 }
 
-/* ── Formal Circular Gauge Timer Display ── */
+/*  Formal Circular Gauge Timer Display  */
 .timerDisplay {
   font-size: 3.25rem;
   font-family: var(--font-mono, monospace);
@@ -156,7 +156,7 @@
   text-shadow: 0 0 24px rgba(124, 106, 255, 0.35);
 }
 
-/* ── Current Task Hero Area ── */
+/*  Current Task Hero Area  */
 .currentTaskArea {
   display: flex;
   flex-direction: column;
@@ -196,7 +196,7 @@
   line-height: 1.4;
 }
 
-/* ── Controls Row ── */
+/*  Controls Row  */
 .controlsRow {
   display: flex;
   align-items: center;
@@ -287,7 +287,7 @@
   border-color: var(--color-text-muted);
 }
 
-/* ── Subtasks on Focus Page (Formal & Clean) ── */
+/*  Subtasks on Focus Page (Formal & Clean)  */
 .subtasksBox {
   background: transparent;
   border: none;
@@ -315,7 +315,7 @@
   color: var(--color-text-faint);
 }
 
-/* ── Right Sidebar: Task Picker & History ── */
+/*  Right Sidebar: Task Picker & History  */
 .sideSection {
   display: flex;
   flex-direction: column;
@@ -388,7 +388,7 @@
   box-shadow: 0 0 0 1px rgba(124, 106, 255, 0.2);
 }
 
-/* ── Side Session Controls ── */
+/*  Side Session Controls  */
 .sideBtnStart {
   width: 100%;
   background: var(--color-accent);
@@ -480,7 +480,7 @@
   transform: translateY(-1px);
 }
 
-/* ── Side Distraction Parking Lot ── */
+/*  Side Distraction Parking Lot  */
 .sideParkingLotForm {
   display: flex;
   flex-direction: column;
@@ -558,7 +558,7 @@
   justify-content: space-between;
 }
 
-/* ── Modals ── */
+/*  Modals  */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -587,7 +587,7 @@
   box-shadow: var(--shadow-xl);
 }
 
-/* ── ADHD Superpower Elements ── */
+/*  ADHD Superpower Elements  */
 
 .adhdBadge {
   font-size: 10px;
@@ -768,7 +768,7 @@
   font-weight: 600;
 }
 
-/* ── Target Picker Modal Tabs & Knowledge Items ── */
+/*  Target Picker Modal Tabs & Knowledge Items  */
 .targetTabGroup {
   display: flex;
   gap: 4px;
@@ -844,7 +844,7 @@
   background: rgba(124, 106, 255, 0.08);
 }
 
-/* ── Focus Mode: Book Reader Layout & Sticky Header ── */
+/*  Focus Mode: Book Reader Layout & Sticky Header  */
 .focusBookWrapper {
   display: flex;
   flex-direction: column;

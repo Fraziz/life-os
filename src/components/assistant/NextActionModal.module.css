@@ -100,7 +100,7 @@
   gap: var(--space-5);
 }
 
-/* ── WHY Section ── */
+/*  WHY Section  */
 .sectionWhy {
   background: rgba(124, 111, 255, 0.08);
   border-left: 3px solid var(--color-accent);
@@ -126,7 +126,7 @@
   margin: 0;
 }
 
-/* ── TASK Section ── */
+/*  TASK Section  */
 .sectionTask {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
@@ -185,7 +185,7 @@
   margin: 0;
 }
 
-/* ── TIME Section ── */
+/*  TIME Section  */
 .sectionTime {
   display: flex;
   align-items: center;
@@ -207,7 +207,7 @@
   color: var(--color-text);
 }
 
-/* ── Actions ── */
+/*  Actions  */
 .actions {
   display: flex;
   flex-direction: column;

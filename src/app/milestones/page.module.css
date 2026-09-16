@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── Controls Bar ── */
+/*  Controls Bar  */
 .controlsBar {
   display: flex;
   align-items: center;
@@ -112,7 +112,7 @@
   background: #6a5cff;
 }
 
-/* ── Milestones Grid ── */
+/*  Milestones Grid  */
 .milestonesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -136,7 +136,7 @@
   transform: translateY(-2px);
 }
 
-/* ── Hierarchy Connector Banner ── */
+/*  Hierarchy Connector Banner  */
 .hierarchyBanner {
   display: flex;
   align-items: center;
@@ -236,7 +236,7 @@
   line-height: 1.5;
 }
 
-/* ── Progress Section ── */
+/*  Progress Section  */
 .progressSection {
   display: flex;
   flex-direction: column;
@@ -287,7 +287,7 @@
   gap: 4px;
 }
 
-/* ── Modal Overlay & Card ── */
+/*  Modal Overlay & Card  */
 .modalOverlay {
   position: fixed;
   inset: 0;

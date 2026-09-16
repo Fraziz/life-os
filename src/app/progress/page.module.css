@@ -7,7 +7,7 @@
   animation: fadeIn 0.4s ease forwards;
 }
 
-/* ── Header ── */
+/*  Header  */
 .header {
   display: flex;
   align-items: flex-start;
@@ -38,7 +38,7 @@
   line-height: 1.5;
 }
 
-/* ── The 3 Core Navigation Tabs ── */
+/*  The 3 Core Navigation Tabs  */
 .perspectiveTabs {
   display: flex;
   align-items: center;
@@ -76,7 +76,7 @@
   box-shadow: 0 2px 8px rgba(124, 106, 255, 0.25);
 }
 
-/* ── High-Level Snapshot Stats Grid ── */
+/*  High-Level Snapshot Stats Grid  */
 .statsSummaryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -125,7 +125,7 @@
   font-weight: 500;
 }
 
-/* ── Section Block ── */
+/*  Section Block  */
 .sectionBlock {
   display: flex;
   flex-direction: column;
@@ -149,7 +149,7 @@
   gap: 8px;
 }
 
-/* ── Cards Grid ── */
+/*  Cards Grid  */
 .cardsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -209,7 +209,7 @@
   color: var(--color-text-faint);
 }
 
-/* ── Time Reality Check Box ── */
+/*  Time Reality Check Box  */
 .timeRealityCard {
   background: linear-gradient(135deg, rgba(124, 106, 255, 0.08) 0%, rgba(56, 189, 248, 0.05) 100%);
   border: 1px solid rgba(124, 106, 255, 0.25);
