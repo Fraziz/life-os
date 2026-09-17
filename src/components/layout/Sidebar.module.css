@@ -78,47 +78,13 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 16px;
-}
-
-.whatToDoTriggerBtn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  color: var(--color-text);
-  font-size: 0.84rem;
-  font-weight: 600;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
-  width: 100%;
-}
-
-.whatToDoTriggerBtn:hover {
-  background-color: var(--color-surface-2);
-  border-color: #cbd5e1;
-}
-
-.shortcutKbd {
-  font-family: inherit;
-  font-size: 0.7rem;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background-color: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-faint);
-  font-weight: 600;
+  margin-bottom: 12px;
 }
 
 .quickUtilityRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  margin-top: 2px;
 }
 
 .utilityPillBtn {
@@ -249,46 +215,26 @@
   letter-spacing: -0.01em;
 }
 
-/*  Handwritten Sticky Note  */
+/*  Subtle, Formal Inspiration Quote  */
 
-.stickyQuoteWrapper {
-  margin: 20px 4px 14px 6px;
-  transform: rotate(-3deg);
-  transition: transform var(--transition-fast);
+.sidebarQuote {
+  margin: 16px 8px 12px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--color-accent, #6366f1);
+  opacity: 0.85;
+  transition: opacity var(--transition-fast);
 }
 
-.stickyQuoteWrapper:hover {
-  transform: rotate(0deg) scale(1.02);
+.sidebarQuote:hover {
+  opacity: 1;
 }
 
-.stickyQuote {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.handwrittenText {
-  font-family: var(--font-handwriting), cursive, sans-serif;
-  font-size: 1.15rem;
-  line-height: 1.25;
-  color: #57534e;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-:global([data-theme='dark']) .handwrittenText {
-  color: #a8a29e;
-}
-
-.handwrittenDoodle {
-  width: 90px;
-  height: 16px;
-  color: #78716c;
-  margin-top: -2px;
-}
-
-:global([data-theme='dark']) .handwrittenDoodle {
-  color: #a8a29e;
+.quoteText {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
 }
 
 /*  User Footer  */

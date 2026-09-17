@@ -168,7 +168,7 @@ export default function RightSidebar() {
       <div className={styles.topUtilityRow}>
         <div className={styles.searchBox} onClick={openSearch} role="button" tabIndex={0}>
           <Search size={15} className={styles.searchIcon} />
-          <span className={styles.searchPlaceholder}>Search... (⌘K)</span>
+          <span className={styles.searchPlaceholder}>Search...</span>
         </div>
 
         <div className={styles.utilityIcons}>

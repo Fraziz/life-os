@@ -24,13 +24,14 @@
   gap: 8px;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 9999px;
-  padding: 8px 14px;
+  border-radius: 10px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .searchBox:hover {
+  background-color: var(--color-surface-2);
   border-color: #cbd5e1;
   box-shadow: var(--shadow-sm);
 }
@@ -418,27 +419,28 @@
   align-items: flex-start;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
-  background-color: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid transparent;
   font-size: 0.74rem;
-  transition: transform var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .agendaItem:hover {
+  background-color: var(--color-surface-2);
   transform: translateX(2px);
 }
 
 .agendaDeadlineItem {
-  border-left: 3px solid #ef4444;
+  border-left: 2.5px solid #ef4444;
 }
 
 .agendaEventItem {
-  border-left: 3px solid #0ea5e9;
+  border-left: 2.5px solid #0ea5e9;
 }
 
 .agendaBlockItem {
-  border-left: 3px solid #a855f7;
+  border-left: 2.5px solid #a855f7;
 }
 
 .agendaItemIconWrap {
@@ -653,9 +655,9 @@
 .momentumCard {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -671,15 +673,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .momentumBadge {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--color-accent, #6366f1);
   background: rgba(99, 102, 241, 0.1);
   padding: 2px 8px;
   border-radius: 99px;
@@ -687,7 +689,7 @@
 
 .momentumProgressTrack {
   width: 100%;
-  height: 7px;
+  height: 6px;
   background: var(--color-surface-2);
   border-radius: 99px;
   overflow: hidden;
@@ -703,21 +705,23 @@
 .momentumGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 10px 14px;
+  padding-top: 2px;
 }
 
 .momentumCell {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface-2);
-  border-radius: 10px;
-  padding: 8px 10px;
+  background: transparent;
+  padding: 0;
 }
 
 .momentumCellLabel {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .momentumCellValue {
@@ -732,9 +736,9 @@
 .energyCard {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -742,46 +746,53 @@
 
 .energyBtnRow {
   display: flex;
-  gap: 6px;
+  background: var(--color-surface-2);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-subtle);
+  gap: 2px;
 }
 
 .energyBtn {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 4px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 600;
   transition: all 0.15s ease;
 }
 
 .energyBtn:hover {
-  background: var(--color-surface);
   color: var(--color-text);
-  border-color: #cbd5e1;
 }
 
 .energyBtnActive {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: #6366f1;
-  color: #6366f1;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .energyBtnActive {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
 }
 
 .energyTipText {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: var(--color-text-muted);
-  background: var(--color-surface-2);
-  padding: 8px 12px;
-  border-radius: 8px;
-  border-left: 3px solid #6366f1;
+  background: transparent;
+  padding: 2px 2px 0;
+  border: none;
 }
 
 /*  Quick Shortcuts Card  */
@@ -789,37 +800,37 @@
 .shortcutsCard {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .shortcutLinksList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .shortcutLinkItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 7px 8px;
   border-radius: 8px;
-  color: var(--color-text);
-  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-size: 0.80rem;
   font-weight: 500;
   text-decoration: none;
-  background: var(--color-surface-2);
-  transition: background 0.15s ease, transform 0.15s ease;
+  background: transparent;
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .shortcutLinkItem:hover {
-  background: var(--color-surface-3, rgba(99, 102, 241, 0.08));
-  color: #6366f1;
+  background: var(--color-surface-2);
+  color: var(--color-text);
   transform: translateX(2px);
 }
 
@@ -837,10 +848,38 @@
   }
 }
 
-/* Nature Theme Overrides - Right Sidebar */
+/* Nature Theme Overrides - Floating Glass Widget Cards */
 :global([data-theme='nature']) .rightSidebar {
-  background: rgba(14, 28, 19, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-left-color: rgba(74, 124, 89, 0.35);
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:global([data-theme='nature']) .widgetCard,
+:global([data-theme='nature']) .momentumCard,
+:global([data-theme='nature']) .energyCard,
+:global([data-theme='nature']) .shortcutsCard {
+  background: rgba(12, 24, 16, 0.62) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(134, 239, 172, 0.16) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+:global([data-theme='nature']) .searchBox {
+  background: rgba(12, 24, 16, 0.62) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(134, 239, 172, 0.16) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+:global([data-theme='nature']) .iconBtn {
+  background: rgba(12, 24, 16, 0.62) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(134, 239, 172, 0.16) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
 }

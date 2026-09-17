@@ -39,7 +39,7 @@ export default function Sidebar({
   onOpenNextAction,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { settings, toggleSimpleMode } = useSettings();
+  const { settings } = useSettings();
   const { unreadCount } = useReminders();
   const { logout, user } = useAuth();
 
@@ -95,36 +95,9 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Quick Action Top Bar (Command Search, What to do, Alerts) */}
+        {/* Quick Utility Row (Next Action + Alerts) */}
         <div className={styles.topActionsGroup}>
-          {/* Global Command Search (⌘K / Ctrl+K) */}
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-            className={styles.whatToDoTriggerBtn}
-            title="Search & Quick Actions (Ctrl+K / ⌘K)"
-          >
-            <span className={styles.whatToDoLabel}>Search / Commands</span>
-            {!collapsed && <kbd className={styles.shortcutKbd}>⌘K</kbd>}
-          </button>
-
-          {/* Mode Switcher + Alerts */}
           <div className={styles.quickUtilityRow}>
-            <button
-              type="button"
-              onClick={toggleSimpleMode}
-              className={styles.utilityPillBtn}
-              title={settings.simpleMode ? "Switch to Full Life OS (Show All)" : "Switch to Simple Mode (Essentials Only)"}
-              style={{
-                background: settings.simpleMode ? 'rgba(74, 222, 128, 0.15)' : undefined,
-                color: settings.simpleMode ? 'var(--color-accent)' : undefined,
-                borderColor: settings.simpleMode ? 'var(--color-accent)' : undefined,
-                fontWeight: 600,
-              }}
-            >
-              <span>{settings.simpleMode ? 'Simple' : 'Full OS'}</span>
-            </button>
-
             <button
               type="button"
               onClick={() => {
@@ -134,7 +107,7 @@ export default function Sidebar({
               className={styles.utilityPillBtn}
               title="What should I do right now? (Ctrl+J / ⌘J)"
             >
-              <span>Next</span>
+              <span>Next Action</span>
             </button>
 
             <button
@@ -234,32 +207,12 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Handwritten Motivational Sticky Note */}
+        {/* Subtle, Formal Inspiration */}
         {!collapsed && (
-          <div className={styles.stickyQuoteWrapper}>
-            <div className={styles.stickyQuote}>
-              <p className={styles.handwrittenText}>
-                Small steps<br />
-                every day<br />
-                build the life<br />
-                you want.
-              </p>
-              <svg className={styles.handwrittenDoodle} viewBox="0 0 100 20" fill="none">
-                <path
-                  d="M10 14 Q 30 8, 55 12 T 90 10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M18 17 Q 40 12, 65 15 T 85 14"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  opacity="0.6"
-                />
-              </svg>
-            </div>
+          <div className={styles.sidebarQuote}>
+            <p className={styles.quoteText}>
+              &ldquo;Small steps every day build the life you want.&rdquo;
+            </p>
           </div>
         )}
 
