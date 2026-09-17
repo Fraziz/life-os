@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
@@ -44,6 +45,18 @@ export default function GoalsPage() {
   const { dreams } = useDreams();
   const { activeAreas } = useLifeAreas();
 
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      const el = document.getElementById(`goal-card-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightId, isLoaded]);
+
   const [horizonFilter, setHorizonFilter] = useState<'all' | GoalHorizon>('all');
   const [dreamFilter, setDreamFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('active');
@@ -82,7 +95,7 @@ export default function GoalsPage() {
     setParentDreamId(dreams[0]?.id || '');
     setLifeAreaId(activeAreas[0]?.id || '');
     setHorizon('90-day');
-    setTargetDate('');
+    setTargetDate(new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0]);
     setPriority('high');
     setStatus('in-progress');
     setProgress(0);
@@ -262,9 +275,19 @@ export default function GoalsPage() {
           {filteredGoals.map((goal) => {
             const parentDream = dreams.find((d) => d.id === goal.parentDreamId);
             const area = activeAreas.find((a) => a.id === goal.lifeAreaId);
+            const isHighlighted = highlightId === goal.id;
 
             return (
-              <article key={goal.id} className={styles.goalCard}>
+              <article
+                key={goal.id}
+                id={`goal-card-${goal.id}`}
+                className={styles.goalCard}
+                style={{
+                  transition: 'all 0.2s ease',
+                  boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+                  borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+                }}
+              >
                 {/* ── Hierarchy Banner (Dream -> Goal) ── */}
                 {parentDream && (
                   <div className={styles.dreamConnector}>
@@ -360,10 +383,30 @@ export default function GoalsPage() {
                     <span style={{ color: 'var(--color-text-faint)' }}>General Life</span>
                   )}
 
-                  {goal.targetDate && (
+                  {goal.targetDate ? (
                     <span className={styles.targetDate}>
                       <Calendar size={13} /> {goal.targetDate}
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(goal)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px dashed var(--color-border)',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        color: 'var(--color-text-faint)',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      title="Set target date for calendar tracking"
+                    >
+                      <Calendar size={12} /> + Add to Calendar
+                    </button>
                   )}
                 </div>
 

@@ -6,6 +6,7 @@ import { useTasks } from './TaskContext';
 import { useProjects } from './ProjectContext';
 import { useGoals } from './GoalContext';
 import { useDreams } from './DreamContext';
+import { useKnowledge } from './KnowledgeContext';
 import { loadJsonArray } from '@/lib/localStore';
 
 const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
@@ -71,11 +72,13 @@ interface InboxContextType {
   quickDump: (content: string) => void;
   bulkDump: (lines: string[]) => void;
   deleteInboxItem: (id: string) => void;
+  toggleItemApplied: (id: string) => void;
   convertToTask: (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string }) => void;
   convertToProject: (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => void;
   convertToGoal: (id: string, overrides?: { horizon?: 'yearly' | '90-day' | 'monthly'; dreamId?: string }) => void;
   convertToDream: (id: string, overrides?: { lifeAreaId?: string; whyItMatters?: string }) => void;
   convertToNote: (id: string) => void;
+  convertToProblemSolver: (id: string) => void;
   convertToSomeday: (id: string) => void;
   restoreToInbox: (id: string) => void;
   clearInbox: () => void;
@@ -90,6 +93,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const { addProject } = useProjects();
   const { addGoal } = useGoals();
   const { addDream } = useDreams();
+  const { createProblemSolvingDoc } = useKnowledge();
 
   const [items, setItems] = useState<InboxItem[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -235,6 +239,33 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     updateItemStatus(id, 'converted', 'note');
   };
 
+  const toggleItemApplied = (id: string) => {
+    saveItems(
+      items.map((i) =>
+        i.id === id
+          ? {
+              ...i,
+              isApplied: !i.isApplied,
+              appliedAt: !i.isApplied ? new Date().toISOString() : undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : i
+      )
+    );
+  };
+
+  const convertToProblemSolver = (id: string) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+
+    const createdDoc = createProblemSolvingDoc(
+      target.content.slice(0, 40),
+      target.content
+    );
+
+    updateItemStatus(id, 'converted', 'note', createdDoc.id);
+  };
+
   const convertToSomeday = (id: string) => {
     updateItemStatus(id, 'someday', 'someday');
   };
@@ -265,11 +296,13 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         quickDump,
         bulkDump,
         deleteInboxItem,
+        toggleItemApplied,
         convertToTask,
         convertToProject,
         convertToGoal,
         convertToDream,
         convertToNote,
+        convertToProblemSolver,
         convertToSomeday,
         restoreToInbox,
         clearInbox,

@@ -125,6 +125,8 @@ interface KnowledgeContextValue {
   addDoc: (input: CreateInput) => KnowledgeDocument;
   updateDoc: (id: string, input: UpdateInput) => void;
   deleteDoc: (id: string) => void;
+  togglePinDoc: (id: string) => void;
+  createProblemSolvingDoc: (problemTitle?: string, initialDescription?: string) => KnowledgeDocument;
   resetToDefaultDocs: () => void;
 }
 
@@ -182,6 +184,60 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const togglePinDoc = useCallback((id: string) => {
+    setDocs((prev: KnowledgeDocument[]) => {
+      const next = prev.map((d: KnowledgeDocument) => d.id === id ? { ...d, isPinned: !d.isPinned, updatedAt: now() } : d);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+
+  const createProblemSolvingDoc = useCallback((problemTitle?: string, initialDescription?: string): KnowledgeDocument => {
+    const title = problemTitle ? `Problem: ${problemTitle}` : 'Problem Breakdown (Kidlin\'s Law)';
+    const content = `# ${title}
+
+> 💡 **Kidlin's Law**: *"If you write down a problem clearly and specifically, you have already solved half of it."*
+
+---
+
+## 1. Clear & Specific Problem Statement
+${initialDescription || 'Write down exactly what is happening, what is failing, or what is creating friction. Be precise.'}
+
+---
+
+## 2. Facts vs. Assumptions
+- **Fact**: 
+- **Assumption**: 
+
+---
+
+## 3. Root Cause Analysis (5 Whys)
+1. **Why is this happening?** 
+2. **Why?** 
+3. **Why?** 
+
+---
+
+## 4. What Does "Solved" Look Like? (Success Metrics)
+- [ ] 
+
+---
+
+## 5. Actionable Next Steps
+- [ ] **Step 1**: 
+- [ ] **Step 2**: 
+`;
+
+    return addDoc({
+      title,
+      content,
+      status: 'active',
+      category: 'problem-solving',
+      isPinned: true,
+      tags: ['kidlins-law', 'problem-solving', 'framework'],
+    });
+  }, [addDoc]);
+
   const deleteDoc = useCallback((id: string) => {
     setDocs((prev: KnowledgeDocument[]) => {
       const next = prev.filter((d: KnowledgeDocument) => d.id !== id);
@@ -195,7 +251,16 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   }, [persist]);
 
   return (
-    <KnowledgeContext.Provider value={{ docs, isLoaded, addDoc, updateDoc, deleteDoc, resetToDefaultDocs }}>
+    <KnowledgeContext.Provider value={{
+      docs,
+      isLoaded,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      togglePinDoc,
+      createProblemSolvingDoc,
+      resetToDefaultDocs,
+    }}>
       {children}
     </KnowledgeContext.Provider>
   );

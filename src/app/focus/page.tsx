@@ -107,7 +107,7 @@ export default function FocusPage() {
     isLoaded,
   } = useFocus();
 
-  const { docs, updateDoc } = useKnowledge();
+  const { docs, updateDoc, addDoc } = useKnowledge();
   const { tasks, toggleSubtask, breakdownTask } = useTasks();
   const { goals } = useGoals();
   const { projects } = useProjects();
@@ -141,6 +141,17 @@ export default function FocusPage() {
       stopAmbientSound();
     };
   }, []);
+
+  // Escape key to exit Zen Mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZenMode) {
+        toggleZenMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZenMode, toggleZenMode]);
 
   // Sync content into book container ref whenever activeDoc or focusViewMode changes
   const getRichHtml = (content: string) => {
@@ -371,6 +382,20 @@ export default function FocusPage() {
 
   return (
     <div className={`${styles.page} ${isZenMode ? styles.zenMode : ''}`}>
+      {/* ── Zen Mode Top Exit Bar ── */}
+      {isZenMode && (
+        <div className={styles.zenTopBar}>
+          <button
+            type="button"
+            className={styles.btnExitZen}
+            onClick={toggleZenMode}
+            title="Exit Zen Mode (or press Esc)"
+          >
+            ← Exit Zen Mode <span className={styles.escBadge}>Esc</span>
+          </button>
+        </div>
+      )}
+
       {/* ── Top Header ── */}
       {!isZenMode && (
         <header className={styles.header}>
@@ -379,7 +404,7 @@ export default function FocusPage() {
               <h1 className={styles.title}>Focus Space</h1>
               {activeDoc && (
                 <span className={styles.toastSaved}>
-                  <BookMarked size={12} /> Book Reader Active
+                  Book Reader Active
                 </span>
               )}
             </div>
@@ -397,14 +422,14 @@ export default function FocusPage() {
                   className={`${styles.targetTab} ${focusViewMode === 'book' ? styles.targetTabActive : ''}`}
                   onClick={() => setFocusViewMode('book')}
                 >
-                  <BookOpen size={13} /> Book View
+                  Book View
                 </button>
                 <button
                   type="button"
                   className={`${styles.targetTab} ${focusViewMode === 'timer' ? styles.targetTabActive : ''}`}
                   onClick={() => setFocusViewMode('timer')}
                 >
-                  <Clock size={13} /> Timer View
+                  Timer View
                 </button>
               </div>
             )}
@@ -414,15 +439,14 @@ export default function FocusPage() {
               onClick={toggleZenMode}
               title="Toggle Zen Mode (Distraction-Free)"
             >
-              {isZenMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              <span>{isZenMode ? 'Exit Zen' : 'Zen Mode'}</span>
+              <span>Zen Mode</span>
             </button>
           </div>
         </header>
       )}
 
       {/* Main Focus Container */}
-      <div className={styles.focusContainer}>
+      <div className={activeDoc && focusViewMode === 'book' ? styles.focusContainerBook : styles.focusContainer}>
         {/* Left / Main Section */}
         <section className={styles.focusMain} style={{ width: '100%' }}>
           {/* If a Knowledge document is active AND we are in Book View */}
@@ -432,20 +456,15 @@ export default function FocusPage() {
               <div className={styles.focusBookHeaderBar}>
                 <div className={styles.focusBookHighlighterGroup}>
                   <span className={styles.focusBookTimerPill}>
-                    <Clock size={14} />
                     {formatTimer(secondsRemaining)}
                     <button
                       type="button"
-                      style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex' }}
+                      style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}
                       onClick={isRunning ? pauseTimer : startTimer}
                       title={isRunning ? 'Pause Timer' : 'Start Timer'}
                     >
-                      {isRunning ? <Pause size={13} /> : <Play size={13} />}
+                      {isRunning ? 'Pause' : 'Start'}
                     </button>
-                  </span>
-
-                  <span className={styles.bookHighlighterLabel}>
-                    <Highlighter size={12} style={{ color: 'var(--color-accent)' }} /> Swatches:
                   </span>
 
                   <div className={styles.focusBookSwatches}>
@@ -483,7 +502,7 @@ export default function FocusPage() {
                     onClick={handleRemoveHighlightInFocus}
                     title="Clear highlight"
                   >
-                    <Eraser size={12} /> Clear
+                    Clear
                   </button>
 
                   <button
@@ -492,12 +511,12 @@ export default function FocusPage() {
                     onClick={handleManualSave}
                     title="Save highlights to Knowledge Base"
                   >
-                    💾 Save Highlights
+                    Save Highlights
                   </button>
 
                   {showSaveToast && (
                     <span className={styles.toastSaved}>
-                      <Check size={12} /> Saved!
+                      Saved!
                     </span>
                   )}
                 </div>
@@ -509,14 +528,14 @@ export default function FocusPage() {
                     onClick={() => setTaskPickerOpen(true)}
                     title="Switch focus target"
                   >
-                    <Target size={12} /> Switch Target
+                    Switch Target
                   </button>
                   <Link
                     href={`/knowledge`}
                     className={styles.focusBookBtn}
                     title="Open in Knowledge base"
                   >
-                    <ExternalLink size={12} /> Knowledge
+                    Knowledge
                   </Link>
                 </div>
               </div>
@@ -549,53 +568,48 @@ export default function FocusPage() {
           ) : (
             /* Standard Focus Timer Card */
             <div className={styles.focusCard}>
-              {/* Presets Bar */}
-              <div className={styles.presetsBar}>
+              {/* Mode Switcher Tabs */}
+              <div className={styles.modeTabs}>
                 <button
-                  className={`${styles.presetBtn} ${mode === 'pomodoro' ? styles.activePreset : ''}`}
+                  className={`${styles.modeTab} ${mode === 'pomodoro' ? styles.activeMode : ''}`}
                   onClick={() => setTimerMode('pomodoro')}
                 >
-                  <Flame size={13} /> Pomodoro
+                  Pomodoro
                 </button>
                 <button
-                  className={`${styles.presetBtn} ${mode === 'short_break' ? styles.activePreset : ''}`}
+                  className={`${styles.modeTab} ${mode === 'short_break' ? styles.activeMode : ''}`}
                   onClick={() => setTimerMode('short_break')}
                 >
-                  <Coffee size={13} /> Short Break
+                  Short Break
                 </button>
                 <button
-                  className={`${styles.presetBtn} ${mode === 'long_break' ? styles.activePreset : ''}`}
+                  className={`${styles.modeTab} ${mode === 'long_break' ? styles.activeMode : ''}`}
                   onClick={() => setTimerMode('long_break')}
                 >
-                  <Zap size={13} /> Long Break
+                  Long Break
                 </button>
                 <button
-                  className={`${styles.presetBtn} ${mode === 'flow' ? styles.activePreset : ''}`}
+                  className={`${styles.modeTab} ${mode === 'flow' ? styles.activeMode : ''}`}
                   onClick={() => setTimerMode('flow')}
                 >
-                  <Sparkles size={13} /> Flow Mode
+                  Flow Mode
                 </button>
               </div>
 
-              {/* Circular Timer Visual */}
-              <div className={styles.timerDisplayArea}>
-                <div className={styles.timerCircle}>
-                  <div className={styles.timerNumber}>
-                    {mode === 'flow'
-                      ? formatTimer(secondsElapsed)
-                      : formatTimer(secondsRemaining)}
-                  </div>
-                  <span className={styles.timerSublabel}>
-                    {mode === 'flow' ? 'Time Elapsed' : mode.replace('_', ' ').toUpperCase()}
+              {/* Formal Digital Timer Display Card */}
+              <div className={styles.timerDisplayCard}>
+                <div className={styles.timerNumber}>
+                  {mode === 'flow'
+                    ? formatTimer(secondsElapsed)
+                    : formatTimer(secondsRemaining)}
+                </div>
+                <div className={styles.timerMetaRow}>
+                  <span className={styles.timerModeLabel}>
+                    {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
                   </span>
-                  <span className={styles.timerStateBadge}>
-                    {isRunning ? (
-                      <span className={styles.liveBadge}>
-                        <span className={styles.livePulse} /> Active
-                      </span>
-                    ) : (
-                      'Ready'
-                    )}
+                  <span className={styles.timerStatusDot}>•</span>
+                  <span className={styles.timerStatusText}>
+                    {isRunning ? 'ACTIVE' : 'READY'}
                   </span>
                 </div>
               </div>
@@ -604,7 +618,7 @@ export default function FocusPage() {
               <div className={styles.currentTaskArea}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <span className={styles.taskTagPill}>
-                    <Target size={12} /> {activeDoc ? 'Reading Target' : 'Current Target'}
+                    {activeDoc ? 'READING TARGET' : 'CURRENT TARGET'}
                   </span>
                   {parentProject && (
                     <span style={{ fontSize: '11px', color: 'var(--color-accent-light)', background: 'var(--color-surface-2)', padding: '2px 8px', borderRadius: '4px' }}>
@@ -619,7 +633,7 @@ export default function FocusPage() {
                 </div>
 
                 <h2 className={styles.taskTitle} id="focus-task-title">
-                  {activeDoc ? `📖 ${activeDoc.title}` : activeTask ? activeTask.title : customTaskTitle || 'Focus Session'}
+                  {activeDoc ? activeDoc.title : activeTask ? activeTask.title : customTaskTitle || 'Focus Session'}
                 </h2>
 
                 {activeDoc && (
@@ -629,7 +643,7 @@ export default function FocusPage() {
                       className={styles.focusBookBtn}
                       onClick={() => setFocusViewMode('book')}
                     >
-                      <BookOpen size={13} /> Open Book Reader with Highlighter
+                      Open Book Reader with Highlighter
                     </button>
                   </div>
                 )}
@@ -702,22 +716,22 @@ export default function FocusPage() {
                 <div className={styles.controlsRow}>
                   {isRunning ? (
                     <button className={styles.btnPause} onClick={pauseTimer}>
-                      <Pause size={18} /> Pause
+                      Pause
                     </button>
                   ) : (
                     <button className={styles.btnStart} onClick={startTimer}>
-                      <Play size={18} /> {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
+                      {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
                     </button>
                   )}
                   <button className={styles.btnReset} onClick={resetTimer} title="Reset timer">
-                    <RotateCcw size={16} /> Reset
+                    Reset
                   </button>
                   <button
                     className={styles.btnFinish}
                     onClick={() => setFinishModalOpen(true)}
                     title="Finish session and log actual time"
                   >
-                    <CheckCircle2 size={16} /> Finish Session
+                    Finish Session
                   </button>
                 </div>
               )}
@@ -726,30 +740,30 @@ export default function FocusPage() {
         </section>
 
         {/* Right Sidebar: Controls, Parking Lot, Ambient Soundscapes & History */}
-        {!isZenMode && (
+        {!isZenMode && !(activeDoc && focusViewMode === 'book') && (
           <aside className={styles.sideSection}>
             {/* ── 1. Focus Controls (Right Side) ── */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
-                  <Play size={14} /> Session Controls
+                  Session Controls
                 </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {isRunning ? (
                   <button className={styles.sideBtnPause} onClick={pauseTimer}>
-                    <Pause size={16} /> Pause Session
+                    Pause Session
                   </button>
                 ) : (
                   <button className={styles.sideBtnStart} onClick={startTimer}>
-                    <Play size={16} /> {secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}
+                    {secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}
                   </button>
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   <button className={styles.sideActionBtn} onClick={resetTimer} title="Reset timer">
-                    <RotateCcw size={13} /> Reset
+                    Reset
                   </button>
                   <button
                     className={styles.sideActionBtn}
@@ -765,7 +779,7 @@ export default function FocusPage() {
                   onClick={() => setFinishModalOpen(true)}
                   title="Finish session and log actual time"
                 >
-                  <CheckCircle2 size={14} /> Finish & Log Session
+                  Finish & Log Session
                 </button>
               </div>
             </div>
@@ -787,13 +801,13 @@ export default function FocusPage() {
                   className={styles.sideParkingLotInput}
                 />
                 <button type="submit" className={styles.sideBtnParkSubmit}>
-                  <Send size={12} /> Park ↵
+                  Park ↵
                 </button>
               </form>
 
               {parkedNotice && (
                 <p style={{ fontSize: '11px', color: 'var(--color-success)', margin: '6px 0 0 0', fontWeight: 600 }}>
-                  ✓ Saved to Brain Dump! Back to focusing!
+                  Saved to Brain Dump! Back to focusing!
                 </p>
               )}
             </div>
@@ -802,7 +816,7 @@ export default function FocusPage() {
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
-                  <Volume2 size={14} /> Ambient Soundscapes
+                  Ambient Soundscapes
                 </span>
               </div>
 
@@ -811,25 +825,25 @@ export default function FocusPage() {
                   className={`${styles.ambientPill} ${ambientSound === 'rain' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('rain')}
                 >
-                  <CloudRain size={13} /> Rain
+                  Rain
                 </button>
                 <button
                   className={`${styles.ambientPill} ${ambientSound === 'brown' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('brown')}
                 >
-                  <Waves size={13} /> Brown Noise
+                  Brown Noise
                 </button>
                 <button
                   className={`${styles.ambientPill} ${ambientSound === 'drone' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('drone')}
                 >
-                  <Radio size={13} /> Deep Drone
+                  Deep Drone
                 </button>
                 <button
                   className={`${styles.ambientPill} ${ambientSound === 'off' ? styles.activeAmbient : ''}`}
                   onClick={() => handleAmbientToggle('off')}
                 >
-                  <VolumeX size={13} /> Mute
+                  Mute
                 </button>
               </div>
 
@@ -872,14 +886,14 @@ export default function FocusPage() {
                 className={`${styles.targetTab} ${targetTab === 'tasks' ? styles.targetTabActive : ''}`}
                 onClick={() => setTargetTab('tasks')}
               >
-                <Target size={13} /> Tasks ({filteredTasks.length})
+                Tasks ({filteredTasks.length})
               </button>
               <button
                 type="button"
                 className={`${styles.targetTab} ${targetTab === 'knowledge' ? styles.targetTabActive : ''}`}
                 onClick={() => setTargetTab('knowledge')}
               >
-                <BookOpen size={13} /> Knowledge & Books ({filteredDocs.length})
+                Knowledge & Books ({filteredDocs.length})
               </button>
             </div>
 
@@ -937,43 +951,66 @@ export default function FocusPage() {
                     No pending tasks found.
                   </p>
                 )
-              ) : filteredDocs.length > 0 ? (
-                filteredDocs.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className={`${styles.knowledgeTargetItem} ${activeDoc?.id === doc.id ? styles.knowledgeTargetActive : ''}`}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px', fontSize: '12px', padding: '8px', background: 'rgba(124, 106, 255, 0.1)', border: '1px dashed var(--color-accent)' }}
                     onClick={() => {
-                      selectFocusDoc(doc);
+                      const newDoc = addDoc({
+                        title: 'Focus Note — ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                        content: '# Focus Note\n\nStart typing your focus notes and thoughts here...',
+                        status: 'active',
+                        category: 'learning',
+                        tags: ['focus-note'],
+                      });
+                      selectFocusDoc(newDoc);
                       setFocusViewMode('book');
                       setTaskPickerOpen(false);
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <BookOpen size={14} style={{ color: 'var(--color-accent)' }} />
-                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
-                          {doc.title}
-                        </span>
-                      </div>
-                      {doc.tags && doc.tags.length > 0 && (
-                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                          {doc.tags.map((t) => (
-                            <span key={t} style={{ fontSize: '10px', color: 'var(--color-text-faint)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px' }}>
-                              #{t}
+                    <Plus size={14} style={{ color: 'var(--color-accent-light)' }} /> + Create New Note / Book Target
+                  </button>
+                  {filteredDocs.length > 0 ? (
+                    filteredDocs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className={`${styles.knowledgeTargetItem} ${activeDoc?.id === doc.id ? styles.knowledgeTargetActive : ''}`}
+                        onClick={() => {
+                          selectFocusDoc(doc);
+                          setFocusViewMode('book');
+                          setTaskPickerOpen(false);
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <BookOpen size={14} style={{ color: 'var(--color-accent)' }} />
+                            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
+                              {doc.title}
                             </span>
-                          ))}
+                          </div>
+                          {doc.tags && doc.tags.length > 0 && (
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              {doc.tags.map((t) => (
+                                <span key={t} style={{ fontSize: '10px', color: 'var(--color-text-faint)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px' }}>
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px', whiteSpace: 'nowrap' }}>
-                      Select Book Target
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
-                  No knowledge documents found.
-                </p>
+                        <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                          Select Book Target
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
+                      No knowledge documents found.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>

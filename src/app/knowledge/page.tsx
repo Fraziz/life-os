@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useRef, useEffect } from 'react';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useGoals } from '@/context/GoalContext';
@@ -7,7 +8,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { extractTextFromFile } from '@/utils/fileImporter';
-import type { KnowledgeDocument, DocumentStatus } from '@/types';
+import type { KnowledgeDocument, DocumentStatus, DocumentCategory } from '@/types';
 import {
   BookOpen,
   Plus,
@@ -62,6 +63,9 @@ import {
   Highlighter,
   Eraser,
   Lock,
+  Pin,
+  HelpCircle,
+  ExternalLink,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -448,7 +452,7 @@ function MarkdownToolbar({
 
 
 export default function KnowledgePage() {
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, resetToDefaultDocs } = useKnowledge();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, togglePinDoc, createProblemSolvingDoc, resetToDefaultDocs } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -458,6 +462,7 @@ export default function KnowledgePage() {
   const [searchQ, setSearchQ]     = useState('');
   const [tagFilter, setTagFilter]  = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'pinned' | DocumentCategory>('all');
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -478,6 +483,8 @@ export default function KnowledgePage() {
   const [fTitle, setFTitle]           = useState('');
   const [fContent, setFContent]       = useState('');
   const [fStatus, setFStatus]         = useState<DocumentStatus>('active');
+  const [fCategory, setFCategory]     = useState<DocumentCategory>('general');
+  const [fIsPinned, setFIsPinned]     = useState(false);
   const [fTags, setFTags]             = useState('');
   const [fDreamId, setFDreamId]       = useState('');
   const [fGoalId, setFGoalId]         = useState('');
@@ -689,6 +696,8 @@ export default function KnowledgePage() {
       title: fTitle.trim(),
       content: fContent,
       status: fStatus,
+      category: fCategory,
+      isPinned: fIsPinned,
       tags,
       linkedDreamId: fDreamId || undefined,
       linkedGoalId: fGoalId || undefined,
@@ -1335,6 +1344,8 @@ export default function KnowledgePage() {
   const q = searchQ.toLowerCase();
   const filteredDocs = docs.filter((d) => {
     if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+    if (categoryFilter === 'pinned' && !d.isPinned) return false;
+    if (categoryFilter !== 'all' && categoryFilter !== 'pinned' && (d.category || 'general') !== categoryFilter) return false;
     if (tagFilter && !d.tags.some((t) => t.toLowerCase().includes(tagFilter.toLowerCase()))) return false;
     if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q) && !d.tags.join(' ').toLowerCase().includes(q)) return false;
     return true;
@@ -1360,10 +1371,29 @@ export default function KnowledgePage() {
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Personal Knowledge Base</h1>
           <p className={styles.subtitle}>
-            Formal reference notes, research, game designs, and documents connected directly to your life domains.
+            Formal reference notes, research, problem solving (Kidlin&apos;s Law), and documents connected to your life.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            className={styles.btnSecondary}
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 600,
+            }}
+            onClick={() => {
+              const newDoc = createProblemSolvingDoc();
+              setSelectedId(newDoc.id);
+              setIsCreating(false);
+              setEditorMode('edit');
+            }}
+            title="Create a Kidlin's Law Problem Breakdown canvas"
+          >
+            + Solve Problem (Kidlin&apos;s Law)
+          </button>
           <input
             type="file"
             ref={importFileRef}
@@ -1373,16 +1403,14 @@ export default function KnowledgePage() {
           />
           <button
             className={styles.btnSecondary}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             onClick={() => importFileRef.current?.click()}
             disabled={isImporting}
             title="Import PDF or text document and extract text automatically"
           >
-            {isImporting ? <Loader2 size={15} className="animate-spin" /> : <FileUp size={15} />}
             {isImporting ? (importStatus || 'Importing...') : 'Import PDF / File'}
           </button>
           <button className={styles.btnCreate} onClick={handleNewDoc}>
-            <Plus size={16} /> New Document
+            + New Document
           </button>
         </div>
       </header>
@@ -1408,6 +1436,28 @@ export default function KnowledgePage() {
             )}
           </div>
 
+          {/* Category Filter Pills */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '8px 0' }}>
+            {([
+              { id: 'all', label: 'All' },
+              { id: 'pinned', label: '📌 Pinned' },
+              { id: 'learning', label: '🧠 Learning' },
+              { id: 'problem-solving', label: '🎯 Kidlin\'s Law' },
+              { id: 'guides', label: '📖 Guides' },
+              { id: 'ideas', label: '💡 Ideas' },
+              { id: 'reference', label: '📚 Reference' },
+            ] as const).map((cat) => (
+              <button
+                key={cat.id}
+                className={`${styles.statusChip} ${categoryFilter === cat.id ? styles.statusChipActive : ''}`}
+                onClick={() => setCategoryFilter(cat.id as any)}
+                style={{ fontSize: '10px', padding: '2px 7px' }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           <div className={styles.filterRow}>
             <div className={styles.statusChips}>
               {(['all', 'active', 'draft', 'archived'] as const).map((s) => (
@@ -1416,7 +1466,7 @@ export default function KnowledgePage() {
                   className={`${styles.statusChip} ${statusFilter === s ? styles.statusChipActive : ''}`}
                   onClick={() => setStatusFilter(s)}
                 >
-                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                  {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}
             </div>
@@ -1455,29 +1505,55 @@ export default function KnowledgePage() {
                   >
                     <div className={styles.docRowContent}>
                       <div className={styles.docRowTitleRow}>
-                        <span className={styles.docRowTitle}>{doc.title}</span>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(doc.id, doc.title);
-                          }}
-                          title="Delete Document"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                          {doc.isPinned && <Pin size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />}
+                          <span className={styles.docRowTitle}>{doc.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinDoc(doc.id);
+                            }}
+                            title={doc.isPinned ? "Unpin document" : "Pin document to top"}
+                            style={{ color: doc.isPinned ? '#f59e0b' : 'var(--color-text-faint)' }}
+                          >
+                            <Pin size={12} />
+                          </button>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(doc.id, doc.title);
+                            }}
+                            title="Delete Document"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className={styles.docRowMeta}>
                         <span className={styles.statusIndicator} style={{ color: statusColor }}>
                           {doc.status}
                         </span>
-                        {doc.tags.slice(0, 2).map((t) => (
+                        {doc.category && (
+                          <span className={styles.tagPill} style={{ background: 'rgba(124, 106, 255, 0.15)', color: 'var(--color-accent-light)' }}>
+                            {doc.category}
+                          </span>
+                        )}
+                        {doc.tags.slice(0, 1).map((t) => (
                           <span key={t} className={styles.tagPill}>{t}</span>
                         ))}
-                        <span className={styles.dateStamp}>
-                          {new Date(doc.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
+                        <Link
+                          href={`/focus?docId=${doc.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ fontSize: '10px', color: 'var(--color-accent-light)', display: 'inline-flex', alignItems: 'center', gap: '2px', fontWeight: 600, marginLeft: 'auto' }}
+                          title="Study in Focus Mode"
+                        >
+                          <BookOpen size={10} /> Study
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -1616,6 +1692,35 @@ export default function KnowledgePage() {
                       <option value="draft">Draft</option>
                       <option value="archived">Archived</option>
                     </select>
+                  </div>
+
+                  <div className={styles.propItem}>
+                    <label className={styles.propLabel}>Category</label>
+                    <select
+                      className={styles.propSelect}
+                      value={fCategory}
+                      onChange={(e) => setFCategory(e.target.value as DocumentCategory)}
+                    >
+                      <option value="general">General</option>
+                      <option value="learning">🧠 Learning &amp; Study</option>
+                      <option value="problem-solving">🎯 Problem Solving (Kidlin&apos;s Law)</option>
+                      <option value="guides">📖 Guides &amp; Manuals</option>
+                      <option value="ideas">💡 Ideas &amp; Insights</option>
+                      <option value="reference">📚 Reference</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.propItem}>
+                    <label className={styles.propLabel}>Pin</label>
+                    <button
+                      type="button"
+                      className={styles.propSelect}
+                      onClick={() => setFIsPinned(!fIsPinned)}
+                      style={{ cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Pin size={12} style={{ color: fIsPinned ? '#f59e0b' : 'inherit' }} />
+                      <span>{fIsPinned ? 'Pinned 📌' : 'Unpinned'}</span>
+                    </button>
                   </div>
 
                   <div className={styles.propItem}>

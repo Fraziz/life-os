@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useProjects } from '@/context/ProjectContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
@@ -54,6 +55,7 @@ function ProjectRow({
   onProgressChange,
   parentGoalTitle,
   compact,
+  highlightId,
 }: {
   project: Project;
   onEdit: (p: Project) => void;
@@ -61,12 +63,15 @@ function ProjectRow({
   onProgressChange: (id: string, v: number) => void;
   parentGoalTitle?: string;
   compact?: boolean;
+  highlightId?: string | null;
 }) {
   const cfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.active;
   const accent = project.color || cfg.color;
+  const isHighlighted = highlightId === project.id;
 
   return (
     <article
+      id={`project-card-${project.id}`}
       style={{
         display: 'flex',
         gap: '12px',
@@ -76,7 +81,9 @@ function ProjectRow({
         background: 'var(--color-surface)',
         borderRadius: compact ? '10px' : '12px',
         marginBottom: compact ? '6px' : '8px',
-        transition: 'background 0.15s',
+        transition: 'all 0.2s ease',
+        boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+        borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
       }}
     >
       {/* Main Info */}
@@ -127,10 +134,33 @@ function ProjectRow({
           />
         </div>
 
-        {!compact && project.dueDate && (
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-            <Calendar size={11} /> Due {project.dueDate}
-          </span>
+        {!compact && (
+          project.dueDate ? (
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <Calendar size={11} /> Due {project.dueDate}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onEdit(project)}
+              style={{
+                background: 'transparent',
+                border: '1px dashed var(--color-border)',
+                borderRadius: '6px',
+                padding: '1px 7px',
+                fontSize: '10px',
+                color: 'var(--color-text-faint)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                marginTop: '6px',
+              }}
+              title="Set due date to show in calendar"
+            >
+              <Calendar size={11} /> + Add to Calendar
+            </button>
+          )
         )}
       </div>
 
@@ -155,12 +185,13 @@ const btnStyle: React.CSSProperties = {
 };
 
 /** ── List View ── */
-function ListView({ projects, goals, onEdit, onDelete, onProgressChange }: {
+function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
   onDelete: (id: string) => void;
   onProgressChange: (id: string, v: number) => void;
+  highlightId?: string | null;
 }) {
   if (projects.length === 0) return <EmptyState />;
   return (
@@ -173,6 +204,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange }: {
           onDelete={onDelete}
           onProgressChange={onProgressChange}
           parentGoalTitle={goals.find((g) => g.id === p.goalId)?.title}
+          highlightId={highlightId}
         />
       ))}
     </div>
@@ -180,12 +212,13 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange }: {
 }
 
 /** ── Kanban View ── */
-function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange }: {
+function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
   onDelete: (id: string) => void;
   onProgressChange: (id: string, v: number) => void;
+  highlightId?: string | null;
 }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', overflowX: 'auto' }}>
@@ -223,6 +256,7 @@ function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange }: {
                   onProgressChange={onProgressChange}
                   parentGoalTitle={goals.find((g) => g.id === p.goalId)?.title}
                   compact
+                  highlightId={highlightId}
                 />
               ))
             )}
@@ -448,6 +482,18 @@ export default function ProjectsPage() {
   const { goals } = useGoals();
   const { dreams } = useDreams();
 
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      const el = document.getElementById(`project-card-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightId, isLoaded]);
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'planning' | 'completed'>('active');
   const [goalFilter, setGoalFilter]     = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -483,8 +529,10 @@ export default function ProjectsPage() {
     setEditingProject(null);
     setTitle(''); setDescription(''); setGoalId(goals[0]?.id || '');
     setMilestoneId(''); setStatus('active'); setPriority('high');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setDueDate(''); setProgress(0); setNotes(''); setProjectColor('');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const defaultDue = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    setStartDate(todayStr);
+    setDueDate(defaultDue); setProgress(0); setNotes(''); setProjectColor('');
     setModalOpen(true);
   };
 
@@ -622,6 +670,7 @@ export default function ProjectsPage() {
           onEdit={openEditModal}
           onDelete={deleteProject}
           onProgressChange={updateProjectProgress}
+          highlightId={highlightId}
         />
       )}
 
@@ -632,6 +681,7 @@ export default function ProjectsPage() {
           onEdit={openEditModal}
           onDelete={deleteProject}
           onProgressChange={updateProjectProgress}
+          highlightId={highlightId}
         />
       )}
 

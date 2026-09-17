@@ -39,12 +39,16 @@ export default function Sidebar({
   onOpenNextAction,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { settings } = useSettings();
+  const { settings, toggleSimpleMode } = useSettings();
   const { unreadCount } = useReminders();
   const { logout, user } = useAuth();
 
   const [moreOpen, setMoreOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+
+  const displayedSections = settings.simpleMode
+    ? NAV_SECTIONS.filter((s) => s.id === 'daily')
+    : NAV_SECTIONS;
 
   const sidebarClass = [
     styles.sidebar,
@@ -91,24 +95,48 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Quick Action Top Bar (What to do, Alerts, Assistant) */}
+        {/* Quick Action Top Bar (Command Search, What to do, Alerts) */}
         <div className={styles.topActionsGroup}>
-          {/* What to do? Trigger */}
+          {/* Global Command Search (⌘K / Ctrl+K) */}
           <button
             type="button"
-            onClick={() => {
-              if (onOpenNextAction) onOpenNextAction();
-              else window.dispatchEvent(new CustomEvent('open-next-action'));
-            }}
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
             className={styles.whatToDoTriggerBtn}
-            title="What should I do right now? (Ctrl+J / ⌘J)"
+            title="Search & Quick Actions (Ctrl+K / ⌘K)"
           >
-            <span className={styles.whatToDoLabel}>What to do?</span>
-            {!collapsed && <kbd className={styles.shortcutKbd}>⌘J</kbd>}
+            <span className={styles.whatToDoLabel}>Search / Commands</span>
+            {!collapsed && <kbd className={styles.shortcutKbd}>⌘K</kbd>}
           </button>
 
-          {/* Alerts + Assistant quick row */}
+          {/* Mode Switcher + Alerts */}
           <div className={styles.quickUtilityRow}>
+            <button
+              type="button"
+              onClick={toggleSimpleMode}
+              className={styles.utilityPillBtn}
+              title={settings.simpleMode ? "Switch to Full Life OS (Show All)" : "Switch to Simple Mode (Essentials Only)"}
+              style={{
+                background: settings.simpleMode ? 'rgba(74, 222, 128, 0.15)' : undefined,
+                color: settings.simpleMode ? 'var(--color-accent)' : undefined,
+                borderColor: settings.simpleMode ? 'var(--color-accent)' : undefined,
+                fontWeight: 600,
+              }}
+            >
+              <span>{settings.simpleMode ? 'Simple' : 'Full OS'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenNextAction) onOpenNextAction();
+                else window.dispatchEvent(new CustomEvent('open-next-action'));
+              }}
+              className={styles.utilityPillBtn}
+              title="What should I do right now? (Ctrl+J / ⌘J)"
+            >
+              <span>Next</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -119,26 +147,16 @@ export default function Sidebar({
               title="Alerts & Reminders"
             >
               <span>Alerts</span>
-
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenAssistant) onOpenAssistant();
-                else window.dispatchEvent(new CustomEvent('open-assistant'));
-              }}
-              className={styles.utilityPillBtn}
-              title="Sariling Mundo Assistant"
-            >
-              <span>Assistant</span>
+              {unreadCount > 0 && (
+                <span className={styles.bellCountBadge}>{unreadCount}</span>
+              )}
             </button>
           </div>
         </div>
 
         {/* Navigation Sections */}
         <nav className={styles.nav}>
-          {NAV_SECTIONS.map((section) => {
+          {displayedSections.map((section) => {
             const isMore = section.id === 'more';
 
             if (isMore) {

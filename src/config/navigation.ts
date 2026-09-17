@@ -6,8 +6,8 @@ import type { NavSection } from '@/types';
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
-    id: 'today',
-    label: 'TODAY',
+    id: 'daily',
+    label: 'DAILY ACTION',
     items: [
       {
         id: 'today',
@@ -18,17 +18,11 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         id: 'focus',
-        label: 'Focus Mode',
+        label: 'Focus Space',
         href: '/focus',
         icon: 'focus',
         isAvailable: true,
       },
-    ],
-  },
-  {
-    id: 'capture',
-    label: 'CAPTURE',
-    items: [
       {
         id: 'inbox',
         label: 'Brain Dump',
@@ -36,12 +30,33 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'inbox',
         isAvailable: true,
       },
+      {
+        id: 'tasks',
+        label: 'Tasks',
+        href: '/tasks',
+        icon: 'tasks',
+        isAvailable: true,
+      },
+      {
+        id: 'calendar',
+        label: 'Calendar',
+        href: '/calendar',
+        icon: 'calendar',
+        isAvailable: true,
+      },
     ],
   },
   {
-    id: 'organize',
-    label: 'ORGANIZE',
+    id: 'planning',
+    label: 'GOALS & PLANS',
     items: [
+      {
+        id: 'projects',
+        label: 'Projects',
+        href: '/projects',
+        icon: 'projects',
+        isAvailable: true,
+      },
       {
         id: 'goals',
         label: 'Goals',
@@ -57,28 +72,8 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'projects',
-        label: 'Projects',
-        href: '/projects',
-        icon: 'projects',
-        isAvailable: true,
-      },
-      {
-        id: 'tasks',
-        label: 'Tasks',
-        href: '/tasks',
-        icon: 'tasks',
-        isAvailable: true,
-      },
-    ],
-  },
-  {
-    id: 'direction',
-    label: 'DIRECTION',
-    items: [
-      {
         id: 'roadmap',
-        label: 'Life Roadmap',
+        label: 'Roadmap',
         href: '/roadmap',
         icon: 'roadmap',
         isAvailable: true,
@@ -90,45 +85,17 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'dreams',
         isAvailable: true,
       },
-      {
-        id: 'areas',
-        label: 'Life Areas',
-        href: '/areas',
-        icon: 'areas',
-        isAvailable: true,
-      },
     ],
   },
   {
-    id: 'more',
-    label: 'MORE',
+    id: 'growth',
+    label: 'KNOWLEDGE & HEALTH',
     items: [
       {
-        id: 'calendar',
-        label: 'Calendar',
-        href: '/calendar',
-        icon: 'calendar',
-        isAvailable: true,
-      },
-      {
-        id: 'progress',
-        label: 'Progress & Review',
-        href: '/progress',
-        icon: 'progress',
-        isAvailable: true,
-      },
-      {
-        id: 'review',
-        label: 'Weekly Review',
-        href: '/review',
-        icon: 'review',
-        isAvailable: true,
-      },
-      {
-        id: 'reset',
-        label: 'Reset Plan',
-        href: '/reset',
-        icon: 'reset',
+        id: 'knowledge',
+        label: 'Knowledge Base',
+        href: '/knowledge',
+        icon: 'knowledge',
         isAvailable: true,
       },
       {
@@ -146,10 +113,10 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'knowledge',
-        label: 'Knowledge',
-        href: '/knowledge',
-        icon: 'knowledge',
+        id: 'areas',
+        label: 'Life Areas',
+        href: '/areas',
+        icon: 'areas',
         isAvailable: true,
       },
       {
@@ -157,6 +124,33 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Files',
         href: '/files',
         icon: 'files',
+        isAvailable: true,
+      },
+    ],
+  },
+  {
+    id: 'more',
+    label: 'REVIEW & SETTINGS',
+    items: [
+      {
+        id: 'review',
+        label: 'Weekly Review',
+        href: '/review',
+        icon: 'review',
+        isAvailable: true,
+      },
+      {
+        id: 'progress',
+        label: 'Progress Analytics',
+        href: '/progress',
+        icon: 'progress',
+        isAvailable: true,
+      },
+      {
+        id: 'reset',
+        label: 'Reset Plan',
+        href: '/reset',
+        icon: 'reset',
         isAvailable: true,
       },
       {

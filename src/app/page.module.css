@@ -250,6 +250,136 @@
   gap: 4px;
 }
 
+/* ── 3-Step Daily Flow Widget ── */
+.dailyFlowCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.dailyFlowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dailyFlowTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dailyFlowHeading {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dailyFlowSubtitle {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.presetTriggerBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.presetTriggerBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.dailyFlowStepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .dailyFlowStepsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dailyFlowStepItem {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  color: inherit;
+}
+
+.dailyFlowStepItem:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.flowStepTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flowStepNumber {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-faint);
+}
+
+.flowStepStatus {
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(124, 106, 255, 0.12);
+  color: var(--color-accent-light);
+}
+
+.flowStepStatusDone {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.flowStepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.flowStepTitle {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.flowStepDesc {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
 .recentDumpsLabel {
   font-size: 0.73rem;
   font-weight: 600;
@@ -1740,18 +1870,20 @@
 
 /* Nature Theme Overrides - Today Dashboard */
 :global([data-theme='nature']) .summaryPillFocus {
-  background: linear-gradient(135deg, #2d5a3f, #4a7c59);
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.20), rgba(34, 197, 94, 0.35));
+  border: 1px solid rgba(134, 239, 172, 0.20);
 }
-:global([data-theme='nature']) .pillIconGreen { color: #3a7d44; }
-:global([data-theme='nature']) .pillIconOrange { color: #c8852a; }
+:global([data-theme='nature']) .pillIconGreen { color: #4ade80; }
+:global([data-theme='nature']) .pillIconOrange { color: #fbbf24; }
 :global([data-theme='nature']) .scheduleSectionCard,
 :global([data-theme='nature']) .scheduleCardItem {
-  background: #faf8f0;
-  border-color: #d4cfc0;
+  background: rgba(20, 38, 28, 0.60);
+  border-color: rgba(134, 239, 172, 0.12);
+  color: #f0fdf4;
 }
 :global([data-theme='nature']) .energyBanner,
 :global([data-theme='nature']) .lowEnergyBanner {
-  background: #edf5e8;
-  border-color: #b8dcac;
-  color: #1c2b1e;
+  background: rgba(24, 46, 32, 0.65);
+  border-color: rgba(134, 239, 172, 0.15);
+  color: #f0fdf4;
 }

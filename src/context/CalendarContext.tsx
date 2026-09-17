@@ -5,6 +5,7 @@ import type { CalendarEvent, ScheduledWorkBlock, Task } from '@/types';
 import { useTasks } from './TaskContext';
 import { useMilestones } from './MilestoneContext';
 import { useProjects } from './ProjectContext';
+import { useGoals } from './GoalContext';
 import { loadJsonArray } from '@/lib/localStore';
 
 const EVENTS_STORAGE_KEY = 'life_os_calendar_events_v1';
@@ -66,7 +67,7 @@ export interface DeadlineItem {
   id: string;
   title: string;
   date: string;
-  sourceType: 'task' | 'milestone' | 'project';
+  sourceType: 'task' | 'milestone' | 'project' | 'goal';
   priority?: string;
   status?: string;
   entityId: string;
@@ -94,6 +95,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const { tasks, isLoaded: tasksLoaded } = useTasks();
   const { milestones, isLoaded: milestonesLoaded } = useMilestones();
   const { projects, isLoaded: projectsLoaded } = useProjects();
+  const { goals, isLoaded: goalsLoaded } = useGoals();
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [scheduledBlocks, setScheduledBlocks] = useState<ScheduledWorkBlock[]>([]);
@@ -192,7 +194,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     saveBlocks(DEFAULT_SCHEDULED_BLOCKS);
   };
 
-  // Compile all Deadlines across tasks, milestones, and projects
+  // Compile all Deadlines across tasks, milestones, projects, and goals
   const deadlines: DeadlineItem[] = [];
 
   tasks.forEach((t) => {
@@ -232,6 +234,20 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         priority: p.priority,
         status: p.status,
         entityId: p.id,
+      });
+    }
+  });
+
+  goals.forEach((g) => {
+    if (g.targetDate) {
+      deadlines.push({
+        id: `dl-goal-${g.id}`,
+        title: `Goal: ${g.title}`,
+        date: g.targetDate,
+        sourceType: 'goal',
+        priority: g.priority,
+        status: g.status,
+        entityId: g.id,
       });
     }
   });

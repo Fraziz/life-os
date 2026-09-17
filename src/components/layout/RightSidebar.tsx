@@ -328,32 +328,46 @@ export default function RightSidebar() {
               </div>
 
               <div className={styles.agendaItemsList}>
-                {selectedDeadlines.map((dl) => (
-                  <div
-                    key={dl.id}
-                    className={`${styles.agendaItem} ${styles.agendaDeadlineItem}`}
-                  >
-                    <div className={styles.agendaItemIconWrap}>
-                      <Flag size={12} className={styles.deadlineIcon} />
-                    </div>
-                    <div className={styles.agendaItemContent}>
-                      <span className={styles.agendaItemTitle} title={dl.title}>
-                        {dl.title}
-                      </span>
-                      <div className={styles.agendaItemMetaRow}>
-                        <span className={styles.agendaSourceBadge}>{dl.sourceType}</span>
-                        {dl.priority && (
-                          <span style={{ textTransform: 'capitalize' }}>{dl.priority}</span>
-                        )}
+                {selectedDeadlines.map((dl) => {
+                  const href =
+                    dl.sourceType === 'task' ? `/tasks?highlight=${dl.entityId}` :
+                    dl.sourceType === 'project' ? `/projects?highlight=${dl.entityId}` :
+                    dl.sourceType === 'goal' ? `/goals?highlight=${dl.entityId}` :
+                    dl.sourceType === 'milestone' ? `/milestones?highlight=${dl.entityId}` :
+                    `/tasks?highlight=${dl.entityId}`;
+                  return (
+                    <Link
+                      key={dl.id}
+                      href={href}
+                      className={`${styles.agendaItem} ${styles.agendaDeadlineItem}`}
+                      style={{ textDecoration: 'none', cursor: 'pointer' }}
+                      title={`Go to ${dl.sourceType}: ${dl.title}`}
+                    >
+                      <div className={styles.agendaItemIconWrap}>
+                        <Flag size={12} className={styles.deadlineIcon} />
                       </div>
-                    </div>
-                  </div>
-                ))}
+                      <div className={styles.agendaItemContent}>
+                        <span className={styles.agendaItemTitle} title={dl.title}>
+                          {dl.title}
+                        </span>
+                        <div className={styles.agendaItemMetaRow}>
+                          <span className={styles.agendaSourceBadge}>{dl.sourceType}</span>
+                          {dl.priority && (
+                            <span style={{ textTransform: 'capitalize' }}>{dl.priority}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
 
                 {selectedEvents.map((evt) => (
-                  <div
+                  <Link
                     key={evt.id}
+                    href="/calendar"
                     className={`${styles.agendaItem} ${styles.agendaEventItem}`}
+                    style={{ textDecoration: 'none', cursor: 'pointer' }}
+                    title={`Open calendar: ${evt.title}`}
                   >
                     <div className={styles.agendaItemIconWrap}>
                       <CalendarIcon size={12} className={styles.eventIcon} />
@@ -370,13 +384,16 @@ export default function RightSidebar() {
                         {evt.notes && <span>• {evt.notes}</span>}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
 
                 {selectedBlocks.map((blk) => (
-                  <div
+                  <Link
                     key={blk.id}
+                    href={`/tasks?highlight=${blk.taskId}`}
                     className={`${styles.agendaItem} ${styles.agendaBlockItem}`}
+                    style={{ textDecoration: 'none', cursor: 'pointer' }}
+                    title={`Go to task: ${blk.taskTitle}`}
                   >
                     <div className={styles.agendaItemIconWrap}>
                       <Clock size={12} className={styles.blockIcon} />
@@ -392,7 +409,7 @@ export default function RightSidebar() {
                         {blk.notes && <span>• {blk.notes}</span>}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
 
                 {totalSelectedMarks === 0 && (
@@ -504,7 +521,7 @@ export default function RightSidebar() {
           <Link href="/focus" className={styles.shortcutLinkItem}>
             <div className={styles.shortcutItemLeft}>
               <Flame size={14} style={{ color: '#ef4444' }} />
-              <span>Focus Mode</span>
+              <span>Focus Space</span>
             </div>
             <ArrowRight size={13} />
           </Link>

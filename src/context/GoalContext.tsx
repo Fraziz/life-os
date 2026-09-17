@@ -73,7 +73,7 @@ interface GoalContextType {
   goals: Goal[];
   activeGoals: Goal[];
   completedGoals: Goal[];
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => Goal;
   updateGoal: (id: string, partial: Partial<Goal>) => void;
   updateGoalProgress: (id: string, progress: number) => void;
   updateGoalStatus: (id: string, status: GoalStatus) => void;
@@ -119,7 +119,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const activeGoals = goals.filter((g) => g.status !== 'completed' && g.status !== 'archived');
   const completedGoals = goals.filter((g) => g.status === 'completed');
 
-  const addGoal = (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addGoal = (data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Goal => {
     const newGoal: Goal = {
       ...data,
       id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -127,6 +127,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     saveGoals([newGoal, ...goals]);
+    return newGoal;
   };
 
   const updateGoal = (id: string, partial: Partial<Goal>) => {

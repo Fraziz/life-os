@@ -29,6 +29,7 @@ import AssistantModal from '@/components/assistant/AssistantModal';
 import NextActionModal from '@/components/assistant/NextActionModal';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
+import CommandPalette from '@/components/command/CommandPalette';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
@@ -223,6 +224,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
       {/* Global Search Modal */}
       {isOpen && <SearchModal />}
+
+      {/* Global Command Palette (Ctrl+K / ⌘K) */}
+      <CommandPalette />
 
       {/* Reminders Drawer */}
       <ReminderDrawer isOpen={remindersOpen} onClose={() => setRemindersOpen(false)} />

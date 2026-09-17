@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useGoals } from '@/context/GoalContext';
 import {
   Dumbbell,
   Plus,
@@ -23,6 +24,7 @@ import {
   Shield,
   Wind,
   Footprints,
+  Scale,
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -201,6 +203,11 @@ function muscleGroupIcon(mg: MuscleGroup) {
 // ── Main Workout Page ─────────────────────────────────────────────────────────
 
 export default function WorkoutPage() {
+  const { goals, updateGoalProgress } = useGoals();
+  const [currentWeightKg, setCurrentWeightKg] = useState<number>(55);
+  const [targetWeightKg, setTargetWeightKg] = useState<number>(60);
+  const [weightLogs, setWeightLogs] = useState<{ date: string; weight: number }[]>([]);
+
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [schedule, setSchedule] = useState<WorkoutSchedule[]>([
     { dayOfWeek: 0, label: 'Sunday', sessionName: '', isRestDay: true },
@@ -243,8 +250,28 @@ export default function WorkoutPage() {
       if (raw) setSessions(JSON.parse(raw));
       const rawSched = localStorage.getItem(SCHEDULE_KEY);
       if (rawSched) setSchedule(JSON.parse(rawSched));
+      const savedWeight = localStorage.getItem('life-os-current-weight');
+      if (savedWeight) setCurrentWeightKg(parseFloat(savedWeight));
+      const savedLogs = localStorage.getItem('life-os-weight-logs');
+      if (savedLogs) setWeightLogs(JSON.parse(savedLogs));
     } catch {/* ignore */}
   }, []);
+
+  const handleUpdateWeight = (newWeight: number) => {
+    setCurrentWeightKg(newWeight);
+    localStorage.setItem('life-os-current-weight', newWeight.toString());
+    const today = getToday();
+    const updatedLogs = [{ date: today, weight: newWeight }, ...weightLogs.filter((l) => l.date !== today)].slice(0, 10);
+    setWeightLogs(updatedLogs);
+    localStorage.setItem('life-os-weight-logs', JSON.stringify(updatedLogs));
+
+    // Automatically update progress of matching body/60kg goal
+    const targetGoal = goals.find((g) => /60kg|weight|gain|workout|fitness/i.test(g.title + ' ' + g.why));
+    if (targetGoal) {
+      const pct = Math.min(100, Math.max(0, Math.round((newWeight / targetWeightKg) * 100)));
+      updateGoalProgress(targetGoal.id, pct);
+    }
+  };
 
   // Save
   const persistSessions = useCallback((data: WorkoutSession[]) => {
@@ -717,6 +744,84 @@ export default function WorkoutPage() {
         >
           <Plus size={15} /> New Workout
         </button>
+      </div>
+
+      {/* ── Body Goal & Weight Target Progress ── */}
+      <div style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderLeft: '4px solid var(--color-accent)',
+        borderRadius: '14px',
+        padding: '16px 20px',
+        marginBottom: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: 'rgba(124, 106, 255, 0.15)', color: 'var(--color-accent)', padding: '8px', borderRadius: '10px' }}>
+              <Scale size={20} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' }}>
+                  Target Weight: {targetWeightKg} kg Goal
+                </span>
+                <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5', padding: '1px 8px', borderRadius: '99px', border: '1px solid rgba(34, 211, 165, 0.3)' }}>
+                  Connected to Goals
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, marginTop: '2px' }}>
+                Track body weight progress towards your 60kg milestone. Log workouts to stay consistent!
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-2)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--color-border-subtle)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Current Weight:</span>
+            <input
+              type="number"
+              min="30"
+              max="200"
+              step="0.5"
+              value={currentWeightKg}
+              onChange={(e) => handleUpdateWeight(parseFloat(e.target.value) || 0)}
+              style={{ width: '60px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text)', padding: '2px 6px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}
+            />
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text)' }}>kg</span>
+            <button
+              type="button"
+              style={{ background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', marginLeft: '4px' }}
+              onClick={() => handleUpdateWeight(currentWeightKg + 0.5)}
+              title="Add +0.5kg"
+            >
+              +0.5kg
+            </button>
+          </div>
+        </div>
+
+        {/* Progress Bar towards 60kg */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+            <span>Progress: {currentWeightKg}kg / {targetWeightKg}kg</span>
+            <span style={{ fontWeight: 700, color: 'var(--color-accent-light)' }}>
+              {Math.min(100, Math.round((currentWeightKg / targetWeightKg) * 100))}% Achieved
+            </span>
+          </div>
+          <div style={{ height: '8px', background: 'var(--color-surface-2)', borderRadius: '99px', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.round((currentWeightKg / targetWeightKg) * 100))}%`,
+                background: 'linear-gradient(90deg, var(--color-accent) 0%, #22d3a5 100%)',
+                borderRadius: '99px',
+                transition: 'width 0.3s ease'
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Weekly Stats Bar ── */}

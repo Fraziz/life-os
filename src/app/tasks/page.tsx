@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
@@ -61,6 +62,17 @@ export default function TasksPage() {
   const { projects } = useProjects();
   const { goals } = useGoals();
   const { milestones } = useMilestones();
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      const el = document.getElementById(`task-card-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightId, isLoaded]);
 
   // Quick Add State
   const [quickTitle, setQuickTitle] = useState('');
@@ -128,7 +140,7 @@ export default function TasksPage() {
     setModalDesc('');
     setModalStatus('todo');
     setModalPriority('medium');
-    setModalDueDate('');
+    setModalDueDate(new Date().toISOString().split('T')[0]);
     setModalEst('');
     setModalAct('');
     setModalProjectId(projects[0]?.id || '');
@@ -463,11 +475,19 @@ export default function TasksPage() {
                       ? `linear-gradient(135deg, var(--color-surface) 0%, ${accentColor}18 100%)`
                       : undefined;
 
+                    const isHighlighted = highlightId === task.id;
+
                     return (
                       <article
                         key={task.id}
+                        id={`task-card-${task.id}`}
                         className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
-                        style={{ borderLeft: cardBorderLeft, background: cardBg }}
+                        style={{
+                          borderLeft: cardBorderLeft,
+                          background: cardBg,
+                          boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+                          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+                        }}
                       >
                         <div className={styles.taskTopRow}>
                           <div className={styles.checkTitleRow}>
@@ -677,10 +697,30 @@ export default function TasksPage() {
                         {/* ── Card Footer ── */}
                         <div className={styles.taskFooter}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {task.dueDate && (
+                            {task.dueDate ? (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                                 <Calendar size={12} /> {task.dueDate}
                               </span>
+                            ) : (
+                              <button
+                                type="button"
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px dashed var(--color-border)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  padding: '1px 6px',
+                                  fontSize: '10px',
+                                  color: 'var(--color-text-faint)',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                                onClick={() => openEditModal(task)}
+                                title="Add target deadline for calendar"
+                              >
+                                <Calendar size={11} /> + Add to Calendar
+                              </button>
                             )}
 
                             {task.estimatedDuration && (

@@ -23,7 +23,9 @@ import {
   AlertOctagon,
   LogOut,
   Lock,
+  Sparkles,
 } from 'lucide-react';
+import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
 import styles from './page.module.css';
 
 const TIMEZONES = [
@@ -58,6 +60,8 @@ export default function SettingsPage() {
   // Local form state initialized from context
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
+
+  const [presetsModalOpen, setPresetsModalOpen] = useState(false);
 
   useEffect(() => {
     if (isLoaded) {
@@ -136,6 +140,88 @@ export default function SettingsPage() {
             <LogOut size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
             Log out
           </button>
+        </section>
+
+        {/* ── 0. Interface Mode & Starter Presets ── */}
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionIcon}>
+              <Sliders size={20} />
+            </div>
+            <div>
+              <h2 className={styles.sectionTitle}>Interface Mode (Simplicity vs Power)</h2>
+              <p className={styles.sectionDesc}>
+                Choose between a clean, minimalist 4-tab setup for beginners, or the full comprehensive Life OS.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <div
+              onClick={() => {
+                const updated = { ...formData, simpleMode: true };
+                setFormData(updated);
+                updateSettings(updated);
+              }}
+              style={{
+                border: formData.simpleMode ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                background: formData.simpleMode ? 'var(--color-accent-dim)' : 'var(--color-surface-2)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-text)' }}>Simple Mode (Beginner)</strong>
+                {formData.simpleMode && <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 700 }}>ACTIVE</span>}
+              </div>
+              <p style={{ fontSize: '0.80rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+                Shows only the 4 core essentials: Today, Focus Space, Brain Dump, Tasks &amp; Calendar. Zero clutter.
+              </p>
+            </div>
+
+            <div
+              onClick={() => {
+                const updated = { ...formData, simpleMode: false };
+                setFormData(updated);
+                updateSettings(updated);
+              }}
+              style={{
+                border: !formData.simpleMode ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                background: !formData.simpleMode ? 'var(--color-accent-dim)' : 'var(--color-surface-2)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-text)' }}>Full Life OS (Power User)</strong>
+                {!formData.simpleMode && <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 700 }}>ACTIVE</span>}
+              </div>
+              <p style={{ fontSize: '0.80rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+                Unlocks Goals, Milestones, Projects, Roadmap, Dreams, Knowledge Base, Habits, and Workout.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: '14px', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)' }}>Starter Presets for New Users</span>
+              <p style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                1-click populate Fitness (60kg), Deep Work Student, or Creator templates.
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => setPresetsModalOpen(true)}
+              style={{ padding: '8px 16px', fontSize: '0.80rem' }}
+            >
+              Choose Starter Preset
+            </button>
+          </div>
         </section>
 
         {/* ── 0. Appearance ── */}
@@ -1017,6 +1103,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Starter Presets Modal */}
+      <StarterPresetsModal isOpen={presetsModalOpen} onClose={() => setPresetsModalOpen(false)} />
     </div>
   );
 }

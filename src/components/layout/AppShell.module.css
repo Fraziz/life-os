@@ -142,9 +142,9 @@
 }
 
 :global([data-theme='nature']) .content {
-  /* Slight warm-tint glass so text is readable against the nature BG */
-  background: rgba(248, 246, 235, 0.52);
-  backdrop-filter: blur(0px);
+  /* Transparent so the nature forest background shows through the whole app */
+  background: transparent;
+  backdrop-filter: none;
 }
 
 :global([data-theme='nature']) .backToTopBtn {

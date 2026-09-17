@@ -84,6 +84,8 @@ export interface UserSettings {
   focusPreferences: FocusPreferences;
   notifications: NotificationPreferences;
   aiSettings?: AISettings;
+  simpleMode?: boolean;         // Simple Mode (beginner) vs Full Life OS (power user)
+  starterPreset?: string;       // Active or loaded starter preset
   theme: AppTheme;
   updatedAt: string;
 }
@@ -260,6 +262,8 @@ export interface InboxItem {
   status: InboxItemStatus;
   convertedTo?: InboxConvertedType;
   convertedEntityId?: string;
+  isApplied?: boolean;
+  appliedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -347,12 +351,17 @@ export interface WeeklyReview {
 // ── Knowledge / Documents (Phase 23) ───────────────────────
 
 export type DocumentStatus = 'draft' | 'active' | 'archived';
+export type DocumentCategory = 'learning' | 'problem-solving' | 'guides' | 'ideas' | 'reference' | 'general';
+export type DocumentReadStatus = 'to-read' | 'reading' | 'completed';
 
 export interface KnowledgeDocument {
   id: string;
   title: string;
   content: string;        // Markdown/rich text (stored as plain markdown)
   status: DocumentStatus;
+  category?: DocumentCategory;
+  isPinned?: boolean;
+  readStatus?: DocumentReadStatus;
   linkedDreamId?: string;
   linkedGoalId?: string;
   linkedProjectId?: string;

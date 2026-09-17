@@ -51,6 +51,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
     totalTokensUsed: 0,
     temperature: 0.7,
   },
+  simpleMode: false,
+  starterPreset: 'default',
   theme: 'light',
   updatedAt: new Date().toISOString(),
 };
@@ -59,6 +61,7 @@ interface SettingsContextType {
   settings: UserSettings;
   updateSettings: (newSettings: Partial<UserSettings>) => void;
   updateProfile: (profile: Partial<UserSettings['profile']>) => void;
+  toggleSimpleMode: () => void;
   resetSettings: () => void;
   isLoaded: boolean;
 }
@@ -135,6 +138,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     updateSettings({ profile: updatedProfile });
   };
 
+  const toggleSimpleMode = () => {
+    updateSettings({ simpleMode: !settings.simpleMode });
+  };
+
   const resetSettings = () => {
     const reset = {
       ...DEFAULT_SETTINGS,
@@ -149,6 +156,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         settings,
         updateSettings,
         updateProfile,
+        toggleSimpleMode,
         resetSettings,
         isLoaded,
       }}

@@ -6,6 +6,7 @@ import {
   Send,
   Trash2,
   CheckSquare,
+  Square,
   FolderKanban,
   Target,
   CloudSun,
@@ -37,11 +38,13 @@ export default function InboxPage() {
     quickDump,
     bulkDump,
     deleteInboxItem,
+    toggleItemApplied,
     convertToTask,
     convertToProject,
     convertToGoal,
     convertToDream,
     convertToNote,
+    convertToProblemSolver,
     convertToSomeday,
     restoreToInbox,
     clearInbox,
@@ -113,17 +116,16 @@ export default function InboxPage() {
       {/* ── Fast Brain Dump Capture Bar ── */}
       <form onSubmit={handleQuickSubmit} className={styles.dumpCard}>
         <div className={styles.dumpRow}>
-          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
           <input
             type="text"
             className={styles.dumpInput}
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
-            placeholder="Dump a thought, task, idea, or reminder (e.g. Need to learn Blender, research clothing, fix computer)..."
+            placeholder="Dump a thought, task, idea, or reminder..."
             autoFocus
           />
           <button type="submit" className={styles.dumpBtn}>
-            <Send size={14} /> Capture ↵
+            Capture ↵
           </button>
         </div>
 
@@ -134,10 +136,10 @@ export default function InboxPage() {
             style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', fontSize: '11px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             onClick={() => setIsBulkOpen(!isBulkOpen)}
           >
-            {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Bulk Dump
+            {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
           </button>
           <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Takes 2 seconds • No organization needed
+            Quick capture
           </span>
         </div>
 
@@ -168,19 +170,19 @@ export default function InboxPage() {
             className={`${styles.tab} ${filterTab === 'inbox' ? styles.activeTab : ''}`}
             onClick={() => setFilterTab('inbox')}
           >
-            <Inbox size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Inbox ({activeItems.length})
+            Inbox ({activeItems.length})
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'converted' ? styles.activeTab : ''}`}
             onClick={() => setFilterTab('converted')}
           >
-            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Converted ({convertedItems.length})
+            Converted ({convertedItems.length})
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'someday' ? styles.activeTab : ''}`}
             onClick={() => setFilterTab('someday')}
           >
-            <Clock size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Someday / Maybe ({somedayItems.length})
+            Someday / Maybe ({somedayItems.length})
           </button>
         </div>
 
@@ -213,12 +215,39 @@ export default function InboxPage() {
         ) : (
           currentList.map((item) => (
             <article key={item.id} className={styles.inboxItemCard}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-                <p className={styles.itemContent}>{item.content}</p>
-                <span className={styles.itemDate}>
-                  Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}`}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => toggleItemApplied(item.id)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    color: item.isApplied ? 'var(--color-success)' : 'var(--color-text-faint)',
+                    marginTop: '2px',
+                  }}
+                  title={item.isApplied ? 'Mark as Not Done' : 'Mark as Done / Applied'}
+                >
+                  {item.isApplied ? <CheckSquare size={18} /> : <Square size={18} />}
+                </button>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p
+                    className={styles.itemContent}
+                    style={{
+                      textDecoration: item.isApplied ? 'line-through' : 'none',
+                      opacity: item.isApplied ? 0.65 : 1,
+                    }}
+                  >
+                    {item.content}
+                  </p>
+                  <span className={styles.itemDate}>
+                    Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {item.isApplied && ' • Applied / Done ✓'}
+                    {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}`}
+                  </span>
+                </div>
               </div>
 
               <div className={styles.convertButtonGroup}>
@@ -230,19 +259,20 @@ export default function InboxPage() {
                       onClick={() => convertToTask(item.id)}
                       title="Convert to actionable Task"
                     >
-                      <CheckSquare size={13} /> + Task
+                      + Task
                     </button>
                     <button
                       className={styles.btnConvert}
-                      onClick={() => convertToProject(item.id)}
-                      title="Convert to Project"
+                      onClick={() => convertToProblemSolver(item.id)}
+                      title="Convert to Kidlin's Law Problem Breakdown Document"
+                      style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
                     >
-                      <FolderKanban size={13} /> + Project
+                      Solve Problem
                     </button>
                     <button
                       className={styles.btnConvert}
                       onClick={() => setConvertModalItem(item)}
-                      title="More conversion options (Goal, Dream, Note, Someday)"
+                      title="More conversion options"
                     >
                       More ▾
                     </button>

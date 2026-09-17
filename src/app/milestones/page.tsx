@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
@@ -44,6 +45,18 @@ export default function MilestonesPage() {
   const { goals } = useGoals();
   const { dreams } = useDreams();
 
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      const el = document.getElementById(`milestone-card-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightId, isLoaded]);
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('active');
   const [goalFilter, setGoalFilter] = useState<string>('all');
 
@@ -73,7 +86,7 @@ export default function MilestonesPage() {
     setTitle('');
     setDescription('');
     setGoalId(goals[0]?.id || '');
-    setTargetDate('');
+    setTargetDate(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
     setStatus('upcoming');
     setProgress(0);
     setModalOpen(true);
@@ -202,9 +215,19 @@ export default function MilestonesPage() {
             const parentGoal = goals.find((g) => g.id === milestone.goalId);
             const parentDream = parentGoal ? dreams.find((d) => d.id === parentGoal.parentDreamId) : undefined;
             const statusInfo = STATUS_CONFIG[milestone.status] || STATUS_CONFIG.upcoming;
+            const isHighlighted = highlightId === milestone.id;
 
             return (
-              <article key={milestone.id} className={styles.milestoneCard}>
+              <article
+                key={milestone.id}
+                id={`milestone-card-${milestone.id}`}
+                className={styles.milestoneCard}
+                style={{
+                  transition: 'all 0.2s ease',
+                  boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+                  borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+                }}
+              >
                 {/* ── Hierarchy Banner: Dream -> Goal ── */}
                 {parentGoal && (
                   <div className={styles.hierarchyBanner}>
@@ -296,10 +319,30 @@ export default function MilestonesPage() {
                 <div className={styles.cardFooter}>
                   <span style={{ color: 'var(--color-text-faint)' }}>Order: #{milestone.sortOrder}</span>
 
-                  {milestone.targetDate && (
+                  {milestone.targetDate ? (
                     <span className={styles.targetDate}>
                       <Calendar size={13} /> {milestone.targetDate}
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(milestone)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px dashed var(--color-border)',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        color: 'var(--color-text-faint)',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      title="Set target date for calendar tracking"
+                    >
+                      <Calendar size={12} /> + Add to Calendar
+                    </button>
                   )}
                 </div>
               </article>

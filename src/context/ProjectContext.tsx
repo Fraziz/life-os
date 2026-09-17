@@ -35,7 +35,7 @@ interface ProjectContextType {
   projects: Project[];
   activeProjects: Project[];
   completedProjects: Project[];
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Project;
   updateProject: (id: string, partial: Partial<Project>) => void;
   updateProjectProgress: (id: string, progress: number) => void;
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
@@ -81,7 +81,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const activeProjects = projects.filter((p) => p.status !== 'completed' && p.status !== 'cancelled');
   const completedProjects = projects.filter((p) => p.status === 'completed');
 
-  const addProject = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addProject = (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Project => {
     const newProject: Project = {
       ...data,
       id: `project-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -89,6 +89,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     saveProjects([newProject, ...projects]);
+    return newProject;
   };
 
   const updateProject = (id: string, partial: Partial<Project>) => {

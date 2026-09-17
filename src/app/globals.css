@@ -224,42 +224,42 @@
 
 /*  Nature Theme (Organic Forest & Parchment)  */
 [data-theme='nature'] {
-  /*  Backgrounds & Surfaces: translucent forest glass */
-  --color-bg:             #0a150e;
-  --color-surface:        rgba(18, 34, 24, 0.82);
-  --color-surface-2:      rgba(26, 48, 34, 0.88);
-  --color-surface-3:      rgba(34, 62, 44, 0.92);
-  --color-surface-hover:  rgba(44, 78, 56, 0.95);
+  /* Backgrounds & Surfaces: subtle, translucent forest glass */
+  --color-bg:             #0a160f;
+  --color-surface:        rgba(16, 32, 23, 0.58);
+  --color-surface-2:      rgba(24, 44, 32, 0.65);
+  --color-surface-3:      rgba(32, 56, 40, 0.72);
+  --color-surface-hover:  rgba(40, 68, 49, 0.78);
 
-  /*  Borders: glowing mossy emerald */
-  --color-border:         rgba(74, 124, 89, 0.40);
-  --color-border-subtle:  rgba(74, 124, 89, 0.22);
-  --color-border-focus:   #5eead4;
+  /* Borders: soft translucent sage line, clean and minimalist */
+  --color-border:         rgba(134, 239, 172, 0.12);
+  --color-border-subtle:  rgba(134, 239, 172, 0.07);
+  --color-border-focus:   #4ade80;
 
-  /*  Text: high contrast vibrant mint on deep forest */
+  /* Text colors: high readability mint-white on deep organic forest */
   --color-text:           #f0fdf4;
-  --color-text-muted:     #bbf7d0;
-  --color-text-faint:     #86efac;
+  --color-text-muted:     rgba(187, 247, 208, 0.75);
+  --color-text-faint:     rgba(134, 239, 172, 0.48);
   --color-text-inverse:   #052e16;
 
-  /*  Accent: vibrant emerald & sunbeam gold */
-  --color-accent:         #34d399;
-  --color-accent-light:   #6ee7b7;
-  --color-accent-dim:     rgba(52, 211, 153, 0.16);
-  --color-accent-glow:    rgba(52, 211, 153, 0.32);
-  --color-accent-hover:   #10b981;
+  /* Accent: calm natural leaf green & subtle sunbeam glow */
+  --color-accent:         #4ade80;
+  --color-accent-light:   #86efac;
+  --color-accent-dim:     rgba(74, 222, 128, 0.12);
+  --color-accent-glow:    rgba(74, 222, 128, 0.20);
+  --color-accent-hover:   #22c55e;
 
-  /*  Semantic card tints: earthy dark forest glass */
-  --color-lavender-card:  rgba(24, 44, 32, 0.85);
-  --color-lavender-border:rgba(74, 124, 89, 0.45);
-  --color-mint-card:      rgba(20, 48, 32, 0.88);
-  --color-mint-border:    rgba(52, 211, 153, 0.40);
-  --color-amber-card:     rgba(48, 36, 18, 0.88);
-  --color-amber-border:   rgba(245, 158, 11, 0.40);
-  --color-rose-card:      rgba(48, 20, 26, 0.88);
-  --color-rose-border:    rgba(244, 63, 94, 0.40);
-  --color-cyan-card:      rgba(14, 42, 48, 0.88);
-  --color-cyan-border:    rgba(6, 182, 212, 0.40);
+  /* Semantic card tints: subtle organic translucent glass */
+  --color-lavender-card:  rgba(26, 44, 34, 0.60);
+  --color-lavender-border:rgba(147, 197, 253, 0.16);
+  --color-mint-card:      rgba(20, 46, 32, 0.62);
+  --color-mint-border:    rgba(134, 239, 172, 0.18);
+  --color-amber-card:     rgba(44, 38, 22, 0.60);
+  --color-amber-border:   rgba(253, 224, 71, 0.16);
+  --color-rose-card:      rgba(44, 24, 28, 0.60);
+  --color-rose-border:    rgba(253, 164, 175, 0.16);
+  --color-cyan-card:      rgba(20, 42, 46, 0.60);
+  --color-cyan-border:    rgba(103, 232, 249, 0.16);
 /*  Semantic feedback */
   --color-success:        #3a7d44;
   --color-success-dim:    rgba(58, 125, 68, 0.12);
@@ -623,20 +623,10 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 100vh;
 }
 
-/* -- Nature cards: translucent dark forest glass -- */
-[data-theme='nature'] .widgetCard,
-[data-theme='nature'] [class*="card"],
-[data-theme='nature'] [class*="Card"] {
-  background: rgba(18, 34, 24, 0.82);
+/* -- Nature cards & surfaces: clean organic glass background -- */
+[data-theme='nature'] .widgetCard {
+  background: var(--color-surface);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-color: rgba(74, 124, 89, 0.38);
-}
-
-/* -- Nature surfaces: translucent forest sidebar -- */
-[data-theme='nature'] [class*="surface"],
-[data-theme='nature'] [class*="sidebar"] {
-  background: rgba(14, 28, 19, 0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  border-color: var(--color-border);
 }

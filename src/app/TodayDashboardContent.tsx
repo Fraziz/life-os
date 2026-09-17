@@ -21,6 +21,8 @@ import {
   Battery,
   Flag,
   Clock,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -30,18 +32,21 @@ import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
 import { useCalendar } from '@/context/CalendarContext';
-import { playSuccessChime, triggerDopamineBurst } from '@/utils/soundAndDopamine';
+import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import RightSidebar from '@/components/layout/RightSidebar';
+import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
 import styles from './page.module.css';
 
 export default function TodayDashboardContent() {
   const { settings } = useSettings();
-  const { tasks, toggleTaskDone, quickAddTask } = useTasks();
+  const { tasks, toggleTaskDone, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
   const { quickDump, activeItems: brainDumpItems, deleteInboxItem } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
+
+  const [presetsModalOpen, setPresetsModalOpen] = useState(false);
 
   // ── Greeting & Date ──────────────────────────────────────────
   const [greeting, setGreeting] = useState('Good morning');
@@ -100,7 +105,16 @@ export default function TodayDashboardContent() {
     .filter((t) => t.status !== 'done' && !top3.some((p) => p.id === t.id))
     .slice(0, 6);
 
-  const completedTasks = tasks.filter((t) => t.status === 'done').slice(0, 6);
+  // Filter completed tasks to show ONLY tasks completed TODAY
+  const completedTasks = tasks
+    .filter((t) => {
+      if (t.status !== 'done') return false;
+      if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
+      if (t.updatedAt) return t.updatedAt.split('T')[0] === todayStr;
+      return true;
+    })
+    .slice(0, 8);
+
   const [showCompleted, setShowCompleted] = useState(true);
 
   const [addingTask, setAddingTask] = useState(false);
@@ -119,6 +133,13 @@ export default function TodayDashboardContent() {
   const handleToggleTask = (id: string, e: React.MouseEvent) => {
     toggleTaskDone(id);
     playSuccessChime();
+    triggerDopamineBurst(e.clientX, e.clientY);
+  };
+
+  const handleToggleSubtask = (taskId: string, subtaskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSubtask(taskId, subtaskId);
+    playSubtaskTick();
     triggerDopamineBurst(e.clientX, e.clientY);
   };
 
@@ -250,9 +271,76 @@ export default function TodayDashboardContent() {
             </Link>
           )}
           <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>
-            <span>Focus Mode</span>
+            <span>Focus Space</span>
           </Link>
         </div>
+
+        {/* ── 3-Step Daily Loop Widget ── */}
+        <section className={styles.dailyFlowCard} aria-label="Daily Flow Guide">
+          <div className={styles.dailyFlowHeader}>
+            <div className={styles.dailyFlowTitleRow}>
+              <span className={styles.dailyFlowHeading}>3-Step Daily Flow</span>
+              <span className={styles.dailyFlowSubtitle}>&bull; Keep daily effort under 5 minutes</span>
+            </div>
+            <button
+              type="button"
+              className={styles.presetTriggerBtn}
+              onClick={() => setPresetsModalOpen(true)}
+              title="Load Starter Goals, Habits, and Tasks"
+            >
+              Starter Presets
+            </button>
+          </div>
+
+          <div className={styles.dailyFlowStepsGrid}>
+            {/* Step 1: Morning Focus */}
+            <Link href="#priorities-section" className={styles.dailyFlowStepItem}>
+              <div className={styles.flowStepTop}>
+                <span className={styles.flowStepNumber}>Step 1 &bull; Morning (1m)</span>
+                <span className={`${styles.flowStepStatus} ${top3.length > 0 ? styles.flowStepStatusDone : ''}`}>
+                  {top3.length > 0 ? '✓ Ready' : 'Pick Top 3'}
+                </span>
+              </div>
+              <div className={styles.flowStepBody}>
+                <span className={styles.flowStepTitle}>Pick Priorities</span>
+                <span className={styles.flowStepDesc}>Choose your 3 most important tasks for the day.</span>
+              </div>
+            </Link>
+
+            {/* Step 2: Day Execution */}
+            <Link href="/focus" className={styles.dailyFlowStepItem}>
+              <div className={styles.flowStepTop}>
+                <span className={styles.flowStepNumber}>Step 2 &bull; Day</span>
+                <span className={`${styles.flowStepStatus} ${tasksDone > 0 ? styles.flowStepStatusDone : ''}`}>
+                  {tasksDone > 0 ? `✓ ${tasksDone} Done` : 'Focus Timer'}
+                </span>
+              </div>
+              <div className={styles.flowStepBody}>
+                <span className={styles.flowStepTitle}>Deep Focus</span>
+                <span className={styles.flowStepDesc}>Run hyperfocus blocks &amp; park quick distractions.</span>
+              </div>
+            </Link>
+
+            {/* Step 3: Evening Wrap Up */}
+            <button
+              type="button"
+              className={styles.dailyFlowStepItem}
+              onClick={() => setWrapUpOpen(true)}
+              style={{ textAlign: 'left', cursor: 'pointer', background: 'var(--color-surface-2)' }}
+            >
+              <div className={styles.flowStepTop}>
+                <span className={styles.flowStepNumber}>Step 3 &bull; Evening (2m)</span>
+                <span className={`${styles.flowStepStatus} ${completedTasks.length > 0 ? styles.flowStepStatusDone : ''}`}>
+                  {completedTasks.length > 0 ? '✓ Wrap Ready' : 'Review Day'}
+                </span>
+              </div>
+              <div className={styles.flowStepBody}>
+                <span className={styles.flowStepTitle}>Wrap Up &amp; Dump</span>
+                <span className={styles.flowStepDesc}>Celebrate wins and empty random thoughts into Brain Dump.</span>
+              </div>
+            </button>
+          </div>
+        </section>
 
         {/* Today's Schedule & Deadlines */}
         {totalTodayCalendarMarks > 0 && (
@@ -409,32 +497,52 @@ export default function TodayDashboardContent() {
                 </div>
               )}
               {top3.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className={`${styles.priorityRow} ${idx === 0 ? styles.priorityOneRow : ''} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
-                >
-                  <div className={styles.priorityLeft}>
-                    <span className={styles.priorityNumBadge}>{idx + 1}</span>
-                    <button
-                      type="button"
-                      className={styles.checkboxBtn}
-                      onClick={(e) => handleToggleTask(item.id, e)}
-                    >
-                      {item.status === 'done' ? (
-                        <div className={styles.checkedBox}><Check size={12} strokeWidth={3} /></div>
-                      ) : (
-                        <div className={styles.emptyBox} />
+                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div
+                    className={`${styles.priorityRow} ${idx === 0 ? styles.priorityOneRow : ''} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
+                  >
+                    <div className={styles.priorityLeft}>
+                      <span className={styles.priorityNumBadge}>{idx + 1}</span>
+                      <button
+                        type="button"
+                        className={styles.checkboxBtn}
+                        onClick={(e) => handleToggleTask(item.id, e)}
+                      >
+                        {item.status === 'done' ? (
+                          <div className={styles.checkedBox}><Check size={12} strokeWidth={3} /></div>
+                        ) : (
+                          <div className={styles.emptyBox} />
+                        )}
+                      </button>
+                      <span className={styles.taskTitleText}>{item.title}</span>
+                      {idx === 0 && (
+                        <span className={styles.priorityOneBadge}>👑 The One Thing</span>
                       )}
-                    </button>
-                    <span className={styles.taskTitleText}>{item.title}</span>
-                    {idx === 0 && (
-                      <span className={styles.priorityOneBadge}>👑 The One Thing</span>
+                    </div>
+                    {item.tags && item.tags.length > 0 && (
+                      <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
+                        {item.tags[0]}
+                      </span>
                     )}
                   </div>
-                  {item.tags && item.tags.length > 0 && (
-                    <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
-                      {item.tags[0]}
-                    </span>
+
+                  {/* Subtask Step Breakdown */}
+                  {item.subtasks && item.subtasks.length > 0 && (
+                    <div style={{ marginLeft: '36px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '6px' }}>
+                      {item.subtasks.map((sub) => (
+                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleSubtask(item.id, sub.id, e)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
+                            title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
+                          >
+                            {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                          </button>
+                          <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
@@ -451,22 +559,42 @@ export default function TodayDashboardContent() {
             </div>
             <div className={styles.otherTasksList}>
               {otherTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
-                >
-                  <button
-                    type="button"
-                    className={styles.checkboxBtn}
-                    onClick={(e) => handleToggleTask(task.id, e)}
+                <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div
+                    className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
                   >
-                    {task.status === 'done' ? (
-                      <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
-                    ) : (
-                      <div className={styles.emptyCircle} />
-                    )}
-                  </button>
-                  <span className={styles.otherTaskTitle}>{task.title}</span>
+                    <button
+                      type="button"
+                      className={styles.checkboxBtn}
+                      onClick={(e) => handleToggleTask(task.id, e)}
+                    >
+                      {task.status === 'done' ? (
+                        <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
+                      ) : (
+                        <div className={styles.emptyCircle} />
+                      )}
+                    </button>
+                    <span className={styles.otherTaskTitle}>{task.title}</span>
+                  </div>
+
+                  {/* Subtask Step Breakdown for Other Tasks */}
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <div style={{ marginLeft: '28px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '4px' }}>
+                      {task.subtasks.map((sub) => (
+                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleSubtask(task.id, sub.id, e)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
+                            title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
+                          >
+                            {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                          </button>
+                          <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {addingTask ? (
@@ -720,7 +848,6 @@ export default function TodayDashboardContent() {
       {wrapUpOpen && (
         <div className={styles.modalBackdrop} onClick={() => setWrapUpOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalEmoji}>🎉</div>
             <h2 className={styles.modalTitle}>Great Job Today, {userName}!</h2>
             <p className={styles.modalSubtitle}>
               You showed up and took action today. Take a deep breath and acknowledge your wins.
@@ -738,7 +865,7 @@ export default function TodayDashboardContent() {
             </div>
 
             <div className={styles.modalReflection}>
-              <strong>ADHD Evening Anchor:</strong> You don&apos;t have to finish everything to deserve rest. Give your brain full permission to turn off now so you can recharge.
+              <strong>Evening Anchor:</strong> You don&apos;t have to finish everything to deserve rest. Give your brain full permission to turn off now so you can recharge.
             </div>
 
             <button
@@ -746,11 +873,14 @@ export default function TodayDashboardContent() {
               className={styles.modalPrimaryBtn}
               onClick={() => setWrapUpOpen(false)}
             >
-              Complete Shutdown &amp; Rest 🌙
+              Complete Shutdown &amp; Rest
             </button>
           </div>
         </div>
       )}
+
+      {/* Starter Presets Modal */}
+      <StarterPresetsModal isOpen={presetsModalOpen} onClose={() => setPresetsModalOpen(false)} />
     </div>
   );
 }
