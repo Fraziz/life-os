@@ -8,7 +8,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { extractTextFromFile } from '@/utils/fileImporter';
-import type { KnowledgeDocument, DocumentStatus, DocumentCategory } from '@/types';
+import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus } from '@/types';
 import {
   BookOpen,
   Plus,
