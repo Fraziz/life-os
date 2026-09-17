@@ -193,14 +193,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createProblemSolvingDoc = useCallback((problemTitle?: string, initialDescription?: string): KnowledgeDocument => {
-    const title = problemTitle ? `Problem: ${problemTitle}` : 'Problem Breakdown (Kidlin\'s Law)';
+    const title = problemTitle ? `Problem: ${problemTitle}` : 'Problem Breakdown & Analysis';
     const content = `# ${title}
 
-> 💡 **Kidlin's Law**: *"If you write down a problem clearly and specifically, you have already solved half of it."*
-
----
-
-## 1. Clear & Specific Problem Statement
+## 1. Problem Statement
 ${initialDescription || 'Write down exactly what is happening, what is failing, or what is creating friction. Be precise.'}
 
 ---
@@ -234,7 +230,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
       status: 'active',
       category: 'problem-solving',
       isPinned: true,
-      tags: ['kidlins-law', 'problem-solving', 'framework'],
+      tags: ['problem-solving', 'analysis'],
     });
   }, [addDoc]);
 

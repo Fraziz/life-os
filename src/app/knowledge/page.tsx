@@ -1371,29 +1371,10 @@ export default function KnowledgePage() {
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Personal Knowledge Base</h1>
           <p className={styles.subtitle}>
-            Formal reference notes, research, problem solving (Kidlin&apos;s Law), and documents connected to your life.
+            Formal reference notes, research, and documentation connected to your life.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            className={styles.btnSecondary}
-            style={{
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 600,
-            }}
-            onClick={() => {
-              const newDoc = createProblemSolvingDoc();
-              setSelectedId(newDoc.id);
-              setIsCreating(false);
-              setEditorMode('edit');
-            }}
-            title="Create a Kidlin's Law Problem Breakdown canvas"
-          >
-            + Solve Problem (Kidlin&apos;s Law)
-          </button>
           <input
             type="file"
             ref={importFileRef}
@@ -1434,28 +1415,6 @@ export default function KnowledgePage() {
                 <X size={12} />
               </button>
             )}
-          </div>
-
-          {/* Category Filter Pills */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '8px 0' }}>
-            {([
-              { id: 'all', label: 'All' },
-              { id: 'pinned', label: '📌 Pinned' },
-              { id: 'learning', label: '🧠 Learning' },
-              { id: 'problem-solving', label: '🎯 Kidlin\'s Law' },
-              { id: 'guides', label: '📖 Guides' },
-              { id: 'ideas', label: '💡 Ideas' },
-              { id: 'reference', label: '📚 Reference' },
-            ] as const).map((cat) => (
-              <button
-                key={cat.id}
-                className={`${styles.statusChip} ${categoryFilter === cat.id ? styles.statusChipActive : ''}`}
-                onClick={() => setCategoryFilter(cat.id as any)}
-                style={{ fontSize: '10px', padding: '2px 7px' }}
-              >
-                {cat.label}
-              </button>
-            ))}
           </div>
 
           <div className={styles.filterRow}>
@@ -1703,7 +1662,7 @@ export default function KnowledgePage() {
                     >
                       <option value="general">General</option>
                       <option value="learning">🧠 Learning &amp; Study</option>
-                      <option value="problem-solving">🎯 Problem Solving (Kidlin&apos;s Law)</option>
+                      <option value="problem-solving">🎯 Problem Solving</option>
                       <option value="guides">📖 Guides &amp; Manuals</option>
                       <option value="ideas">💡 Ideas &amp; Insights</option>
                       <option value="reference">📚 Reference</option>

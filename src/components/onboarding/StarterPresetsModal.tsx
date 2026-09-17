@@ -121,7 +121,7 @@ export default function StarterPresetsModal({ isOpen, onClose }: StarterPresetsM
 
         addTask({
           title: 'Review and summarize lecture notes within 24h',
-          description: 'Use Kidlin\'s Law in Knowledge tab to break down complex lecture concepts.',
+          description: 'Use Knowledge tab to synthesize and summarize complex lecture concepts.',
           priority: 'high',
           status: 'todo',
           projectId: proj.id,
@@ -147,10 +147,10 @@ export default function StarterPresetsModal({ isOpen, onClose }: StarterPresetsM
         });
 
         addDoc({
-          title: 'Problem Solving Matrix (Kidlin\'s Law for Exams)',
-          content: '<h1>Kidlin\'s Law Problem Breakdown</h1><p><em>"If you write down a problem clearly and specifically, you have already solved half of it."</em></p><h2>1. The Core Problem</h2><p>State the exact theoretical or mathematical problem clearly here.</p><h2>2. Known Variables &amp; Constraints</h2><ul><li>Input parameters</li><li>Boundary conditions</li></ul><h2>3. Step-by-Step Solution</h2><p>Draft out your logic systematically.</p>',
+          title: 'Problem Solving Matrix & Analysis',
+          content: '<h1>Problem Breakdown &amp; Analysis</h1><h2>1. The Core Problem</h2><p>State the exact theoretical or mathematical problem clearly here.</p><h2>2. Known Variables &amp; Constraints</h2><ul><li>Input parameters</li><li>Boundary conditions</li></ul><h2>3. Step-by-Step Solution</h2><p>Draft out your logic systematically.</p>',
           status: 'active',
-          tags: ['academics', 'kidlin', 'problem-solver'],
+          tags: ['academics', 'problem-solver'],
           isPinned: true,
         });
 
@@ -267,7 +267,7 @@ export default function StarterPresetsModal({ isOpen, onClose }: StarterPresetsM
                 <span className={styles.presetTag}>Academics &amp; Study</span>
               </div>
               <p className={styles.presetDesc}>
-                Structured for high academic achievement, 2h deep focus habits, lecture summary workflows, and Kidlin&apos;s Law problem breakdowns.
+                Structured for high academic achievement, 2h deep focus habits, lecture summary workflows, and structured problem breakdowns.
               </p>
               <div className={styles.presetIncludes}>
                 <span className={styles.includePill}>1 Academic Goal</span>

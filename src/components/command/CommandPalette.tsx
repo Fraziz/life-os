@@ -110,9 +110,9 @@ export default function CommandPalette() {
     {
       id: 'act-solve-problem',
       category: 'Quick Actions',
-      title: 'Solve Problem (Kidlin\'s Law)',
-      subtitle: 'Create structured breakdown note',
-      keywords: ['problem', 'kidlin', 'solution', 'analyze'],
+      title: 'Problem Breakdown & Analysis',
+      subtitle: 'Create structured analysis note',
+      keywords: ['problem', 'breakdown', 'solution', 'analyze'],
       onSelect: () => {
         router.push('/knowledge?mode=problem');
         closePalette();

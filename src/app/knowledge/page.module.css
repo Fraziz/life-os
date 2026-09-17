@@ -23,6 +23,58 @@
   gap: 2px;
 }
 
+.btnCreate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover, #6366f1));
+  color: #ffffff;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 10px var(--color-accent-dim);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btnCreate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--color-accent-glow);
+  filter: brightness(1.08);
+}
+
+.btnCreate:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btnSecondary:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.btnSecondary:active {
+  transform: translateY(0) scale(0.97);
+}
+
 .title {
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
@@ -162,21 +214,30 @@
   font-size: var(--text-xs);
 }
 
-/* Linear Document Row (No Box in a Box) */
+/* Linear Document Row (Tactile ADHD Spring Micro-Interaction) */
 .docRow {
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-border-subtle);
+  border-left: 3px solid transparent;
   cursor: pointer;
-  transition: background var(--transition-fast);
   background: transparent;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .docRow:hover {
   background: var(--color-surface-hover);
+  transform: translateX(4px);
+  border-left-color: var(--color-accent);
+}
+
+.docRow:active {
+  transform: translateX(2px) scale(0.99);
 }
 
 .docRowActive {
   background: var(--color-surface-2);
+  border-left-color: var(--color-accent);
+  font-weight: 600;
 }
 
 .docRowContent {
