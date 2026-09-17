@@ -485,6 +485,10 @@ export default function KnowledgePage() {
   const [fStatus, setFStatus]         = useState<DocumentStatus>('active');
   const [fCategory, setFCategory]     = useState<DocumentCategory>('general');
   const [fIsPinned, setFIsPinned]     = useState(false);
+  const [fReadStatus, setFReadStatus] = useState<DocumentReadStatus>('reading');
+  const [fReadProgress, setFReadProgress] = useState<number>(0);
+  const [fCurrentPage, setFCurrentPage] = useState<number | undefined>(undefined);
+  const [fTotalPages, setFTotalPages]   = useState<number | undefined>(undefined);
   const [fTags, setFTags]             = useState('');
   const [fDreamId, setFDreamId]       = useState('');
   const [fGoalId, setFGoalId]         = useState('');
@@ -625,6 +629,12 @@ export default function KnowledgePage() {
       setFTitle(selectedDoc.title);
       setFContent(selectedDoc.content);
       setFStatus(selectedDoc.status);
+      setFCategory(selectedDoc.category || 'general');
+      setFIsPinned(selectedDoc.isPinned || false);
+      setFReadStatus(selectedDoc.readStatus || 'reading');
+      setFReadProgress(selectedDoc.readProgress ?? 0);
+      setFCurrentPage(selectedDoc.currentPage);
+      setFTotalPages(selectedDoc.totalPages);
       setFTags(selectedDoc.tags.join(', '));
       setFDreamId(selectedDoc.linkedDreamId || '');
       setFGoalId(selectedDoc.linkedGoalId || '');
@@ -672,6 +682,12 @@ export default function KnowledgePage() {
     setFTitle('');
     setFContent('');
     setFStatus('active');
+    setFCategory('general');
+    setFIsPinned(false);
+    setFReadStatus('reading');
+    setFReadProgress(0);
+    setFCurrentPage(undefined);
+    setFTotalPages(undefined);
     setFTags('');
     setFDreamId('');
     setFGoalId('');
@@ -698,6 +714,10 @@ export default function KnowledgePage() {
       status: fStatus,
       category: fCategory,
       isPinned: fIsPinned,
+      readStatus: fReadStatus,
+      readProgress: fReadProgress,
+      currentPage: fCurrentPage,
+      totalPages: fTotalPages,
       tags,
       linkedDreamId: fDreamId || undefined,
       linkedGoalId: fGoalId || undefined,
@@ -1340,16 +1360,24 @@ export default function KnowledgePage() {
     }
   };
 
-  // Filter docs list
+  // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
-  const filteredDocs = docs.filter((d) => {
-    if (statusFilter !== 'all' && d.status !== statusFilter) return false;
-    if (categoryFilter === 'pinned' && !d.isPinned) return false;
-    if (categoryFilter !== 'all' && categoryFilter !== 'pinned' && (d.category || 'general') !== categoryFilter) return false;
-    if (tagFilter && !d.tags.some((t) => t.toLowerCase().includes(tagFilter.toLowerCase()))) return false;
-    if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q) && !d.tags.join(' ').toLowerCase().includes(q)) return false;
-    return true;
-  });
+  const filteredDocs = docs
+    .filter((d) => {
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      if (categoryFilter === 'pinned' && !d.isPinned) return false;
+      if (categoryFilter !== 'all' && categoryFilter !== 'pinned' && (d.category || 'general') !== categoryFilter) return false;
+      if (tagFilter && !d.tags.some((t) => t.toLowerCase().includes(tagFilter.toLowerCase()))) return false;
+      if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q) && !d.tags.join(' ').toLowerCase().includes(q)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
 
   const allTags = Array.from(new Set(docs.flatMap((d) => d.tags))).sort();
   const hasEditor = isCreating || selectedDoc;
@@ -1497,6 +1525,15 @@ export default function KnowledgePage() {
                         <span className={styles.statusIndicator} style={{ color: statusColor }}>
                           {doc.status}
                         </span>
+                        {doc.readStatus === 'completed' ? (
+                          <span className={styles.tagPill} style={{ background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5' }}>
+                            ✅ Done
+                          </span>
+                        ) : (doc.readProgress != null && doc.readProgress > 0) ? (
+                          <span className={styles.tagPill} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                            📖 {doc.readProgress}%
+                          </span>
+                        ) : null}
                         {doc.category && (
                           <span className={styles.tagPill} style={{ background: 'rgba(124, 106, 255, 0.15)', color: 'var(--color-accent-light)' }}>
                             {doc.category}
@@ -1514,6 +1551,22 @@ export default function KnowledgePage() {
                           <BookOpen size={10} /> Study
                         </Link>
                       </div>
+
+                      {/* Mini Progress Bar */}
+                      {doc.readProgress != null && doc.readProgress > 0 && (
+                        <div style={{ width: '100%', height: '3px', background: 'var(--color-surface-2)', borderRadius: '99px', overflow: 'hidden', marginTop: '6px' }}>
+                          <div
+                            style={{
+                              width: `${Math.min(100, Math.max(0, doc.readProgress))}%`,
+                              height: '100%',
+                              background: doc.readProgress === 100
+                                ? '#22d3a5'
+                                : 'linear-gradient(90deg, var(--color-accent) 0%, #38bdf8 100%)',
+                              borderRadius: '99px'
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1667,6 +1720,93 @@ export default function KnowledgePage() {
                       <option value="ideas">💡 Ideas &amp; Insights</option>
                       <option value="reference">📚 Reference</option>
                     </select>
+                  </div>
+
+                  <div className={styles.propItem}>
+                    <label className={styles.propLabel}>Reading Status</label>
+                    <select
+                      className={styles.propSelect}
+                      value={fReadStatus}
+                      onChange={(e) => {
+                        const next = e.target.value as DocumentReadStatus;
+                        setFReadStatus(next);
+                        if (next === 'completed') setFReadProgress(100);
+                      }}
+                    >
+                      <option value="to-read">⏳ To Read</option>
+                      <option value="reading">📖 Currently Reading</option>
+                      <option value="completed">✅ Completed</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.propItem}>
+                    <label className={styles.propLabel}>Reading Progress ({fReadProgress}%)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={fReadProgress}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setFReadProgress(val);
+                          if (val === 100) setFReadStatus('completed');
+                          else if (val > 0 && fReadStatus === 'to-read') setFReadStatus('reading');
+                        }}
+                        style={{ flex: 1, accentColor: 'var(--color-accent)' }}
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={fReadProgress}
+                        onChange={(e) => {
+                          const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                          setFReadProgress(val);
+                          if (val === 100) setFReadStatus('completed');
+                          else if (val > 0 && fReadStatus === 'to-read') setFReadStatus('reading');
+                        }}
+                        style={{ width: '48px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
+                      />
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>%</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.propItem}>
+                    <label className={styles.propLabel}>Page Tracker (Optional)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Page</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={fCurrentPage ?? ''}
+                        placeholder="Current"
+                        onChange={(e) => {
+                          const cur = e.target.value ? parseInt(e.target.value) : undefined;
+                          setFCurrentPage(cur);
+                          if (cur && fTotalPages && fTotalPages > 0) {
+                            setFReadProgress(Math.min(100, Math.round((cur / fTotalPages) * 100)));
+                          }
+                        }}
+                        style={{ width: '60px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
+                      />
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>of</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={fTotalPages ?? ''}
+                        placeholder="Total"
+                        onChange={(e) => {
+                          const tot = e.target.value ? parseInt(e.target.value) : undefined;
+                          setFTotalPages(tot);
+                          if (fCurrentPage && tot && tot > 0) {
+                            setFReadProgress(Math.min(100, Math.round((fCurrentPage / tot) * 100)));
+                          }
+                        }}
+                        style={{ width: '60px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
+                      />
+                    </div>
                   </div>
 
                   <div className={styles.propItem}>

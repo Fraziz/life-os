@@ -337,19 +337,28 @@ export default function CommandPalette() {
     });
   });
 
-  docs.slice(0, 6).forEach((doc) => {
-    dynamicItems.push({
-      id: `doc-${doc.id}`,
-      category: 'Knowledge Notes',
-      title: doc.title,
-      subtitle: doc.tags?.join(', ') || 'Document',
-      keywords: ['doc', 'note', doc.title],
-      onSelect: () => {
-        router.push(`/knowledge?docId=${doc.id}`);
-        closePalette();
-      },
+  [...docs]
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    })
+    .slice(0, 6)
+    .forEach((doc) => {
+      dynamicItems.push({
+        id: `doc-${doc.id}`,
+        category: 'Knowledge Notes',
+        title: `${doc.isPinned ? '📌 ' : ''}${doc.title}`,
+        subtitle: doc.tags?.join(', ') || 'Document',
+        keywords: ['doc', 'note', doc.title],
+        onSelect: () => {
+          router.push(`/knowledge?docId=${doc.id}`);
+          closePalette();
+        },
+      });
     });
-  });
 
   projects.slice(0, 4).forEach((p) => {
     dynamicItems.push({

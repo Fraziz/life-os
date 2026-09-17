@@ -362,6 +362,9 @@ export interface KnowledgeDocument {
   category?: DocumentCategory;
   isPinned?: boolean;
   readStatus?: DocumentReadStatus;
+  readProgress?: number;  // 0 - 100 percentage
+  currentPage?: number;
+  totalPages?: number;
   linkedDreamId?: string;
   linkedGoalId?: string;
   linkedProjectId?: string;

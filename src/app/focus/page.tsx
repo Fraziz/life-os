@@ -37,6 +37,7 @@ import {
   Search,
   ExternalLink,
   FileText,
+  Pin,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
 import { useTasks } from '@/context/TaskContext';
@@ -374,11 +375,19 @@ export default function FocusPage() {
     .filter((t) => t.status !== 'done')
     .filter((t) => t.title.toLowerCase().includes(targetSearchQuery.toLowerCase()));
 
-  const filteredDocs = docs.filter(
-    (d) =>
-      d.title.toLowerCase().includes(targetSearchQuery.toLowerCase()) ||
-      d.tags.some((tag) => tag.toLowerCase().includes(targetSearchQuery.toLowerCase()))
-  );
+  const filteredDocs = docs
+    .filter(
+      (d) =>
+        d.title.toLowerCase().includes(targetSearchQuery.toLowerCase()) ||
+        d.tags.some((tag) => tag.toLowerCase().includes(targetSearchQuery.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
 
   return (
     <div className={`${styles.page} ${isZenMode ? styles.zenMode : ''}`}>
@@ -838,15 +847,19 @@ export default function FocusPage() {
 
               <div className={styles.ambientBtnGrid}>
                 {[
-                  { id: 'forest', label: 'Forest Birds', icon: '🌲' },
-                  { id: 'waves', label: 'Ocean Waves', icon: '🌊' },
-                  { id: 'stream', label: 'River Stream', icon: '💧' },
-                  { id: 'rain', label: 'Gentle Rain', icon: '🌧️' },
+                  { id: 'gamma40', label: '40Hz Gamma (Hyperfocus)', icon: '🧠' },
+                  { id: 'alpha10', label: '10Hz Alpha (Flow State)', icon: '🧘' },
+                  { id: 'pink',    label: 'Pink Noise (ADHD Block)', icon: '🛡️' },
+                  { id: 'brown',   label: 'Deep Brown Noise', icon: '🎧' },
+                  { id: 'rain',    label: 'Gentle Rain', icon: '🌧️' },
                   { id: 'thunder', label: 'Distant Thunder', icon: '⛈️' },
-                  { id: 'fire', label: 'Campfire', icon: '🔥' },
-                  { id: 'wind', label: 'Mountain Wind', icon: '🍃' },
-                  { id: 'brown', label: 'Brown Noise', icon: '🎧' },
-                  { id: 'drone', label: 'Alpha Drone', icon: '🧘' },
+                  { id: 'waves',   label: 'Ocean Waves', icon: '🌊' },
+                  { id: 'stream',  label: 'River Stream', icon: '💧' },
+                  { id: 'forest',  label: 'Forest Birds', icon: '🌲' },
+                  { id: 'fire',    label: 'Campfire', icon: '🔥' },
+                  { id: 'wind',    label: 'Mountain Wind', icon: '🍃' },
+                  { id: 'cafe',    label: 'Cozy Cafe', icon: '☕' },
+                  { id: 'drone',   label: 'Space Drone', icon: '🌌' },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -998,6 +1011,7 @@ export default function FocusPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <BookOpen size={14} style={{ color: 'var(--color-accent)' }} />
+                            {doc.isPinned && <Pin size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />}
                             <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
                               {doc.title}
                             </span>

@@ -23,6 +23,7 @@ import {
   Clock,
   CheckSquare,
   Square,
+  BookOpen,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -32,6 +33,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
 import { useCalendar } from '@/context/CalendarContext';
+import { useKnowledge } from '@/context/KnowledgeContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import RightSidebar from '@/components/layout/RightSidebar';
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
@@ -45,6 +47,12 @@ export default function TodayDashboardContent() {
   const { quickDump, activeItems: brainDumpItems, deleteInboxItem } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
+  const { docs } = useKnowledge();
+
+  const currentReadingDoc = docs.find((d) => d.readStatus === 'reading')
+    || docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100)
+    || docs.find((d) => d.isPinned)
+    || docs[0];
 
   const [presetsModalOpen, setPresetsModalOpen] = useState(false);
 
@@ -449,17 +457,24 @@ export default function TodayDashboardContent() {
             <div className={styles.actionCardSub}>AI picks next</div>
           </button>
 
-          <button
-            type="button"
+          <Link
+            href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
             className={styles.actionCard}
-            onClick={() => setTimerRunning((r) => !r)}
+            style={{ textDecoration: 'none' }}
+            title={currentReadingDoc ? `Continue reading: ${currentReadingDoc.title}` : 'Open Knowledge Books'}
           >
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`}>
-              {timerRunning ? <Pause size={19} strokeWidth={2.2} /> : <Play size={19} strokeWidth={2.2} />}
+            <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+              <BookOpen size={19} strokeWidth={2.2} />
             </div>
-            <div className={styles.actionCardTitle}>{fmtTimer(timerSecs)}</div>
-            <div className={styles.actionCardSub}>{timerRunning ? 'Running…' : 'Pomodoro'}</div>
-          </button>
+            <div className={styles.actionCardTitle} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+              {currentReadingDoc ? currentReadingDoc.title : 'Read Book'}
+            </div>
+            <div className={styles.actionCardSub}>
+              {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
+                ? `${currentReadingDoc.readProgress}% completed`
+                : 'Knowledge Book'}
+            </div>
+          </Link>
         </div>
 
         {/* Today's Tasks */}

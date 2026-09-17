@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useGoals } from '@/context/GoalContext';
 import {
   Dumbbell,
@@ -25,6 +26,7 @@ import {
   Wind,
   Footprints,
   Scale,
+  SlidersHorizontal,
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -203,9 +205,11 @@ function muscleGroupIcon(mg: MuscleGroup) {
 // ── Main Workout Page ─────────────────────────────────────────────────────────
 
 export default function WorkoutPage() {
-  const { goals, updateGoalProgress } = useGoals();
+  const { goals, addGoal, updateGoalProgress } = useGoals();
   const [currentWeightKg, setCurrentWeightKg] = useState<number>(55);
   const [targetWeightKg, setTargetWeightKg] = useState<number>(60);
+  const [connectedGoalId, setConnectedGoalId] = useState<string>('auto');
+  const [showGoalConfig, setShowGoalConfig] = useState<boolean>(false);
   const [weightLogs, setWeightLogs] = useState<{ date: string; weight: number }[]>([]);
 
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
@@ -252,10 +256,19 @@ export default function WorkoutPage() {
       if (rawSched) setSchedule(JSON.parse(rawSched));
       const savedWeight = localStorage.getItem('life-os-current-weight');
       if (savedWeight) setCurrentWeightKg(parseFloat(savedWeight));
+      const savedTarget = localStorage.getItem('life-os-target-weight');
+      if (savedTarget) setTargetWeightKg(parseFloat(savedTarget));
+      const savedGoalId = localStorage.getItem('life-os-connected-goal-id');
+      if (savedGoalId) setConnectedGoalId(savedGoalId);
       const savedLogs = localStorage.getItem('life-os-weight-logs');
       if (savedLogs) setWeightLogs(JSON.parse(savedLogs));
     } catch {/* ignore */}
   }, []);
+
+  // Determine active connected goal
+  const resolvedGoal = connectedGoalId !== 'auto'
+    ? goals.find((g) => g.id === connectedGoalId)
+    : goals.find((g) => /60kg|weight|gain|workout|fitness|body/i.test(g.title + ' ' + (g.why || '')));
 
   const handleUpdateWeight = (newWeight: number) => {
     setCurrentWeightKg(newWeight);
@@ -265,12 +278,46 @@ export default function WorkoutPage() {
     setWeightLogs(updatedLogs);
     localStorage.setItem('life-os-weight-logs', JSON.stringify(updatedLogs));
 
-    // Automatically update progress of matching body/60kg goal
-    const targetGoal = goals.find((g) => /60kg|weight|gain|workout|fitness/i.test(g.title + ' ' + g.why));
-    if (targetGoal) {
+    // Automatically sync progress to linked goal
+    if (resolvedGoal && targetWeightKg > 0) {
       const pct = Math.min(100, Math.max(0, Math.round((newWeight / targetWeightKg) * 100)));
-      updateGoalProgress(targetGoal.id, pct);
+      updateGoalProgress(resolvedGoal.id, pct);
     }
+  };
+
+  const handleUpdateTargetWeight = (newTarget: number) => {
+    setTargetWeightKg(newTarget);
+    localStorage.setItem('life-os-target-weight', newTarget.toString());
+    if (resolvedGoal && newTarget > 0) {
+      const pct = Math.min(100, Math.max(0, Math.round((currentWeightKg / newTarget) * 100)));
+      updateGoalProgress(resolvedGoal.id, pct);
+    }
+  };
+
+  const handleSelectGoal = (goalId: string) => {
+    setConnectedGoalId(goalId);
+    localStorage.setItem('life-os-connected-goal-id', goalId);
+    const g = goalId !== 'auto'
+      ? goals.find((x) => x.id === goalId)
+      : goals.find((x) => /60kg|weight|gain|workout|fitness|body/i.test(x.title + ' ' + (x.why || '')));
+    if (g && targetWeightKg > 0) {
+      const pct = Math.min(100, Math.max(0, Math.round((currentWeightKg / targetWeightKg) * 100)));
+      updateGoalProgress(g.id, pct);
+    }
+  };
+
+  const handleCreateFitnessGoal = () => {
+    const newGoal = addGoal({
+      title: `Reach ${targetWeightKg}kg Target Weight & Fitness`,
+      description: `Consistent workouts and nutrition to achieve ${targetWeightKg}kg target physique.`,
+      why: 'Build physical stamina, confidence, and vibrant daily energy.',
+      lifeAreaId: 'area-health',
+      horizon: '90-day',
+      priority: 'high',
+      status: 'in-progress',
+      progress: Math.min(100, Math.max(0, Math.round((currentWeightKg / targetWeightKg) * 100))),
+    });
+    handleSelectGoal(newGoal.id);
   };
 
   // Save
@@ -765,44 +812,157 @@ export default function WorkoutPage() {
               <Scale size={20} />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' }}>
                   Target Weight: {targetWeightKg} kg Goal
                 </span>
-                <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5', padding: '1px 8px', borderRadius: '99px', border: '1px solid rgba(34, 211, 165, 0.3)' }}>
-                  Connected to Goals
-                </span>
+                {resolvedGoal ? (
+                  <Link
+                    href={`/goals?highlight=${resolvedGoal.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(34, 211, 165, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      🎯 {resolvedGoal.title.length > 28 ? `${resolvedGoal.title.slice(0, 28)}...` : resolvedGoal.title}
+                    </span>
+                  </Link>
+                ) : (
+                  <span style={{ fontSize: '10px', fontWeight: 600, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', padding: '2px 8px', borderRadius: '99px' }}>
+                    No Goal Linked
+                  </span>
+                )}
               </div>
               <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, marginTop: '2px' }}>
-                Track body weight progress towards your 60kg milestone. Log workouts to stay consistent!
+                Track body weight progress towards your {targetWeightKg}kg milestone. Log workouts to stay consistent!
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-2)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--color-border-subtle)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Current Weight:</span>
-            <input
-              type="number"
-              min="30"
-              max="200"
-              step="0.5"
-              value={currentWeightKg}
-              onChange={(e) => handleUpdateWeight(parseFloat(e.target.value) || 0)}
-              style={{ width: '60px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text)', padding: '2px 6px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}
-            />
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text)' }}>kg</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface-2)', padding: '6px 12px', borderRadius: '10px', border: '1px solid var(--color-border-subtle)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Current:</span>
+              <input
+                type="number"
+                min="30"
+                max="200"
+                step="0.5"
+                value={currentWeightKg}
+                onChange={(e) => handleUpdateWeight(parseFloat(e.target.value) || 0)}
+                style={{ width: '56px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text)', padding: '2px 6px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}
+              />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text)' }}>kg</span>
+              <button
+                type="button"
+                style={{ background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                onClick={() => handleUpdateWeight(currentWeightKg + 0.5)}
+                title="Add +0.5kg"
+              >
+                +0.5kg
+              </button>
+            </div>
+
             <button
               type="button"
-              style={{ background: 'var(--color-accent)', color: 'white', border: 'none', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', marginLeft: '4px' }}
-              onClick={() => handleUpdateWeight(currentWeightKg + 0.5)}
-              title="Add +0.5kg"
+              onClick={() => setShowGoalConfig(!showGoalConfig)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: showGoalConfig ? 'rgba(124, 106, 255, 0.2)' : 'var(--color-surface-2)',
+                color: showGoalConfig ? 'var(--color-accent-light)' : 'var(--color-text-muted)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '8px',
+                padding: '6px 10px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              title="Change target weight or connect a different Goal"
             >
-              +0.5kg
+              <SlidersHorizontal size={13} />
+              {showGoalConfig ? 'Close' : 'Link / Edit Goal'}
             </button>
           </div>
         </div>
 
-        {/* Progress Bar towards 60kg */}
+        {/* Goal Configuration Drawer */}
+        {showGoalConfig && (
+          <div style={{
+            background: 'var(--color-surface-2)',
+            border: '1px dashed var(--color-accent)',
+            borderRadius: '10px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text)' }}>
+                  Target Weight:
+                </label>
+                <input
+                  type="number"
+                  min="30"
+                  max="200"
+                  step="0.5"
+                  value={targetWeightKg}
+                  onChange={(e) => handleUpdateTargetWeight(parseFloat(e.target.value) || 60)}
+                  style={{ width: '60px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text)', padding: '3px 8px', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}
+                />
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)' }}>kg</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text)' }}>
+                  Connected Goal:
+                </label>
+                <select
+                  value={connectedGoalId}
+                  onChange={(e) => handleSelectGoal(e.target.value)}
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    color: 'var(--color-text)',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    maxWidth: '240px'
+                  }}
+                >
+                  <option value="auto">⚡ Auto-detect Fitness Goal</option>
+                  {goals.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCreateFitnessGoal}
+                style={{
+                  background: 'rgba(34, 211, 165, 0.15)',
+                  color: '#22d3a5',
+                  border: '1px solid rgba(34, 211, 165, 0.3)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                + Create New Health Goal
+              </button>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0 }}>
+              💡 Whenever you change your Current Weight, your connected Goal automatically receives real-time progress percentage updates!
+            </p>
+          </div>
+        )}
+
+        {/* Progress Bar towards target */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
             <span>Progress: {currentWeightKg}kg / {targetWeightKg}kg</span>
