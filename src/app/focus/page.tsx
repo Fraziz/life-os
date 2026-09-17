@@ -818,33 +818,45 @@ export default function FocusPage() {
                 <span className={styles.sideCardTitle}>
                   Ambient Soundscapes
                 </span>
+                {ambientSound !== 'off' && (
+                  <button
+                    type="button"
+                    onClick={() => handleAmbientToggle('off')}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--color-text-faint)',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Mute
+                  </button>
+                )}
               </div>
 
               <div className={styles.ambientBtnGrid}>
-                <button
-                  className={`${styles.ambientPill} ${ambientSound === 'rain' ? styles.activeAmbient : ''}`}
-                  onClick={() => handleAmbientToggle('rain')}
-                >
-                  Rain
-                </button>
-                <button
-                  className={`${styles.ambientPill} ${ambientSound === 'brown' ? styles.activeAmbient : ''}`}
-                  onClick={() => handleAmbientToggle('brown')}
-                >
-                  Brown Noise
-                </button>
-                <button
-                  className={`${styles.ambientPill} ${ambientSound === 'drone' ? styles.activeAmbient : ''}`}
-                  onClick={() => handleAmbientToggle('drone')}
-                >
-                  Deep Drone
-                </button>
-                <button
-                  className={`${styles.ambientPill} ${ambientSound === 'off' ? styles.activeAmbient : ''}`}
-                  onClick={() => handleAmbientToggle('off')}
-                >
-                  Mute
-                </button>
+                {[
+                  { id: 'forest', label: 'Forest Birds', icon: '🌲' },
+                  { id: 'waves', label: 'Ocean Waves', icon: '🌊' },
+                  { id: 'stream', label: 'River Stream', icon: '💧' },
+                  { id: 'rain', label: 'Gentle Rain', icon: '🌧️' },
+                  { id: 'thunder', label: 'Distant Thunder', icon: '⛈️' },
+                  { id: 'fire', label: 'Campfire', icon: '🔥' },
+                  { id: 'wind', label: 'Mountain Wind', icon: '🍃' },
+                  { id: 'brown', label: 'Brown Noise', icon: '🎧' },
+                  { id: 'drone', label: 'Alpha Drone', icon: '🧘' },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    className={`${styles.ambientPill} ${ambientSound === s.id ? styles.activeAmbient : ''}`}
+                    onClick={() => handleAmbientToggle(s.id as AmbientSoundType)}
+                  >
+                    <span>{s.icon}</span>
+                    <span>{s.label}</span>
+                  </button>
+                ))}
               </div>
 
               {ambientSound !== 'off' && (

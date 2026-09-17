@@ -117,14 +117,25 @@ export function playTimerCompleteFanfare() {
 
 // ============================================================
 // PROCEDURAL AMBIENT SOUND GENERATOR (Web Audio API)
-// Brown noise, Gentle rain, and Alpha focus drone
+// 100% offline nature soundscapes & focus noise synthesizers
 // ============================================================
 
-export type AmbientSoundType = 'off' | 'brown' | 'rain' | 'drone';
+export type AmbientSoundType =
+  | 'off'
+  | 'forest'
+  | 'waves'
+  | 'stream'
+  | 'rain'
+  | 'thunder'
+  | 'fire'
+  | 'wind'
+  | 'brown'
+  | 'drone';
 
 let activeAmbientNodes: {
   sources: (AudioNode | AudioBufferSourceNode | OscillatorNode)[];
   gainNode: GainNode;
+  timers?: number[];
 } | null = null;
 
 let currentAmbientVolume = 0.35;
@@ -142,7 +153,7 @@ function createNoiseBuffer(ctx: AudioContext, type: 'white' | 'pink'): AudioBuff
       data[i] = Math.random() * 2 - 1;
     }
   } else {
-    // Pink noise filter algorithm
+    // Pink noise filter algorithm (Paul Kellet's filter)
     let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
@@ -161,6 +172,9 @@ function createNoiseBuffer(ctx: AudioContext, type: 'white' | 'pink'): AudioBuff
 
 export function stopAmbientSound() {
   if (activeAmbientNodes) {
+    if (activeAmbientNodes.timers) {
+      activeAmbientNodes.timers.forEach((t) => window.clearTimeout(t));
+    }
     try {
       activeAmbientNodes.gainNode.gain.setTargetAtTime(0, audioCtx ? audioCtx.currentTime : 0, 0.1);
       setTimeout(() => {
@@ -201,25 +215,135 @@ export function startAmbientSound(type: AmbientSoundType, volume = currentAmbien
   masterGain.connect(ctx.destination);
 
   const sources: (AudioNode | AudioBufferSourceNode | OscillatorNode)[] = [];
+  const timers: number[] = [];
 
-  if (type === 'brown') {
-    // Brown noise: Low-pass filtered pink noise for deep calm
-    const noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = createNoiseBuffer(ctx, 'pink');
-    noiseSource.loop = true;
+  if (type === 'forest') {
+    // Forest: soft rustling breeze + distant gentle chirping birds
+    const breeze = ctx.createBufferSource();
+    breeze.buffer = createNoiseBuffer(ctx, 'pink');
+    breeze.loop = true;
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(320, ctx.currentTime);
-    filter.Q.setValueAtTime(0.7, ctx.currentTime);
+    const breezeFilter = ctx.createBiquadFilter();
+    breezeFilter.type = 'bandpass';
+    breezeFilter.frequency.setValueAtTime(650, ctx.currentTime);
+    breezeFilter.Q.setValueAtTime(0.6, ctx.currentTime);
 
-    noiseSource.connect(filter);
-    filter.connect(masterGain);
-    noiseSource.start();
-    sources.push(noiseSource, filter);
+    const breezeGain = ctx.createGain();
+    breezeGain.gain.setValueAtTime(0.4, ctx.currentTime);
+
+    breeze.connect(breezeFilter);
+    breezeFilter.connect(breezeGain);
+    breezeGain.connect(masterGain);
+    breeze.start();
+    sources.push(breeze, breezeFilter, breezeGain);
+
+    // Procedural chirping birds generator
+    const scheduleBirdChirp = () => {
+      if (!activeAmbientNodes) return;
+      try {
+        const now = ctx.currentTime;
+        const baseFreq = 2400 + Math.random() * 1200;
+        const chirpCount = Math.floor(Math.random() * 3) + 2;
+
+        for (let i = 0; i < chirpCount; i++) {
+          const chirpOsc = ctx.createOscillator();
+          const chirpGain = ctx.createGain();
+
+          chirpOsc.type = 'sine';
+          const startTime = now + i * 0.12;
+          const duration = 0.08 + Math.random() * 0.04;
+
+          chirpOsc.frequency.setValueAtTime(baseFreq + (Math.random() * 300 - 150), startTime);
+          chirpOsc.frequency.exponentialRampToValueAtTime(baseFreq + 400, startTime + duration * 0.6);
+          chirpOsc.frequency.exponentialRampToValueAtTime(baseFreq - 200, startTime + duration);
+
+          chirpGain.gain.setValueAtTime(0.0001, startTime);
+          chirpGain.gain.linearRampToValueAtTime(0.08, startTime + 0.01);
+          chirpGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+          chirpOsc.connect(chirpGain);
+          chirpGain.connect(masterGain);
+
+          chirpOsc.start(startTime);
+          chirpOsc.stop(startTime + duration + 0.05);
+        }
+      } catch {}
+
+      const nextDelay = 3500 + Math.random() * 6000;
+      const tid = window.setTimeout(scheduleBirdChirp, nextDelay);
+      timers.push(tid);
+    };
+
+    const initialTid = window.setTimeout(scheduleBirdChirp, 1200);
+    timers.push(initialTid);
+
+  } else if (type === 'waves') {
+    // Ocean Waves: Modulated rolling tidal surf (8s wash & retreat cycle)
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+
+    const waveFilter = ctx.createBiquadFilter();
+    waveFilter.type = 'lowpass';
+    waveFilter.frequency.setValueAtTime(450, ctx.currentTime);
+    waveFilter.Q.setValueAtTime(1.2, ctx.currentTime);
+
+    const waveGain = ctx.createGain();
+    waveGain.gain.setValueAtTime(0.15, ctx.currentTime);
+
+    // LFO to modulate swell and crash
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(0.12, ctx.currentTime); // ~8.3 sec cycle
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.setValueAtTime(300, ctx.currentTime); // modulate filter frequency
+    lfo.connect(lfoGain);
+    lfoGain.connect(waveFilter.frequency);
+
+    const lfoAmp = ctx.createGain();
+    lfoAmp.gain.setValueAtTime(0.25, ctx.currentTime);
+    lfo.connect(lfoAmp);
+    lfoAmp.connect(waveGain.gain);
+
+    noise.connect(waveFilter);
+    waveFilter.connect(waveGain);
+    waveGain.connect(masterGain);
+
+    noise.start();
+    lfo.start();
+    sources.push(noise, waveFilter, waveGain, lfo, lfoGain, lfoAmp);
+
+  } else if (type === 'stream') {
+    // Babbling Brook / Stream: Dual multi-band water bubbling noise
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'pink');
+    noise.loop = true;
+
+    const bp1 = ctx.createBiquadFilter();
+    bp1.type = 'bandpass';
+    bp1.frequency.setValueAtTime(950, ctx.currentTime);
+    bp1.Q.setValueAtTime(1.5, ctx.currentTime);
+
+    const bp2 = ctx.createBiquadFilter();
+    bp2.type = 'bandpass';
+    bp2.frequency.setValueAtTime(1800, ctx.currentTime);
+    bp2.Q.setValueAtTime(2.0, ctx.currentTime);
+
+    const streamGain = ctx.createGain();
+    streamGain.gain.setValueAtTime(0.55, ctx.currentTime);
+
+    noise.connect(bp1);
+    noise.connect(bp2);
+    bp1.connect(streamGain);
+    bp2.connect(streamGain);
+    streamGain.connect(masterGain);
+
+    noise.start();
+    sources.push(noise, bp1, bp2, streamGain);
 
   } else if (type === 'rain') {
-    // Rain noise: Filtered noise with high-pass sparkle and gentle modulation
+    // Gentle Rain: Filtered noise with high-pass sparkle and gentle modulation
     const noiseSource = ctx.createBufferSource();
     noiseSource.buffer = createNoiseBuffer(ctx, 'pink');
     noiseSource.loop = true;
@@ -239,6 +363,144 @@ export function startAmbientSound(type: AmbientSoundType, volume = currentAmbien
     noiseSource.start();
     sources.push(noiseSource, bandpass, lowpass);
 
+  } else if (type === 'thunder') {
+    // Rain & Distant Thunder: Steady rain with deep rolling low rumble
+    const rain = ctx.createBufferSource();
+    rain.buffer = createNoiseBuffer(ctx, 'pink');
+    rain.loop = true;
+
+    const rainFilter = ctx.createBiquadFilter();
+    rainFilter.type = 'bandpass';
+    rainFilter.frequency.setValueAtTime(1300, ctx.currentTime);
+    rainFilter.Q.setValueAtTime(0.6, ctx.currentTime);
+
+    rain.connect(rainFilter);
+    rainFilter.connect(masterGain);
+    rain.start();
+    sources.push(rain, rainFilter);
+
+    // Periodic distant thunder roll
+    const scheduleThunder = () => {
+      if (!activeAmbientNodes) return;
+      try {
+        const now = ctx.currentTime;
+        const rumble = ctx.createBufferSource();
+        rumble.buffer = createNoiseBuffer(ctx, 'pink');
+
+        const rumbleFilter = ctx.createBiquadFilter();
+        rumbleFilter.type = 'lowpass';
+        rumbleFilter.frequency.setValueAtTime(90, now);
+        rumbleFilter.Q.setValueAtTime(3.0, now);
+
+        const rumbleGain = ctx.createGain();
+        rumbleGain.gain.setValueAtTime(0.0001, now);
+        rumbleGain.gain.linearRampToValueAtTime(0.45, now + 1.2);
+        rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.5);
+
+        rumble.connect(rumbleFilter);
+        rumbleFilter.connect(rumbleGain);
+        rumbleGain.connect(masterGain);
+
+        rumble.start(now);
+        rumble.stop(now + 5.0);
+      } catch {}
+
+      const nextDelay = 10000 + Math.random() * 12000;
+      const tid = window.setTimeout(scheduleThunder, nextDelay);
+      timers.push(tid);
+    };
+
+    const initialTid = window.setTimeout(scheduleThunder, 2500);
+    timers.push(initialTid);
+
+  } else if (type === 'fire') {
+    // Campfire Crackle: Warm low hiss + randomized micro pops
+    const baseHiss = ctx.createBufferSource();
+    baseHiss.buffer = createNoiseBuffer(ctx, 'pink');
+    baseHiss.loop = true;
+
+    const hissFilter = ctx.createBiquadFilter();
+    hissFilter.type = 'lowpass';
+    hissFilter.frequency.setValueAtTime(700, ctx.currentTime);
+
+    const hissGain = ctx.createGain();
+    hissGain.gain.setValueAtTime(0.35, ctx.currentTime);
+
+    baseHiss.connect(hissFilter);
+    hissFilter.connect(hissGain);
+    hissGain.connect(masterGain);
+    baseHiss.start();
+    sources.push(baseHiss, hissFilter, hissGain);
+
+    // Micro crackles loop
+    const scheduleCrackle = () => {
+      if (!activeAmbientNodes) return;
+      try {
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300 + Math.random() * 1200, now);
+
+        gain.gain.setValueAtTime(0.08 + Math.random() * 0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02 + Math.random() * 0.03);
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      } catch {}
+
+      const nextDelay = 180 + Math.random() * 500;
+      const tid = window.setTimeout(scheduleCrackle, nextDelay);
+      timers.push(tid);
+    };
+
+    const initialTid = window.setTimeout(scheduleCrackle, 300);
+    timers.push(initialTid);
+
+  } else if (type === 'wind') {
+    // Mountain Wind: Sweeping resonant breeze
+    const wind = ctx.createBufferSource();
+    wind.buffer = createNoiseBuffer(ctx, 'pink');
+    wind.loop = true;
+
+    const windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'bandpass';
+    windFilter.frequency.setValueAtTime(400, ctx.currentTime);
+    windFilter.Q.setValueAtTime(1.8, ctx.currentTime);
+
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(0.08, ctx.currentTime);
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.setValueAtTime(250, ctx.currentTime);
+    lfo.connect(lfoGain);
+    lfoGain.connect(windFilter.frequency);
+
+    wind.connect(windFilter);
+    windFilter.connect(masterGain);
+    wind.start();
+    lfo.start();
+    sources.push(wind, windFilter, lfo, lfoGain);
+
+  } else if (type === 'brown') {
+    // Brown noise: Low-pass filtered pink noise for deep calm
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = createNoiseBuffer(ctx, 'pink');
+    noiseSource.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320, ctx.currentTime);
+    filter.Q.setValueAtTime(0.7, ctx.currentTime);
+
+    noiseSource.connect(filter);
+    filter.connect(masterGain);
+    noiseSource.start();
+    sources.push(noiseSource, filter);
+
   } else if (type === 'drone') {
     // 14Hz Alpha focus wave with 216Hz base frequency
     const osc1 = ctx.createOscillator();
@@ -246,13 +508,13 @@ export function startAmbientSound(type: AmbientSoundType, volume = currentAmbien
     const subOsc = ctx.createOscillator();
 
     osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(216, ctx.currentTime); // Base
+    osc1.frequency.setValueAtTime(216, ctx.currentTime);
 
     osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(230, ctx.currentTime); // 216 + 14Hz Alpha difference
+    osc2.frequency.setValueAtTime(230, ctx.currentTime);
 
     subOsc.type = 'triangle';
-    subOsc.frequency.setValueAtTime(108, ctx.currentTime); // Deep warm sub-octave
+    subOsc.frequency.setValueAtTime(108, ctx.currentTime);
 
     const subGain = ctx.createGain();
     subGain.gain.setValueAtTime(0.4, ctx.currentTime);
@@ -268,7 +530,7 @@ export function startAmbientSound(type: AmbientSoundType, volume = currentAmbien
     sources.push(osc1, osc2, subOsc, subGain);
   }
 
-  activeAmbientNodes = { sources, gainNode: masterGain };
+  activeAmbientNodes = { sources, gainNode: masterGain, timers };
 }
 
 // ============================================================

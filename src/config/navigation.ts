@@ -51,10 +51,17 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'GOALS & PLANS',
     items: [
       {
-        id: 'projects',
-        label: 'Projects',
-        href: '/projects',
-        icon: 'projects',
+        id: 'roadmap',
+        label: 'Roadmap',
+        href: '/roadmap',
+        icon: 'roadmap',
+        isAvailable: true,
+      },
+      {
+        id: 'dreams',
+        label: 'Dreams & Vision',
+        href: '/dreams',
+        icon: 'dreams',
         isAvailable: true,
       },
       {
@@ -72,17 +79,10 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'roadmap',
-        label: 'Roadmap',
-        href: '/roadmap',
-        icon: 'roadmap',
-        isAvailable: true,
-      },
-      {
-        id: 'dreams',
-        label: 'Dreams & Vision',
-        href: '/dreams',
-        icon: 'dreams',
+        id: 'projects',
+        label: 'Projects',
+        href: '/projects',
+        icon: 'projects',
         isAvailable: true,
       },
     ],
