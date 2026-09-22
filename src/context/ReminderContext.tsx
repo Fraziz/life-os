@@ -59,8 +59,8 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   const [dismissedSet, setDismissedSet] = useState<Set<string>>(new Set());
   const [readSet, setReadSet] = useState<Set<string>>(new Set());
 
-  // Load snoozed and dismissed states on mount
-  useEffect(() => {
+  // Load snoozed and dismissed states on mount and after cloud sync
+  const reloadReminderState = () => {
     try {
       const savedSnooze = localStorage.getItem(SNOOZE_STORAGE_KEY);
       if (savedSnooze) setSnoozedMap(JSON.parse(savedSnooze));
@@ -69,6 +69,14 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // localStorage error fallback
     }
+  };
+
+  useEffect(() => {
+    reloadReminderState();
+
+    const handleSync = () => reloadReminderState();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const notifConfig = settings.notifications;

@@ -1168,4 +1168,148 @@
   animation: fadeIn 0.2s ease forwards;
 }
 
+/* ================================================================
+   LIGHT THEME FOCUS STYLES
+   ================================================================ */
+:global([data-theme='light']) .focusCard {
+  background: #ffffff;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='light']) .modeTabs {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme='light']) .modeTab {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .modeTab:hover {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .modeTab.activeMode {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+:global([data-theme='light']) .timerDisplayCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+
+:global([data-theme='light']) .taskTagPill {
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+}
+
+:global([data-theme='light']) .sideCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+:global([data-theme='light']) .sideModeBtn {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme='light']) .sideModeBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .sideParkingLotInput,
+:global([data-theme='light']) .sideActionBtn,
+:global([data-theme='light']) .btnReset,
+:global([data-theme='light']) .ambientPill {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+:global([data-theme='light']) .sideActionBtn:hover,
+:global([data-theme='light']) .ambientPill:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .targetTabGroup {
+  background: #f1f5f9;
+}
+
+:global([data-theme='light']) .targetTab {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .targetTabActive {
+  background: #ffffff;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+:global([data-theme='light']) .targetSearchInput {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .knowledgeTargetItem {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme='light']) .knowledgeTargetItem:hover {
+  background: #f1f5f9;
+  border-color: #818cf8;
+}
+
+:global([data-theme='light']) .focusBookHeaderBar {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* ================================================================
+   NATURE THEME FOCUS STYLES
+   ================================================================ */
+:global([data-theme='nature']) .focusCard {
+  background: rgba(16, 32, 23, 0.75);
+  border: 1px solid rgba(134, 239, 172, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='nature']) .timerDisplayCard {
+  background: rgba(10, 24, 16, 0.7);
+  border: 1px solid rgba(134, 239, 172, 0.15);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme='nature']) .sideCard {
+  background: rgba(16, 32, 23, 0.75);
+  border: 1px solid rgba(134, 239, 172, 0.16);
+}
+
+:global([data-theme='nature']) .modeTabs {
+  background: rgba(10, 24, 16, 0.6);
+  border-color: rgba(134, 239, 172, 0.15);
+}
+
+:global([data-theme='nature']) .modeTab.activeMode {
+  background: #4ade80;
+  color: #052e16;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
+}
+
+:global([data-theme='nature']) .focusBookHeaderBar {
+  background: rgba(16, 32, 23, 0.9);
+  border-color: rgba(134, 239, 172, 0.2);
+}
+
 

@@ -1399,7 +1399,9 @@ export default function KnowledgePage() {
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Personal Knowledge Base</h1>
           <p className={styles.subtitle}>
-            Formal reference notes, research, and documentation connected to your life.
+            <em style={{ fontStyle: 'italic', color: 'var(--color-text-muted)', fontSize: '12px' }}>
+              &ldquo;If you write down a problem clearly and specifically, you have already solved half of it.&rdquo;
+            </em>
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1412,11 +1414,66 @@ export default function KnowledgePage() {
           />
           <button
             className={styles.btnSecondary}
+            onClick={() => {
+              const doc = createProblemSolvingDoc();
+              setSelectedId(doc.id);
+              setIsCreating(false);
+              setEditorMode('edit');
+              setCategoryFilter('problem-solving');
+            }}
+            title="Start a structured problem-solving session"
+            style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+          >
+            🔍 New Problem
+          </button>
+          <button
+            className={styles.btnSecondary}
+            onClick={() => {
+              const studyTemplate = `<h2>📖 Summary</h2>
+<p>Write a 2–3 sentence summary of what you learned.</p>
+<hr />
+<h2>🔑 Key Concepts</h2>
+<ul><li><strong>Concept 1</strong>: Explain it in your own words.</li>
+<li><strong>Concept 2</strong>: Add another important idea.</li></ul>
+<hr />
+<h2>💡 Examples &amp; Applications</h2>
+<p>Concrete examples or real-world use cases.</p>
+<hr />
+<h2>❓ Questions to Explore</h2>
+<ul><li>What do I still not understand?</li>
+<li>What should I research next?</li></ul>
+<hr />
+<h2>✅ Action Items</h2>
+<div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Apply this concept to a real project</span></div>
+<div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Review these notes in 7 days</span></div>`;
+              const created = addDoc({
+                title: 'New Study Note',
+                content: studyTemplate,
+                status: 'active',
+                category: 'learning',
+                tags: ['study', 'notes'],
+              });
+              setSelectedId(created.id);
+              setIsCreating(false);
+              setEditorMode('edit');
+              setCategoryFilter('learning');
+              setTimeout(() => {
+                if (editorRef.current) editorRef.current.innerHTML = studyTemplate;
+                if (bookEditorRef.current) bookEditorRef.current.innerHTML = studyTemplate;
+              }, 50);
+            }}
+            title="Create a structured study note with learning template"
+            style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+          >
+            📖 Study Note
+          </button>
+          <button
+            className={styles.btnSecondary}
             onClick={() => importFileRef.current?.click()}
             disabled={isImporting}
             title="Import PDF or text document and extract text automatically"
           >
-            {isImporting ? (importStatus || 'Importing...') : 'Import PDF / File'}
+            {isImporting ? (importStatus || 'Importing...') : 'Import File'}
           </button>
           <button className={styles.btnCreate} onClick={handleNewDoc}>
             + New Document
@@ -1428,6 +1485,42 @@ export default function KnowledgePage() {
       <div className={styles.workbench}>
         {/* ── Left: Document List (Clean Linear Rows) ── */}
         <aside className={styles.sidebar}>
+          {/* ── Category Tabs ── */}
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', padding: '0 0 8px 0', borderBottom: '1px solid var(--color-border)' }}>
+            {([
+              { id: 'all',              label: '📚 All',           title: 'All documents' },
+              { id: 'learning',         label: '📖 Study',         title: 'Study notes & learning' },
+              { id: 'problem-solving',  label: '🔍 Problems',      title: 'Problem solving documents' },
+              { id: 'ideas',            label: '💡 Ideas',         title: 'Ideas & brainstorms' },
+              { id: 'pinned',           label: '📌 Pinned',        title: 'Pinned documents' },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setCategoryFilter(tab.id as typeof categoryFilter)}
+                title={tab.title}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: categoryFilter === tab.id ? 700 : 500,
+                  background: categoryFilter === tab.id ? 'var(--color-accent)' : 'var(--color-surface-2)',
+                  color: categoryFilter === tab.id ? '#fff' : 'var(--color-text-muted)',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tab.label}
+                {tab.id !== 'all' && tab.id !== 'pinned' && (
+                  <span style={{ marginLeft: '4px', opacity: 0.75 }}>
+                    ({docs.filter(d => (d.category || 'general') === tab.id).length})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* Search & Tag Filter */}
           <div className={styles.searchBar}>
             <Search size={14} className={styles.searchIcon} />
@@ -1472,8 +1565,44 @@ export default function KnowledgePage() {
           <div className={styles.docList}>
             {filteredDocs.length === 0 ? (
               <div className={styles.emptyList}>
-                <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
-                <p>No documents found</p>
+                {categoryFilter === 'problem-solving' ? (
+                  <>
+                    <span style={{ fontSize: '28px', marginBottom: '8px', display: 'block' }}>🔍</span>
+                    <p style={{ fontWeight: 600, marginBottom: '4px' }}>No problems logged yet</p>
+                    <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginBottom: '10px', lineHeight: 1.5 }}>
+                      &ldquo;If you write down a problem clearly,<br />you've already solved half of it.&rdquo;
+                    </p>
+                    <button
+                      className={styles.btnCreate}
+                      style={{ fontSize: '12px', padding: '6px 14px' }}
+                      onClick={() => { const d = createProblemSolvingDoc(); setSelectedId(d.id); setEditorMode('edit'); }}
+                    >
+                      🔍 Start Problem Solving
+                    </button>
+                  </>
+                ) : categoryFilter === 'learning' ? (
+                  <>
+                    <span style={{ fontSize: '28px', marginBottom: '8px', display: 'block' }}>📖</span>
+                    <p style={{ fontWeight: 600, marginBottom: '10px' }}>No study notes yet</p>
+                    <button
+                      className={styles.btnCreate}
+                      style={{ fontSize: '12px', padding: '6px 14px' }}
+                      onClick={() => {
+                        const t = `<h2>📖 Summary</h2><p>Write a 2–3 sentence summary.</p><hr /><h2>🔑 Key Concepts</h2><ul><li><strong>Concept 1</strong>: Explain in your own words.</li></ul><hr /><h2>❓ Questions</h2><ul><li>What should I explore next?</li></ul>`;
+                        const d = addDoc({ title: 'New Study Note', content: t, status: 'active', category: 'learning', tags: ['study'] });
+                        setSelectedId(d.id); setEditorMode('edit');
+                        setTimeout(() => { if (editorRef.current) editorRef.current.innerHTML = t; }, 50);
+                      }}
+                    >
+                      📖 Create Study Note
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <p>No documents found</p>
+                  </>
+                )}
               </div>
             ) : (
               filteredDocs.map((doc) => {

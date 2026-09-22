@@ -1,8 +1,9 @@
 /* 
    LIFE ROADMAP  Full-Screen Blueprint & Node Graph
-    */
+   Theme-adaptive styles supporting Light, Dark, and Nature themes flawlessly.
+*/
 
-/*  Full-screen page container  */
+/* Full-screen page container */
 .roadmapPage {
   position: relative;
   width: 100%;
@@ -12,7 +13,7 @@
   user-select: none;
 }
 
-/*  Floating Minimal Header (Linear / Figma style HUD)  */
+/* Floating Minimal Header (Linear / Figma style HUD) */
 .floatingHeader {
   position: absolute;
   top: 14px;
@@ -24,13 +25,14 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: 6px 14px;
-  background: rgba(13, 14, 21, 0.82);
+  background: var(--color-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   pointer-events: auto;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .headerLeft {
@@ -44,8 +46,8 @@
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   color: var(--color-text-muted);
   font-size: 11px;
@@ -55,15 +57,15 @@
 }
 
 .navToggleBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-hover);
   color: var(--color-text);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--color-accent);
 }
 
 .headerDivider {
   width: 1px;
   height: 16px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border);
 }
 
 .pageTitle {
@@ -80,13 +82,13 @@
   font-size: 10px;
   color: var(--color-text-faint);
   padding: 1px 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   font-weight: 500;
 }
 
-/*  Center filters  */
+/* Center filters */
 .filterRow {
   display: flex;
   align-items: center;
@@ -100,7 +102,7 @@
   gap: 5px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--color-text-faint);
+  color: var(--color-text-muted);
   padding: 3px 9px;
   border-radius: var(--radius-full);
   font-size: 11px;
@@ -111,17 +113,17 @@
 
 .filterPill:hover {
   color: var(--color-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface-2);
 }
 
 .filterPill.filterActive {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: var(--color-text);
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
   font-weight: 600;
 }
 
-/*  Right controls  */
+/* Right controls */
 .headerRight {
   display: flex;
   align-items: center;
@@ -143,9 +145,9 @@
 }
 
 .ctrlBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-2);
   color: var(--color-text);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-border);
 }
 
 .zoomLabel {
@@ -156,7 +158,7 @@
   text-align: center;
 }
 
-/*  Canvas Viewport  */
+/* Canvas Viewport */
 .canvasViewport {
   width: 100%;
   height: 100%;
@@ -170,18 +172,20 @@
   cursor: grabbing;
 }
 
-/*  Canvas  */
+/* Canvas */
 .canvas {
   position: relative;
   will-change: transform;
 }
 
-/*  Dot grid  */
+/* Dot grid */
 .dotGrid {
   pointer-events: none;
+  color: var(--color-text-muted);
+  opacity: 0.22;
 }
 
-/*  SVG connection curves  */
+/* SVG connection curves */
 .svgOverlay {
   pointer-events: none;
 }
@@ -195,49 +199,53 @@
   to   { stroke-dashoffset: 0; }
 }
 
-/*  Column Headers on Canvas  */
+/* Column Headers on Canvas */
 .canvasColHeader {
   position: absolute;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--color-text-faint);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 4px 14px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 5px 16px;
   border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 
-/*  Node Card: Formal, Clean, Polished  */
+/* Node Card: Formal, Clean, Theme-Synced */
 .nodeCard {
   position: absolute;
-  background: rgba(17, 18, 27, 0.94);
+  background: var(--color-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 12px 14px 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  box-shadow: var(--shadow-sm);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.15s ease,
-    opacity 0.2s ease;
+    opacity 0.2s ease,
+    background 0.2s ease;
   cursor: pointer;
   overflow: visible;
 }
 
 .nodeCard:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
 }
 
 .nodeAccentBar {
@@ -245,7 +253,7 @@
   left: 0;
   top: 10px;
   bottom: 10px;
-  width: 3px;
+  width: 3.5px;
   border-radius: 0 2px 2px 0;
 }
 
@@ -295,7 +303,7 @@
 }
 
 .nodeTitle {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.4;
@@ -315,8 +323,9 @@
 
 .nodeProgressTrack {
   flex: 1;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  height: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
@@ -361,7 +370,7 @@
   left: -4px;
 }
 
-/*  Minimal Floating Hint (Bottom Right)  */
+/* Minimal Floating Hint (Bottom Right) */
 .canvasHintBadge {
   position: absolute;
   bottom: 14px;
@@ -370,24 +379,26 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  background: rgba(13, 14, 21, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px 12px;
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   font-size: 10px;
-  color: var(--color-text-faint);
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 
-/*  ADHD Controls in Floating Header  */
+/* ADHD Controls in Floating Header */
 .adhdBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 3px 9px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   color: var(--color-text-muted);
   font-size: 11px;
@@ -397,9 +408,9 @@
 }
 
 .adhdBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-2);
   color: var(--color-text);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--color-border);
 }
 
 .adhdBtnActive {
@@ -427,7 +438,7 @@
   background: rgba(245, 166, 35, 0.2);
 }
 
-/*  ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center)  */
+/* ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center) */
 .adhdFloatingPill {
   position: absolute;
   bottom: 14px;
@@ -437,13 +448,13 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 5px 12px;
-  background: rgba(13, 14, 21, 0.85);
+  padding: 6px 14px;
+  background: var(--color-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-xl);
   pointer-events: auto;
   animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   max-width: calc(100vw - 32px);
@@ -458,13 +469,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
-  background: rgba(124, 111, 255, 0.15);
-  border: 1px solid rgba(124, 111, 255, 0.4);
+  padding: 2px 8px;
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent-light);
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 700;
-  color: #a59bff;
+  color: var(--color-accent);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -492,8 +503,8 @@
   align-items: center;
   gap: 4px;
   padding: 3px 9px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   color: var(--color-text);
   font-size: 10px;
@@ -545,8 +556,8 @@
   align-items: center;
   gap: 4px;
   padding: 2px 9px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   color: var(--color-text);
   font-size: 10px;
@@ -563,7 +574,7 @@
   transform: translateY(-1px);
 }
 
-/*  Loading screen  */
+/* Loading screen */
 .loadingScreen {
   display: flex;
   flex-direction: column;
@@ -575,7 +586,7 @@
   font-size: var(--text-sm);
 }
 
-/*  Empty canvas state  */
+/* Empty canvas state */
 .emptyCanvas {
   position: absolute;
   inset: 0;
@@ -633,11 +644,11 @@
   border-color: var(--color-accent);
 }
 
-/* 
+/* ================================================================
    LIGHT THEME ROADMAP STYLES
-    */
+   ================================================================ */
 :global([data-theme='light']) .floatingHeader {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(226, 232, 240, 0.95);
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
 }
@@ -659,6 +670,10 @@
   color: #64748b;
 }
 
+:global([data-theme='light']) .filterPill {
+  color: #64748b;
+}
+
 :global([data-theme='light']) .filterPill:hover {
   background: #f1f5f9;
   color: #0f172a;
@@ -674,4 +689,133 @@
   background: #f1f5f9;
   color: #0f172a;
   border-color: #e2e8f0;
+}
+
+:global([data-theme='light']) .canvasColHeader {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+:global([data-theme='light']) .nodeCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+:global([data-theme='light']) .nodeCard:hover {
+  border-color: #818cf8;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+}
+
+:global([data-theme='light']) .nodeTitle {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .nodeProgressTrack {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme='light']) .adhdFloatingPill {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+:global([data-theme='light']) .canvasHintBadge {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+/* ================================================================
+   DARK THEME ROADMAP STYLES
+   ================================================================ */
+:global([data-theme='dark']) .floatingHeader {
+  background: rgba(22, 25, 35, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme='dark']) .canvasColHeader {
+  background: rgba(26, 29, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9ca3af;
+}
+
+:global([data-theme='dark']) .nodeCard {
+  background: rgba(26, 29, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme='dark']) .nodeCard:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:global([data-theme='dark']) .nodeProgressTrack {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+}
+
+:global([data-theme='dark']) .adhdFloatingPill {
+  background: rgba(22, 25, 35, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+:global([data-theme='dark']) .canvasHintBadge {
+  background: rgba(22, 25, 35, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ================================================================
+   NATURE THEME ROADMAP STYLES
+   ================================================================ */
+:global([data-theme='nature']) .floatingHeader {
+  background: rgba(16, 32, 23, 0.85);
+  border: 1px solid rgba(134, 239, 172, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='nature']) .canvasColHeader {
+  background: rgba(16, 32, 23, 0.82);
+  border: 1px solid rgba(134, 239, 172, 0.16);
+  color: rgba(187, 247, 208, 0.85);
+}
+
+:global([data-theme='nature']) .nodeCard {
+  background: rgba(16, 32, 23, 0.88);
+  border: 1px solid rgba(134, 239, 172, 0.16);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  color: #f0fdf4;
+}
+
+:global([data-theme='nature']) .nodeCard:hover {
+  border-color: #4ade80;
+  box-shadow: 0 6px 22px rgba(74, 222, 128, 0.2);
+}
+
+:global([data-theme='nature']) .nodeTitle {
+  color: #f0fdf4;
+}
+
+:global([data-theme='nature']) .nodeProgressTrack {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(134, 239, 172, 0.1);
+}
+
+:global([data-theme='nature']) .adhdFloatingPill {
+  background: rgba(16, 32, 23, 0.92);
+  border: 1px solid rgba(134, 239, 172, 0.22);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme='nature']) .canvasHintBadge {
+  background: rgba(16, 32, 23, 0.85);
+  border: 1px solid rgba(134, 239, 172, 0.15);
+  color: rgba(187, 247, 208, 0.7);
 }

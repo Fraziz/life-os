@@ -46,7 +46,7 @@ export function QuickNotesProvider({ children }: { children: React.ReactNode }) 
   const [notes, setNotes] = useState<QuickNote[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
+  const reloadFromStorage = () => {
     try {
       const raw = localStorage.getItem(QUICK_NOTES_KEY);
       if (raw) {
@@ -62,7 +62,16 @@ export function QuickNotesProvider({ children }: { children: React.ReactNode }) 
     } catch {
       setNotes(DEFAULT_QUICK_NOTES);
     }
+  };
+
+  useEffect(() => {
+    reloadFromStorage();
     setIsLoaded(true);
+
+    // Re-sync notes when cloud data arrives
+    const handleSync = () => reloadFromStorage();
+    window.addEventListener('life_os_cloud_synced', handleSync);
+    return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
   const persist = (next: QuickNote[]) => {

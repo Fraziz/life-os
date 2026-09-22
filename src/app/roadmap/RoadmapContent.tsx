@@ -699,7 +699,7 @@ export default function RoadmapContent() {
             >
               <defs>
                 <pattern id="dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-                  <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.05)" />
+                  <circle cx="1" cy="1" r="1.2" fill="currentColor" />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#dotgrid)" />
@@ -933,14 +933,14 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         top: node.y,
         width: NODE_W,
         minHeight: NODE_H,
-        borderColor: highlighted ? node.color : 'rgba(255,255,255,0.08)',
+        borderColor: highlighted ? node.color : undefined,
         boxShadow: isHovered || isFocused === true
-          ? `0 0 0 1px ${node.color}50, 0 10px 28px rgba(0,0,0,0.5), 0 0 20px ${node.color}25`
+          ? `0 0 0 1.5px ${node.color}, var(--shadow-lg), 0 0 20px ${node.color}35`
           : isConnected
-            ? `0 0 0 1px ${node.color}30, 0 6px 18px rgba(0,0,0,0.4)`
-            : '0 3px 12px rgba(0,0,0,0.3)',
+            ? `0 0 0 1px ${node.color}50, var(--shadow-md)`
+            : undefined,
         opacity: dimmed ? 0.12 : 1,
-        transition: 'opacity 0.2s ease, box-shadow 0.18s ease, transform 0.15s ease',
+        transition: 'opacity 0.2s ease, box-shadow 0.18s ease, transform 0.15s ease, border-color 0.18s ease',
         cursor: 'pointer',
       }}
       onMouseEnter={() => onHover(node.id)}

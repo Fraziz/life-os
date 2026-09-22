@@ -321,18 +321,21 @@ export default function FocusPage() {
     setAmbientVolume(v);
   };
 
+  // Live active task derived from TaskContext to ensure reactive subtask sync
+  const liveActiveTask = activeTask ? tasks.find((t) => t.id === activeTask.id) || activeTask : null;
+
   const handleMagicBreakdown = () => {
-    if (!activeTask) return;
-    const generated = generateMicroBreakdown(activeTask.title, activeTask.description);
-    breakdownTask(activeTask.id, generated);
+    if (!liveActiveTask) return;
+    const generated = generateMicroBreakdown(liveActiveTask.title, liveActiveTask.description);
+    breakdownTask(liveActiveTask.id, generated);
     playSuccessChime();
     triggerDopamineBurst();
   };
 
   const handleSubtaskCheck = (e: React.MouseEvent, subtaskId: string) => {
     e.stopPropagation();
-    if (!activeTask) return;
-    toggleSubtask(activeTask.id, subtaskId);
+    if (!liveActiveTask) return;
+    toggleSubtask(liveActiveTask.id, subtaskId);
     playSubtaskTick();
   };
 
@@ -363,8 +366,8 @@ export default function FocusPage() {
   };
 
   // Hierarchy Lookup
-  const parentProject = activeTask?.projectId
-    ? projects.find((p) => p.id === activeTask.projectId)
+  const parentProject = liveActiveTask?.projectId
+    ? projects.find((p) => p.id === liveActiveTask.projectId)
     : null;
   const parentGoal = parentProject?.goalId
     ? goals.find((g) => g.id === parentProject.goalId)
@@ -634,15 +637,15 @@ export default function FocusPage() {
                       Project: {parentProject.title}
                     </span>
                   )}
-                  {activeTask?.estimatedDuration && (
+                  {liveActiveTask?.estimatedDuration && (
                     <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-                      Est: {activeTask.estimatedDuration}m • Act: {Math.round((activeTask.actualDuration || 0) + secondsElapsed / 60)}m
+                      Est: {liveActiveTask.estimatedDuration}m • Act: {Math.round((liveActiveTask.actualDuration || 0) + secondsElapsed / 60)}m
                     </span>
                   )}
                 </div>
 
                 <h2 className={styles.taskTitle} id="focus-task-title">
-                  {activeDoc ? activeDoc.title : activeTask ? activeTask.title : customTaskTitle || 'Focus Session'}
+                  {activeDoc ? activeDoc.title : liveActiveTask ? liveActiveTask.title : customTaskTitle || 'Focus Session'}
                 </h2>
 
                 {activeDoc && (
@@ -663,9 +666,9 @@ export default function FocusPage() {
                     &ldquo;{parentGoal.why}&rdquo;
                   </p>
                 )}
-                {activeTask?.description && (
+                {liveActiveTask?.description && (
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-                    {activeTask.description}
+                    {liveActiveTask.description}
                   </p>
                 )}
               </div>
@@ -675,10 +678,10 @@ export default function FocusPage() {
                 <div className={styles.subtasksBox}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Micro-Steps ({activeTask?.subtasks?.filter((s) => s.completed).length || 0}/{activeTask?.subtasks?.length || 0}):
+                      Micro-Steps ({liveActiveTask?.subtasks?.filter((s) => s.completed).length || 0}/{liveActiveTask?.subtasks?.length || 0}):
                     </span>
 
-                    {activeTask && (
+                    {liveActiveTask && (
                       <button
                         className={styles.btnMagicBreakdown}
                         onClick={handleMagicBreakdown}
@@ -689,8 +692,8 @@ export default function FocusPage() {
                     )}
                   </div>
 
-                  {activeTask?.subtasks && activeTask.subtasks.length > 0 ? (
-                    activeTask.subtasks.map((sub) => (
+                  {liveActiveTask?.subtasks && liveActiveTask.subtasks.length > 0 ? (
+                    liveActiveTask.subtasks.map((sub) => (
                       <div
                         key={sub.id}
                         className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
@@ -1084,14 +1087,14 @@ export default function FocusPage() {
                 />
               </div>
 
-              {activeTask && (
+              {liveActiveTask && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--color-text)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={markDoneOnFinish}
                     onChange={(e) => setMarkDoneOnFinish(e.target.checked)}
                   />
-                  <span>Mark task &ldquo;{activeTask.title}&rdquo; as completed (Done)</span>
+                  <span>Mark task &ldquo;{liveActiveTask.title}&rdquo; as completed (Done)</span>
                 </label>
               )}
 

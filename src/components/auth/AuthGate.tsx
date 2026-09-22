@@ -40,6 +40,11 @@ export default function AuthGate({
     syncStarted.current = true;
 
     let cancelled = false;
+    // CRITICAL: Start cloud sync FIRST so localStorage.setItem is patched
+    // immediately. Any writes (task toggles, brain dumps) during hydration
+    // will be captured and queued to Firebase.
+    startCloudSync(user.uid);
+
     (async () => {
       try {
         await hydrateFromCloud(user.uid);
@@ -48,8 +53,6 @@ export default function AuthGate({
         if (!cancelled) {
           setHydrateError(err instanceof Error ? err.message : 'Cloud sync not ready.');
         }
-      } finally {
-        if (!cancelled) startCloudSync(user.uid);
       }
     })();
 

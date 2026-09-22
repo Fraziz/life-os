@@ -72,13 +72,6 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'milestones',
-        label: 'Milestones',
-        href: '/milestones',
-        icon: 'milestones',
-        isAvailable: true,
-      },
-      {
         id: 'projects',
         label: 'Projects',
         href: '/projects',
@@ -130,7 +123,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'more',
-    label: 'REVIEW & SETTINGS',
+    label: 'REVIEW',
     items: [
       {
         id: 'review',
@@ -151,13 +144,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Reset Plan',
         href: '/reset',
         icon: 'reset',
-        isAvailable: true,
-      },
-      {
-        id: 'settings',
-        label: 'Settings',
-        href: '/settings',
-        icon: 'settings',
         isAvailable: true,
       },
     ],

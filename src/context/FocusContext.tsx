@@ -111,6 +111,16 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tasks, activeTask, activeDoc]);
 
+  // Keep activeTask synced when tasks list updates
+  useEffect(() => {
+    if (activeTask) {
+      const fresh = tasks.find((t) => t.id === activeTask.id);
+      if (fresh && fresh !== activeTask) {
+        setActiveTask(fresh);
+      }
+    }
+  }, [tasks, activeTask]);
+
   // Keep activeDoc synced if knowledge doc content is updated
   useEffect(() => {
     if (activeDoc) {

@@ -46,25 +46,34 @@ export async function flushCloudNow(): Promise<void> {
   const entriesToDelete = Array.from(pendingDeletions);
   pendingDeletions = new Set();
 
-  // Commit updates/creations
-  for (let i = 0; i < entriesToSet.length; i += 400) {
-    const chunk = entriesToSet.slice(i, i + 400);
-    const batch = writeBatch(db);
-    chunk.forEach(([key, value]) => {
-      const updatedAt = Date.now();
-      batch.set(kvRef(uid, key), { v: value, updatedAt });
-    });
-    await batch.commit();
-  }
+  try {
+    // Commit updates/creations
+    for (let i = 0; i < entriesToSet.length; i += 400) {
+      const chunk = entriesToSet.slice(i, i + 400);
+      const batch = writeBatch(db);
+      chunk.forEach(([key, value]) => {
+        const updatedAt = Date.now();
+        batch.set(kvRef(uid, key), { v: value, updatedAt });
+      });
+      await batch.commit();
+    }
 
-  // Commit key deletions
-  for (let i = 0; i < entriesToDelete.length; i += 400) {
-    const chunk = entriesToDelete.slice(i, i + 400);
-    const batch = writeBatch(db);
-    chunk.forEach((key) => {
-      batch.delete(kvRef(uid, key));
-    });
-    await batch.commit();
+    // Commit key deletions
+    for (let i = 0; i < entriesToDelete.length; i += 400) {
+      const chunk = entriesToDelete.slice(i, i + 400);
+      const batch = writeBatch(db);
+      chunk.forEach((key) => {
+        batch.delete(kvRef(uid, key));
+      });
+      await batch.commit();
+    }
+  } catch (err) {
+    // If flush fails, re-queue the entries so they retry on next flush
+    console.warn('[LifeOS] Cloud flush failed, will retry:', err);
+    entriesToSet.forEach(([k, v]) => pending.set(k, v));
+    entriesToDelete.forEach((k) => pendingDeletions.add(k));
+    // Schedule a retry
+    scheduleFlush();
   }
 }
 
@@ -86,6 +95,10 @@ function patchLocalStorage() {
       pendingDeletions.delete(key);
       pending.set(key, value);
       scheduleFlush();
+      // Notify UI that a write is in progress so sync indicator can show
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('life_os_writing'));
+      }
     }
   };
 
@@ -203,6 +216,19 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 export function startCloudSync(uid: string) {
   activeUid = uid;
   patchLocalStorage();
+
+  // Snapshot ALL existing life_os_ keys and queue them for upload.
+  // This catches any data written to localStorage BEFORE the patch was active
+  // (e.g., initial default data written during app startup or context init).
+  const existing = snapshotLocal();
+  existing.forEach(([key, value]) => {
+    if (!pending.has(key)) {
+      pending.set(key, value);
+    }
+  });
+  if (existing.length > 0) {
+    scheduleFlush();
+  }
 
   if (typeof window === 'undefined' || (window as Window & { __lifeOsFlushBound?: boolean }).__lifeOsFlushBound) {
     return;
