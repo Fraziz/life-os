@@ -17,8 +17,12 @@ import {
   Trash2,
   History,
   RotateCcw,
+  Loader2,
+  Wand2,
 } from 'lucide-react';
 import { useReview } from '@/context/ReviewContext';
+import { useSettings } from '@/context/SettingsContext';
+import { draftWeeklyReviewWithAI } from '@/utils/aiEngine';
 import styles from './page.module.css';
 
 export default function WeeklyReviewPage() {
@@ -31,12 +35,15 @@ export default function WeeklyReviewPage() {
     isLoaded,
   } = useReview();
 
+  const { settings } = useSettings();
+
   // Form inputs for the 4 reflection questions
   const [wentWell, setWentWell] = useState('');
   const [didNotGoWell, setDidNotGoWell] = useState('');
   const [shouldChange, setShouldChange] = useState('');
   const [nextWeekFocus, setNextWeekFocus] = useState('');
   const [savedNotice, setSavedNotice] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -84,6 +91,29 @@ export default function WeeklyReviewPage() {
     setShouldChange('');
     setNextWeekFocus('');
     setTimeout(() => setSavedNotice(false), 3500);
+  };
+
+  const handleAutoDraft = async () => {
+    setIsDrafting(true);
+    try {
+      const draft = await draftWeeklyReviewWithAI(
+        {
+          completedTaskCount: currentWeekStats.completedTasks.length,
+          completedTaskTitles: currentWeekStats.completedTasks.map(t => t.title),
+          focusMinutes: currentWeekStats.focusMinutes,
+          habitStreak: Math.round(currentWeekStats.habitsConsistency / 10),
+          activeGoalCount: currentWeekStats.goalsProgressed.length,
+          topGoalTitle: currentWeekStats.goalsProgressed[0]?.title,
+        },
+        settings.aiSettings
+      );
+      setWentWell(draft.wentWell);
+      setDidNotGoWell(draft.didNotGoWell);
+      setShouldChange(draft.shouldChange);
+      setNextWeekFocus(draft.nextWeekFocus);
+    } finally {
+      setIsDrafting(false);
+    }
   };
 
   return (
@@ -172,11 +202,32 @@ export default function WeeklyReviewPage() {
             </span>
           </div>
 
-          {savedNotice && (
-            <span style={{ color: 'var(--color-success)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
-              ✓ Weekly Review Saved!
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {savedNotice && (
+              <span style={{ color: 'var(--color-success)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+                ✓ Weekly Review Saved!
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleAutoDraft}
+              disabled={isDrafting}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '7px 14px', borderRadius: '10px', border: 'none', cursor: isDrafting ? 'wait' : 'pointer',
+                background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)',
+                color: 'white', fontSize: '12px', fontWeight: 600,
+                opacity: isDrafting ? 0.75 : 1,
+                transition: 'opacity 0.15s',
+              }}
+              title="Let AI draft your weekly review based on this week's data"
+              id="weekly-review-ai-draft-btn"
+            >
+              {isDrafting
+                ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Drafting...    </>  
+                : <><Wand2 size={13} /> ✨ Auto-Draft</>}
+            </button>
+          </div>
         </div>
 
         {/* Prompt 1 */}

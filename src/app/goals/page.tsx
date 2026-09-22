@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useTasks } from '@/context/TaskContext';
+import { useSettings } from '@/context/SettingsContext';
 import type { Goal, GoalHorizon, GoalPriority, GoalStatus } from '@/types';
 import { AreaIcon } from '@/app/areas/page';
 import {
@@ -20,9 +22,18 @@ import {
   X,
   RotateCcw,
   Sliders,
+  Bot,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import { coachGoalWithAI } from '@/utils/aiEngine';
+import type { GoalCoachResult } from '@/utils/aiEngine';
 
 const HORIZON_LABELS: Record<GoalHorizon, string> = {
   'long-term': 'Long-term',
@@ -44,6 +55,27 @@ export default function GoalsPage() {
   const { goals, addGoal, updateGoal, updateGoalProgress, deleteGoal, resetToDefaultGoals, isLoaded } = useGoals();
   const { dreams } = useDreams();
   const { activeAreas } = useLifeAreas();
+  const { tasks } = useTasks();
+  const { settings } = useSettings();
+
+  // AI Coach state: { [goalId]: { loading, result, open } }
+  const [coachState, setCoachState] = useState<Record<string, { loading: boolean; result: GoalCoachResult | null; open: boolean }>>({});
+
+  const handleCoachGoal = async (goal: Goal) => {
+    const id = goal.id;
+    setCoachState(prev => ({ ...prev, [id]: { loading: true, result: null, open: true } }));
+    const relatedTasks = tasks.filter(t => t.goalId === id);
+    const result = await coachGoalWithAI(goal, relatedTasks, settings.aiSettings);
+    setCoachState(prev => ({ ...prev, [id]: { loading: false, result, open: true } }));
+  };
+
+  const toggleCoach = (goalId: string) => {
+    setCoachState(prev => {
+      const cur = prev[goalId];
+      if (!cur) return prev;
+      return { ...prev, [goalId]: { ...cur, open: !cur.open } };
+    });
+  };
 
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
@@ -411,6 +443,60 @@ export default function GoalsPage() {
                 </div>
 
                 <EntityFiles entityType="goal" entityId={goal.id} title={goal.title} />
+
+                {/* ── AI Coach Panel ── */}
+                {coachState[goal.id]?.loading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', color: 'var(--color-accent)', fontSize: '12px' }}>
+                    <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                    Analysing your goal...
+                  </div>
+                )}
+
+                {coachState[goal.id]?.result && coachState[goal.id]?.open && (() => {
+                  const r = coachState[goal.id].result!;
+                  const statusColor = r.status === 'ahead' ? 'var(--color-success)' : r.status === 'behind' || r.status === 'stalled' ? '#ef4444' : 'var(--color-accent)';
+                  const StatusIcon = r.status === 'ahead' ? TrendingUp : r.status === 'stalled' || r.status === 'behind' ? AlertTriangle : CheckCircle;
+                  return (
+                    <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px', marginTop: '8px', fontSize: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <StatusIcon size={14} style={{ color: statusColor }} />
+                        <strong style={{ color: statusColor, textTransform: 'capitalize' }}>{r.status.replace('-', ' ')}</strong>
+                        <span style={{ color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{r.assessment}</span>
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>🎯 Next Steps</div>
+                        {r.nextSteps.map((step, i) => (
+                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>• {step}</div>
+                        ))}
+                      </div>
+                      <div style={{ fontStyle: 'italic', color: 'var(--color-accent)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                        💬 {r.motivation}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Coach Me button row */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                  {coachState[goal.id]?.result ? (
+                    <button
+                      onClick={() => toggleCoach(goal.id)}
+                      style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {coachState[goal.id]?.open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      {coachState[goal.id]?.open ? 'Hide Coach' : 'Show Coach'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleCoachGoal(goal)}
+                      disabled={coachState[goal.id]?.loading}
+                      id={`coach-goal-btn-${goal.id}`}
+                      style={{ background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)', border: 'none', borderRadius: '8px', padding: '5px 12px', fontSize: '11px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
+                    >
+                      <Bot size={12} /> 🤖 Coach Me
+                    </button>
+                  )}
+                </div>
               </article>
             );
           })}

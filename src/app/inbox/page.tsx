@@ -19,13 +19,19 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Loader2,
+  Wand2,
+  CheckCircle2,
 } from 'lucide-react';
 import { useInbox } from '@/context/InboxContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useSettings } from '@/context/SettingsContext';
 import type { InboxItem, InboxConvertedType } from '@/types';
+import { processBrainDumpWithAI } from '@/utils/aiEngine';
+import type { BrainDumpClassification } from '@/utils/aiEngine';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 
@@ -57,10 +63,40 @@ export default function InboxPage() {
   const { dreams } = useDreams();
   const { activeAreas } = useLifeAreas();
 
+  const { settings } = useSettings();
+
   // Input states
   const [quickInput, setQuickInput] = useState('');
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
+
+  // AI Brain Dump Processor state
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [aiResults, setAiResults] = useState<BrainDumpClassification[] | null>(null);
+  const [aiApplied, setAiApplied] = useState(false);
+
+  const handleAIProcess = async () => {
+    if (activeItems.length === 0) return;
+    setIsAiProcessing(true);
+    setAiResults(null);
+    setAiApplied(false);
+    const results = await processBrainDumpWithAI(
+      activeItems.map(i => ({ id: i.id, text: i.content })),
+      settings.aiSettings
+    );
+    setAiResults(results);
+    setIsAiProcessing(false);
+  };
+
+  const TYPE_ICONS: Record<string, string> = {
+    task: '✅', goal: '🎯', project: '📁', dream: '✨', idea: '💡', note: '📝',
+  };
+  const TYPE_COLORS: Record<string, string> = {
+    task: '#22d3a5', goal: '#7c6fff', project: '#3b82f6', dream: '#f59e0b', idea: '#ec4899', note: '#64748b',
+  };
+  const PRIORITY_COLORS: Record<string, string> = {
+    urgent: '#ef4444', high: '#f97316', medium: '#7c6fff', low: '#64748b',
+  };
 
   // Active filter tab
   const [filterTab, setFilterTab] = useState<'inbox' | 'converted' | 'someday'>('inbox');
@@ -187,17 +223,33 @@ export default function InboxPage() {
         </div>
 
         {currentList.length > 0 && filterTab === 'inbox' && (
-          <button
-            className={styles.btnSecondary}
-            onClick={() => {
-              if (confirm('Clear all items from Inbox?')) {
-                clearInbox();
-              }
-            }}
-            style={{ fontSize: '11px', color: 'var(--color-danger)' }}
-          >
-            Clear Inbox
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {activeItems.length >= 1 && (
+              <button
+                className={styles.btnSecondary}
+                onClick={handleAIProcess}
+                disabled={isAiProcessing}
+                id="ai-process-inbox-btn"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)',
+                  color: 'white', border: 'none', fontWeight: 600, fontSize: '12px',
+                  padding: '6px 14px', borderRadius: '10px',
+                }}
+              >
+                {isAiProcessing
+                  ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
+                  : <><Wand2 size={13} /> ✨ AI Process All</>}
+              </button>
+            )}
+            <button
+              className={styles.btnSecondary}
+              onClick={() => { if (confirm('Clear all items from Inbox?')) clearInbox(); }}
+              style={{ fontSize: '11px', color: 'var(--color-danger)' }}
+            >
+              Clear Inbox
+            </button>
+          </div>
         )}
       </div>
 
@@ -382,6 +434,63 @@ export default function InboxPage() {
                 }}
               >
                 <Clock size={16} style={{ color: 'var(--color-text-faint)' }} /> Someday / Maybe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Brain Dump Results Overlay ── */}
+      {aiResults && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '20px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Wand2 size={16} style={{ color: 'var(--color-accent)' }} /> AI Classification Results
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  Review suggestions below. Convert items using the buttons on each card.
+                </div>
+              </div>
+              <button onClick={() => setAiResults(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {aiResults.map((r) => (
+                <div key={r.itemId} style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <span style={{ fontSize: '18px', flexShrink: 0 }}>{TYPE_ICONS[r.suggestedType] || '📝'}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--color-text)', marginBottom: '5px', wordBreak: 'break-word' }}>{r.text}</div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${TYPE_COLORS[r.suggestedType]}20`, color: TYPE_COLORS[r.suggestedType] }}>
+                          {r.suggestedType}
+                        </span>
+                        {r.suggestedPriority && (
+                          <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${PRIORITY_COLORS[r.suggestedPriority] || '#64748b'}20`, color: PRIORITY_COLORS[r.suggestedPriority] || '#64748b' }}>
+                            {r.suggestedPriority}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', fontStyle: 'italic' }}>{r.reasoning}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '14px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                {aiResults.length} items analysed
+              </span>
+              <button
+                onClick={() => { setAiResults(null); setAiApplied(true); }}
+                style={{ padding: '8px 18px', borderRadius: '10px', border: 'none', background: 'var(--color-accent)', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <CheckCircle2 size={14} /> Got it — I'll convert manually
               </button>
             </div>
           </div>
