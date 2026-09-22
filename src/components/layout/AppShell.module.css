@@ -172,3 +172,44 @@
   border-color: #2d5a3f;
   color: #1b3a27;
 }
+
+/* -- Floating AI Chat Button --------------------------------- */
+.aiChatBtn {
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  z-index: 60;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45), 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: aiPulse 3s ease-in-out infinite;
+}
+
+.aiChatBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(99, 102, 241, 0.6), 0 3px 12px rgba(0,0,0,0.2);
+  animation: none;
+}
+
+@keyframes aiPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45), 0 2px 8px rgba(0,0,0,0.15); }
+  50%       { box-shadow: 0 4px 28px rgba(99, 102, 241, 0.7),  0 2px 8px rgba(0,0,0,0.15); }
+}
+
+@media (max-width: 768px) {
+  .aiChatBtn {
+    bottom: 72px;
+    right: 16px;
+    width: 46px;
+    height: 46px;
+  }
+}

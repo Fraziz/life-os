@@ -27,13 +27,14 @@ import SearchModal from '@/components/search/SearchModal';
 import ReminderDrawer from '@/components/reminders/ReminderDrawer';
 import AssistantModal from '@/components/assistant/AssistantModal';
 import NextActionModal from '@/components/assistant/NextActionModal';
+import AIAssistantPanel from '@/components/assistant/AIAssistantPanel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import CommandPalette from '@/components/command/CommandPalette';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
-import { ArrowUp, PanelLeft } from 'lucide-react';
+import { ArrowUp, PanelLeft, Bot } from 'lucide-react';
 
 /**
  * Derives a human-readable page title from the current pathname.
@@ -63,6 +64,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // Floating Back to Top state
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -161,6 +163,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         e.preventDefault();
         setNextActionOpen(true);
       }
+      // Ctrl+L → Open AI Chat Assistant
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        setAiChatOpen(prev => !prev);
+      }
       // Shift+? or ? (when not typing in an input) → Shortcuts
       if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
         e.preventDefault();
@@ -241,6 +248,21 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       {shortcutsOpen && (
         <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       )}
+
+      {/* AI Chat Assistant Panel */}
+      <AIAssistantPanel isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+
+      {/* Floating AI Chat Button (bottom-right) */}
+      <button
+        type="button"
+        onClick={() => setAiChatOpen(prev => !prev)}
+        className={styles.aiChatBtn}
+        aria-label="Open AI assistant (Ctrl+L)"
+        title="AI Assistant (Ctrl+L)"
+        id="ai-chat-float-btn"
+      >
+        <Bot size={20} strokeWidth={2} />
+      </button>
 
       {/* Global Floating Back to Top Button */}
       {showBackToTop && (
