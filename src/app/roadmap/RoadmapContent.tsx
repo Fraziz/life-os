@@ -935,9 +935,9 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         minHeight: NODE_H,
         borderColor: highlighted ? node.color : undefined,
         boxShadow: isHovered || isFocused === true
-          ? `0 0 0 1.5px ${node.color}, var(--shadow-lg), 0 0 20px ${node.color}35`
+          ? `0 0 0 2px ${node.color}, var(--shadow-md)`
           : isConnected
-            ? `0 0 0 1px ${node.color}50, var(--shadow-md)`
+            ? `0 0 0 1px ${node.color}60, var(--shadow-sm)`
             : undefined,
         opacity: dimmed ? 0.12 : 1,
         transition: 'opacity 0.2s ease, box-shadow 0.18s ease, transform 0.15s ease, border-color 0.18s ease',

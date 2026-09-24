@@ -173,43 +173,85 @@
   color: #1b3a27;
 }
 
-/* -- Floating AI Chat Button --------------------------------- */
+/* -- Floating Movable AI Assistant Button --------------------------------- */
 .aiChatBtn {
   position: fixed;
   bottom: 88px;
   right: 24px;
   z-index: 60;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent) 0%, #8b5cf6 100%);
-  color: white;
-  border: none;
-  cursor: pointer;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45), 0 2px 8px rgba(0,0,0,0.15);
-  transition: transform 0.2s, box-shadow 0.2s;
-  animation: aiPulse 3s ease-in-out infinite;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .aiChatBtn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 28px rgba(99, 102, 241, 0.6), 0 3px 12px rgba(0,0,0,0.2);
-  animation: none;
+  transform: scale(1.06);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface-hover);
 }
 
-@keyframes aiPulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45), 0 2px 8px rgba(0,0,0,0.15); }
-  50%       { box-shadow: 0 4px 28px rgba(99, 102, 241, 0.7),  0 2px 8px rgba(0,0,0,0.15); }
+.aiChatBtn:active,
+.aiChatBtnDragging {
+  cursor: grabbing !important;
+  transform: scale(0.96);
+  box-shadow: var(--shadow-lg);
+}
+
+:global([data-theme='light']) .aiChatBtn {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='light']) .aiChatBtn:hover {
+  border-color: #6366f1;
+  color: #4f46e5;
+  background: #f8fafc;
+}
+
+:global([data-theme='dark']) .aiChatBtn {
+  background: rgba(26, 29, 38, 0.95);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='dark']) .aiChatBtn:hover {
+  border-color: #818cf8;
+  color: #818cf8;
+}
+
+:global([data-theme='nature']) .aiChatBtn {
+  background: rgba(16, 32, 23, 0.92);
+  border-color: rgba(134, 239, 172, 0.22);
+  color: #f0fdf4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+:global([data-theme='nature']) .aiChatBtn:hover {
+  border-color: #4ade80;
+  color: #4ade80;
 }
 
 @media (max-width: 768px) {
   .aiChatBtn {
-    bottom: 72px;
+    bottom: 74px;
     right: 16px;
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
   }
 }
+

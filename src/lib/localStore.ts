@@ -1,5 +1,7 @@
 export const CLOUD_SYNC_EVENT = 'life_os_cloud_synced';
-const META_KEY = 'life_os_kv_updated_v1';
+export const META_KEY = 'life_os_kv_updated_v1';
+
+const nativeSetItem = typeof Storage !== 'undefined' ? Storage.prototype.setItem : null;
 
 export function loadJsonArray<T>(key: string): T[] | null {
   if (typeof localStorage === 'undefined') return null;
@@ -41,12 +43,13 @@ export function readUpdateMeta(): Record<string, number> {
 }
 
 export function touchUpdateMeta(key: string, at = Date.now()) {
+  if (key === META_KEY) return;
   const meta = readUpdateMeta();
   meta[key] = at;
   rawSet(META_KEY, JSON.stringify(meta));
 }
 
 function rawSet(key: string, value: string) {
-  const proto = Storage.prototype.setItem;
-  proto.call(localStorage, key, value);
+  if (!nativeSetItem) return;
+  nativeSetItem.call(localStorage, key, value);
 }

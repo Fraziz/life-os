@@ -233,9 +233,7 @@
 }
 
 .btnStart:hover {
-  background: #6a5cff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 111, 255, 0.35);
+  opacity: 0.9;
 }
 
 .secondaryActions {

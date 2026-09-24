@@ -154,82 +154,451 @@ export function generateDeterministicBlockerAnalysis(
 }
 
 /**
+ * AI-Powered Goal Breakdown (uses Cloud AI when configured, else falls back)
+ */
+export async function generateAIBreakdown(
+  goal: Goal,
+  projects: Project[],
+  aiSettings?: AISettings,
+  customConstraint?: string
+): Promise<AISuggestion> {
+  const fallback = generateDeterministicBreakdown(goal, projects);
+  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+    return fallback;
+  }
+
+  try {
+    const systemPrompt = `You are a world-class strategic execution coach in Life OS.
+Break down the given high-level goal into 3 to 5 realistic, high-impact, actionable tasks.
+Respond ONLY with a valid JSON object matching this schema:
+{
+  "title": string,
+  "explanation": string,
+  "tasks": [
+    {
+      "title": string,
+      "priority": "urgent" | "high" | "medium" | "low",
+      "estimatedDuration": number (in minutes, e.g. 15, 30, 45, 60),
+      "tags": string[] (1-3 tags e.g. ["planning", "execution", "mvp"])
+    }
+  ]
+}
+No markdown code fences. Keep explanation to 2 crisp, inspiring sentences.`;
+
+    const prompt = `Goal: "${goal.title}"
+Why: "${goal.why || 'Not specified'}"
+Horizon: ${goal.horizon}
+Target Date: ${goal.targetDate || 'Flexible'}
+Priority: ${goal.priority}
+Current Progress: ${goal.progress ?? 0}%
+Linked Projects: ${projects.filter((p) => p.goalId === goal.id).map((p) => p.title).join(', ') || 'None yet'}
+${customConstraint ? `User Constraint / Note: "${customConstraint}"` : ''}`;
+
+    const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) {
+        const actions: SuggestedAction[] = parsed.tasks.map((t: any, idx: number) => ({
+          id: `ai-act-${goal.id}-${idx}-${Date.now()}`,
+          type: 'create_task',
+          label: `${t.title} (${t.estimatedDuration || 30}m · [${(t.priority || 'medium').toUpperCase()}])`,
+          payload: {
+            title: t.title,
+            priority: t.priority || 'medium',
+            estimatedDuration: t.estimatedDuration || 30,
+            goalId: goal.id,
+            tags: Array.isArray(t.tags) && t.tags.length > 0 ? t.tags : ['ai-breakdown'],
+          },
+          selected: true,
+        }));
+
+        return {
+          id: `sug-ai-breakdown-${goal.id}-${Date.now()}`,
+          type: 'breakdown',
+          title: parsed.title || `AI Strategy: ${goal.title}`,
+          explanation: parsed.explanation || fallback.explanation,
+          actions,
+          isDeterministicFallback: false,
+          createdAt: new Date().toISOString(),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('AI Breakdown call failed, using deterministic fallback:', err);
+  }
+
+  return fallback;
+}
+
+/**
+ * AI-Powered Day Plan Generator (uses Cloud AI when configured, else falls back)
+ */
+export async function generateAIDayPlan(
+  tasks: Task[],
+  settings: UserSettings,
+  aiSettings?: AISettings
+): Promise<AISuggestion> {
+  const fallback = generateDeterministicDayPlan(tasks, settings);
+  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+    return fallback;
+  }
+
+  try {
+    const activeTasks = tasks
+      .filter((t) => t.status !== 'done')
+      .slice(0, 15)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        duration: t.estimatedDuration || 30,
+        due: t.dueDate,
+      }));
+
+    const systemPrompt = `You are an elite productivity executive. Given the user's available tasks and daily capacity, select and order the 4-6 highest ROI tasks to execute today.
+Respond ONLY with a valid JSON object matching this schema:
+{
+  "title": string,
+  "explanation": string,
+  "selectedTaskIds": string[]
+}
+No markdown fences.`;
+
+    const prompt = `Available daily capacity: ${settings.availableHoursPerDay || 8} hours.
+Planning style: ${settings.planningStyle || 'time-blocking'}.
+Tasks: ${JSON.stringify(activeTasks, null, 2)}`;
+
+    const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed.selectedTaskIds) && parsed.selectedTaskIds.length > 0) {
+        const chosenTasks = parsed.selectedTaskIds
+          .map((id: string) => tasks.find((t) => t.id === id))
+          .filter(Boolean) as Task[];
+
+        if (chosenTasks.length > 0) {
+          const totalMinutes = chosenTasks.reduce((acc, t) => acc + (t.estimatedDuration || 30), 0);
+          const actions: SuggestedAction[] = chosenTasks.map((t, idx) => ({
+            id: `ai-plan-${t.id}`,
+            type: 'schedule_block',
+            label: `${idx + 1}. [${t.priority.toUpperCase()}] ${t.title} (${t.estimatedDuration || 30}m)`,
+            payload: {
+              taskId: t.id,
+              title: t.title,
+              duration: t.estimatedDuration || 30,
+            },
+            selected: true,
+          }));
+
+          return {
+            id: `sug-ai-dayplan-${Date.now()}`,
+            type: 'day_plan',
+            title: parsed.title || `AI Focus Plan (${Math.round(totalMinutes / 60)}h ${totalMinutes % 60}m)`,
+            explanation: parsed.explanation || fallback.explanation,
+            actions,
+            isDeterministicFallback: false,
+            createdAt: new Date().toISOString(),
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('AI Day Plan call failed, using deterministic fallback:', err);
+  }
+
+  return fallback;
+}
+
+/**
+ * AI-Powered Blocker & Friction Analysis
+ */
+export async function generateAIBlockerAnalysis(
+  tasks: Task[],
+  projects: Project[],
+  aiSettings?: AISettings
+): Promise<AISuggestion> {
+  const fallback = generateDeterministicBlockerAnalysis(tasks, projects);
+  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+    return fallback;
+  }
+
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const overdueTasks = tasks.filter((t) => t.status !== 'done' && t.dueDate && t.dueDate < todayStr);
+    const stalledProjects = projects.filter((p) => p.status === 'active' && p.progress === 0);
+
+    const systemPrompt = `You are a peak-performance friction auditor.
+Analyze the user's overdue tasks and stalled projects to identify hidden blockers and prescribe 15-minute unsticking actions.
+Respond ONLY with a valid JSON object matching:
+{
+  "title": string,
+  "explanation": string,
+  "actions": [
+    {
+      "label": string,
+      "taskTitle": string,
+      "priority": "high" | "urgent" | "medium",
+      "estimatedDuration": number,
+      "projectId": string (optional)
+    }
+  ]
+}
+No markdown fences.`;
+
+    const prompt = `Today's date: ${todayStr}
+Overdue tasks (${overdueTasks.length}): ${JSON.stringify(overdueTasks.slice(0, 6).map((t) => ({ id: t.id, title: t.title, due: t.dueDate })))}
+Stalled projects (${stalledProjects.length}): ${JSON.stringify(stalledProjects.slice(0, 4).map((p) => ({ id: p.id, title: p.title })))}`;
+
+    const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+        const actions: SuggestedAction[] = parsed.actions.map((act: any, idx: number) => ({
+          id: `ai-blocker-${idx}-${Date.now()}`,
+          type: 'create_task',
+          label: act.label || act.taskTitle,
+          payload: {
+            title: act.taskTitle || act.label,
+            priority: act.priority || 'high',
+            estimatedDuration: act.estimatedDuration || 15,
+            projectId: act.projectId,
+            tags: ['unblock', 'friction-remover'],
+          },
+          selected: true,
+        }));
+
+        return {
+          id: `sug-ai-blockers-${Date.now()}`,
+          type: 'blockers',
+          title: parsed.title || 'AI Friction & Blocker Analysis',
+          explanation: parsed.explanation || fallback.explanation,
+          actions,
+          isDeterministicFallback: false,
+          createdAt: new Date().toISOString(),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('AI Blocker call failed, using deterministic fallback:', err);
+  }
+
+  return fallback;
+}
+
+/**
+ * Test AI API connection with a lightweight ping
+ */
+export async function testAIConnection(aiSettings: AISettings): Promise<{
+  success: boolean;
+  message: string;
+  latencyMs: number;
+  modelUsed?: string;
+}> {
+  if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
+    return {
+      success: false,
+      message: 'API key is missing. Please enter your API key.',
+      latencyMs: 0,
+    };
+  }
+
+  const startTime = Date.now();
+  try {
+    const systemPrompt = 'You are a test ping responder for Life OS. Respond with a concise greeting of 5 words or fewer.';
+    const prompt = 'Ping! Respond with: "Life OS AI Connected!"';
+    const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+    const latencyMs = Date.now() - startTime;
+    return {
+      success: true,
+      message: result.text.trim() || 'Connected successfully!',
+      latencyMs,
+      modelUsed: aiSettings.model || (aiSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'default'),
+    };
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    return {
+      success: false,
+      message: err?.message || 'Connection failed. Please verify your API key and network.',
+      latencyMs,
+    };
+  }
+}
+
+/**
  * Optional Cloud AI Call with strictly controlled token limits, cost tracking, and error handling.
+ * Supports Google Gemini, OpenAI, Anthropic, and Custom OpenAI-compatible endpoints (Groq, OpenRouter, Ollama).
  */
 export async function executeOptionalAICall(
   prompt: string,
   systemPrompt: string,
   aiSettings: AISettings
 ): Promise<{ text: string; tokensUsed: number; costUSD: number }> {
-  if (!aiSettings.apiKey) {
+  if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
     throw new Error('API key is missing. Please configure your API key in Settings.');
   }
 
   // Budget safeguard
   if (aiSettings.spentBudgetUSD >= aiSettings.monthlyBudgetUSD) {
-    throw new Error(`Monthly AI budget limit ($${aiSettings.monthlyBudgetUSD.toFixed(2)}) reached. Falling back to local rules.`);
+    throw new Error(
+      `Monthly AI budget limit ($${aiSettings.monthlyBudgetUSD.toFixed(2)}) reached. Falling back to local rules.`
+    );
   }
 
-  // Mock-safe Gemini / OpenAI / Anthropic format
+  // 1. Google Gemini API
   if (aiSettings.provider === 'gemini') {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${aiSettings.model || 'gemini-1.5-flash'}:generateContent?key=${aiSettings.apiKey}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }
-        ],
-        generationConfig: {
-          temperature: aiSettings.temperature || 0.7,
-          maxOutputTokens: 1000,
-        },
-      }),
-    });
+    const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';
+    const cleanModel = rawModel.replace(/^models\//, '');
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${aiSettings.apiKey?.trim()}`;
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: aiSettings.temperature ?? 0.7,
+            maxOutputTokens: 2048,
+          },
+        }),
+      });
+    } catch (fetchErr: any) {
+      // If systemInstruction wasn't supported by older endpoint, retry with combined prompt
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemPrompt}\n\n${prompt}` }],
+            },
+          ],
+          generationConfig: {
+            temperature: aiSettings.temperature ?? 0.7,
+            maxOutputTokens: 2048,
+          },
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.error?.message || `Gemini API error (${response.status})`);
+      const rawErrMsg = errJson.error?.message || `Gemini API error (${response.status})`;
+      if (response.status === 400 && rawErrMsg.includes('API_KEY_INVALID')) {
+        throw new Error('Invalid Gemini API key. Please check your key from Google AI Studio.');
+      }
+      if (response.status === 404) {
+        throw new Error(`Gemini model "${cleanModel}" not found. Try using "gemini-2.0-flash" or "gemini-1.5-flash".`);
+      }
+      if (response.status === 429) {
+        throw new Error('Gemini quota limit reached. Please wait a moment or check your Google Cloud quota.');
+      }
+      throw new Error(rawErrMsg);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text =
+      data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ||
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      '';
     const totalTokens = data.usageMetadata?.totalTokenCount || 400;
-    const costUSD = (totalTokens / 1_000_000) * 0.075; // Approx Gemini Flash pricing
+    const costUSD = (totalTokens / 1_000_000) * 0.075;
 
     return { text, tokensUsed: totalTokens, costUSD };
-  } else {
-    // OpenAI-compatible endpoint
-    const endpoint = aiSettings.apiEndpoint || 'https://api.openai.com/v1/chat/completions';
+  }
+
+  // 2. Anthropic Claude API
+  if (aiSettings.provider === 'anthropic') {
+    const endpoint = aiSettings.apiEndpoint || 'https://api.anthropic.com/v1/messages';
+    const modelName = aiSettings.model?.trim() || 'claude-3-5-sonnet-20241022';
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${aiSettings.apiKey}`,
+        'x-api-key': aiSettings.apiKey?.trim() || '',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: aiSettings.model || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: aiSettings.temperature || 0.7,
-        max_tokens: 1000,
+        model: modelName,
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: aiSettings.temperature ?? 0.7,
       }),
     });
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.error?.message || `API error (${response.status})`);
+      throw new Error(errJson.error?.message || `Anthropic API error (${response.status})`);
     }
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    const totalTokens = data.usage?.total_tokens || 450;
-    const costUSD = (totalTokens / 1_000_000) * 0.15;
+    const text = data.content?.[0]?.text || '';
+    const totalTokens = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0) || 450;
+    const costUSD = (totalTokens / 1_000_000) * 3.0;
 
     return { text, tokensUsed: totalTokens, costUSD };
   }
+
+  // 3. OpenAI or OpenAI-Compatible Custom Endpoints (OpenRouter, Groq, Ollama)
+  const endpoint =
+    aiSettings.provider === 'custom'
+      ? aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions'
+      : aiSettings.apiEndpoint?.trim() || 'https://api.openai.com/v1/chat/completions';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (aiSettings.apiKey?.trim()) {
+    headers['Authorization'] = `Bearer ${aiSettings.apiKey.trim()}`;
+  }
+
+  const modelName = aiSettings.model?.trim() || (aiSettings.provider === 'custom' ? 'llama3' : 'gpt-4o-mini');
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: modelName,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
+      ],
+      temperature: aiSettings.temperature ?? 0.7,
+      max_tokens: 2048,
+    }),
+  });
+
+  if (!response.ok) {
+    const errJson = await response.json().catch(() => ({}));
+    const rawErrMsg = errJson.error?.message || `API error (${response.status})`;
+    if (response.status === 401) {
+      throw new Error('Invalid API key for OpenAI / provider. Please verify your key.');
+    }
+    throw new Error(rawErrMsg);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  const totalTokens = data.usage?.total_tokens || 450;
+  const costUSD = (totalTokens / 1_000_000) * 0.15;
+
+  return { text, tokensUsed: totalTokens, costUSD };
 }
 
 // ── Types for new AI features ─────────────────────────────────────────────
@@ -531,29 +900,54 @@ export async function chatWithAssistant(
     return `Hi ${userName}! I'm your Life OS assistant. I can answer questions about your tasks, goals, habits, and progress. Try asking: "What should I focus on?", "Am I behind on any goals?", or "What did I accomplish today?" 🤖\n\n*Tip: Add a Gemini or OpenAI API key in Settings → AI for real AI responses.*`;
   }
 
-  // Real AI chat with context
+  // Real AI chat with full user context
   try {
     const todayStr = new Date().toISOString().split('T')[0];
     const contextSummary = {
       user: userName,
-      date: todayStr,
-      activeTasks: tasks.filter(t => t.status !== 'done').slice(0, 8).map(t => ({ title: t.title, priority: t.priority, due: t.dueDate })),
-      goals: goals.filter(g => g.status === 'in-progress').slice(0, 5).map(g => ({ title: g.title, progress: g.progress, horizon: g.horizon })),
-      projects: projects.filter(p => p.status === 'active').slice(0, 4).map(p => ({ title: p.title, progress: p.progress })),
-      habits: habits.slice(0, 5).map(h => h.title),
+      currentDate: todayStr,
+      activeTasks: tasks
+        .filter((t) => t.status !== 'done')
+        .slice(0, 10)
+        .map((t) => ({ id: t.id, title: t.title, priority: t.priority, due: t.dueDate, duration: t.estimatedDuration })),
+      goals: goals
+        .filter((g) => g.status === 'in-progress')
+        .slice(0, 5)
+        .map((g) => ({ title: g.title, progress: `${g.progress ?? 0}%`, horizon: g.horizon, why: g.why })),
+      projects: projects
+        .filter((p) => p.status === 'active')
+        .slice(0, 5)
+        .map((p) => ({ title: p.title, progress: `${p.progress ?? 0}%` })),
+      habits: habits.slice(0, 6).map((h) => ({ title: h.title, frequency: h.frequency })),
     };
 
-    const historyMessages = history.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
+    const historyMessages = history
+      .slice(-8)
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n\n');
 
-    const systemPrompt = `You are a friendly, insightful AI Life OS coach for ${userName}. You know their full productivity system. Be concise (2–4 sentences max), warm, and actionable. Use emojis sparingly. Never make up data not in the context. Today is ${todayStr}.
+    const systemPrompt = `You are the executive AI Life OS Assistant for ${userName}.
+You have direct, real-time visibility into their tasks, goals, active projects, habits, and deadlines.
 
-User's current context:
+Your Mission:
+1. Provide concise, ultra-clear, highly actionable advice tailored specifically to their live context.
+2. Structure recommendations with bold highlights, bullet points, or step numbers when helpful.
+3. If they ask what to work on, select specific tasks from their actual active backlog.
+4. If they need to create new tasks or break something down, suggest clean concrete action items.
+5. Keep tone supportive, sharp, focused, and free of fluff.
+6. Today's date is ${todayStr}.
+
+Current User Life OS Data:
 ${JSON.stringify(contextSummary, null, 2)}`;
 
-    const prompt = historyMessages ? `Conversation so far:\n${historyMessages}\n\nUser: ${userMessage}` : userMessage;
+    const prompt = historyMessages
+      ? `Recent Conversation:\n${historyMessages}\n\nUser: ${userMessage}`
+      : userMessage;
+
     const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
-    return text.trim() || 'I had trouble generating a response. Please try again.';
-  } catch {
-    return `I encountered an error. Please check your API key in Settings → AI. In the meantime, I can answer basic questions about your tasks and goals without AI.`;
+    return text.trim() || 'I generated an empty response. Please try asking in a different way.';
+  } catch (err: any) {
+    console.error('AI chat error:', err);
+    return `⚠️ AI Error: ${err?.message || 'Could not connect to AI provider'}.\n\nPlease check your API key in Settings → AI Assistant.`;
   }
 }

@@ -238,6 +238,15 @@ export default function TodayDashboardContent() {
   const tasksDone = tasks.filter((t) => t.status === 'done').length;
   const habitColor = (color?: string) => color || '#6366f1';
 
+  const getActionTitleFontSize = (text: string) => {
+    if (text.length > 28) return '0.68rem';
+    if (text.length > 18) return '0.74rem';
+    if (text.length > 12) return '0.80rem';
+    return '0.88rem';
+  };
+
+  const readingTitle = currentReadingDoc ? currentReadingDoc.title : 'Read Book';
+
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.mainColumn}>
@@ -283,72 +292,7 @@ export default function TodayDashboardContent() {
           </Link>
         </div>
 
-        {/* ── 3-Step Daily Loop Widget ── */}
-        <section className={styles.dailyFlowCard} aria-label="Daily Flow Guide">
-          <div className={styles.dailyFlowHeader}>
-            <div className={styles.dailyFlowTitleRow}>
-              <span className={styles.dailyFlowHeading}>3-Step Daily Flow</span>
-              <span className={styles.dailyFlowSubtitle}>&bull; Keep daily effort under 5 minutes</span>
-            </div>
-            <button
-              type="button"
-              className={styles.presetTriggerBtn}
-              onClick={() => setPresetsModalOpen(true)}
-              title="Load Starter Goals, Habits, and Tasks"
-            >
-              Starter Presets
-            </button>
-          </div>
 
-          <div className={styles.dailyFlowStepsGrid}>
-            {/* Step 1: Morning Focus */}
-            <Link href="#priorities-section" className={styles.dailyFlowStepItem}>
-              <div className={styles.flowStepTop}>
-                <span className={styles.flowStepNumber}>Step 1 &bull; Morning (1m)</span>
-                <span className={`${styles.flowStepStatus} ${top3.length > 0 ? styles.flowStepStatusDone : ''}`}>
-                  {top3.length > 0 ? '✓ Ready' : 'Pick Top 3'}
-                </span>
-              </div>
-              <div className={styles.flowStepBody}>
-                <span className={styles.flowStepTitle}>Pick Priorities</span>
-                <span className={styles.flowStepDesc}>Choose your 3 most important tasks for the day.</span>
-              </div>
-            </Link>
-
-            {/* Step 2: Day Execution */}
-            <Link href="/focus" className={styles.dailyFlowStepItem}>
-              <div className={styles.flowStepTop}>
-                <span className={styles.flowStepNumber}>Step 2 &bull; Day</span>
-                <span className={`${styles.flowStepStatus} ${tasksDone > 0 ? styles.flowStepStatusDone : ''}`}>
-                  {tasksDone > 0 ? `✓ ${tasksDone} Done` : 'Focus Timer'}
-                </span>
-              </div>
-              <div className={styles.flowStepBody}>
-                <span className={styles.flowStepTitle}>Deep Focus</span>
-                <span className={styles.flowStepDesc}>Run hyperfocus blocks &amp; park quick distractions.</span>
-              </div>
-            </Link>
-
-            {/* Step 3: Evening Wrap Up */}
-            <button
-              type="button"
-              className={styles.dailyFlowStepItem}
-              onClick={() => setWrapUpOpen(true)}
-              style={{ textAlign: 'left', cursor: 'pointer', background: 'var(--color-surface-2)' }}
-            >
-              <div className={styles.flowStepTop}>
-                <span className={styles.flowStepNumber}>Step 3 &bull; Evening (2m)</span>
-                <span className={`${styles.flowStepStatus} ${completedTasks.length > 0 ? styles.flowStepStatusDone : ''}`}>
-                  {completedTasks.length > 0 ? '✓ Wrap Ready' : 'Review Day'}
-                </span>
-              </div>
-              <div className={styles.flowStepBody}>
-                <span className={styles.flowStepTitle}>Wrap Up &amp; Dump</span>
-                <span className={styles.flowStepDesc}>Celebrate wins and empty random thoughts into Brain Dump.</span>
-              </div>
-            </button>
-          </div>
-        </section>
 
         {/* Today's Schedule & Deadlines */}
         {totalTodayCalendarMarks > 0 && (
@@ -466,8 +410,15 @@ export default function TodayDashboardContent() {
             <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
               <BookOpen size={19} strokeWidth={2.2} />
             </div>
-            <div className={styles.actionCardTitle} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
-              {currentReadingDoc ? currentReadingDoc.title : 'Read Book'}
+            <div
+              className={styles.actionCardTitle}
+              style={{
+                fontSize: getActionTitleFontSize(readingTitle),
+                wordBreak: 'break-word',
+                lineHeight: 1.25,
+              }}
+            >
+              {readingTitle}
             </div>
             <div className={styles.actionCardSub}>
               {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0

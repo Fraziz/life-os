@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
 import { useGoals } from '@/context/GoalContext';
@@ -9,21 +10,21 @@ import { useHabits } from '@/context/HabitContext';
 import { chatWithAssistant } from '@/utils/aiEngine';
 import type { ChatMessage } from '@/utils/aiEngine';
 import {
-  Bot,
   X,
   Send,
   Loader2,
-  Sparkles,
   RotateCcw,
+  Copy,
+  Check,
 } from 'lucide-react';
 import styles from './AIAssistantPanel.module.css';
 
 const SUGGESTED_QUESTIONS = [
   'What should I focus on right now?',
-  'Am I behind on any goals?',
-  'What did I accomplish today?',
-  'Do I have any overdue tasks?',
-  'How are my habits going?',
+  'Help me plan an optimized schedule for today',
+  'Break down my most important goal',
+  'Check my overdue tasks and potential blockers',
+  'How is my habit consistency this week?',
 ];
 
 interface AIAssistantPanelProps {
@@ -32,12 +33,38 @@ interface AIAssistantPanelProps {
 }
 
 function renderMessageContent(content: string) {
-  const parts = content.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) =>
-    part.startsWith('**') && part.endsWith('**')
-      ? <strong key={i}>{part.slice(2, -2)}</strong>
-      : <span key={i}>{part}</span>
-  );
+  const lines = content.split('\n');
+  return lines.map((line, li) => {
+    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('- ') || /^\d+\.\s/.test(line.trim());
+    const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+    
+    return (
+      <div key={li} style={{ marginBottom: line.trim() === '' ? '8px' : '3px', paddingLeft: isBullet ? '4px' : undefined }}>
+        {parts.map((part, pi) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={pi} style={{ color: 'var(--color-text)' }}>{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith('`') && part.endsWith('`')) {
+            return (
+              <code
+                key={pi}
+                style={{
+                  background: 'var(--color-surface-3, rgba(128, 128, 128, 0.15))',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono, monospace)',
+                }}
+              >
+                {part.slice(1, -1)}
+              </code>
+            );
+          }
+          return <span key={pi}>{part}</span>;
+        })}
+      </div>
+    );
+  });
 }
 
 export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelProps) {
@@ -50,6 +77,8 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,14 +88,22 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: `Hey ${userName}! 👋 I'm your Life OS assistant. I know your tasks, goals, habits, and projects. Ask me anything!\n\n${isAIConfigured ? `AI Mode: ${aiSettings?.model} 🤖` : '*Smart local mode. Add an API key in Settings → AI for real AI.*'}`,
-        timestamp: new Date().toISOString(),
-      }]);
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Hello ${userName}. I have live context on your active tasks, goals, habits, and projects.\n\n${
+            isAIConfigured
+              ? `Connected: ${aiSettings?.model || 'Gemini'} is active.`
+              : `Local Mode: Offline rules active. Add an API key in Settings to enable LLM generation.`
+          }`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     }
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [isOpen]);
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, isAIConfigured, userName]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,92 +128,171 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       );
       setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
     } catch {
-      setMessages([...newHistory, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.', timestamp: new Date().toISOString() }]);
+      setMessages([
+        ...newHistory,
+        {
+          role: 'assistant',
+          content: 'Unable to generate a response. Please verify your connection or API settings.',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     } finally {
       setIsThinking(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  const handleCopy = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   if (!isOpen) return null;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.panel} onClick={e => e.stopPropagation()}>
+      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.avatar}><Bot size={18} /></div>
             <div>
-              <div className={styles.headerTitle}>Life OS Assistant</div>
-              <div className={styles.headerSub}>{isAIConfigured ? `🤖 ${aiSettings?.model}` : '⚡ Smart local mode'}</div>
+              <div className={styles.headerTitle}>Assistant</div>
+              <div className={styles.headerSub}>
+                {isAIConfigured ? (
+                  <span className={`${styles.statusPill} ${styles.statusPillActive}`}>
+                    <span>●</span> {aiSettings?.model || 'Gemini'}
+                  </span>
+                ) : (
+                  <span className={`${styles.statusPill} ${styles.statusPillOffline}`}>
+                    <span>○</span> Local Rules
+                    <Link href="/settings" onClick={onClose} className={styles.configLink}>
+                      Configure API
+                    </Link>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+
+          <div style={{ display: 'flex', gap: '4px' }}>
             {messages.length > 1 && (
-              <button className={styles.iconBtn} onClick={() => { setMessages([]); setInput(''); }} title="Clear chat">
+              <button
+                className={styles.iconBtn}
+                onClick={() => {
+                  setMessages([]);
+                  setInput('');
+                }}
+                title="Clear conversation"
+              >
                 <RotateCcw size={14} />
               </button>
             )}
-            <button className={styles.iconBtn} onClick={onClose} title="Close"><X size={16} /></button>
+            <button className={styles.iconBtn} onClick={onClose} title="Close Assistant">
+              <X size={16} />
+            </button>
           </div>
         </div>
 
+        {/* Message Thread */}
         <div className={styles.messages}>
-          {messages.map((msg, i) => (
-            <div key={i} className={`${styles.msgRow} ${msg.role === 'user' ? styles.userRow : styles.assistantRow}`}>
-              {msg.role === 'assistant' && <div className={styles.msgAvatar}><Sparkles size={12} /></div>}
-              <div className={`${styles.bubble} ${msg.role === 'user' ? styles.userBubble : styles.assistantBubble}`}>
-                {msg.content.split('\n').map((line, li, arr) => (
-                  <React.Fragment key={li}>
-                    {renderMessageContent(line)}
-                    {li < arr.length - 1 && <br />}
-                  </React.Fragment>
-                ))}
+          {messages.map((msg, i) => {
+            const isAssistant = msg.role === 'assistant';
+
+            return (
+              <div
+                key={i}
+                className={`${styles.msgRow} ${isAssistant ? styles.assistantRow : styles.userRow}`}
+              >
+                <div
+                  className={`${styles.bubble} ${
+                    isAssistant ? styles.assistantBubble : styles.userBubble
+                  }`}
+                >
+                  {renderMessageContent(msg.content)}
+
+                  {isAssistant && i > 0 && (
+                    <div className={styles.bubbleFooter}>
+                      <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <button
+                        type="button"
+                        className={styles.copyBtn}
+                        onClick={() => handleCopy(msg.content, i)}
+                        title="Copy message text"
+                      >
+                        {copiedIndex === i ? (
+                          <>
+                            <Check size={11} style={{ color: 'var(--color-success)' }} /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={11} /> Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isThinking && (
             <div className={`${styles.msgRow} ${styles.assistantRow}`}>
-              <div className={styles.msgAvatar}><Sparkles size={12} /></div>
               <div className={`${styles.bubble} ${styles.assistantBubble} ${styles.thinkingBubble}`}>
-                <Loader2 size={14} className={styles.spin} />
-                <span>Thinking...</span>
+                <Loader2 size={13} className={styles.spin} />
+                <span>Generating response...</span>
               </div>
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
+        {/* Suggested Quick Question Chips */}
         {messages.length <= 1 && !isThinking && (
           <div className={styles.suggestions}>
             {SUGGESTED_QUESTIONS.map((q, i) => (
-              <button key={i} className={styles.suggestionChip} onClick={() => sendMessage(q)}>{q}</button>
+              <button
+                key={i}
+                className={styles.suggestionChip}
+                onClick={() => sendMessage(q)}
+              >
+                {q}
+              </button>
             ))}
           </div>
         )}
 
+        {/* Input Bar */}
         <div className={styles.inputRow}>
           <input
             ref={inputRef}
             type="text"
             className={styles.input}
-            placeholder="Ask me anything about your system..."
+            placeholder="Ask about tasks, schedule, goals, habits..."
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isThinking}
             id="ai-assistant-chat-input"
           />
-          <button className={styles.sendBtn} onClick={() => sendMessage(input)} disabled={!input.trim() || isThinking} aria-label="Send">
-            <Send size={16} />
+          <button
+            type="button"
+            className={styles.sendBtn}
+            onClick={() => sendMessage(input)}
+            disabled={!input.trim() || isThinking}
+            aria-label="Send message"
+          >
+            <Send size={14} />
           </button>
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
@@ -178,6 +178,75 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [mobileOpen, openSearch]);
 
+  // Draggable floating AI bubble state
+  const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingBubble, setIsDraggingBubble] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number; moved: boolean } | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('life_os_ai_bubble_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          const maxX = Math.max(10, window.innerWidth - 60);
+          const maxY = Math.max(10, window.innerHeight - 60);
+          setBubblePos({
+            x: Math.min(Math.max(10, parsed.x), maxX),
+            y: Math.min(Math.max(10, parsed.y), maxY),
+          });
+        }
+      }
+    } catch {}
+  }, []);
+
+  const handleBubblePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: rect.left,
+      initY: rect.top,
+      moved: false,
+    };
+    try {
+      btn.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleBubblePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.hypot(dx, dy) > 3) {
+      dragRef.current.moved = true;
+      setIsDraggingBubble(true);
+      const newX = Math.min(Math.max(10, dragRef.current.initX + dx), window.innerWidth - 54);
+      const newY = Math.min(Math.max(10, dragRef.current.initY + dy), window.innerHeight - 54);
+      setBubblePos({ x: newX, y: newY });
+    }
+  };
+
+  const handleBubblePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current) return;
+    const wasMoved = dragRef.current.moved;
+    dragRef.current = null;
+    setIsDraggingBubble(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    if (!wasMoved) {
+      setAiChatOpen(prev => !prev);
+    } else if (bubblePos) {
+      try {
+        localStorage.setItem('life_os_ai_bubble_pos', JSON.stringify(bubblePos));
+      } catch {}
+    }
+  };
+
   const mainClass = [
     styles.main,
     collapsed ? styles.sidebarCollapsed : '',
@@ -252,13 +321,26 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       {/* AI Chat Assistant Panel */}
       <AIAssistantPanel isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
 
-      {/* Floating AI Chat Button (bottom-right) */}
+      {/* Movable Minimalist Floating AI Chat Button */}
       <button
         type="button"
-        onClick={() => setAiChatOpen(prev => !prev)}
-        className={styles.aiChatBtn}
+        onPointerDown={handleBubblePointerDown}
+        onPointerMove={handleBubblePointerMove}
+        onPointerUp={handleBubblePointerUp}
+        onPointerCancel={handleBubblePointerUp}
+        className={`${styles.aiChatBtn} ${isDraggingBubble ? styles.aiChatBtnDragging : ''}`}
+        style={
+          bubblePos
+            ? {
+                left: `${bubblePos.x}px`,
+                top: `${bubblePos.y}px`,
+                right: 'auto',
+                bottom: 'auto',
+              }
+            : undefined
+        }
         aria-label="Open AI assistant (Ctrl+L)"
-        title="AI Assistant (Ctrl+L)"
+        title="AI Assistant (Click to open, Drag to move)"
         id="ai-chat-float-btn"
       >
         <Bot size={20} strokeWidth={2} />

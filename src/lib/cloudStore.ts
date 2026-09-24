@@ -90,7 +90,7 @@ function patchLocalStorage() {
 
   Storage.prototype.setItem = function patchedSetItem(key: string, value: string) {
     rawSetItem.call(this, key, value);
-    if (this === localStorage && key.startsWith(PREFIX) && activeUid) {
+    if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && activeUid) {
       touchUpdateMeta(key);
       pendingDeletions.delete(key);
       pending.set(key, value);

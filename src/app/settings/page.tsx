@@ -23,9 +23,13 @@ import {
   AlertOctagon,
   LogOut,
   Lock,
+  Eye,
+  EyeOff,
+  X,
   Sparkles,
 } from 'lucide-react';
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
+import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
 
 const TIMEZONES = [
@@ -54,20 +58,52 @@ const WEEKDAYS = [
 ];
 
 export default function SettingsPage() {
-  const { settings, updateSettings, updateProfile, resetSettings, isLoaded } = useSettings();
+  const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
   const { user, logout } = useAuth();
 
-  // Local form state initialized from context
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
-
   const [presetsModalOpen, setPresetsModalOpen] = useState(false);
+
+  // AI Connection Test state
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isTestingAI, setIsTestingAI] = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<{
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+    modelUsed?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isLoaded) {
       setFormData(settings);
     }
   }, [settings, isLoaded]);
+
+  const handleTestAndSaveAI = async () => {
+    if (!formData.aiSettings) return;
+    setIsTestingAI(true);
+    setAiTestResult(null);
+
+    const testSettings = {
+      ...formData.aiSettings,
+      enabled: true,
+    };
+
+    const res = await testAIConnection(testSettings);
+    setIsTestingAI(false);
+    setAiTestResult(res);
+
+    if (res.success) {
+      const updated = {
+        ...formData,
+        aiSettings: testSettings,
+      };
+      setFormData(updated);
+      updateSettings(updated);
+    }
+  };
 
   if (!isLoaded) {
     return (
@@ -102,190 +138,161 @@ export default function SettingsPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* ── Formal Header ── */}
       <header className={styles.header}>
-        <h1 className={styles.title}>Personal Profile & Settings</h1>
+        <h1 className={styles.title}>System Settings &amp; Preferences</h1>
         <p className={styles.subtitle}>
-          Configure your personal Life OS parameters. Your preferences guide daily planning, focus timing, and task breakdown.
+          Manage your profile, display preferences, operational capacity, and integrations.
         </p>
       </header>
 
       {showSavedToast && (
         <div className={styles.saveBanner} role="status">
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle size={18} /> Settings saved to local browser storage!
+            <CheckCircle size={16} /> Preferences saved successfully.
           </span>
         </div>
       )}
 
-      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        {/* ── 0. Account & Session ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Lock size={20} />
+              <Lock size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Your private login</h2>
-              <p className={styles.sectionDesc}>Only this account can open Life OS. Phone and computer stay in sync.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Account &amp; Session</h2>
+              <p className={styles.sectionDesc}>Authenticated access and multi-device synchronization status.</p>
             </div>
           </div>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 12 }}>
-            Signed in as <strong style={{ color: 'var(--color-text)' }}>{user?.email || 'you'}</strong>
-          </p>
-          <button
-            type="button"
-            className={styles.btnDanger}
-            onClick={() => void logout()}
-          >
-            <LogOut size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-            Log out
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', display: 'block' }}>Signed in account</span>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>{user?.email || 'Local User'}</strong>
+            </div>
+            <button
+              type="button"
+              className={styles.btnDanger}
+              onClick={() => void logout()}
+            >
+              <LogOut size={13} />
+              Sign Out
+            </button>
+          </div>
         </section>
 
-        {/* ── 0. Interface Mode & Starter Presets ── */}
+        {/* ── 1. Interface & Presets ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Sliders size={20} />
+              <Sliders size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Interface Mode (Simplicity vs Power)</h2>
-              <p className={styles.sectionDesc}>
-                Choose between a clean, minimalist 4-tab setup for beginners, or the full comprehensive Life OS.
-              </p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Interface Mode</h2>
+              <p className={styles.sectionDesc}>Select your preferred workspace density and complexity level.</p>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+          <div className={styles.modeGrid}>
             <div
+              className={`${styles.modeCard} ${formData.simpleMode ? styles.modeCardActive : ''}`}
               onClick={() => {
                 const updated = { ...formData, simpleMode: true };
                 setFormData(updated);
                 updateSettings(updated);
               }}
-              style={{
-                border: formData.simpleMode ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                background: formData.simpleMode ? 'var(--color-accent-dim)' : 'var(--color-surface-2)',
-                borderRadius: 'var(--radius-xl)',
-                padding: '16px',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <strong style={{ fontSize: '0.94rem', color: 'var(--color-text)' }}>Simple Mode (Beginner)</strong>
-                {formData.simpleMode && <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 700 }}>ACTIVE</span>}
+              <div className={styles.modeCardHeader}>
+                <span className={styles.modeCardTitle}>Simple Mode</span>
+                {formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
               </div>
-              <p style={{ fontSize: '0.80rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                Shows only the 4 core essentials: Today, Focus Space, Brain Dump, Tasks &amp; Calendar. Zero clutter.
+              <p className={styles.modeCardDesc}>
+                Focused 4-view setup: Today Dashboard, Focus Timer, Tasks, and Calendar.
               </p>
             </div>
 
             <div
+              className={`${styles.modeCard} ${!formData.simpleMode ? styles.modeCardActive : ''}`}
               onClick={() => {
                 const updated = { ...formData, simpleMode: false };
                 setFormData(updated);
                 updateSettings(updated);
               }}
-              style={{
-                border: !formData.simpleMode ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                background: !formData.simpleMode ? 'var(--color-accent-dim)' : 'var(--color-surface-2)',
-                borderRadius: 'var(--radius-xl)',
-                padding: '16px',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <strong style={{ fontSize: '0.94rem', color: 'var(--color-text)' }}>Full Life OS (Power User)</strong>
-                {!formData.simpleMode && <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 700 }}>ACTIVE</span>}
+              <div className={styles.modeCardHeader}>
+                <span className={styles.modeCardTitle}>Full Life OS</span>
+                {!formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
               </div>
-              <p style={{ fontSize: '0.80rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                Unlocks Goals, Milestones, Projects, Roadmap, Dreams, Knowledge Base, Habits, and Workout.
+              <p className={styles.modeCardDesc}>
+                Complete architecture: Dreams, Goals, Milestones, Projects, Roadmap, and Knowledge Base.
               </p>
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: '14px', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div className={styles.starterPresetRow}>
             <div>
-              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)' }}>Starter Presets for New Users</span>
+              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)' }}>Workspace Templates</span>
               <p style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                1-click populate Fitness (60kg), Deep Work Student, or Creator templates.
+                Populate initial blueprints for Fitness, Deep Work Student, or Creative Projects.
               </p>
             </div>
             <button
               type="button"
               className={styles.btnSecondary}
               onClick={() => setPresetsModalOpen(true)}
-              style={{ padding: '8px 16px', fontSize: '0.80rem' }}
             >
-              Choose Starter Preset
+              <Sparkles size={12} style={{ marginRight: 6 }} />
+              Browse Presets
             </button>
           </div>
         </section>
 
-        {/* ── 0. Appearance ── */}
+        {/* ── 2. Appearance & Color Theme ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Sun size={20} />
+              <Sun size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Appearance</h2>
-              <p className={styles.sectionDesc}>Choose between dark mode, light mode, or follow your system preference.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Visual Theme</h2>
+              <p className={styles.sectionDesc}>Customize the interface appearance across all devices.</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className={styles.themeGrid}>
             {(['dark', 'light', 'nature', 'system'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
+                className={`${styles.themeBtn} ${formData.theme === t ? styles.themeBtnActive : ''}`}
                 onClick={() => {
                   const newTheme = t as AppTheme;
                   const updated = { ...formData, theme: newTheme };
                   setFormData(updated);
-                  updateSettings(updated);  // apply immediately — no Save needed
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: 'var(--radius-lg)',
-                  border: formData.theme === t
-                    ? '2px solid var(--color-accent)'
-                    : '1px solid var(--color-border)',
-                  background: formData.theme === t
-                    ? 'var(--color-accent-dim)'
-                    : 'var(--color-surface-2)',
-                  color: formData.theme === t ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                  fontWeight: formData.theme === t ? 700 : 500,
-                  fontSize: 'var(--text-sm)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  updateSettings(updated);
                 }}
               >
-                {t === 'dark' && <Moon size={16} />}
-                {t === 'light' && <Sun size={16} />}
-                {t === 'nature' && <Leaf size={16} />}
-                {t === 'system' && <Sliders size={16} />}
-                {t === 'nature' ? 'Nature' : t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'dark' && <Moon size={14} />}
+                {t === 'light' && <Sun size={14} />}
+                {t === 'nature' && <Leaf size={14} />}
+                {t === 'system' && <Sliders size={14} />}
+                <span>{t === 'nature' ? 'Nature' : t.charAt(0).toUpperCase() + t.slice(1)}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* ── 1. Profile ── */}
+        {/* ── 3. Identity & Profile ── */}
         <section className={styles.sectionCard}>
-
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <User size={20} />
+              <User size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Identity & Profile</h2>
-              <p className={styles.sectionDesc}>Your name and preferred display name across the app.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Identity &amp; Profile</h2>
+              <p className={styles.sectionDesc}>Personalization details used in daily briefings and headings.</p>
             </div>
           </div>
 
@@ -309,7 +316,7 @@ export default function SettingsPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="display-name-input">Preferred Display Name</label>
+              <label className={styles.label} htmlFor="display-name-input">Display Name</label>
               <input
                 id="display-name-input"
                 type="text"
@@ -324,20 +331,19 @@ export default function SettingsPage() {
                 placeholder="e.g. Alex"
                 required
               />
-              <span className={styles.hint}>Used in greetings and navigation sidebar.</span>
             </div>
           </div>
         </section>
 
-        {/* ── 2. Time & Capacity ── */}
+        {/* ── 4. Time & Schedule Capacity ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Clock size={20} />
+              <Clock size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Time Zone & Working Hours</h2>
-              <p className={styles.sectionDesc}>Define when you work and how many hours you have available per day.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Schedule &amp; Capacity</h2>
+              <p className={styles.sectionDesc}>Define your timezone, daily working hours, and standard schedule.</p>
             </div>
           </div>
 
@@ -374,11 +380,10 @@ export default function SettingsPage() {
                   })
                 }
               />
-              <span className={styles.hint}>Realistic daily capacity for deep & shallow work.</span>
             </div>
           </div>
 
-          <div className={styles.gridTwo} style={{ marginTop: 'var(--space-2)' }}>
+          <div className={styles.gridTwo}>
             <div className={styles.formGroup}>
               <label className={styles.label} htmlFor="work-start">Work Start Time</label>
               <input
@@ -432,21 +437,21 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── 3. Planning & Tasks ── */}
+        {/* ── 5. Planning & Task Execution ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Sliders size={20} />
+              <Sliders size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Planning & Task Defaults</h2>
-              <p className={styles.sectionDesc}>Customize how Life OS structures your schedule and estimates task time.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Planning &amp; Task Defaults</h2>
+              <p className={styles.sectionDesc}>Configure time estimates and task organization frameworks.</p>
             </div>
           </div>
 
           <div className={styles.gridTwo}>
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="planning-style-select">Preferred Planning Style</label>
+              <label className={styles.label} htmlFor="planning-style-select">Planning Methodology</label>
               <select
                 id="planning-style-select"
                 className={styles.select}
@@ -490,21 +495,21 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── 4. Focus Timer Preferences ── */}
+        {/* ── 6. Focus & Deep Work Timer ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Headphones size={20} />
+              <Headphones size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Focus & Pomodoro Preferences</h2>
-              <p className={styles.sectionDesc}>Set default intervals for your deep work focus sessions.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Focus &amp; Pomodoro Protocols</h2>
+              <p className={styles.sectionDesc}>Configure interval timers for undistracted deep work sessions.</p>
             </div>
           </div>
 
           <div className={styles.gridTwo}>
             <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="pomodoro-duration">Focus Session (Minutes)</label>
+              <label className={styles.label} htmlFor="pomodoro-duration">Focus Duration (Minutes)</label>
               <input
                 id="pomodoro-duration"
                 type="number"
@@ -571,7 +576,7 @@ export default function SettingsPage() {
             <div className={styles.toggleRow} style={{ borderBottom: 'none' }}>
               <div className={styles.toggleLabel}>
                 <span className={styles.toggleTitle}>Auto-Start Breaks</span>
-                <span className={styles.toggleDesc}>Automatically start break timer when focus session finishes</span>
+                <span className={styles.toggleDesc}>Automatically begin rest timer upon focus completion</span>
               </div>
               <input
                 type="checkbox"
@@ -591,54 +596,73 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── 5. Reminders, Quiet Hours & Theme ── */}
+        {/* ── 7. Notifications & Quiet Hours ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Bell size={20} />
+              <Bell size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Reminders &amp; Quiet Hours</h2>
-              <p className={styles.sectionDesc}>Complete control over tasks, deadlines, habits, and quiet resting hours.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Notifications &amp; Quiet Hours</h2>
+              <p className={styles.sectionDesc}>Granular notification controls for deadlines, blocks, and quiet time.</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {/* Master Toggle */}
-            <div className={styles.toggleRow} style={{ borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: '12px' }}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle} style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>
-                  Enable Reminders &amp; Alerts
-                </span>
-                <span className={styles.toggleDesc}>Master switch to turn on/off all notification features</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.enabled}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      enabled: e.target.checked,
-                    },
-                  })
-                }
-              />
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>System Notifications</span>
+              <span className={styles.toggleDesc}>Master switch for all task and milestone alerts</span>
             </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.enabled}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    enabled: e.target.checked,
+                  },
+                })
+              }
+            />
+          </div>
 
-            {/* Quiet Hours */}
-            <div style={{ background: 'var(--color-surface-2)', padding: '12px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)' }}>
-              <div className={styles.toggleRow} style={{ marginBottom: '8px' }}>
-                <div className={styles.toggleLabel}>
-                  <span className={styles.toggleTitle}>🌙 Quiet Hours</span>
-                  <span className={styles.toggleDesc}>Automatically silence non-urgent notifications during sleep or focus time</span>
-                </div>
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Quiet Hours Filter</span>
+              <span className={styles.toggleDesc}>Silence non-essential alerts during focus or rest periods</span>
+            </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.quietHours?.enabled}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    quietHours: {
+                      ...formData.notifications.quietHours,
+                      enabled: e.target.checked,
+                      start: formData.notifications.quietHours?.start || '22:00',
+                      end: formData.notifications.quietHours?.end || '08:00',
+                    },
+                  },
+                })
+              }
+            />
+          </div>
+
+          {formData.notifications.quietHours?.enabled && (
+            <div className={styles.gridTwo}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Quiet Hours Start</label>
                 <input
-                  type="checkbox"
-                  className={styles.checkbox}
-                  checked={formData.notifications.quietHours?.enabled}
+                  type="time"
+                  className={styles.input}
+                  value={formData.notifications.quietHours?.start || '22:00'}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -646,8 +670,8 @@ export default function SettingsPage() {
                         ...formData.notifications,
                         quietHours: {
                           ...formData.notifications.quietHours,
-                          enabled: e.target.checked,
-                          start: formData.notifications.quietHours?.start || '22:00',
+                          start: e.target.value,
+                          enabled: true,
                           end: formData.notifications.quietHours?.end || '08:00',
                         },
                       },
@@ -655,431 +679,553 @@ export default function SettingsPage() {
                   }
                 />
               </div>
-
-              {formData.notifications.quietHours?.enabled && (
-                <div className={styles.gridTwo} style={{ marginTop: '8px' }}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Quiet Hours Start</label>
-                    <input
-                      type="time"
-                      className={styles.input}
-                      value={formData.notifications.quietHours?.start || '22:00'}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          notifications: {
-                            ...formData.notifications,
-                            quietHours: {
-                              ...formData.notifications.quietHours,
-                              start: e.target.value,
-                              enabled: true,
-                              end: formData.notifications.quietHours?.end || '08:00',
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Quiet Hours End</label>
-                    <input
-                      type="time"
-                      className={styles.input}
-                      value={formData.notifications.quietHours?.end || '08:00'}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          notifications: {
-                            ...formData.notifications,
-                            quietHours: {
-                              ...formData.notifications.quietHours,
-                              end: e.target.value,
-                              enabled: true,
-                              start: formData.notifications.quietHours?.start || '22:00',
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Individual Notification Toggles */}
-            <div className={styles.toggleRow}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Task Due Alerts</span>
-                <span className={styles.toggleDesc}>Remind me when tasks are due or overdue</span>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Quiet Hours End</label>
+                <input
+                  type="time"
+                  className={styles.input}
+                  value={formData.notifications.quietHours?.end || '08:00'}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      notifications: {
+                        ...formData.notifications,
+                        quietHours: {
+                          ...formData.notifications.quietHours,
+                          end: e.target.value,
+                          enabled: true,
+                          start: formData.notifications.quietHours?.start || '22:00',
+                        },
+                      },
+                    })
+                  }
+                />
               </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.taskReminders}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      taskReminders: e.target.checked,
-                    },
-                  })
-                }
-              />
             </div>
+          )}
 
-            <div className={styles.toggleRow}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Deadline &amp; Milestone Alerts</span>
-                <span className={styles.toggleDesc}>Alert me for upcoming project or milestone target dates</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.deadlineAlerts}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      deadlineAlerts: e.target.checked,
-                    },
-                  })
-                }
-              />
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Task Due Date Alerts</span>
+              <span className={styles.toggleDesc}>Notify when scheduled tasks reach their deadline</span>
             </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.taskReminders}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    taskReminders: e.target.checked,
+                  },
+                })
+              }
+            />
+          </div>
 
-            <div className={styles.toggleRow}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Scheduled Calendar Work Blocks</span>
-                <span className={styles.toggleDesc}>Alert me when a scheduled focus block is about to start</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.scheduledWorkAlerts}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      scheduledWorkAlerts: e.target.checked,
-                    },
-                  })
-                }
-              />
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Milestone &amp; Goal Target Alerts</span>
+              <span className={styles.toggleDesc}>Alert on upcoming project and milestone target dates</span>
             </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.deadlineAlerts}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    deadlineAlerts: e.target.checked,
+                  },
+                })
+              }
+            />
+          </div>
 
-            <div className={styles.toggleRow}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Habit Practice Cues</span>
-                <span className={styles.toggleDesc}>Remind me for configured daily/weekly habit practice times</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.habitReminders}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      habitReminders: e.target.checked,
-                    },
-                  })
-                }
-              />
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Weekly Reflection Cues</span>
+              <span className={styles.toggleDesc}>Reminder to complete weekly progress and review reflections</span>
             </div>
-
-            <div className={styles.toggleRow}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Weekly Review Prompts</span>
-                <span className={styles.toggleDesc}>Prompt for weekly reflection every Sunday / Friday</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.notifications.weeklyReviewReminders}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notifications: {
-                      ...formData.notifications,
-                      weeklyReviewReminders: e.target.checked,
-                    },
-                  })
-                }
-              />
-            </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.weeklyReviewReminders}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    weeklyReviewReminders: e.target.checked,
+                  },
+                })
+              }
+            />
           </div>
         </section>
 
-        {/* ── 6. Optional AI Assistant & API Cost Control ── */}
+        {/* ── 8. AI Engine & API Key Setup ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Bot size={20} />
+              <Bot size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Optional AI Assistant &amp; Privacy</h2>
-              <p className={styles.sectionDesc}>100% optional. The app works fully offline using deterministic rules if AI is disabled.</p>
+            <div className={styles.sectionHeaderContent}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <h2 className={styles.sectionTitle}>AI Integration &amp; API Key</h2>
+                <div className={`${styles.aiStatusBadge} ${formData.aiSettings?.enabled && formData.aiSettings?.apiKey ? styles.active : styles.inactive}`}>
+                  <span className={styles.statusDot} />
+                  {formData.aiSettings?.enabled && formData.aiSettings?.apiKey
+                    ? `Active: ${formData.aiSettings?.model || 'Gemini'}`
+                    : 'Offline Deterministic Mode'}
+                </div>
+              </div>
+              <p className={styles.sectionDesc}>Optional bring-your-own-key intelligence layer for task breakdown and planning.</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div className={styles.toggleRow} style={{ borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: '12px' }}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle} style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>
-                  Enable Cloud AI Features
-                </span>
-                <span className={styles.toggleDesc}>
-                  Connect your own API key to augment goal breakdown, planning, and task suggestions.
-                </span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.aiSettings?.enabled || false}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    aiSettings: {
-                      enabled: e.target.checked,
-                      provider: formData.aiSettings?.provider || 'gemini',
-                      model: formData.aiSettings?.model || 'gemini-1.5-flash',
-                      apiKey: formData.aiSettings?.apiKey || '',
-                      monthlyBudgetUSD: formData.aiSettings?.monthlyBudgetUSD || 5,
-                      spentBudgetUSD: formData.aiSettings?.spentBudgetUSD || 0,
-                      totalTokensUsed: formData.aiSettings?.totalTokensUsed || 0,
-                      temperature: formData.aiSettings?.temperature || 0.7,
-                    },
-                  })
-                }
-              />
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Enable AI Features</span>
+              <span className={styles.toggleDesc}>Connect Gemini, OpenAI, Claude, or local Ollama models</span>
             </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.aiSettings?.enabled || false}
+              onChange={(e) => {
+                const isEnabled = e.target.checked;
+                const updatedAI = {
+                  enabled: isEnabled,
+                  provider: formData.aiSettings?.provider || 'gemini',
+                  model: formData.aiSettings?.model || 'gemini-2.0-flash',
+                  apiKey: formData.aiSettings?.apiKey || '',
+                  monthlyBudgetUSD: formData.aiSettings?.monthlyBudgetUSD || 5,
+                  spentBudgetUSD: formData.aiSettings?.spentBudgetUSD || 0,
+                  totalTokensUsed: formData.aiSettings?.totalTokensUsed || 0,
+                  temperature: formData.aiSettings?.temperature || 0.7,
+                };
+                const updated = {
+                  ...formData,
+                  aiSettings: updatedAI,
+                };
+                setFormData(updated);
+                updateSettings(updated);
+              }}
+            />
+          </div>
 
-            {formData.aiSettings?.enabled && (
-              <>
-                <div className={styles.gridTwo}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>AI Provider</label>
-                    <select
-                      className={styles.select}
-                      value={formData.aiSettings?.provider || 'gemini'}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          aiSettings: {
-                            ...formData.aiSettings!,
-                            provider: e.target.value as any,
-                            model: e.target.value === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini',
-                          },
-                        })
-                      }
-                    >
-                      <option value="gemini">Google Gemini (Recommended &amp; Cost Effective)</option>
-                      <option value="openai">OpenAI (GPT-4o Mini)</option>
-                      <option value="anthropic">Anthropic Claude</option>
-                      <option value="custom">Custom Endpoint (Ollama / Local LLM)</option>
-                    </select>
+          {formData.aiSettings?.enabled && (
+            <>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Provider</label>
+                <div className={styles.providerGrid}>
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'gemini' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'gemini' as const,
+                        model: 'gemini-2.0-flash',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Google Gemini</span>
+                    <span className={styles.providerSub}>Recommended</span>
                   </div>
 
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Model Identifier</label>
-                    <input
-                      type="text"
-                      className={styles.input}
-                      value={formData.aiSettings?.model || 'gemini-1.5-flash'}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          aiSettings: {
-                            ...formData.aiSettings!,
-                            model: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g. gemini-1.5-flash"
-                    />
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'openai' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'openai' as const,
+                        model: 'gpt-4o-mini',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>OpenAI</span>
+                    <span className={styles.providerSub}>GPT-4o Mini / 4o</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'anthropic' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'anthropic' as const,
+                        model: 'claude-3-5-sonnet-20241022',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Anthropic</span>
+                    <span className={styles.providerSub}>Claude 3.5</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'custom' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'custom' as const,
+                        model: 'llama3',
+                        apiEndpoint: formData.aiSettings?.apiEndpoint || 'http://localhost:11434/v1/chat/completions',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Local / Ollama</span>
+                    <span className={styles.providerSub}>Custom Endpoint</span>
                   </div>
                 </div>
+              </div>
 
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Model Identifier</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={formData.aiSettings?.model || ''}
+                  onChange={(e) => {
+                    const updatedAI = {
+                      ...formData.aiSettings!,
+                      model: e.target.value,
+                    };
+                    setFormData({ ...formData, aiSettings: updatedAI });
+                  }}
+                  placeholder="e.g. gemini-2.0-flash"
+                />
+
+                <div className={styles.modelChipsRow}>
+                  {formData.aiSettings?.provider === 'gemini' && (
+                    <>
+                      {['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'openai' && (
+                    <>
+                      {['gpt-4o-mini', 'gpt-4o'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'anthropic' && (
+                    <>
+                      {['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'custom' && (
+                    <>
+                      {['llama3', 'mistral', 'deepseek-coder'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {formData.aiSettings?.provider === 'custom' && (
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Private API Key (Stored 100% Locally)</label>
+                  <label className={styles.label}>Custom Endpoint URL</label>
                   <input
-                    type="password"
+                    type="text"
+                    className={styles.input}
+                    value={formData.aiSettings?.apiEndpoint || ''}
+                    onChange={(e) => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        apiEndpoint: e.target.value,
+                      };
+                      setFormData({ ...formData, aiSettings: updatedAI });
+                    }}
+                    placeholder="http://localhost:11434/v1/chat/completions"
+                  />
+                </div>
+              )}
+
+              <div className={styles.formGroup}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  <label className={styles.label}>API Key (Stored Locally)</label>
+                  {formData.aiSettings?.provider === 'gemini' && (
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get API Key from Google AI Studio
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'openai' && (
+                    <a
+                      href="https://platform.openai.com/api-keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get OpenAI API Key
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'anthropic' && (
+                    <a
+                      href="https://console.anthropic.com/settings/keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get Anthropic API Key
+                    </a>
+                  )}
+                </div>
+
+                <div className={styles.apiKeyInputWrapper}>
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
                     className={styles.input}
                     value={formData.aiSettings?.apiKey || ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        apiKey: e.target.value,
+                      };
                       setFormData({
                         ...formData,
-                        aiSettings: {
-                          ...formData.aiSettings!,
-                          apiKey: e.target.value,
-                        },
-                      })
+                        aiSettings: updatedAI,
+                      });
+                    }}
+                    placeholder={
+                      formData.aiSettings?.provider === 'gemini'
+                        ? 'Paste your Gemini API key'
+                        : 'Paste your API key'
                     }
-                    placeholder="Enter your private API key..."
+                    id="ai-api-key-input"
                   />
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginTop: '2px' }}>
-                    Your API key is never shared or stored in any cloud backend. It remains exclusively in your browser.
+                  <div className={styles.inputActions}>
+                    <button
+                      type="button"
+                      className={styles.iconBtnSmall}
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      title={showApiKey ? 'Hide key' : 'Show key'}
+                      aria-label="Toggle key visibility"
+                    >
+                      {showApiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    {formData.aiSettings?.apiKey && (
+                      <button
+                        type="button"
+                        className={styles.iconBtnSmall}
+                        onClick={() => {
+                          const updatedAI = { ...formData.aiSettings!, apiKey: '' };
+                          setFormData({ ...formData, aiSettings: updatedAI });
+                          updateSettings({ aiSettings: updatedAI });
+                          setAiTestResult(null);
+                        }}
+                        title="Clear key"
+                        aria-label="Clear key"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <span className={styles.hint}>
+                  Keys remain strictly on your device and are never transmitted to any third party.
+                </span>
+              </div>
+
+              <div className={styles.testConnectionArea}>
+                <div className={styles.testButtonsRow}>
+                  <button
+                    type="button"
+                    className={styles.btnTestConnection}
+                    onClick={handleTestAndSaveAI}
+                    disabled={isTestingAI || (!formData.aiSettings?.apiKey && formData.aiSettings?.provider !== 'custom')}
+                  >
+                    {isTestingAI ? 'Testing...' : 'Test Connection'}
+                  </button>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                    Verifies connection against the {formData.aiSettings?.provider} endpoint.
                   </span>
                 </div>
 
-                <div className={styles.gridTwo}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Monthly Budget Safeguard (USD)</label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="1"
-                      className={styles.input}
-                      value={formData.aiSettings?.monthlyBudgetUSD || 5}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          aiSettings: {
-                            ...formData.aiSettings!,
-                            monthlyBudgetUSD: parseFloat(e.target.value) || 5,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Estimated Usage &amp; Cost</label>
-                    <div style={{ background: 'var(--color-surface-2)', padding: '10px 12px', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                      <strong>${(formData.aiSettings?.spentBudgetUSD || 0).toFixed(4)}</strong> spent of ${formData.aiSettings?.monthlyBudgetUSD || 5} limit &middot; {formData.aiSettings?.totalTokensUsed || 0} tokens
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                {aiTestResult && (
+                  <>
+                    {aiTestResult.success ? (
+                      <div className={styles.testSuccessBox} role="status">
+                        Connected successfully. Latency: {aiTestResult.latencyMs}ms.
+                      </div>
+                    ) : (
+                      <div className={styles.testErrorBox} role="alert">
+                        Connection failed: {aiTestResult.message}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
-        {/* ── 7. Data Portability & Account Reset (Phase 28) ── */}
+        {/* ── 9. Data Backup & Storage Management ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionIcon}>
-              <Download size={20} />
+              <Download size={16} />
             </div>
-            <div>
-              <h2 className={styles.sectionTitle}>Data Backup, Export &amp; Account Reset</h2>
-              <p className={styles.sectionDesc}>Download a complete JSON snapshot of all your Life OS data or perform a factory reset.</p>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Data Backup &amp; Portability</h2>
+              <p className={styles.sectionDesc}>Export a full JSON snapshot of your data or perform maintenance.</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            {/* Export */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', flexWrap: 'wrap', gap: '10px' }}>
-              <div>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text)', display: 'block' }}>
-                  Download Complete Data Backup (JSON)
-                </span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                  Exports Dreams, Goals, Projects, Tasks, Notes, Habits, Reviews, and Settings into a single portable file.
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window === 'undefined') return;
-                  const backup: Record<string, any> = {};
-                  for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && (key.startsWith('life_os_') || key.startsWith('lifeos_'))) {
-                      try {
-                        backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
-                      } catch {
-                        backup[key] = localStorage.getItem(key);
-                      }
-                    }
-                  }
-                  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'var(--color-accent)',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <Download size={14} /> Export Backup (.json)
-              </button>
+          <div className={styles.backupCard}>
+            <div>
+              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                Complete Snapshot Export (.json)
+              </span>
+              <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                Download all Dreams, Goals, Projects, Tasks, Notes, and Settings in a portable standard format.
+              </span>
             </div>
 
-            {/* Account Reset / Factory Delete */}
-            <div style={{ padding: '14px', background: 'rgba(239, 68, 68, 0.06)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239, 68, 68, 0.25)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertOctagon size={18} style={{ color: 'var(--color-danger)' }} />
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-danger)' }}>
-                  Factory Reset / Erase All Local Data
-                </span>
-              </div>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                Permanently wipes all local browser storage, tasks, projects, habits, documents, and API keys. This action cannot be undone.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const phrase = prompt('To confirm complete erasure of all local data, type "DELETE ALL MY DATA" below:');
-                    if (phrase === 'DELETE ALL MY DATA') {
-                      if (user) {
-                        try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
-                      }
-                      localStorage.clear();
-                      alert('Life OS data has been erased. The app will reload.');
-                      window.location.href = '/';
-                    } else if (phrase !== null) {
-                      alert('Confirmation phrase did not match. Deletion cancelled.');
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => {
+                if (typeof window === 'undefined') return;
+                const backup: Record<string, any> = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key && (key.startsWith('life_os_') || key.startsWith('lifeos_'))) {
+                    try {
+                      backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
+                    } catch {
+                      backup[key] = localStorage.getItem(key);
                     }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: 'var(--color-danger)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trash2 size={14} /> Erase All Data &amp; Reset Account
-                </button>
-              </div>
+                  }
+                }
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download size={13} style={{ marginRight: 6 }} />
+              Export Data
+            </button>
+          </div>
+
+          <div className={styles.dangerCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertOctagon size={16} style={{ color: 'var(--color-danger, #ef4444)' }} />
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)' }}>
+                Factory Reset / Erase Local Data
+              </span>
+            </div>
+            <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+              Permanently wipes all local browser storage, tasks, projects, notes, and local credentials.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
+              <button
+                type="button"
+                className={styles.btnDangerSolid}
+                onClick={async () => {
+                  const phrase = prompt('To confirm erasure of all data, type "DELETE ALL MY DATA" below:');
+                  if (phrase === 'DELETE ALL MY DATA') {
+                    if (user) {
+                      try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
+                    }
+                    localStorage.clear();
+                    alert('Life OS data has been erased.');
+                    window.location.href = '/';
+                  } else if (phrase !== null) {
+                    alert('Confirmation phrase did not match. Action cancelled.');
+                  }
+                }}
+              >
+                <Trash2 size={13} />
+                Erase Data &amp; Reset
+              </button>
             </div>
           </div>
         </section>
 
-        {/* ── Privacy & Security Guarantee ── */}
+        {/* ── Privacy & Security Statement ── */}
         <div className={styles.privacyNotice}>
-          <ShieldCheck className={styles.privacyIcon} size={24} />
+          <ShieldCheck className={styles.privacyIcon} size={18} />
           <div>
-            <h3 className={styles.privacyTitle}>Private Life OS — locked to you</h3>
+            <h3 className={styles.privacyTitle}>Private &amp; Local-First Architecture</h3>
             <p className={styles.privacyText}>
-              Login is required. Your plans sync through your Firebase project so phone and computer stay in sync.
-              Files live in your Storage bucket. Nobody else can open this account.
+              All data is stored directly in your local environment and synced securely via your private Firebase cloud project.
             </p>
           </div>
         </div>
@@ -1087,7 +1233,7 @@ export default function SettingsPage() {
         {/* ── Form Actions ── */}
         <div className={styles.actions}>
           <button type="submit" className={styles.btnPrimary}>
-            Save Preferences
+            Save Changes
           </button>
 
           <button
@@ -1099,7 +1245,8 @@ export default function SettingsPage() {
               }
             }}
           >
-            <RotateCcw size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Reset Defaults
+            <RotateCcw size={13} />
+            Reset Defaults
           </button>
         </div>
       </form>

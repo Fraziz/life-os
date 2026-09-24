@@ -195,6 +195,47 @@ export default function RightSidebar() {
         </div>
       </div>
 
+      {/* ── ADHD Energy Check-In (Top of Calendar) ───────────── */}
+      <div className={styles.energyCard}>
+        <div className={styles.momentumHeader}>
+          <div className={styles.momentumTitle}>
+            <Zap size={16} style={{ color: '#eab308' }} />
+            <span>Today&apos;s Energy</span>
+          </div>
+        </div>
+
+        <div className={styles.energyBtnRow}>
+          <button
+            type="button"
+            className={`${styles.energyBtn} ${energyLevel === 'low' ? styles.energyBtnActive : ''}`}
+            onClick={() => selectEnergy('low')}
+          >
+            <Battery size={16} />
+            <span>Low</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.energyBtn} ${energyLevel === 'normal' ? styles.energyBtnActive : ''}`}
+            onClick={() => selectEnergy('normal')}
+          >
+            <BatteryMedium size={16} />
+            <span>Steady</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.energyBtn} ${energyLevel === 'high' ? styles.energyBtnActive : ''}`}
+            onClick={() => selectEnergy('high')}
+          >
+            <BatteryCharging size={16} />
+            <span>High</span>
+          </button>
+        </div>
+
+        <div className={styles.energyTipText}>
+          {energyTips[energyLevel]}
+        </div>
+      </div>
+
       {/* ── Mini Calendar Card ─────────────────────────────────── */}
       <div className={styles.widgetCard}>
         <div className={styles.calendarHeader}>
@@ -465,47 +506,6 @@ export default function RightSidebar() {
             <span className={styles.momentumCellLabel}>Goals</span>
             <span className={styles.momentumCellValue}>{activeGoals.length} Active</span>
           </div>
-        </div>
-      </div>
-
-      {/* ── ADHD Energy Check-In ───────────────────────────────── */}
-      <div className={styles.energyCard}>
-        <div className={styles.momentumHeader}>
-          <div className={styles.momentumTitle}>
-            <Zap size={16} style={{ color: '#eab308' }} />
-            <span>Today&apos;s Energy</span>
-          </div>
-        </div>
-
-        <div className={styles.energyBtnRow}>
-          <button
-            type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'low' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('low')}
-          >
-            <Battery size={16} />
-            <span>Low</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'normal' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('normal')}
-          >
-            <BatteryMedium size={16} />
-            <span>Steady</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'high' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('high')}
-          >
-            <BatteryCharging size={16} />
-            <span>High</span>
-          </button>
-        </div>
-
-        <div className={styles.energyTipText}>
-          {energyTips[energyLevel]}
         </div>
       </div>
 

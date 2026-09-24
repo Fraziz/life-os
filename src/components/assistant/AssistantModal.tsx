@@ -5,27 +5,16 @@ import { useSettings } from '@/context/SettingsContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
-import type { AISuggestion, SuggestedAction } from '@/types';
+import type { AISuggestion } from '@/types';
 import {
+  generateAIBreakdown,
+  generateAIDayPlan,
+  generateAIBlockerAnalysis,
   generateDeterministicBreakdown,
   generateDeterministicDayPlan,
   generateDeterministicBlockerAnalysis,
-  executeOptionalAICall,
 } from '@/utils/aiEngine';
-import {
-  Sparkles,
-  Bot,
-  Layers,
-  Calendar,
-  AlertTriangle,
-  CheckCircle2,
-  X,
-  Plus,
-  ShieldCheck,
-  Zap,
-  Lock,
-  RotateCcw,
-} from 'lucide-react';
+import { X, RotateCcw } from 'lucide-react';
 import styles from './AssistantModal.module.css';
 
 interface AssistantModalProps {
@@ -41,6 +30,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
 
   const [activeTab, setActiveTab] = useState<'day_plan' | 'breakdown' | 'blockers'>('day_plan');
   const [selectedGoalId, setSelectedGoalId] = useState<string>(goals[0]?.id || '');
+  const [customConstraint, setCustomConstraint] = useState('');
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
   const [selectedActions, setSelectedActions] = useState<Record<string, boolean>>({});
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,36 +46,39 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
     setAppliedSuccess(false);
     setSuggestion(null);
 
-    // Simulate async / check optional AI
-    setTimeout(async () => {
-      try {
-        let result: AISuggestion;
-        if (type === 'day_plan') {
-          result = generateDeterministicDayPlan(tasks, settings);
-        } else if (type === 'breakdown') {
-          const targetGoal = goals.find((g) => g.id === selectedGoalId) || goals[0];
-          if (!targetGoal) {
-            alert('Please create a goal first to use the breakdown assistant.');
-            setIsGenerating(false);
-            return;
-          }
-          result = generateDeterministicBreakdown(targetGoal, projects);
-        } else {
-          result = generateDeterministicBlockerAnalysis(tasks, projects);
+    try {
+      let result: AISuggestion;
+      if (type === 'day_plan') {
+        result = isAIConfigured
+          ? await generateAIDayPlan(tasks, settings, aiSettings)
+          : generateDeterministicDayPlan(tasks, settings);
+      } else if (type === 'breakdown') {
+        const targetGoal = goals.find((g) => g.id === selectedGoalId) || goals[0];
+        if (!targetGoal) {
+          alert('Please create a goal first to use the breakdown assistant.');
+          setIsGenerating(false);
+          return;
         }
-
-        setSuggestion(result);
-        const initialSelected: Record<string, boolean> = {};
-        result.actions.forEach((a) => {
-          initialSelected[a.id] = a.selected ?? true;
-        });
-        setSelectedActions(initialSelected);
-      } catch (err: any) {
-        alert(err.message || 'Failed to generate suggestions');
-      } finally {
-        setIsGenerating(false);
+        result = isAIConfigured
+          ? await generateAIBreakdown(targetGoal, projects, aiSettings, customConstraint)
+          : generateDeterministicBreakdown(targetGoal, projects);
+      } else {
+        result = isAIConfigured
+          ? await generateAIBlockerAnalysis(tasks, projects, aiSettings)
+          : generateDeterministicBlockerAnalysis(tasks, projects);
       }
-    }, 400);
+
+      setSuggestion(result);
+      const initialSelected: Record<string, boolean> = {};
+      result.actions.forEach((a) => {
+        initialSelected[a.id] = a.selected ?? true;
+      });
+      setSelectedActions(initialSelected);
+    } catch (err: any) {
+      alert(err.message || 'Failed to generate suggestions');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleToggleAction = (id: string) => {
@@ -95,20 +88,18 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
   const handleApplySelected = () => {
     if (!suggestion) return;
 
-    let appliedCount = 0;
     suggestion.actions.forEach((act) => {
-      if (selectedActions[act.id] && act.type === 'create_task') {
+      if (selectedActions[act.id] && (act.type === 'create_task' || act.type === 'schedule_block')) {
         addTask({
           title: act.payload.title,
           priority: act.payload.priority || 'medium',
-          estimatedDuration: act.payload.estimatedDuration,
-          goalId: act.payload.goalId,
+          estimatedDuration: act.payload.estimatedDuration || act.payload.duration,
+          goalId: act.payload.goalId || (activeTab === 'breakdown' ? selectedGoalId : undefined),
           projectId: act.payload.projectId,
           tags: act.payload.tags || ['assistant'],
           subtasks: [],
           status: 'todo',
         });
-        appliedCount++;
       }
     });
 
@@ -120,31 +111,18 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className={styles.botIcon}>
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <h2 className={styles.title}>Life OS Assistant</h2>
-              <p className={styles.subtitle}>
-                {isAIConfigured
-                  ? `AI Mode Enabled (${aiSettings.model}) · Local API Key`
-                  : `Deterministic Rules Mode (100% offline & local)`}
-              </p>
-            </div>
+          <div>
+            <h2 className={styles.title}>Assistant Actions</h2>
+            <p className={styles.subtitle}>
+              {isAIConfigured
+                ? `AI Mode (${aiSettings.model})`
+                : `Local Rules Mode (Offline)`}
+            </p>
           </div>
 
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
-            <X size={18} />
+            <X size={16} />
           </button>
-        </div>
-
-        {/* Safety Banner */}
-        <div className={styles.safetyBanner}>
-          <ShieldCheck size={16} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
-          <span>
-            <strong>Safe &amp; Explicit:</strong> Assistant never silently creates or changes data. You review and select every action before applying.
-          </span>
         </div>
 
         {/* Tab Controls */}
@@ -156,7 +134,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
               setSuggestion(null);
             }}
           >
-            <Calendar size={14} /> Plan My Day
+            Plan Day
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'breakdown' ? styles.activeTab : ''}`}
@@ -165,7 +143,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
               setSuggestion(null);
             }}
           >
-            <Layers size={14} /> Breakdown Goal
+            Break Down Goal
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'blockers' ? styles.activeTab : ''}`}
@@ -174,7 +152,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
               setSuggestion(null);
             }}
           >
-            <AlertTriangle size={14} /> Find Blockers
+            Detect Blockers
           </button>
         </div>
 
@@ -182,7 +160,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
         <div className={styles.body}>
           {activeTab === 'breakdown' && (
             <div className={styles.selectGroup}>
-              <label className={styles.label}>Select Goal to Break Down:</label>
+              <label className={styles.label}>Select Goal</label>
               <select
                 className={styles.select}
                 value={selectedGoalId}
@@ -194,18 +172,29 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
                   </option>
                 ))}
               </select>
+
+              <div style={{ marginTop: '6px' }}>
+                <label className={styles.label}>Constraint / Instructions (Optional)</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="e.g. Keep steps under 30 minutes"
+                  value={customConstraint}
+                  onChange={(e) => setCustomConstraint(e.target.value)}
+                />
+              </div>
             </div>
           )}
 
           {!suggestion && (
             <div className={styles.promptArea}>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
+              <p className={styles.promptDesc}>
                 {activeTab === 'day_plan' &&
-                  'Analyze active tasks, estimated durations, and your daily capacity to build a realistic execution list.'}
+                  'Analyze pending tasks, priority levels, and capacity to build an executable daily list.'}
                 {activeTab === 'breakdown' &&
-                  'Decompose high-level goal vision into clear, low-friction actionable tasks.'}
+                  'Decompose your selected high-level goal into actionable, concrete tasks.'}
                 {activeTab === 'blockers' &&
-                  'Detect overdue commitments and stalled projects to suggest 15-minute unblock actions.'}
+                  'Identify stalled projects and overdue items to create 15-minute unblocking actions.'}
               </p>
 
               <button
@@ -215,12 +204,10 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
               >
                 {isGenerating ? (
                   <>
-                    <RotateCcw size={16} className={styles.spin} /> Generating Suggestions...
+                    <RotateCcw size={14} className={styles.spin} /> Generating...
                   </>
                 ) : (
-                  <>
-                    <Zap size={16} /> Run Analysis &amp; Generate
-                  </>
+                  'Generate Plan'
                 )}
               </button>
             </div>
@@ -231,7 +218,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
               <div className={styles.suggestionHeader}>
                 <h3 className={styles.sugTitle}>{suggestion.title}</h3>
                 <span className={styles.sugBadge}>
-                  {suggestion.isDeterministicFallback ? 'Local Rules' : 'AI Verified'}
+                  {suggestion.isDeterministicFallback ? 'Local' : 'AI'}
                 </span>
               </div>
 
@@ -239,7 +226,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
 
               {suggestion.actions.length > 0 && (
                 <div className={styles.actionsBox}>
-                  <h4 className={styles.actionsTitle}>Suggested Action Items (Select to Apply):</h4>
+                  <h4 className={styles.actionsTitle}>Suggested Action Items</h4>
                   <div className={styles.actionsList}>
                     {suggestion.actions.map((act) => (
                       <label key={act.id} className={styles.actionRow}>
@@ -255,15 +242,14 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
                   </div>
 
                   {!appliedSuccess ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                       <button className={styles.btnApply} onClick={handleApplySelected}>
-                        Apply {Object.values(selectedActions).filter(Boolean).length} Selected Items
+                        Apply {Object.values(selectedActions).filter(Boolean).length} Selected Tasks
                       </button>
                     </div>
                   ) : (
                     <div className={styles.successBanner}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
-                      <span>Action items successfully added to your Tasks!</span>
+                      Tasks added to your workspace.
                     </div>
                   )}
                 </div>

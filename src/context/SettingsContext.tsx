@@ -120,6 +120,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const updated: UserSettings = {
       ...settings,
       ...partial,
+      aiSettings: partial.aiSettings
+        ? { ...(settings.aiSettings || DEFAULT_SETTINGS.aiSettings!), ...partial.aiSettings }
+        : settings.aiSettings,
+      notifications: partial.notifications
+        ? { ...settings.notifications, ...partial.notifications }
+        : settings.notifications,
+      workingHours: partial.workingHours
+        ? { ...settings.workingHours, ...partial.workingHours }
+        : settings.workingHours,
+      focusPreferences: partial.focusPreferences
+        ? { ...settings.focusPreferences, ...partial.focusPreferences }
+        : settings.focusPreferences,
       updatedAt: new Date().toISOString(),
     };
     saveSettings(updated);
