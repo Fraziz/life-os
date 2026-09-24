@@ -822,8 +822,42 @@ export default function SettingsPage() {
           {formData.aiSettings?.enabled && (
             <>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Provider</label>
+                <label className={styles.label}>AI Provider</label>
                 <div className={styles.providerGrid}>
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'openrouter' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'openrouter' as const,
+                        model: 'google/gemini-2.0-flash-exp:free',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>OpenRouter</span>
+                    <span className={styles.providerSub}>Free &amp; All Models</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'groq' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'groq' as const,
+                        model: 'llama-3.3-70b-versatile',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Groq</span>
+                    <span className={styles.providerSub}>100% Free &amp; Fast</span>
+                  </div>
+
                   <div
                     className={`${styles.providerCard} ${formData.aiSettings?.provider === 'gemini' ? styles.activeProvider : ''}`}
                     onClick={() => {
@@ -838,7 +872,75 @@ export default function SettingsPage() {
                     }}
                   >
                     <span className={styles.providerTitle}>Google Gemini</span>
-                    <span className={styles.providerSub}>Recommended</span>
+                    <span className={styles.providerSub}>Free Tier Direct</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'deepseek' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'deepseek' as const,
+                        model: 'deepseek-chat',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>DeepSeek</span>
+                    <span className={styles.providerSub}>V3 / R1 Reasoning</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'mistral' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'mistral' as const,
+                        model: 'mistral-small-latest',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Mistral AI</span>
+                    <span className={styles.providerSub}>Free Tier Available</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'huggingface' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'huggingface' as const,
+                        model: 'meta-llama/Llama-3.2-3B-Instruct',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Hugging Face</span>
+                    <span className={styles.providerSub}>Serverless Inference</span>
+                  </div>
+
+                  <div
+                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'cohere' ? styles.activeProvider : ''}`}
+                    onClick={() => {
+                      const updatedAI = {
+                        ...formData.aiSettings!,
+                        provider: 'cohere' as const,
+                        model: 'command-r',
+                      };
+                      const updated = { ...formData, aiSettings: updatedAI };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <span className={styles.providerTitle}>Cohere</span>
+                    <span className={styles.providerSub}>Command R / Trial</span>
                   </div>
 
                   <div
@@ -890,7 +992,7 @@ export default function SettingsPage() {
                     }}
                   >
                     <span className={styles.providerTitle}>Local / Ollama</span>
-                    <span className={styles.providerSub}>Custom Endpoint</span>
+                    <span className={styles.providerSub}>Offline &amp; Private</span>
                   </div>
                 </div>
               </div>
@@ -908,10 +1010,62 @@ export default function SettingsPage() {
                     };
                     setFormData({ ...formData, aiSettings: updatedAI });
                   }}
-                  placeholder="e.g. gemini-2.0-flash"
+                  placeholder="e.g. google/gemini-2.0-flash-exp:free"
                 />
 
                 <div className={styles.modelChipsRow}>
+                  {formData.aiSettings?.provider === 'openrouter' && (
+                    <>
+                      {[
+                        'google/gemini-2.0-flash-exp:free',
+                        'deepseek/deepseek-r1:free',
+                        'meta-llama/llama-3.3-70b-instruct:free',
+                        'qwen/qwen-2.5-coder-32b-instruct:free',
+                        'mistralai/mistral-small-24b-instruct-2501:free',
+                        'anthropic/claude-3.5-sonnet',
+                        'openai/gpt-4o-mini',
+                      ].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'groq' && (
+                    <>
+                      {[
+                        'llama-3.3-70b-versatile',
+                        'llama-3.1-8b-instant',
+                        'deepseek-r1-distill-llama-70b',
+                        'gemma2-9b-it',
+                        'mixtral-8x7b-32768',
+                      ].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
                   {formData.aiSettings?.provider === 'gemini' && (
                     <>
                       {['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
@@ -931,9 +1085,89 @@ export default function SettingsPage() {
                     </>
                   )}
 
+                  {formData.aiSettings?.provider === 'deepseek' && (
+                    <>
+                      {['deepseek-chat', 'deepseek-reasoner'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'mistral' && (
+                    <>
+                      {['mistral-small-latest', 'codestral-latest', 'open-mistral-7b', 'mistral-large-latest'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'huggingface' && (
+                    <>
+                      {[
+                        'meta-llama/Llama-3.2-3B-Instruct',
+                        'mistralai/Mistral-7B-Instruct-v0.3',
+                        'Qwen/Qwen2.5-72B-Instruct',
+                      ].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {formData.aiSettings?.provider === 'cohere' && (
+                    <>
+                      {['command-r', 'command-r-plus', 'command-light'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          onClick={() => {
+                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            setFormData({ ...formData, aiSettings: updatedAI });
+                            updateSettings({ aiSettings: updatedAI });
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </>
+                  )}
+
                   {formData.aiSettings?.provider === 'openai' && (
                     <>
-                      {['gpt-4o-mini', 'gpt-4o'].map((m) => (
+                      {['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'].map((m) => (
                         <button
                           key={m}
                           type="button"
@@ -971,7 +1205,7 @@ export default function SettingsPage() {
 
                   {formData.aiSettings?.provider === 'custom' && (
                     <>
-                      {['llama3', 'mistral', 'deepseek-coder'].map((m) => (
+                      {['llama3', 'mistral', 'deepseek-r1', 'qwen2.5', 'phi3'].map((m) => (
                         <button
                           key={m}
                           type="button"
@@ -1012,6 +1246,26 @@ export default function SettingsPage() {
               <div className={styles.formGroup}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
                   <label className={styles.label}>API Key (Stored Locally)</label>
+                  {formData.aiSettings?.provider === 'openrouter' && (
+                    <a
+                      href="https://openrouter.ai/keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get OpenRouter Key (Free &amp; Paid)
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'groq' && (
+                    <a
+                      href="https://console.groq.com/keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get 100% Free Groq Key
+                    </a>
+                  )}
                   {formData.aiSettings?.provider === 'gemini' && (
                     <a
                       href="https://aistudio.google.com/app/apikey"
@@ -1019,7 +1273,47 @@ export default function SettingsPage() {
                       rel="noreferrer"
                       className={styles.externalGuideLink}
                     >
-                      Get API Key from Google AI Studio
+                      Get Free Gemini Key from Google AI Studio
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'deepseek' && (
+                    <a
+                      href="https://platform.deepseek.com/api_keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get DeepSeek Key
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'mistral' && (
+                    <a
+                      href="https://console.mistral.ai/api-keys/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get Mistral AI Key
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'huggingface' && (
+                    <a
+                      href="https://huggingface.co/settings/tokens"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get Free Hugging Face Token
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'cohere' && (
+                    <a
+                      href="https://dashboard.cohere.com/api-keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Get Cohere Trial Key
                     </a>
                   )}
                   {formData.aiSettings?.provider === 'openai' && (
@@ -1040,6 +1334,16 @@ export default function SettingsPage() {
                       className={styles.externalGuideLink}
                     >
                       Get Anthropic API Key
+                    </a>
+                  )}
+                  {formData.aiSettings?.provider === 'custom' && (
+                    <a
+                      href="https://ollama.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.externalGuideLink}
+                    >
+                      Learn about local Ollama setup
                     </a>
                   )}
                 </div>

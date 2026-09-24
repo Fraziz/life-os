@@ -62,9 +62,21 @@ export interface UserProfile {
   avatarInitials: string;
 }
 
+export type AIProvider =
+  | 'openrouter'
+  | 'groq'
+  | 'gemini'
+  | 'deepseek'
+  | 'mistral'
+  | 'huggingface'
+  | 'cohere'
+  | 'openai'
+  | 'anthropic'
+  | 'custom';
+
 export interface AISettings {
   enabled: boolean;
-  provider: 'gemini' | 'openai' | 'anthropic' | 'custom';
+  provider: AIProvider;
   apiKey?: string;
   apiEndpoint?: string;
   model: string;

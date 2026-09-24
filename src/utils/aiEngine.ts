@@ -474,7 +474,7 @@ export async function executeOptionalAICall(
           },
         }),
       });
-    } catch (fetchErr: any) {
+    } catch {
       // If systemInstruction wasn't supported by older endpoint, retry with combined prompt
       response = await fetch(endpoint, {
         method: 'POST',
@@ -555,20 +555,79 @@ export async function executeOptionalAICall(
     return { text, tokensUsed: totalTokens, costUSD };
   }
 
-  // 3. OpenAI or OpenAI-Compatible Custom Endpoints (OpenRouter, Groq, Ollama)
-  const endpoint =
-    aiSettings.provider === 'custom'
-      ? aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions'
-      : aiSettings.apiEndpoint?.trim() || 'https://api.openai.com/v1/chat/completions';
+  // 3. Cohere Chat v2 API
+  if (aiSettings.provider === 'cohere') {
+    const endpoint = aiSettings.apiEndpoint || 'https://api.cohere.com/v2/chat';
+    const modelName = aiSettings.model?.trim() || 'command-r';
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiSettings.apiKey?.trim() || ''}`,
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt },
+        ],
+        temperature: aiSettings.temperature ?? 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.message || `Cohere API error (${response.status})`);
+    }
+
+    const data = await response.json();
+    const text = data.message?.content?.[0]?.text || data.text || '';
+    const totalTokens = (data.usage?.tokens?.input_tokens || 0) + (data.usage?.tokens?.output_tokens || 0) || 400;
+    const costUSD = (totalTokens / 1_000_000) * 0.15;
+
+    return { text, tokensUsed: totalTokens, costUSD };
+  }
+
+  // 4. OpenAI-Compatible Providers (OpenRouter, Groq, DeepSeek, Mistral, HuggingFace, OpenAI, Custom/Ollama)
+  let endpoint = 'https://api.openai.com/v1/chat/completions';
+  let defaultModel = 'gpt-4o-mini';
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
+
   if (aiSettings.apiKey?.trim()) {
     headers['Authorization'] = `Bearer ${aiSettings.apiKey.trim()}`;
   }
 
-  const modelName = aiSettings.model?.trim() || (aiSettings.provider === 'custom' ? 'llama3' : 'gpt-4o-mini');
+  if (aiSettings.provider === 'openrouter') {
+    endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+    defaultModel = 'google/gemini-2.0-flash-exp:free';
+    headers['HTTP-Referer'] = 'https://lifeos.app';
+    headers['X-Title'] = 'Life OS';
+  } else if (aiSettings.provider === 'groq') {
+    endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+    defaultModel = 'llama-3.3-70b-versatile';
+  } else if (aiSettings.provider === 'deepseek') {
+    endpoint = 'https://api.deepseek.com/v1/chat/completions';
+    defaultModel = 'deepseek-chat';
+  } else if (aiSettings.provider === 'mistral') {
+    endpoint = 'https://api.mistral.ai/v1/chat/completions';
+    defaultModel = 'mistral-small-latest';
+  } else if (aiSettings.provider === 'huggingface') {
+    endpoint = 'https://api-inference.huggingface.co/v1/chat/completions';
+    defaultModel = 'meta-llama/Llama-3.2-3B-Instruct';
+  } else if (aiSettings.provider === 'custom') {
+    endpoint = aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions';
+    defaultModel = 'llama3';
+  }
+
+  if (aiSettings.apiEndpoint?.trim()) {
+    endpoint = aiSettings.apiEndpoint.trim();
+  }
+
+  const modelName = aiSettings.model?.trim() || defaultModel;
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -586,9 +645,12 @@ export async function executeOptionalAICall(
 
   if (!response.ok) {
     const errJson = await response.json().catch(() => ({}));
-    const rawErrMsg = errJson.error?.message || `API error (${response.status})`;
+    const rawErrMsg = errJson.error?.message || errJson.message || `API error (${response.status})`;
     if (response.status === 401) {
-      throw new Error('Invalid API key for OpenAI / provider. Please verify your key.');
+      throw new Error(`Invalid API key for ${aiSettings.provider.toUpperCase()}. Please verify your key.`);
+    }
+    if (response.status === 429) {
+      throw new Error(`Rate limit or quota reached for ${aiSettings.provider.toUpperCase()}. Please wait or check your balance.`);
     }
     throw new Error(rawErrMsg);
   }
