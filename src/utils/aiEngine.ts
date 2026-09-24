@@ -449,7 +449,7 @@ export async function executeOptionalAICall(
 
   // 1. Google Gemini API
   if (aiSettings.provider === 'gemini') {
-    const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';
+    const rawModel = aiSettings.model?.trim() || 'gemini-2.5-flash';
     const cleanModel = rawModel.replace(/^models\//, '');
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${aiSettings.apiKey?.trim()}`;
 
@@ -501,7 +501,7 @@ export async function executeOptionalAICall(
         throw new Error('Invalid Gemini API key. Please check your key from Google AI Studio.');
       }
       if (response.status === 404) {
-        throw new Error(`Gemini model "${cleanModel}" not found. Try using "gemini-2.0-flash" or "gemini-1.5-flash".`);
+        throw new Error(`Gemini model "${cleanModel}" not found. Try using "gemini-2.5-flash", "gemini-2.0-flash", or "gemini-1.5-flash".`);
       }
       if (response.status === 429) {
         throw new Error('Gemini quota limit reached. Please wait a moment or check your Google Cloud quota.');

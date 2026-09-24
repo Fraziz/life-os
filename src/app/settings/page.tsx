@@ -864,7 +864,7 @@ export default function SettingsPage() {
                       const updatedAI = {
                         ...formData.aiSettings!,
                         provider: 'gemini' as const,
-                        model: 'gemini-2.0-flash',
+                        model: 'gemini-2.5-flash',
                       };
                       const updated = { ...formData, aiSettings: updatedAI };
                       setFormData(updated);
@@ -1068,7 +1068,7 @@ export default function SettingsPage() {
 
                   {formData.aiSettings?.provider === 'gemini' && (
                     <>
-                      {['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
+                      {['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
                         <button
                           key={m}
                           type="button"

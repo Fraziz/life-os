@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   aiSettings: {
     enabled: false,
     provider: 'gemini',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     monthlyBudgetUSD: 5,
     spentBudgetUSD: 0,
     totalTokensUsed: 0,
