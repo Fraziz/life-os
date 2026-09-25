@@ -215,7 +215,10 @@ export default function SettingsPage() {
     if (res.success) {
       const updated = {
         ...formData,
-        aiSettings: testSettings,
+        aiSettings: {
+          ...testSettings,
+          model: res.modelUsed || testSettings.model,
+        },
       };
       setFormData(updated);
       updateSettings(updated);
@@ -1133,7 +1136,11 @@ export default function SettingsPage() {
                     };
                     setFormData({ ...formData, aiSettings: updatedAI });
                   }}
-                  placeholder="e.g. google/gemini-2.0-flash-exp:free"
+                  placeholder={
+                    formData.aiSettings?.provider === 'gemini'
+                      ? 'e.g. gemini-3.1-pro-preview or gemini-2.5-flash'
+                      : 'e.g. google/gemini-2.0-flash-exp:free'
+                  }
                 />
 
                 <div className={styles.modelChipsRow}>
@@ -1191,7 +1198,7 @@ export default function SettingsPage() {
 
                   {formData.aiSettings?.provider === 'gemini' && (
                     <>
-                      {['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'].map((m) => (
+                      {['gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
                         <button
                           key={m}
                           type="button"

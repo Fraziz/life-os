@@ -77,6 +77,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed.aiSettings?.model === 'gemini-2.5-pro' || parsed.aiSettings?.model === 'models/gemini-2.5-pro') {
+          parsed.aiSettings.model = 'gemini-3.1-pro-preview';
+        }
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
     } catch (err) {
@@ -117,6 +120,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateSettings = (partial: Partial<UserSettings>) => {
+    if (partial.aiSettings?.model === 'gemini-2.5-pro' || partial.aiSettings?.model === 'models/gemini-2.5-pro') {
+      partial.aiSettings.model = 'gemini-3.1-pro-preview';
+    }
     const updated: UserSettings = {
       ...settings,
       ...partial,

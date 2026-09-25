@@ -417,7 +417,7 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
       success: true,
       message: result.text.trim() || 'Connected successfully!',
       latencyMs,
-      modelUsed: aiSettings.model || (aiSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'default'),
+      modelUsed: result.modelUsed || aiSettings.model || (aiSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'default'),
     };
   } catch (err: any) {
     const latencyMs = Date.now() - startTime;
@@ -437,7 +437,7 @@ export async function executeOptionalAICall(
   prompt: string,
   systemPrompt: string,
   aiSettings: AISettings
-): Promise<{ text: string; tokensUsed: number; costUSD: number }> {
+): Promise<{ text: string; tokensUsed: number; costUSD: number; modelUsed?: string }> {
   if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
     throw new Error('API key is missing. Please configure your API key in Settings.');
   }
@@ -452,17 +452,22 @@ export async function executeOptionalAICall(
   // 1. Google Gemini API
   if (aiSettings.provider === 'gemini') {
     const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';
-    const initialCleanModel = rawModel.replace(/^models\//, '');
+    let initialCleanModel = rawModel.replace(/^models\//, '');
     
-    // Candidates to attempt in order if the specified model returns 404 or retired
+    // Automatically migrate retired/deprecated gemini-2.5-pro to Google's recommended gemini-3.1-pro-preview
+    if (initialCleanModel === 'gemini-2.5-pro') {
+      initialCleanModel = 'gemini-3.1-pro-preview';
+    }
+
+    // Candidates to attempt in order if the specified model returns 404, 400 retired, or is temporarily unavailable
     const candidateModels = Array.from(new Set([
       initialCleanModel,
+      'gemini-3.1-pro-preview',
       'gemini-2.5-flash',
       'gemini-2.0-flash',
       'gemini-1.5-flash',
       'gemini-1.5-pro',
-      'gemini-2.5-pro',
-    ]));
+    ])).filter((m) => Boolean(m) && m !== 'gemini-2.5-pro' && m !== 'models/gemini-2.5-pro');
 
     // Multi-key Pool for Auto-failover & Auto-switching when quota/limit is low
     const candidateKeys: string[] = [];
@@ -544,7 +549,7 @@ export async function executeOptionalAICall(
           const totalTokens = data.usageMetadata?.totalTokenCount || 400;
           const costUSD = (totalTokens / 1_000_000) * 0.075;
 
-          return { text, tokensUsed: totalTokens, costUSD };
+          return { text, tokensUsed: totalTokens, costUSD, modelUsed: cleanModel };
         }
 
         const errJson = await response.json().catch(() => ({}));
@@ -578,12 +583,21 @@ export async function executeOptionalAICall(
           }
         }
 
-        if (
+        const isModelUnavailable =
           response.status === 404 ||
           rawErrMsg.toLowerCase().includes('not found') ||
           rawErrMsg.toLowerCase().includes('no longer available') ||
-          rawErrMsg.toLowerCase().includes('high demand')
-        ) {
+          rawErrMsg.toLowerCase().includes('not available') ||
+          rawErrMsg.toLowerCase().includes('deprecated') ||
+          rawErrMsg.toLowerCase().includes('high demand') ||
+          rawErrMsg.toLowerCase().includes('interactions api') ||
+          (response.status === 400 && (
+            rawErrMsg.toLowerCase().includes('model') ||
+            rawErrMsg.toLowerCase().includes('invalid argument') ||
+            rawErrMsg.toLowerCase().includes('no longer available')
+          ));
+
+        if (isModelUnavailable) {
           // Try next candidate model
           lastError = new Error(`Gemini model "${cleanModel}" unavailable: ${rawErrMsg}`);
           continue;
