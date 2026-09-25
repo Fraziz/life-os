@@ -7,6 +7,7 @@ import type {
   SuggestedAction,
   UserSettings,
   Habit,
+  CalendarEvent,
 } from '@/types';
 
 /**
@@ -449,75 +450,149 @@ export async function executeOptionalAICall(
 
   // 1. Google Gemini API
   if (aiSettings.provider === 'gemini') {
-    const rawModel = aiSettings.model?.trim() || 'gemini-2.5-flash';
-    const cleanModel = rawModel.replace(/^models\//, '');
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${aiSettings.apiKey?.trim()}`;
+    const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';
+    const initialCleanModel = rawModel.replace(/^models\//, '');
+    
+    // Candidates to attempt in order if the specified model returns 404 or retired
+    const candidateModels = Array.from(new Set([
+      initialCleanModel,
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.5-pro',
+    ]));
 
-    let response: Response;
-    try {
-      response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: aiSettings.temperature ?? 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      });
-    } catch {
-      // If systemInstruction wasn't supported by older endpoint, retry with combined prompt
-      response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemPrompt}\n\n${prompt}` }],
-            },
-          ],
-          generationConfig: {
-            temperature: aiSettings.temperature ?? 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      });
+    // Multi-key Pool for Auto-failover & Auto-switching when quota/limit is low
+    const candidateKeys: string[] = [];
+    if (aiSettings.apiKey?.trim()) {
+      candidateKeys.push(aiSettings.apiKey.trim());
+    }
+    if (aiSettings.savedKeys && aiSettings.savedKeys.length > 0) {
+      for (const k of aiSettings.savedKeys) {
+        const clean = k.apiKey?.trim();
+        if (clean && !candidateKeys.includes(clean)) {
+          candidateKeys.push(clean);
+        }
+      }
     }
 
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({}));
-      const rawErrMsg = errJson.error?.message || `Gemini API error (${response.status})`;
-      if (response.status === 400 && rawErrMsg.includes('API_KEY_INVALID')) {
-        throw new Error('Invalid Gemini API key. Please check your key from Google AI Studio.');
-      }
-      if (response.status === 404) {
-        throw new Error(`Gemini model "${cleanModel}" not found. Try using "gemini-2.5-flash", "gemini-2.0-flash", or "gemini-1.5-flash".`);
-      }
-      if (response.status === 429) {
-        throw new Error('Gemini quota limit reached. Please wait a moment or check your Google Cloud quota.');
-      }
-      throw new Error(rawErrMsg);
+    if (candidateKeys.length === 0) {
+      throw new Error('API key is missing. Please configure your API key in Settings.');
     }
 
-    const data = await response.json();
-    const text =
-      data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ||
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '';
-    const totalTokens = data.usageMetadata?.totalTokenCount || 400;
-    const costUSD = (totalTokens / 1_000_000) * 0.075;
+    let lastError: Error | null = null;
 
-    return { text, tokensUsed: totalTokens, costUSD };
+    // Iterate through available API keys in pool (Auto-Failover)
+    for (let keyIdx = 0; keyIdx < candidateKeys.length; keyIdx++) {
+      const currentKey = candidateKeys[keyIdx];
+      const hasBackupKeys = keyIdx < candidateKeys.length - 1;
+
+      for (const cleanModel of candidateModels) {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${currentKey}`;
+
+        let response: Response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(6000),
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemPrompt }],
+              },
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: prompt }],
+                },
+              ],
+              generationConfig: {
+                temperature: aiSettings.temperature ?? 0.7,
+                maxOutputTokens: 2048,
+              },
+            }),
+          });
+        } catch {
+          // If systemInstruction wasn't supported by older endpoint, retry with combined prompt
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(6000),
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: `${systemPrompt}\n\n${prompt}` }],
+                },
+              ],
+              generationConfig: {
+                temperature: aiSettings.temperature ?? 0.7,
+                maxOutputTokens: 2048,
+              },
+            }),
+          });
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          const text =
+            data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ||
+            data.candidates?.[0]?.content?.parts?.[0]?.text ||
+            '';
+          const totalTokens = data.usageMetadata?.totalTokenCount || 400;
+          const costUSD = (totalTokens / 1_000_000) * 0.075;
+
+          return { text, tokensUsed: totalTokens, costUSD };
+        }
+
+        const errJson = await response.json().catch(() => ({}));
+        const rawErrMsg = errJson.error?.message || `Gemini API error (${response.status})`;
+
+        const isKeyInvalid =
+          response.status === 400 &&
+          (rawErrMsg.toLowerCase().includes('api key not valid') ||
+           rawErrMsg.toLowerCase().includes('api_key_invalid') ||
+           rawErrMsg.toLowerCase().includes('invalid api key') ||
+           rawErrMsg.toLowerCase().includes('key not valid') ||
+           rawErrMsg.toLowerCase().includes('api key expired'));
+
+        const isQuotaOrLimit =
+          response.status === 429 ||
+          rawErrMsg.includes('RESOURCE_EXHAUSTED') ||
+          rawErrMsg.toLowerCase().includes('quota') ||
+          rawErrMsg.toLowerCase().includes('rate limit');
+
+        if (isKeyInvalid || isQuotaOrLimit) {
+          if (hasBackupKeys) {
+            console.warn(`[Life OS AI] Key #${keyIdx + 1} failed (${rawErrMsg}). Auto-switching to backup key in pool...`);
+            lastError = new Error(`Key #${keyIdx + 1} unavailable. Switched to backup key.`);
+            break; // Break inner model loop to try NEXT KEY in candidateKeys
+          }
+          if (isQuotaOrLimit) {
+            throw new Error('Gemini quota limit reached on all saved keys. Please add a backup key in Settings or try later.');
+          }
+          if (isKeyInvalid) {
+            throw new Error('Invalid Gemini API key. Please check your API key in Settings (Google AI Studio).');
+          }
+        }
+
+        if (
+          response.status === 404 ||
+          rawErrMsg.toLowerCase().includes('not found') ||
+          rawErrMsg.toLowerCase().includes('no longer available') ||
+          rawErrMsg.toLowerCase().includes('high demand')
+        ) {
+          // Try next candidate model
+          lastError = new Error(`Gemini model "${cleanModel}" unavailable: ${rawErrMsg}`);
+          continue;
+        }
+
+        throw new Error(rawErrMsg);
+      }
+    }
+
+    throw lastError || new Error(`Gemini models not available for this API key. Please check your API key in Settings.`);
   }
 
   // 2. Anthropic Claude API
@@ -1009,7 +1084,382 @@ ${JSON.stringify(contextSummary, null, 2)}`;
     const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
     return text.trim() || 'I generated an empty response. Please try asking in a different way.';
   } catch (err: any) {
-    console.error('AI chat error:', err);
+    console.warn('AI chat error (fallback):', err);
     return `⚠️ AI Error: ${err?.message || 'Could not connect to AI provider'}.\n\nPlease check your API key in Settings → AI Assistant.`;
   }
 }
+
+/**
+ * Generates an Executive Morning Briefing or Evening Reflection
+ */
+export async function generateDailyBriefing(
+  mode: 'morning' | 'evening',
+  context: {
+    userName: string;
+    tasks: Task[];
+    goals: Goal[];
+    projects: Project[];
+    habits: Habit[];
+    todayCompletedTasks?: Task[];
+    todayHabitCount?: number;
+  },
+  aiSettings?: AISettings
+): Promise<string> {
+  const { userName, tasks, goals, projects, habits, todayCompletedTasks = [], todayHabitCount = 0 } = context;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pendingTasks = tasks.filter((t) => t.status !== 'done');
+  const urgentTasks = pendingTasks.filter((t) => t.priority === 'urgent' || t.priority === 'high');
+
+  // Deterministic Fallback generator (Formal, Executive Style)
+  const getDeterministicBriefing = () => {
+    if (mode === 'morning') {
+      const top3List = (urgentTasks.length > 0 ? urgentTasks : pendingTasks).slice(0, 3);
+      const habitsList = habits.slice(0, 3).map((h) => `• **${h.title}** (${h.frequency})`).join('\n');
+      const topTasksText = top3List.length > 0
+        ? top3List.map((t, i) => `${i + 1}. **${t.title}** — ${t.priority.toUpperCase()} (${t.estimatedDuration || 25} min)`).join('\n')
+        : '• Backlog is clear. Ready to plan new strategic goals.';
+
+      return `## Morning Briefing: ${userName}
+
+**${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}**
+
+### Strategic Priorities
+${topTasksText}
+
+### Habit Focus
+${habitsList || '• No daily habits scheduled.'}
+
+### Focus Principle
+> *"Disciplined execution on core priorities drives compound results. Direct your primary focus toward high-impact objectives today."*`;
+    } else {
+      const doneList = todayCompletedTasks.length > 0
+        ? todayCompletedTasks.map((t) => `• **${t.title}**`).join('\n')
+        : '• No tasks recorded as completed today.';
+      const pendingCount = pendingTasks.length;
+
+      return `## Evening Debrief: ${userName}
+
+**${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}**
+
+### Completed Deliverables (${todayCompletedTasks.length})
+${doneList}
+
+### Habit Consistency
+• Checked in **${todayHabitCount} of ${habits.length}** scheduled habits today.
+
+### Queue Status
+${pendingCount > 0 ? `• **${pendingCount} pending task(s)** queued for tomorrow's execution.` : '• All task queues are currently cleared.'}
+
+### Executive Review
+> *"Review completed milestones, recalibrate priorities, and set clear focus for tomorrow."*`;
+    }
+  };
+
+  const isAIConfigured = aiSettings?.enabled && (aiSettings.apiKey || aiSettings.provider === 'custom');
+  if (!isAIConfigured) {
+    return getDeterministicBriefing();
+  }
+
+  try {
+    const summaryData = {
+      user: userName,
+      date: todayStr,
+      mode,
+      activePendingTasks: pendingTasks.slice(0, 8).map(t => ({ title: t.title, priority: t.priority, duration: t.estimatedDuration })),
+      completedToday: todayCompletedTasks.map(t => t.title),
+      habits: habits.map(h => ({ title: h.title, frequency: h.frequency })),
+      habitsDoneTodayCount: todayHabitCount,
+      activeGoals: goals.filter(g => g.status === 'in-progress').map(g => ({ title: g.title, progress: `${g.progress || 0}%` })),
+    };
+
+    const systemPrompt = `You are a formal executive Chief of Staff and strategic advisor for ${userName}.
+Your task is to generate a structured, professional ${mode === 'morning' ? 'Executive Morning Briefing' : 'Evening Performance Debrief'}.
+
+CRITICAL STYLE & FORMATTING INSTRUCTIONS:
+- Strictly DO NOT include emojis, playful icons, or informal jargon anywhere in the output.
+- Keep the tone formal, direct, articulate, professional, and concise.
+- Use clean Markdown with headers (##, ###), bullet points (•), and bold identifiers (**Title**).
+- Be specific to the user's live roadmap tasks, goals, and habits.
+- Structure for ${mode === 'morning' ? 'Morning Briefing' : 'Evening Debrief'}:
+  ${mode === 'morning' 
+    ? '1. Executive overview header\n2. Strategic Priorities (Top 3 prioritized tasks with estimated duration)\n3. Habit Focus\n4. Executive Directive / Strategic Principle'
+    : '1. Executive summary of achievements\n2. Completed Deliverables\n3. Habit Consistency & Execution Status\n4. Queue Status & Forward Outlook'
+  }`;
+
+    const userPrompt = `Generate my ${mode === 'morning' ? 'Morning Briefing' : 'Evening Reflection'} based on my live dashboard state:\n${JSON.stringify(summaryData, null, 2)}`;
+
+    const { text } = await executeOptionalAICall(userPrompt, systemPrompt, aiSettings);
+    return text.trim() || getDeterministicBriefing();
+  } catch (err) {
+    console.warn('AI Briefing fallback active:', err);
+    return getDeterministicBriefing();
+  }
+}
+
+export interface OptimizedScheduleBlock {
+  id: string;
+  startTime: string; // e.g. "09:00"
+  endTime: string;   // e.g. "10:30"
+  type: 'deep_work' | 'secondary_focus' | 'habit' | 'admin' | 'break';
+  title: string;
+  taskId?: string;
+  durationMinutes: number;
+  priority?: 'urgent' | 'high' | 'medium' | 'low';
+  rationale: string;
+}
+
+export interface OptimizedDaySchedule {
+  date: string;
+  totalPlannedMinutes: number;
+  mainFocusTaskId: string | null;
+  mainFocusTitle: string;
+  executiveSummary: string;
+  blocks: OptimizedScheduleBlock[];
+}
+
+function timeStringToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function minutesToTimeString(totalMinutes: number): string {
+  const norm = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * 1-Click AI "Optimize My Day" Time-Block Engine
+ * Intelligently analyzes priority tasks, habit anchors, and capacity to build an hourly execution plan.
+ */
+export async function optimizeMyDaySchedule(
+  context: {
+    tasks: Task[];
+    habits: Habit[];
+    goals: Goal[];
+    calendarEvents?: CalendarEvent[];
+    startHour?: number; // default 9
+    availableHours?: number; // default 8
+    userName?: string;
+  },
+  aiSettings?: AISettings
+): Promise<OptimizedDaySchedule> {
+  const {
+    tasks,
+    habits,
+    goals,
+    calendarEvents = [],
+    startHour = 9,
+    availableHours = 8,
+    userName = 'User',
+  } = context;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pendingTasks = tasks.filter((t) => t.status !== 'done');
+  
+  // Sort tasks by priority (urgent > high > medium > low) and deadline proximity
+  const sortedTasks = [...pendingTasks].sort((a, b) => {
+    const pWeight: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+    const wA = pWeight[a.priority] || 2;
+    const wB = pWeight[b.priority] || 2;
+    if (wA !== wB) return wB - wA;
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate) return -1;
+    return 0;
+  });
+
+  const mainFocus = sortedTasks[0] || null;
+
+  // Deterministic Schedule Generator
+  const generateDeterministicSchedule = (): OptimizedDaySchedule => {
+    const blocks: OptimizedScheduleBlock[] = [];
+    let currentMin = startHour * 60;
+    const maxEndMin = currentMin + (availableHours * 60);
+    const activeHabits = habits.slice(0, 3);
+
+    // 1. Morning Kickoff / Habit Anchor
+    if (activeHabits.length > 0) {
+      const habitDuration = 20;
+      const end = currentMin + habitDuration;
+      blocks.push({
+        id: `block-habit-morning`,
+        startTime: minutesToTimeString(currentMin),
+        endTime: minutesToTimeString(end),
+        type: 'habit',
+        title: `Habit Anchor: ${activeHabits[0].title}`,
+        durationMinutes: habitDuration,
+        rationale: 'Prime physical and mental focus before deep work.',
+      });
+      currentMin = end;
+    }
+
+    // 2. High-Impact Deep Work Block (Main Priority)
+    if (mainFocus) {
+      const duration = Math.min(mainFocus.estimatedDuration || 90, 120);
+      const end = currentMin + duration;
+      blocks.push({
+        id: `block-task-${mainFocus.id}`,
+        startTime: minutesToTimeString(currentMin),
+        endTime: minutesToTimeString(end),
+        type: 'deep_work',
+        title: mainFocus.title,
+        taskId: mainFocus.id,
+        durationMinutes: duration,
+        priority: mainFocus.priority,
+        rationale: 'Highest-leverage strategic priority during peak morning cognitive energy.',
+      });
+      currentMin = end;
+    }
+
+    // 3. Cognitive Rest & Buffer (15 min)
+    if (currentMin + 15 <= maxEndMin) {
+      const end = currentMin + 15;
+      blocks.push({
+        id: `block-rest-1`,
+        startTime: minutesToTimeString(currentMin),
+        endTime: minutesToTimeString(end),
+        type: 'break',
+        title: 'Buffer & Cognitive Reset',
+        durationMinutes: 15,
+        rationale: 'Decompress and reset focus before secondary execution.',
+      });
+      currentMin = end;
+    }
+
+    // 4. Secondary Tasks
+    const secondaryTasks = sortedTasks.slice(1, 4);
+    for (const t of secondaryTasks) {
+      const dur = t.estimatedDuration || 45;
+      if (currentMin + dur > maxEndMin) break;
+
+      const end = currentMin + dur;
+      blocks.push({
+        id: `block-task-${t.id}`,
+        startTime: minutesToTimeString(currentMin),
+        endTime: minutesToTimeString(end),
+        type: 'secondary_focus',
+        title: t.title,
+        taskId: t.id,
+        durationMinutes: dur,
+        priority: t.priority,
+        rationale: `Strategic deliverable for ${t.priority.toUpperCase()} priority item.`,
+      });
+      currentMin = end;
+    }
+
+    // 5. Afternoon Admin / Daily Review Block
+    if (currentMin + 30 <= maxEndMin) {
+      const end = currentMin + 30;
+      blocks.push({
+        id: `block-admin-wrap`,
+        startTime: minutesToTimeString(currentMin),
+        endTime: minutesToTimeString(end),
+        type: 'admin',
+        title: 'Daily Review & Inbox Zero',
+        durationMinutes: 30,
+        rationale: 'Review completed deliverables, check remaining habits, and set clean slate for tomorrow.',
+      });
+      currentMin = end;
+    }
+
+    const totalMinutes = blocks.reduce((acc, b) => acc + b.durationMinutes, 0);
+
+    return {
+      date: todayStr,
+      totalPlannedMinutes: totalMinutes,
+      mainFocusTaskId: mainFocus?.id || null,
+      mainFocusTitle: mainFocus?.title || 'Daily Strategic Focus',
+      executiveSummary: `Optimized ${Math.round(totalMinutes / 60)}h ${totalMinutes % 60}m schedule with ${blocks.filter(b => b.type === 'deep_work' || b.type === 'secondary_focus').length} priority task blocks and habit anchors structured for peak circadian efficiency.`,
+      blocks,
+    };
+  };
+
+  const isAIConfigured = aiSettings?.enabled && (aiSettings.apiKey || aiSettings.provider === 'custom');
+  if (!isAIConfigured) {
+    return generateDeterministicSchedule();
+  }
+
+  try {
+    const summaryData = {
+      user: userName,
+      date: todayStr,
+      startHour,
+      availableHours,
+      tasks: sortedTasks.slice(0, 8).map((t) => ({
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        estimatedDuration: t.estimatedDuration || 30,
+      })),
+      habits: habits.slice(0, 4).map((h) => ({ id: h.id, title: h.title, frequency: h.frequency })),
+      goals: goals.filter((g) => g.status === 'in-progress').slice(0, 3).map((g) => g.title),
+      calendarEvents: calendarEvents.map((e) => ({ title: e.title, start: e.startTime, end: e.endTime })),
+    };
+
+    const systemPrompt = `You are a world-class executive time-blocking engine and productivity architect for ${userName}.
+Your task is to generate an optimized, realistic hour-by-hour schedule for today in strictly valid JSON.
+
+RULES:
+- Respect start hour: ${startHour}:00.
+- Place the #1 highest-leverage task in peak morning focus.
+- Schedule realistic task blocks with transition buffers.
+- Return ONLY a JSON object with this exact shape:
+{
+  "mainFocusTaskId": "task-id or null",
+  "mainFocusTitle": "string",
+  "executiveSummary": "1-sentence formal summary of why this schedule is optimal",
+  "blocks": [
+    {
+      "id": "string",
+      "startTime": "HH:MM",
+      "endTime": "HH:MM",
+      "type": "deep_work" | "secondary_focus" | "habit" | "admin" | "break",
+      "title": "string",
+      "taskId": "task-id if matching a task or omit",
+      "durationMinutes": number,
+      "priority": "urgent" | "high" | "medium" | "low",
+      "rationale": "short formal rationale"
+    }
+  ]
+}`;
+
+    const userPrompt = `Build an optimized daily time-block schedule for today:\n${JSON.stringify(summaryData, null, 2)}`;
+
+    const { text } = await executeOptionalAICall(userPrompt, systemPrompt, aiSettings);
+    
+    // Parse JSON
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
+        const totalMinutes = parsed.blocks.reduce((acc: number, b: any) => acc + (b.durationMinutes || 30), 0);
+        return {
+          date: todayStr,
+          totalPlannedMinutes: totalMinutes,
+          mainFocusTaskId: parsed.mainFocusTaskId || mainFocus?.id || null,
+          mainFocusTitle: parsed.mainFocusTitle || mainFocus?.title || 'Daily Strategic Focus',
+          executiveSummary: parsed.executiveSummary || 'AI-optimized daily time-block schedule.',
+          blocks: parsed.blocks.map((b: any, i: number) => ({
+            id: b.id || `ai-block-${i}`,
+            startTime: b.startTime || '09:00',
+            endTime: b.endTime || '10:00',
+            type: b.type || 'deep_work',
+            title: b.title || 'Scheduled Item',
+            taskId: b.taskId || undefined,
+            durationMinutes: b.durationMinutes || 30,
+            priority: b.priority || undefined,
+            rationale: b.rationale || 'Scheduled priority block.',
+          })),
+        };
+      }
+    }
+
+    return generateDeterministicSchedule();
+  } catch (err) {
+    console.warn('AI Optimizer fallback active:', err);
+    return generateDeterministicSchedule();
+  }
+}
+
+

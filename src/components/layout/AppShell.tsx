@@ -34,7 +34,7 @@ import CommandPalette from '@/components/command/CommandPalette';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
-import { ArrowUp, PanelLeft, Bot } from 'lucide-react';
+import { PanelLeft, Bot } from 'lucide-react';
 
 /**
  * Derives a human-readable page title from the current pathname.
@@ -66,20 +66,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  // Floating Back to Top state
-  const [showBackToTop, setShowBackToTop] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 300);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   // Restore persisted sidebar preference on mount
   useEffect(() => {
@@ -345,20 +331,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       >
         <Bot size={20} strokeWidth={2} />
       </button>
-
-      {/* Global Floating Back to Top Button */}
-      {showBackToTop && (
-        <button
-          type="button"
-          onClick={scrollToTop}
-          className={styles.backToTopBtn}
-          aria-label="Scroll back to top"
-          title="Back to top"
-        >
-          <ArrowUp size={15} strokeWidth={2.5} />
-          <span>Top</span>
-        </button>
-      )}
     </>
   );
 }

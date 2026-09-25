@@ -147,18 +147,18 @@ function ProjectRow({
                 background: 'transparent',
                 border: '1px dashed var(--color-border)',
                 borderRadius: '6px',
-                padding: '1px 7px',
-                fontSize: '10px',
+                padding: '2px 6px',
                 color: 'var(--color-text-faint)',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                justifyContent: 'center',
                 marginTop: '6px',
               }}
-              title="Set due date to show in calendar"
+              title="Add to Calendar"
+              aria-label="Add to Calendar"
             >
-              <Calendar size={11} /> + Add to Calendar
+              <Calendar size={12} />
             </button>
           )
         )}
@@ -515,6 +515,12 @@ export default function ProjectsPage() {
   const [notes, setNotes]           = useState('');
   const [projectColor, setProjectColor] = useState('');
 
+  // Quick Add State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickStatus, setQuickStatus] = useState<ProjectStatus>('active');
+  const [quickPriority, setQuickPriority] = useState<ProjectPriority>('high');
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
+
   if (!isLoaded) {
     return (
       <div className={styles.page}>
@@ -570,6 +576,23 @@ export default function ProjectsPage() {
     setModalOpen(false);
   };
 
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const defaultDue = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    addProject({
+      title: quickTitle.trim(),
+      status: quickStatus,
+      priority: quickPriority,
+      goalId: quickGoalId || undefined,
+      startDate: todayStr,
+      dueDate: defaultDue,
+      progress: 0,
+    });
+    setQuickTitle('');
+  };
+
   const filteredProjects = projects.filter((p) => {
     if (statusFilter === 'active' && (p.status === 'completed' || p.status === 'cancelled')) return false;
     if (statusFilter === 'planning' && p.status !== 'planning') return false;
@@ -597,6 +620,68 @@ export default function ProjectsPage() {
           <Plus size={18} /> New Project
         </button>
       </header>
+
+      {/* ── Quick Add Bar ── */}
+      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
+        <div className={styles.quickAddRow}>
+          <FolderKanban size={20} style={{ color: 'var(--color-accent)' }} />
+          <input
+            type="text"
+            className={styles.quickAddInput}
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            placeholder="Type a project and press Enter to add instantly (e.g. Redesign Landing Page)..."
+            autoFocus
+          />
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
+          </button>
+        </div>
+
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <select
+              className={styles.pillSelect}
+              value={quickStatus}
+              onChange={(e) => setQuickStatus(e.target.value as ProjectStatus)}
+            >
+              <option value="active">Status: Active</option>
+              <option value="planning">Status: Planning</option>
+              <option value="on-hold">Status: On Hold</option>
+              <option value="completed">Status: Completed</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickPriority}
+              onChange={(e) => setQuickPriority(e.target.value as ProjectPriority)}
+            >
+              <option value="high">Priority: High</option>
+              <option value="urgent">Priority: Urgent</option>
+              <option value="medium">Priority: Medium</option>
+              <option value="low">Priority: Low</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickGoalId}
+              onChange={(e) => setQuickGoalId(e.target.value)}
+            >
+              <option value="">No Linked Goal (General)</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  Goal: {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
+          </span>
+        </div>
+      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>

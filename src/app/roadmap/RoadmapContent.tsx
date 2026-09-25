@@ -4,38 +4,30 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Link from 'next/link';
 import {
   GitBranch,
-  CloudSun,
-  Target,
-  FolderKanban,
-  CheckSquare,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Sparkles,
   ExternalLink,
   X,
-  PanelLeft,
-  PanelLeftClose,
-  Eye,
-  EyeOff,
-  Check,
-  Zap,
   RotateCcw,
 } from 'lucide-react';
 import { useDreams } from '@/context/DreamContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
+import { useMilestones } from '@/context/MilestoneContext';
+import { useSettings } from '@/context/SettingsContext';
+import { executeOptionalAICall } from '@/utils/aiEngine';
 import styles from './page.module.css';
 
 // ── Layout constants ──────────────────────────────────────────
-const NODE_W = 250;
-const NODE_H = 104;
-const COL_GAP = 300;
-const ROW_GAP = 125;
+const NODE_W = 240;
+const NODE_H = 96;
+const COL_GAP = 280;
+const ROW_GAP = 118;
 // Flow: Task (0) → Project (1) → Goal (2) → Dream (3)
-const COL_STARTS = [50, 50 + COL_GAP, 50 + COL_GAP * 2, 50 + COL_GAP * 3];
-const CANVAS_PAD = 70; // Room for canvas column headers at y=25
+const COL_STARTS = [40, 40 + COL_GAP, 40 + COL_GAP * 2, 40 + COL_GAP * 3];
+const CANVAS_PAD = 64;
 
 const AREA_COLORS: Record<string, string> = {
   'area-creative': '#ff6b6b',
@@ -60,6 +52,8 @@ const AREA_LABELS: Record<string, string> = {
 const DEFAULT_COLOR = '#7c6fff';
 
 type FilterMode = 'all' | 'active' | string;
+type HorizonMode = 'all' | '90-day' | 'yearly';
+type ViewMode = 'graph' | 'timeline';
 
 interface NodePosition {
   id: string;
@@ -85,17 +79,24 @@ export default function RoadmapContent() {
   const { goals, isLoaded: goalsLoaded } = useGoals();
   const { projects, isLoaded: projectsLoaded } = useProjects();
   const { tasks, isLoaded: tasksLoaded, updateTaskStatus } = useTasks();
+  const { milestones } = useMilestones();
+  const { settings } = useSettings();
 
+  const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const [filter, setFilter] = useState<FilterMode>('all');
-  const [zoom, setZoom] = useState(0.8);
+  const [horizonFilter, setHorizonFilter] = useState<HorizonMode>('all');
+
+  // AI Strategy Audit state
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [auditResult, setAuditResult] = useState<string | null>(null);
+
+  const [zoom, setZoom] = useState(0.85);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [isCalmMode, setIsCalmMode] = useState(false);
-  const [celebrationMsg, setCelebrationMsg] = useState<string | null>(null);
   const [lastCompletedTask, setLastCompletedTask] = useState<{ id: string; title: string; prevStatus: any } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,60 +104,74 @@ export default function RoadmapContent() {
 
   const isLoaded = dreamsLoaded && goalsLoaded && projectsLoaded && tasksLoaded;
 
-  // Track sidebar collapse state
-  useEffect(() => {
-    try {
-      setSidebarHidden(localStorage.getItem('life_os_sidebar_collapsed') === 'true');
-    } catch {}
-    const handleStorage = () => {
-      try {
-        setSidebarHidden(localStorage.getItem('life_os_sidebar_collapsed') === 'true');
-      } catch {}
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
-  const toggleSidebar = () => {
-    window.dispatchEvent(new CustomEvent('toggle-sidebar'));
-    setSidebarHidden(prev => !prev);
-  };
-
   // ── Filtered sets ────────────────────────────────────────
   const filteredDreams = useMemo(() => {
-    if (filter === 'active') return dreams.filter(d => d.status !== 'archived');
-    if (filter !== 'all') return dreams.filter(d => d.lifeAreaId === filter);
-    return dreams;
+    let d = dreams;
+    if (filter === 'active') d = d.filter(item => item.status !== 'archived');
+    if (filter !== 'all' && filter !== 'active') d = d.filter(item => item.lifeAreaId === filter);
+    return d;
   }, [dreams, filter]);
 
   const filteredGoals = useMemo(() => {
     const dreamIds = new Set(filteredDreams.map(d => d.id));
     let g = goals.filter(g => !g.parentDreamId || dreamIds.has(g.parentDreamId));
-    if (filter === 'active') g = g.filter(g => g.status !== 'archived' && g.status !== 'completed');
-    if (filter !== 'all' && filter !== 'active') g = g.filter(g => g.lifeAreaId === filter);
+    if (filter === 'active') g = g.filter(item => item.status !== 'archived' && item.status !== 'completed');
+    if (filter !== 'all' && filter !== 'active') g = g.filter(item => item.lifeAreaId === filter);
+
+    if (horizonFilter === '90-day') {
+      g = g.filter(item => item.status === 'in-progress' || (item.progress && item.progress > 0));
+    }
     return g;
-  }, [goals, filteredDreams, filter]);
+  }, [goals, filteredDreams, filter, horizonFilter]);
 
   const filteredProjects = useMemo(() => {
     const goalIds = new Set(filteredGoals.map(g => g.id));
     let p = projects.filter(p => !p.goalId || goalIds.has(p.goalId));
-    if (filter === 'active') p = p.filter(p => p.status === 'active');
+    if (filter === 'active') p = p.filter(item => item.status === 'active');
+    if (horizonFilter === '90-day') {
+      p = p.filter(item => item.status === 'active');
+    }
     return p;
-  }, [projects, filteredGoals, filter]);
+  }, [projects, filteredGoals, filter, horizonFilter]);
 
   const filteredTasks = useMemo(() => {
     const projIds = new Set(filteredProjects.map(p => p.id));
     return tasks
       .filter(t => t.status !== 'done' && t.projectId && projIds.has(t.projectId))
-      .slice(0, 16);
+      .slice(0, 20);
   }, [tasks, filteredProjects]);
 
-  // Unlinked tasks count for ADHD object permanence
   const unlinkedTasks = useMemo(() => {
     return tasks.filter(t => t.status !== 'done' && !t.projectId);
   }, [tasks]);
 
-  // ── Dream aggregate progress (avg of linked goals) ──────
+  // ── Executive Alignment Metrics ──────────────────────────
+  const metrics = useMemo(() => {
+    const activeGoals = goals.filter(g => g.status !== 'archived' && g.status !== 'completed');
+    const goalsWithActiveProjects = activeGoals.filter(g =>
+      projects.some(p => p.goalId === g.id && p.status === 'active')
+    ).length;
+    const goalCoverage = activeGoals.length > 0
+      ? Math.round((goalsWithActiveProjects / activeGoals.length) * 100)
+      : 100;
+
+    const activeProjectCount = projects.filter(p => p.status === 'active').length;
+    const activeTaskCount = tasks.filter(t => t.status !== 'done').length;
+    const unlinkedCount = unlinkedTasks.length;
+    const pendingMilestones = (milestones || []).filter(m => m.status === 'in-progress' || m.status === 'upcoming').length;
+
+    return {
+      goalCoverage,
+      activeGoalsCount: activeGoals.length,
+      goalsWithActiveProjects,
+      activeProjectCount,
+      activeTaskCount,
+      unlinkedCount,
+      pendingMilestones,
+    };
+  }, [goals, projects, tasks, unlinkedTasks, milestones]);
+
+  // ── Dream aggregate progress ─────────────────────────────
   const dreamProgress = useMemo(() => {
     const map: Record<string, number> = {};
     filteredDreams.forEach(dream => {
@@ -168,7 +183,7 @@ export default function RoadmapContent() {
     return map;
   }, [filteredDreams, filteredGoals]);
 
-  // ── Build balanced cluster layout (Task → Project → Goal → Dream) ──
+  // ── Balanced cluster layout (Task → Project → Goal → Dream) ──
   const { nodes, connections, canvasHeight } = useMemo(() => {
     const nodes: NodePosition[] = [];
     const connections: Connection[] = [];
@@ -245,7 +260,6 @@ export default function RoadmapContent() {
       });
     }
 
-    // Now layout each cluster vertically
     let currentY = CANVAS_PAD;
 
     clusters.forEach(cluster => {
@@ -259,7 +273,6 @@ export default function RoadmapContent() {
       const clusterHeight = maxCount * ROW_GAP;
       const clusterCenterY = currentY + clusterHeight / 2;
 
-      // Helper to center items vertically in this cluster
       const layoutColumn = <T,>(items: T[], colIndex: number, renderNode: (item: T, y: number) => void) => {
         const count = items.length;
         if (count === 0) return;
@@ -270,7 +283,7 @@ export default function RoadmapContent() {
         });
       };
 
-      // Layout Tasks
+      // Tasks
       layoutColumn(cluster.tasks, 0, (task, y) => {
         const parentProj = filteredProjects.find(p => p.id === task.projectId);
         const parentGoal = parentProj ? filteredGoals.find(g => g.id === parentProj.goalId) : undefined;
@@ -289,7 +302,7 @@ export default function RoadmapContent() {
         });
       });
 
-      // Layout Projects
+      // Projects
       layoutColumn(cluster.projects, 1, (proj, y) => {
         const parentGoal = filteredGoals.find(g => g.id === proj.goalId);
         const color = parentGoal?.lifeAreaId
@@ -308,7 +321,7 @@ export default function RoadmapContent() {
         });
       });
 
-      // Layout Goals
+      // Goals
       layoutColumn(cluster.goals, 2, (goal, y) => {
         const color = goal.lifeAreaId
           ? (AREA_COLORS[goal.lifeAreaId] ?? DEFAULT_COLOR)
@@ -327,7 +340,7 @@ export default function RoadmapContent() {
         });
       });
 
-      // Layout Dreams
+      // Dreams
       layoutColumn(cluster.dreams, 3, (dream, y) => {
         const color = dream.lifeAreaId
           ? (AREA_COLORS[dream.lifeAreaId] ?? DEFAULT_COLOR)
@@ -345,22 +358,22 @@ export default function RoadmapContent() {
         });
       });
 
-      currentY += clusterHeight + 40;
+      currentY += clusterHeight + 36;
     });
 
-    // Collision avoidance per column to guarantee no overlaps
+    // Collision avoidance
     for (let col = 0; col < 4; col++) {
       const colNodes = nodes.filter(n => n.x === COL_STARTS[col]).sort((a, b) => a.y - b.y);
       for (let i = 1; i < colNodes.length; i++) {
         const prev = colNodes[i - 1];
         const cur = colNodes[i];
-        if (cur.y < prev.y + NODE_H + 18) {
-          cur.y = prev.y + NODE_H + 18;
+        if (cur.y < prev.y + NODE_H + 16) {
+          cur.y = prev.y + NODE_H + 16;
         }
       }
     }
 
-    // Build connections
+    // Connections
     nodes.forEach(n => {
       if (n.parentId) {
         const parent = nodes.find(p => p.id === n.parentId);
@@ -387,7 +400,7 @@ export default function RoadmapContent() {
       }
     });
 
-    const maxY = nodes.reduce((m, n) => Math.max(m, n.y + NODE_H + CANVAS_PAD), 520);
+    const maxY = nodes.reduce((m, n) => Math.max(m, n.y + NODE_H + CANVAS_PAD), 500);
     return { nodes, connections, canvasHeight: maxY };
   }, [filteredTasks, filteredProjects, filteredGoals, filteredDreams, dreamProgress]);
 
@@ -399,20 +412,18 @@ export default function RoadmapContent() {
     return m;
   }, [nodes]);
 
-  // ── Focus mode: walk the full chain of a clicked node ───
+  // ── Focus chain ──────────────────────────────────────────
   const focusedChain = useMemo<Set<string> | null>(() => {
     if (!focusedNodeId) return null;
     const chain = new Set<string>();
     chain.add(focusedNodeId);
 
-    // Follow parentId upward toward Dream
     let cur: NodePosition | undefined = nodeMap[focusedNodeId];
     while (cur?.parentId) {
       chain.add(cur.parentId);
       cur = nodeMap[cur.parentId];
     }
 
-    // Follow downward toward Tasks
     const addChildren = (parentId: string) => {
       nodes.filter(n => n.parentId === parentId).forEach(n => {
         chain.add(n.id);
@@ -424,43 +435,14 @@ export default function RoadmapContent() {
     return chain;
   }, [focusedNodeId, nodes, nodeMap]);
 
-  // ── Immediate Next Action (ADHD Next Small Win) ─────────
-  const activeNextStep = useMemo(() => {
-    const activeTask = nodes.find(n => n.type === 'task' && n.status !== 'done');
-    if (!activeTask) return null;
-
-    const parentProj = activeTask.parentId ? nodeMap[activeTask.parentId] : null;
-    const parentGoal = parentProj?.parentId ? nodeMap[parentProj.parentId] : null;
-    const parentDream = parentGoal?.parentId ? nodeMap[parentGoal.parentId] : null;
-
-    return {
-      task: activeTask,
-      project: parentProj,
-      goal: parentGoal,
-      dream: parentDream,
-    };
-  }, [nodes, nodeMap]);
-
-  // Quick complete action for instant ADHD dopamine
-  const handleQuickDone = (taskId: string, taskTitle: string) => {
-    const task = nodes.find(n => n.id === taskId);
-    const prevStatus = task?.status || 'todo';
-    setLastCompletedTask({ id: taskId, title: taskTitle, prevStatus });
-    updateTaskStatus(taskId, 'done');
-    setCelebrationMsg(`Done with "${taskTitle}"`);
-  };
-
-  // Undo action for completed task (Ctrl+Z or Undo button)
+  // Undo action for completed task
   const handleUndo = useCallback(() => {
     if (!lastCompletedTask) return;
     updateTaskStatus(lastCompletedTask.id, lastCompletedTask.prevStatus || 'todo');
-    const title = lastCompletedTask.title;
     setLastCompletedTask(null);
-    setCelebrationMsg(`↺ Reverted "${title}" back to active`);
-    setTimeout(() => setCelebrationMsg(null), 3000);
   }, [lastCompletedTask, updateTaskStatus]);
 
-  // Global Ctrl+Z / Cmd+Z handler for Undo
+  // Global Ctrl+Z handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
@@ -475,7 +457,6 @@ export default function RoadmapContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lastCompletedTask, handleUndo]);
 
-  // ── Area legend ──────────────────────────────────────────
   const uniqueAreas = useMemo(() => {
     const seen = new Set<string>();
     [...filteredDreams, ...filteredGoals].forEach(item => {
@@ -484,9 +465,9 @@ export default function RoadmapContent() {
     return Array.from(seen);
   }, [filteredDreams, filteredGoals]);
 
-  // ── Pan ──────────────────────────────────────────────────
+  // Pan & Zoom
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-node]') || (e.target as HTMLElement).closest('[data-header]') || (e.target as HTMLElement).closest('[data-pill]')) return;
+    if ((e.target as HTMLElement).closest('[data-node]') || (e.target as HTMLElement).closest('[data-interactive]')) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   }, [pan]);
@@ -498,26 +479,73 @@ export default function RoadmapContent() {
 
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
-  // ── Zoom ─────────────────────────────────────────────────
   const handleWheel = useCallback((e: WheelEvent) => {
+    if (viewMode !== 'graph') return;
     e.preventDefault();
-    setZoom(z => Math.max(0.25, Math.min(2, z - e.deltaY * 0.001)));
-  }, []);
+    setZoom(z => Math.max(0.3, Math.min(1.8, z - e.deltaY * 0.001)));
+  }, [viewMode]);
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || viewMode !== 'graph') return;
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, [handleWheel]);
+  }, [handleWheel, viewMode]);
 
   const resetView = useCallback(() => {
     setPan({ x: 0, y: 0 });
-    setZoom(0.8);
+    setZoom(0.85);
     setFocusedNodeId(null);
   }, []);
 
-  // ── Bezier connection path ───────────────────────────────
+  // AI Strategy Audit
+  const handleAuditStrategy = async () => {
+    setIsAuditing(true);
+    setAuditModalOpen(true);
+    try {
+      const activeGoals = goals.filter(g => g.status !== 'archived' && g.status !== 'completed');
+      const activeProjects = projects.filter(p => p.status === 'active');
+      const unlinked = tasks.filter(t => t.status !== 'done' && !t.projectId);
+
+      const prompt = `Conduct a clean, formal 3-bullet strategic executive audit for this life/project roadmap:
+Goals (${activeGoals.length}): ${activeGoals.map(g => g.title).join(', ') || 'None'}
+Active Projects (${activeProjects.length}): ${activeProjects.map(p => `${p.title} (Goal ID: ${p.goalId || 'Unlinked'})`).join(', ') || 'None'}
+Orphan/Unlinked Tasks: ${unlinked.length} tasks without a parent project.
+Goal Coverage: ${metrics.goalCoverage}% of active goals have active projects.
+
+Format strictly as 3 concise bullet points:
+1. Alignment Health & Pipeline Balance
+2. Strategic Bottlenecks / Orphaned Work
+3. Immediate 30-Day Focus Recommendation
+Keep language professional, crisp, and clean. No emojis.`;
+
+      const systemPrompt = "You are an executive strategy advisor. Provide concise, high-signal, professional roadmap audits.";
+      let text = '';
+      if (settings?.aiSettings?.apiKey) {
+        const res = await executeOptionalAICall(prompt, systemPrompt, settings.aiSettings);
+        text = res.text;
+      }
+      
+      if (text) {
+        setAuditResult(text);
+      } else {
+        setAuditResult(
+          `• Alignment Health: ${metrics.goalCoverage}% of active goals currently have linked execution projects. Total active pipeline contains ${metrics.activeProjectCount} projects and ${metrics.activeTaskCount} tasks in flight.\n` +
+          `• Strategic Bottlenecks: Found ${metrics.unlinkedCount} standalone tasks not attached to any project. Connect these tasks to active projects to maintain traceability.\n` +
+          `• Immediate Recommendation: Focus capacity on clearing the ${metrics.pendingMilestones} imminent milestones in queue before taking on new parallel initiatives.`
+        );
+      }
+    } catch {
+      setAuditResult(
+        `• Alignment Health: ${metrics.goalCoverage}% coverage across ${metrics.activeGoalsCount} active goals.\n` +
+        `• Work In Flight: ${metrics.activeProjectCount} active projects with ${metrics.activeTaskCount} pending tasks.\n` +
+        `• Strategic Recommendation: Review unlinked items (${metrics.unlinkedCount}) to maintain full goal traceability.`
+      );
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
   function getBezierPath(from: NodePosition, to: NodePosition): string {
     const x1 = from.x + NODE_W;
     const y1 = from.y + NODE_H / 2;
@@ -537,7 +565,7 @@ export default function RoadmapContent() {
   if (!isLoaded) {
     return (
       <div className={styles.loadingScreen}>
-        <GitBranch size={28} style={{ color: 'var(--color-accent)', opacity: 0.6 }} />
+        <GitBranch size={22} style={{ color: 'var(--color-accent)', opacity: 0.6 }} />
         <p>Loading Roadmap...</p>
       </div>
     );
@@ -545,341 +573,465 @@ export default function RoadmapContent() {
 
   return (
     <div className={styles.roadmapPage}>
-      {/* ── Ultra-Slim Floating Header (Figma / Linear HUD style) ── */}
-      <div className={styles.floatingHeader} data-header="true">
-        <div className={styles.headerLeft}>
-          <button
-            type="button"
-            className={styles.navToggleBtn}
-            onClick={toggleSidebar}
-            title="Toggle left navigation (Ctrl+B)"
-          >
-            {sidebarHidden ? <PanelLeft size={13} /> : <PanelLeftClose size={13} />}
-            <span>{sidebarHidden ? 'Show Nav' : 'Hide Nav'}</span>
-          </button>
+      {/* ── Fixed Structured Top Bar ── */}
+      <header className={styles.topBar}>
+        {/* Main Row */}
+        <div className={styles.topBarMain}>
+          <div className={styles.topBarLeft}>
+            <div className={styles.pageTitleGroup}>
+              <span className={styles.pageTitle}>Roadmap</span>
+              <span className={styles.pageSubtitle}>Execution Flow</span>
+            </div>
 
-          <div className={styles.headerDivider} />
-
-          <span className={styles.pageTitle}>
-            Roadmap
-            <span className={styles.pageSub}>Task → Dream</span>
-          </span>
-
-          {/* ADHD Calm Mode & Unlinked Alert */}
-          <button
-            type="button"
-            className={`${styles.adhdBtn} ${isCalmMode ? styles.adhdBtnActive : ''}`}
-            onClick={() => setIsCalmMode(v => !v)}
-            title="ADHD Calm View: Dims distractions and isolates active path"
-          >
-            {isCalmMode ? <EyeOff size={11} /> : <Eye size={11} />}
-            <span>{isCalmMode ? 'Calm: On' : 'Calm View'}</span>
-          </button>
-
-          {unlinkedTasks.length > 0 && (
-            <Link href="/tasks" className={styles.unlinkedChip} title="Tasks without a parent project">
-              <Zap size={10} />
-              <span>{unlinkedTasks.length} unlinked</span>
-            </Link>
-          )}
-        </div>
-
-        {/* Center filters */}
-        <div className={styles.filterRow}>
-          <button
-            className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </button>
-          <button
-            className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
-            onClick={() => setFilter('active')}
-          >
-            <Sparkles size={10} /> Active
-          </button>
-          {uniqueAreas.map(areaId => (
-            <button
-              key={areaId}
-              className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
-              style={filter === areaId ? { color: AREA_COLORS[areaId] } : {}}
-              onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: AREA_COLORS[areaId] ?? DEFAULT_COLOR, display: 'inline-block' }} />
-              {AREA_LABELS[areaId] ?? areaId}
-            </button>
-          ))}
-        </div>
-
-        {/* Right controls */}
-        <div className={styles.headerRight}>
-          {focusedNodeId && (
-            <button
-              className={styles.ctrlBtn}
-              onClick={() => setFocusedNodeId(null)}
-              title="Exit Focus Mode"
-              style={{ color: 'var(--color-accent)', width: 'auto', padding: '0 8px', gap: 4 }}
-            >
-              <X size={12} /> Clear
-            </button>
-          )}
-
-          {lastCompletedTask && (
-            <button
-              type="button"
-              className={styles.adhdUndoBtn}
-              onClick={handleUndo}
-              title="Undo completed task (Ctrl+Z)"
-            >
-              <RotateCcw size={10} /> Undo
-            </button>
-          )}
-
-          <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.min(2, z + 0.1))} title="Zoom In">
-            <ZoomIn size={13} />
-          </button>
-          <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
-          <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.max(0.25, z - 0.1))} title="Zoom Out">
-            <ZoomOut size={13} />
-          </button>
-          <button className={styles.ctrlBtn} onClick={resetView} title="Reset Canvas View">
-            <Maximize2 size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Canvas viewport ── */}
-      <div
-        ref={containerRef}
-        className={`${styles.canvasViewport} ${isDragging ? styles.dragging : ''}`}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {isEmpty ? (
-          <div className={styles.emptyCanvas}>
-            <GitBranch size={36} style={{ color: 'var(--color-accent)', opacity: 0.45, marginBottom: 14 }} />
-            <p className={styles.emptyTitle}>Roadmap is empty</p>
-            <p className={styles.emptySubtitle}>
-              Add tasks, projects, goals, or dreams to connect today's tasks to your long-term vision.
-            </p>
-            <div className={styles.emptyActions}>
-              <Link href="/tasks" className={styles.emptyActionBtn}>
-                <CheckSquare size={12} /> Add Task
-              </Link>
-              <Link href="/projects" className={styles.emptyActionBtn}>
-                <FolderKanban size={12} /> Add Project
-              </Link>
-              <Link href="/goals" className={styles.emptyActionBtn}>
-                <Target size={12} /> Add Goal
-              </Link>
-              <Link href="/dreams" className={styles.emptyActionBtn}>
-                <CloudSun size={12} /> Add Dream
-              </Link>
+            {/* View Mode Switcher */}
+            <div className={styles.viewSwitcher}>
+              <button
+                type="button"
+                className={`${styles.viewBtn} ${viewMode === 'graph' ? styles.viewBtnActive : ''}`}
+                onClick={() => setViewMode('graph')}
+              >
+                Graph Flow
+              </button>
+              <button
+                type="button"
+                className={`${styles.viewBtn} ${viewMode === 'timeline' ? styles.viewBtnActive : ''}`}
+                onClick={() => setViewMode('timeline')}
+              >
+                Timeline Gantt
+              </button>
             </div>
           </div>
-        ) : (
-          <div
-            ref={canvasRef}
-            className={styles.canvas}
-            style={{
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-              transformOrigin: '0 0',
-              width: canvasWidth,
-              height: canvasHeight,
-            }}
-          >
-            {/* Dot grid */}
-            <svg
-              className={styles.dotGrid}
-              width={canvasWidth}
-              height={canvasHeight}
-              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-            >
-              <defs>
-                <pattern id="dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-                  <circle cx="1" cy="1" r="1.2" fill="currentColor" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#dotgrid)" />
-            </svg>
 
-            {/* Column Headers rendered directly on canvas */}
-            {[
-              { label: 'Tasks', icon: <CheckSquare size={11} />, col: 0 },
-              { label: 'Projects', icon: <FolderKanban size={11} />, col: 1 },
-              { label: 'Goals', icon: <Target size={11} />, col: 2 },
-              { label: 'Dreams', icon: <CloudSun size={11} />, col: 3 },
-            ].map(({ label, icon, col }) => (
-              <div
-                key={label}
-                className={styles.canvasColHeader}
-                style={{
-                  left: COL_STARTS[col] + NODE_W / 2,
-                  top: 25,
-                }}
-              >
-                {icon} {label}
+          <div className={styles.topBarRight}>
+            {/* Horizon Filter */}
+            <div className={styles.horizonControl}>
+              {(['all', '90-day', 'yearly'] as HorizonMode[]).map(h => (
+                <button
+                  key={h}
+                  type="button"
+                  className={`${styles.horizonBtn} ${horizonFilter === h ? styles.horizonBtnActive : ''}`}
+                  onClick={() => setHorizonFilter(h)}
+                >
+                  {h === 'all' ? 'All Horizons' : h === '90-day' ? '90-Day Focus' : 'Yearly'}
+                </button>
+              ))}
+            </div>
+
+            {/* Audit Button */}
+            <button
+              type="button"
+              className={styles.auditBtn}
+              onClick={handleAuditStrategy}
+            >
+              Audit Strategy
+            </button>
+
+            {/* Zoom Controls */}
+            {viewMode === 'graph' && (
+              <div className={styles.zoomControlGroup}>
+                <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.min(1.8, z + 0.1))} title="Zoom In">
+                  <ZoomIn size={12} />
+                </button>
+                <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
+                <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.max(0.3, z - 0.1))} title="Zoom Out">
+                  <ZoomOut size={12} />
+                </button>
+                <button className={styles.ctrlBtn} onClick={resetView} title="Reset View">
+                  <Maximize2 size={12} />
+                </button>
               </div>
-            ))}
+            )}
+          </div>
+        </div>
 
-            {/* SVG connections */}
-            <svg
-              className={styles.svgOverlay}
-              width={canvasWidth}
-              height={canvasHeight}
-              style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+        {/* Sub Row: Filter & Executive KPI Metrics */}
+        <div className={styles.topBarSub}>
+          <div className={styles.filterGroup}>
+            <button
+              type="button"
+              className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
+              onClick={() => setFilter('all')}
             >
-              <defs>
-                {connections.map((conn, i) => (
-                  <marker
-                    key={`arr-${i}`}
-                    id={`arrow-${i}`}
-                    markerWidth="5"
-                    markerHeight="5"
-                    refX="4"
-                    refY="2.5"
-                    orient="auto"
-                  >
-                    <path d="M0,0 L0,5 L5,2.5 z" fill={conn.color} opacity="0.8" />
-                  </marker>
-                ))}
-              </defs>
+              All Areas
+            </button>
+            <button
+              type="button"
+              className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
+              onClick={() => setFilter('active')}
+            >
+              Active Only
+            </button>
+            {uniqueAreas.map(areaId => (
+              <button
+                key={areaId}
+                type="button"
+                className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
+                onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
+              >
+                {AREA_LABELS[areaId] ?? areaId}
+              </button>
+            ))}
+          </div>
 
-              {connections.map((conn, i) => {
-                const from = nodeMap[conn.fromId];
-                const to = nodeMap[conn.toId];
-                if (!from || !to) return null;
-                const inFocus = focusedChain
-                  ? focusedChain.has(conn.fromId) && focusedChain.has(conn.toId)
-                  : null;
-                const highlighted = hoveredNode === conn.fromId || hoveredNode === conn.toId;
-                const dimmed = (focusedChain !== null && !inFocus) || (isCalmMode && !inFocus);
+          <div className={styles.metricsGroup}>
+            <div className={`${styles.metricBadge} ${metrics.goalCoverage >= 80 ? styles.metricSuccess : ''}`}>
+              <span>Goal Alignment:</span>
+              <strong>{metrics.goalCoverage}%</strong>
+            </div>
 
-                if (isCalmMode && !inFocus && focusedChain !== null) return null;
+            <div className={styles.metricDivider} />
+
+            <div className={styles.metricBadge}>
+              <span>Pipeline:</span>
+              <strong>{metrics.activeProjectCount} Projects · {metrics.activeTaskCount} Tasks</strong>
+            </div>
+
+            <div className={styles.metricDivider} />
+
+            <div className={`${styles.metricBadge} ${metrics.unlinkedCount > 0 ? styles.metricWarning : ''}`}>
+              <span>Unlinked:</span>
+              <strong>{metrics.unlinkedCount} Tasks</strong>
+            </div>
+
+            <div className={styles.metricDivider} />
+
+            <div className={styles.metricBadge}>
+              <span>Milestones:</span>
+              <strong>{metrics.pendingMilestones} in Queue</strong>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Viewport Content ── */}
+      {viewMode === 'timeline' ? (
+        <div className={styles.timelineViewport}>
+          <div className={styles.timelineGridHeader}>
+            <div>Initiative / Project</div>
+            <div className={styles.quarterHeader}>Q1 Focus</div>
+            <div className={styles.quarterHeader}>Q2 Focus</div>
+            <div className={styles.quarterHeader}>Q3 Focus</div>
+            <div className={styles.quarterHeader}>Q4 Focus</div>
+          </div>
+
+          {filteredGoals.length === 0 && filteredProjects.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+              No initiatives found for the current horizon and area filters.
+            </div>
+          ) : (
+            filteredGoals.map(goal => {
+              const linkedProjects = filteredProjects.filter(p => p.goalId === goal.id);
+              const goalColor = goal.lifeAreaId ? (AREA_COLORS[goal.lifeAreaId] ?? DEFAULT_COLOR) : DEFAULT_COLOR;
+
+              return (
+                <div key={goal.id} className={styles.goalSection}>
+                  <div className={styles.goalRow}>
+                    <div className={styles.goalInfo}>
+                      <div className={styles.goalAreaIndicator} style={{ background: goalColor }} />
+                      <span className={styles.goalTitle}>{goal.title}</span>
+                    </div>
+                    <div className={styles.goalMeta}>
+                      <span>{goal.progress ?? 0}% Complete</span>
+                      <span>·</span>
+                      <span>{linkedProjects.length} Active {linkedProjects.length === 1 ? 'Project' : 'Projects'}</span>
+                    </div>
+                  </div>
+
+                  {linkedProjects.length === 0 ? (
+                    <div className={styles.emptyGoalRow}>
+                      <span>No active execution projects linked to this goal.</span>
+                      <Link href="/projects" className={styles.addProjectLink}>+ Add Project</Link>
+                    </div>
+                  ) : (
+                    linkedProjects.map(proj => {
+                      const linkedTasksCount = tasks.filter(t => t.projectId === proj.id).length;
+                      const completedTasksCount = tasks.filter(t => t.projectId === proj.id && t.status === 'done').length;
+                      const progressVal = proj.progress ?? (linkedTasksCount > 0 ? Math.round((completedTasksCount / linkedTasksCount) * 100) : 0);
+
+                      return (
+                        <div key={proj.id} className={styles.projectRow}>
+                          <div className={styles.projectInfo}>
+                            <span className={styles.projectTitle}>{proj.title}</span>
+                            <span className={styles.projectSub}>
+                              Status: {proj.status} · {completedTasksCount}/{linkedTasksCount} Tasks
+                            </span>
+                          </div>
+
+                          <div className={styles.projectTrackWrapper}>
+                            <div className={styles.trackQuarterLine} />
+                            <div className={styles.trackQuarterLine} />
+                            <div className={styles.trackQuarterLine} />
+                            <div className={styles.trackQuarterLine} />
+                            <div
+                              className={styles.projectBar}
+                              style={{
+                                width: `${Math.max(10, progressVal)}%`,
+                                background: goalColor,
+                              }}
+                            >
+                              <span className={styles.projectBarLabel}>{progressVal}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              );
+            })
+          )}
+
+          {/* Standalone Initiatives */}
+          {filteredProjects.filter(p => !p.goalId).length > 0 && (
+            <div className={styles.goalSection}>
+              <div className={styles.goalRow}>
+                <div className={styles.goalInfo}>
+                  <div className={styles.goalAreaIndicator} style={{ background: '#f5a623' }} />
+                  <span className={styles.goalTitle}>Unlinked Initiatives</span>
+                </div>
+                <div className={styles.goalMeta}>
+                  <span>{filteredProjects.filter(p => !p.goalId).length} Projects without Parent Goal</span>
+                </div>
+              </div>
+
+              {filteredProjects.filter(p => !p.goalId).map(proj => {
+                const linkedTasksCount = tasks.filter(t => t.projectId === proj.id).length;
+                const completedTasksCount = tasks.filter(t => t.projectId === proj.id && t.status === 'done').length;
+                const progressVal = proj.progress ?? (linkedTasksCount > 0 ? Math.round((completedTasksCount / linkedTasksCount) * 100) : 0);
 
                 return (
-                  <path
-                    key={`conn-${i}`}
-                    d={getBezierPath(from, to)}
-                    fill="none"
-                    stroke={conn.color}
-                    strokeWidth={highlighted || inFocus ? 2.2 : 1.4}
-                    strokeOpacity={dimmed ? 0.03 : highlighted || inFocus ? 0.95 : 0.4}
-                    markerEnd={`url(#arrow-${i})`}
-                    className={styles.connectionPath}
-                    style={{ transition: 'stroke-opacity 0.2s, stroke-width 0.2s' }}
+                  <div key={proj.id} className={styles.projectRow}>
+                    <div className={styles.projectInfo}>
+                      <span className={styles.projectTitle}>{proj.title}</span>
+                      <span className={styles.projectSub}>
+                        Status: {proj.status} · {completedTasksCount}/{linkedTasksCount} Tasks
+                      </span>
+                    </div>
+
+                    <div className={styles.projectTrackWrapper}>
+                      <div className={styles.trackQuarterLine} />
+                      <div className={styles.trackQuarterLine} />
+                      <div className={styles.trackQuarterLine} />
+                      <div className={styles.trackQuarterLine} />
+                      <div
+                        className={styles.projectBar}
+                        style={{
+                          width: `${Math.max(10, progressVal)}%`,
+                          background: '#f5a623',
+                        }}
+                      >
+                        <span className={styles.projectBarLabel}>{progressVal}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Canvas Viewport: Graph Flow ── */
+        <div
+          ref={containerRef}
+          className={`${styles.canvasViewport} ${isDragging ? styles.dragging : ''}`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {isEmpty ? (
+            <div className={styles.emptyCanvas}>
+              <GitBranch size={28} style={{ color: 'var(--color-accent)', opacity: 0.5, marginBottom: 10 }} />
+              <p className={styles.emptyTitle}>Roadmap is empty</p>
+              <p className={styles.emptySubtitle}>
+                Add tasks, projects, goals, or dreams to establish your strategy blueprint.
+              </p>
+              <div className={styles.emptyActions}>
+                <Link href="/tasks" className={styles.emptyActionBtn}>Add Task</Link>
+                <Link href="/projects" className={styles.emptyActionBtn}>Add Project</Link>
+                <Link href="/goals" className={styles.emptyActionBtn}>Add Goal</Link>
+                <Link href="/dreams" className={styles.emptyActionBtn}>Add Dream</Link>
+              </div>
+            </div>
+          ) : (
+            <div
+              ref={canvasRef}
+              className={styles.canvas}
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: '0 0',
+                width: canvasWidth,
+                height: canvasHeight,
+              }}
+            >
+              {/* Dot Grid Background */}
+              <svg
+                className={styles.dotGrid}
+                width={canvasWidth}
+                height={canvasHeight}
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+              >
+                <defs>
+                  <pattern id="dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+                    <circle cx="1" cy="1" r="1.1" fill="currentColor" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#dotgrid)" />
+              </svg>
+
+              {/* Column Headers on Canvas */}
+              {[
+                { label: '1. Daily Tasks', col: 0 },
+                { label: '2. Projects', col: 1 },
+                { label: '3. Strategic Goals', col: 2 },
+                { label: '4. Vision & Dreams', col: 3 },
+              ].map(({ label, col }) => (
+                <div
+                  key={label}
+                  className={styles.canvasColHeader}
+                  style={{
+                    left: COL_STARTS[col] + NODE_W / 2,
+                    top: 20,
+                  }}
+                >
+                  {label}
+                </div>
+              ))}
+
+              {/* SVG Connections */}
+              <svg
+                className={styles.svgOverlay}
+                width={canvasWidth}
+                height={canvasHeight}
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+              >
+                <defs>
+                  {connections.map((conn, i) => (
+                    <marker
+                      key={`arr-${i}`}
+                      id={`arrow-${i}`}
+                      markerWidth="5"
+                      markerHeight="5"
+                      refX="4"
+                      refY="2.5"
+                      orient="auto"
+                    >
+                      <path d="M0,0 L0,5 L5,2.5 z" fill={conn.color} opacity="0.8" />
+                    </marker>
+                  ))}
+                </defs>
+
+                {connections.map((conn, i) => {
+                  const from = nodeMap[conn.fromId];
+                  const to = nodeMap[conn.toId];
+                  if (!from || !to) return null;
+                  const inFocus = focusedChain
+                    ? focusedChain.has(conn.fromId) && focusedChain.has(conn.toId)
+                    : null;
+                  const highlighted = hoveredNode === conn.fromId || hoveredNode === conn.toId;
+                  const dimmed = focusedChain !== null && !inFocus;
+
+                  return (
+                    <path
+                      key={`conn-${i}`}
+                      d={getBezierPath(from, to)}
+                      fill="none"
+                      stroke={conn.color}
+                      strokeWidth={highlighted || inFocus ? 2 : 1.2}
+                      strokeOpacity={dimmed ? 0.04 : highlighted || inFocus ? 0.95 : 0.35}
+                      markerEnd={`url(#arrow-${i})`}
+                      className={styles.connectionPath}
+                      style={{ transition: 'stroke-opacity 0.2s, stroke-width 0.2s' }}
+                    />
+                  );
+                })}
+              </svg>
+
+              {/* Nodes */}
+              {nodes.map(node => {
+                const inFocus = focusedChain !== null ? focusedChain.has(node.id) : null;
+
+                return (
+                  <RoadmapNodeCard
+                    key={node.id}
+                    node={node}
+                    isHovered={hoveredNode === node.id}
+                    isConnected={
+                      hoveredNode != null &&
+                      connections.some(
+                        c => (c.fromId === hoveredNode && c.toId === node.id) ||
+                          (c.toId === hoveredNode && c.fromId === node.id)
+                      )
+                    }
+                    isFocused={inFocus}
+                    focusedNodeId={focusedNodeId}
+                    onHover={setHoveredNode}
+                    onFocus={setFocusedNodeId}
                   />
                 );
               })}
-            </svg>
+            </div>
+          )}
 
-            {/* Node cards */}
-            {nodes.map(node => {
-              const inFocus = focusedChain !== null ? focusedChain.has(node.id) : null;
-              if (isCalmMode && inFocus === false) return null;
-
-              return (
-                <RoadmapNodeCard
-                  key={node.id}
-                  node={node}
-                  isHovered={hoveredNode === node.id}
-                  isConnected={
-                    hoveredNode != null &&
-                    connections.some(
-                      c => (c.fromId === hoveredNode && c.toId === node.id) ||
-                        (c.toId === hoveredNode && c.fromId === node.id)
-                    )
-                  }
-                  isFocused={inFocus}
-                  focusedNodeId={focusedNodeId}
-                  onHover={setHoveredNode}
-                  onFocus={setFocusedNodeId}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Sleek Floating ADHD Action Pill with Undo ── */}
-        {(celebrationMsg || focusedNodeId || activeNextStep) && (
-          <div className={styles.adhdFloatingPill} data-pill="true">
-            {celebrationMsg ? (
-              <div className={styles.adhdCelebration}>
-                <Sparkles size={13} />
-                <span>{celebrationMsg}</span>
-                {lastCompletedTask && (
-                  <button
-                    type="button"
-                    className={styles.adhdUndoBtn}
-                    onClick={handleUndo}
-                    title="Undo (Ctrl+Z)"
-                  >
-                    <RotateCcw size={10} /> Undo (Ctrl+Z)
-                  </button>
-                )}
-              </div>
-            ) : focusedNodeId && nodeMap[focusedNodeId] ? (
-              <>
-                <span className={styles.adhdTag}>Focus Path</span>
-                <div className={styles.adhdPathText}>
-                  <span className={styles.adhdHighlight}>{nodeMap[focusedNodeId].title}</span>
-                  {nodeMap[focusedNodeId].progress !== undefined && (
-                    <span style={{ color: nodeMap[focusedNodeId].color }}>({nodeMap[focusedNodeId].progress}%)</span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className={styles.adhdFocusBtn}
-                  onClick={() => setFocusedNodeId(null)}
-                >
-                  <X size={10} /> Clear Focus
-                </button>
-              </>
-            ) : activeNextStep ? (
-              <>
-                <span className={styles.adhdTag}>Next Win</span>
-                <div className={styles.adhdPathText}>
-                  <span className={styles.adhdHighlight}>{activeNextStep.task.title}</span>
-                  {activeNextStep.dream && (
-                    <>
-                      <span>➔</span>
-                      <span style={{ color: activeNextStep.dream.color }}>{activeNextStep.dream.title}</span>
-                    </>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className={styles.adhdFocusBtn}
-                  onClick={() => setFocusedNodeId(activeNextStep.task.id)}
-                  title="Isolate this thread and dim all background distractions"
-                >
-                  <Target size={10} /> Focus Path
-                </button>
-                <button
-                  type="button"
-                  className={styles.adhdDoneBtn}
-                  onClick={() => handleQuickDone(activeNextStep.task.id, activeNextStep.task.title)}
-                  title="Mark task done directly (Undo with Ctrl+Z)"
-                >
-                  <Check size={11} /> Done
-                </button>
-              </>
-            ) : null}
-          </div>
-        )}
-
-        {/* Minimal Corner Hint */}
-        <div className={styles.canvasHintBadge}>
-          <span>💡 Scroll to zoom · Drag to pan · Undo: Ctrl+Z</span>
+          {/* Focus Bar (Bottom Center) */}
+          {focusedNodeId && nodeMap[focusedNodeId] && (
+            <div className={styles.focusBar} data-interactive="true">
+              <span className={styles.focusTag}>Focused Thread</span>
+              <span className={styles.focusText}>{nodeMap[focusedNodeId].title}</span>
+              <button
+                type="button"
+                className={styles.focusClearBtn}
+                onClick={() => setFocusedNodeId(null)}
+              >
+                <X size={10} /> Clear
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* ── AI Strategy Audit Modal ── */}
+      {auditModalOpen && (
+        <div className={styles.auditOverlay} onClick={() => setAuditModalOpen(false)}>
+          <div className={styles.auditCard} onClick={e => e.stopPropagation()}>
+            <div className={styles.auditHeader}>
+              <span className={styles.auditTitle}>Executive Strategy Audit</span>
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={() => setAuditModalOpen(false)}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className={styles.auditBody}>
+              {isAuditing ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                  Analyzing goal alignment, orphaned pipelines, and execution capacity...
+                </div>
+              ) : (
+                auditResult
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                type="button"
+                className={styles.emptyActionBtn}
+                onClick={() => setAuditModalOpen(false)}
+              >
+                Close Audit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── RoadmapNodeCard: Formal, Clean, Polished ───────────────────────
+// ── Node Card Component ──────────────────────────────────────────
 interface NodeCardProps {
   node: NodePosition;
   isHovered: boolean;
@@ -890,12 +1042,6 @@ interface NodeCardProps {
   onFocus: (id: string | null) => void;
 }
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  dream:   <CloudSun size={11} />,
-  goal:    <Target size={11} />,
-  project: <FolderKanban size={11} />,
-  task:    <CheckSquare size={11} />,
-};
 const TYPE_LABELS: Record<string, string> = {
   dream:   'Dream',
   goal:    'Goal',
@@ -927,7 +1073,7 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
   return (
     <div
       data-node="true"
-      className={`${styles.nodeCard} ${isHovered ? styles.nodeHovered : ''} ${isConnected ? styles.nodeConnected : ''}`}
+      className={styles.nodeCard}
       style={{
         left: node.x,
         top: node.y,
@@ -935,25 +1081,18 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         minHeight: NODE_H,
         borderColor: highlighted ? node.color : undefined,
         boxShadow: isHovered || isFocused === true
-          ? `0 0 0 2px ${node.color}, var(--shadow-md)`
-          : isConnected
-            ? `0 0 0 1px ${node.color}60, var(--shadow-sm)`
-            : undefined,
+          ? `0 0 0 2px ${node.color}50, var(--shadow-md)`
+          : undefined,
         opacity: dimmed ? 0.12 : 1,
-        transition: 'opacity 0.2s ease, box-shadow 0.18s ease, transform 0.15s ease, border-color 0.18s ease',
-        cursor: 'pointer',
       }}
       onMouseEnter={() => onHover(node.id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onFocus(focusedNodeId === node.id ? null : node.id)}
     >
-      {/* Accent bar on left edge */}
       <div className={styles.nodeAccentBar} style={{ background: node.color }} />
 
-      {/* Header */}
       <div className={styles.nodeHeader}>
         <span className={styles.nodeTypeBadge} style={{ color: node.color, borderColor: `${node.color}35`, background: `${node.color}15` }}>
-          {TYPE_ICONS[node.type]}
           {TYPE_LABELS[node.type]}
         </span>
         {node.status && (
@@ -973,10 +1112,8 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         </Link>
       </div>
 
-      {/* Title */}
       <div className={styles.nodeTitle}>{node.title}</div>
 
-      {/* Progress bar */}
       {node.progress !== undefined && (
         <div className={styles.nodeProgressArea}>
           <div className={styles.nodeProgressTrack}>
@@ -991,7 +1128,6 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         </div>
       )}
 
-      {/* Port dots */}
       <div className={styles.portOut} style={{ background: node.color }} />
       <div className={styles.portIn} style={{ background: node.color }} />
     </div>

@@ -22,7 +22,10 @@ import {
   Loader2,
   Wand2,
   CheckCircle2,
+  Mic,
+  MicOff,
 } from 'lucide-react';
+import { useSpeechToText } from '@/utils/useSpeechToText';
 import { useInbox } from '@/context/InboxContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
@@ -130,6 +133,13 @@ export default function InboxPage() {
     setIsBulkOpen(false);
   };
 
+  // Voice brain dump
+  const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
+    onTranscript: (spokenText) => {
+      setQuickInput((prev) => (prev ? `${prev} ${spokenText}` : spokenText));
+    },
+  });
+
   const currentList =
     filterTab === 'inbox'
       ? activeItems
@@ -150,32 +160,59 @@ export default function InboxPage() {
       </header>
 
       {/* ── Fast Brain Dump Capture Bar ── */}
-      <form onSubmit={handleQuickSubmit} className={styles.dumpCard}>
-        <div className={styles.dumpRow}>
+      <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
+        <div className={styles.quickAddRow}>
+          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
           <input
             type="text"
-            className={styles.dumpInput}
+            className={styles.quickAddInput}
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
-            placeholder="Dump a thought, task, idea, or reminder..."
+            placeholder={isListening ? 'Listening to voice...' : 'Dump a thought, task, idea, or reminder...'}
             autoFocus
           />
-          <button type="submit" className={styles.dumpBtn}>
-            Capture ↵
+          {speechSupported && (
+            <button
+              type="button"
+              className={styles.pillSelect}
+              onClick={toggleListening}
+              style={{
+                background: isListening ? 'var(--color-danger, #ef4444)' : 'var(--color-surface-2)',
+                color: isListening ? '#ffffff' : 'var(--color-text)',
+                padding: '6px 12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                height: '36px',
+              }}
+              title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+              aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+            >
+              {isListening ? <MicOff size={15} /> : <Mic size={15} />}
+              <span style={{ fontSize: '12px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
+            </button>
+          )}
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
           </button>
         </div>
 
-        {/* Multi-line dump accordion toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed var(--color-border-subtle)', paddingTop: 'var(--space-2)' }}>
-          <button
-            type="button"
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', fontSize: '11px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-            onClick={() => setIsBulkOpen(!isBulkOpen)}
-          >
-            {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
-          </button>
+        {/* Quick Add Meta Row */}
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <button
+              type="button"
+              className={styles.pillSelect}
+              onClick={() => setIsBulkOpen(!isBulkOpen)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
+              {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
+            </button>
+          </div>
+
           <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Quick capture
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
           </span>
         </div>
 
@@ -189,7 +226,7 @@ export default function InboxPage() {
             />
             <button
               type="button"
-              className={styles.dumpBtn}
+              className={styles.quickAddBtn}
               style={{ alignSelf: 'flex-end' }}
               onClick={handleBulkSubmit}
             >
@@ -237,9 +274,13 @@ export default function InboxPage() {
                   padding: '6px 14px', borderRadius: '10px',
                 }}
               >
-                {isAiProcessing
-                  ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
-                  : <><Wand2 size={13} /> ✨ AI Process All</>}
+                {isAiProcessing ? (
+                  <>
+                    <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Processing...
+                  </>
+                ) : (
+                  'AI Process All'
+                )}
               </button>
             )}
             <button

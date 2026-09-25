@@ -75,10 +75,9 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(REVIEWS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setReviews(parsed);
-        else setReviews(DEFAULT_WEEKLY_REVIEWS);
+        setReviews(Array.isArray(parsed) ? parsed : []);
       } else {
-        setReviews(DEFAULT_WEEKLY_REVIEWS);
+        setReviews([]);
       }
     } catch (err) {
       console.error('Failed to load weekly reviews:', err);

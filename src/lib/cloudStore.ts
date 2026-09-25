@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, writeBatch, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
 import { readUpdateMeta, touchUpdateMeta } from './localStore';
 
@@ -12,6 +12,7 @@ let pending = new Map<string, string>();
 let pendingDeletions = new Set<string>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 let patched = false;
+let unsubscribeSnapshot: (() => void) | null = null;
 
 function kvRef(uid: string, key: string) {
   return doc(getFirebaseDb(), 'users', uid, 'kv', key);
@@ -72,7 +73,6 @@ export async function flushCloudNow(): Promise<void> {
     console.warn('[LifeOS] Cloud flush failed, will retry:', err);
     entriesToSet.forEach(([k, v]) => pending.set(k, v));
     entriesToDelete.forEach((k) => pendingDeletions.add(k));
-    // Schedule a retry
     scheduleFlush();
   }
 }
@@ -90,7 +90,7 @@ function patchLocalStorage() {
 
   Storage.prototype.setItem = function patchedSetItem(key: string, value: string) {
     rawSetItem.call(this, key, value);
-    if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && activeUid) {
+    if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && key !== 'life_os_active_uid' && activeUid) {
       touchUpdateMeta(key);
       pendingDeletions.delete(key);
       pending.set(key, value);
@@ -105,7 +105,7 @@ function patchLocalStorage() {
   if (rawRemoveItem) {
     Storage.prototype.removeItem = function patchedRemoveItem(key: string) {
       rawRemoveItem.call(this, key);
-      if (this === localStorage && key.startsWith(PREFIX) && activeUid) {
+      if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && key !== 'life_os_active_uid' && activeUid) {
         pending.delete(key);
         pendingDeletions.add(key);
         scheduleFlush();
@@ -118,8 +118,10 @@ function patchLocalStorage() {
       if (this === localStorage && activeUid) {
         const local = snapshotLocal();
         local.forEach(([k]) => {
-          pending.delete(k);
-          pendingDeletions.add(k);
+          if (k !== 'life_os_kv_updated_v1' && k !== 'life_os_active_uid') {
+            pending.delete(k);
+            pendingDeletions.add(k);
+          }
         });
         scheduleFlush();
       }
@@ -130,7 +132,7 @@ function patchLocalStorage() {
 
 /**
  * Hydrates local storage from Firestore.
- * If Firestore already has user data, syncs the cloud state.
+ * If Firestore already has user data, syncs the cloud state to localStorage.
  */
 export async function hydrateFromCloud(uid: string): Promise<void> {
   // Check if last active user was different to isolate user data
@@ -154,7 +156,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   }
 
   const fetchDocsPromise = getDocs(collection(getFirebaseDb(), 'users', uid, 'kv'));
-  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000));
   
   const snap = await Promise.race([fetchDocsPromise, timeoutPromise]);
   if (!snap) {
@@ -167,45 +169,26 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 
   const meta = readUpdateMeta();
 
-  if (snap.empty) {
-    const local = snapshotLocal();
-    void Promise.all(
-      local.map(([key, value]) =>
-        setDoc(kvRef(uid, key), { v: value, updatedAt: meta[key] || Date.now() })
-      )
-    ).catch(() => {});
-    activeUid = uid;
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
-    }
-    return;
+  if (!snap.empty) {
+    snap.forEach((item) => {
+      const value = item.data().v;
+      if (typeof value !== 'string') return;
+      const cloudAt = Number(item.data().updatedAt) || 0;
+      const localValue = localStorage.getItem(item.id);
+      const localAt = meta[item.id] || 0;
+
+      // Cloud data wins on hydration unless local has a pending uncommitted write that is strictly newer
+      if (localValue === null || cloudAt >= localAt || !pending.has(item.id)) {
+        if (rawSetItem) rawSetItem.call(localStorage, item.id, value);
+        touchUpdateMeta(item.id, cloudAt || Date.now());
+      }
+    });
   }
 
-  snap.forEach((item) => {
-    const value = item.data().v;
-    if (typeof value !== 'string') return;
-    const localValue = localStorage.getItem(item.id);
-    const cloudAt = Number(item.data().updatedAt) || 0;
-    const localAt = meta[item.id] || 0;
-
-    if (localValue !== null && (localAt >= cloudAt || localAt === 0)) {
-      pending.set(item.id, localValue);
-      if (localAt === 0) touchUpdateMeta(item.id);
-      return;
-    }
-
-    if (rawSetItem) rawSetItem.call(localStorage, item.id, value);
-    touchUpdateMeta(item.id, cloudAt || Date.now());
-  });
-
-  snapshotLocal().forEach(([key, value]) => {
-    if (!snap.docs.some((d) => d.id === key)) {
-      pending.set(key, value);
-    }
-  });
-
   activeUid = uid;
-  await flushCloudNow();
+  if (pending.size > 0 || pendingDeletions.size > 0) {
+    await flushCloudNow();
+  }
 
   // Notify all components that cloud data is loaded
   if (typeof window !== 'undefined') {
@@ -214,20 +197,75 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 }
 
 export function startCloudSync(uid: string) {
+  if (activeUid === uid && unsubscribeSnapshot) {
+    return;
+  }
+
+  if (unsubscribeSnapshot) {
+    unsubscribeSnapshot();
+    unsubscribeSnapshot = null;
+  }
+
   activeUid = uid;
   patchLocalStorage();
 
-  // Snapshot ALL existing life_os_ keys and queue them for upload.
-  // This catches any data written to localStorage BEFORE the patch was active
-  // (e.g., initial default data written during app startup or context init).
-  const existing = snapshotLocal();
-  existing.forEach(([key, value]) => {
-    if (!pending.has(key)) {
-      pending.set(key, value);
-    }
-  });
-  if (existing.length > 0) {
-    scheduleFlush();
+  // Attach real-time Firestore listener so changes on other devices sync instantly
+  try {
+    const db = getFirebaseDb();
+    const kvCollection = collection(db, 'users', uid, 'kv');
+    
+    unsubscribeSnapshot = onSnapshot(
+      kvCollection,
+      (snap) => {
+        let hasChanges = false;
+        const meta = readUpdateMeta();
+
+        snap.docChanges().forEach((change) => {
+          const key = change.doc.id;
+          if (!key.startsWith(PREFIX) || key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') {
+            return;
+          }
+
+          if (change.type === 'removed') {
+            if (!pending.has(key) && !pendingDeletions.has(key)) {
+              if (typeof localStorage !== 'undefined' && localStorage.getItem(key) !== null) {
+                if (rawRemoveItem) rawRemoveItem.call(localStorage, key);
+                else localStorage.removeItem(key);
+                hasChanges = true;
+              }
+            }
+          } else if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data();
+            const cloudVal = data?.v;
+            const cloudAt = Number(data?.updatedAt) || 0;
+
+            if (typeof cloudVal !== 'string') return;
+            if (pending.has(key)) return; // Skip if we have an un-flushed local edit
+
+            const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+            const localAt = meta[key] || 0;
+
+            if (localVal === null || localVal !== cloudVal) {
+              if (cloudAt >= localAt || localVal === null) {
+                if (rawSetItem) rawSetItem.call(localStorage, key, cloudVal);
+                else localStorage.setItem(key, cloudVal);
+                touchUpdateMeta(key, cloudAt || Date.now());
+                hasChanges = true;
+              }
+            }
+          }
+        });
+
+        if (hasChanges && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+        }
+      },
+      (err) => {
+        console.warn('[LifeOS] Realtime sync listener warning:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('[LifeOS] Could not start realtime sync listener:', err);
   }
 
   if (typeof window === 'undefined' || (window as Window & { __lifeOsFlushBound?: boolean }).__lifeOsFlushBound) {
@@ -245,6 +283,10 @@ export function startCloudSync(uid: string) {
 }
 
 export async function stopCloudSync() {
+  if (unsubscribeSnapshot) {
+    unsubscribeSnapshot();
+    unsubscribeSnapshot = null;
+  }
   await flushCloudNow();
   activeUid = null;
 }

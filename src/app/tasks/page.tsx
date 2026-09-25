@@ -91,6 +91,14 @@ export default function TasksPage() {
   const [breakdownTargetTask, setBreakdownTargetTask] = useState<Task | null>(null);
   const [breakdownStepsText, setBreakdownStepsText] = useState('');
 
+  // Collapsible subtask checklists
+  const [expandedTasksMap, setExpandedTasksMap] = useState<Record<string, boolean>>({});
+
+  const toggleTaskSubtasksExpand = (taskId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setExpandedTasksMap((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
+  };
+
   // Inline Subtask Adder states (taskId -> newSubtaskTitle)
   const [activeSubtaskTaskId, setActiveSubtaskTaskId] = useState<string | null>(null);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -509,6 +517,17 @@ export default function TasksPage() {
                                     <ListTree size={10} /> Compound
                                   </span>
                                 )}
+                                {task.subtasks.length > 0 && (
+                                  <button
+                                    type="button"
+                                    className={styles.subtaskBadgeBtn}
+                                    onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
+                                    title="Toggle subtask checklist"
+                                  >
+                                    <span>{completedSubs}/{task.subtasks.length} steps</span>
+                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? '▲' : '▼'}</span>
+                                  </button>
+                                )}
                               </div>
                               {task.description && (
                                 <p className={styles.taskDesc}>{task.description}</p>
@@ -521,12 +540,22 @@ export default function TasksPage() {
                           </span>
                         </div>
 
-                        {/* ── Subtask Progress Mini-bar ── */}
+                        {/* ── Subtask Progress Mini-bar (Interactive Toggle) ── */}
                         {task.subtasks.length > 0 && (
-                          <div>
+                          <button
+                            type="button"
+                            className={styles.subtaskCollapseTrigger}
+                            onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
+                            title={expandedTasksMap[task.id] ? 'Collapse subtasks' : 'Expand subtasks'}
+                          >
                             <div className={styles.subtaskProgressHeader}>
-                              <span>Steps Breakdown</span>
-                              <span style={{ fontWeight: 600 }}>{completedSubs}/{task.subtasks.length} ({subPercent}%)</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <ListTree size={11} style={{ color: 'var(--color-accent)' }} />
+                                <span>Steps Breakdown</span>
+                              </span>
+                              <span style={{ fontWeight: 600 }}>
+                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
+                              </span>
                             </div>
                             <div className={styles.subtaskMiniBar}>
                               <div
@@ -534,11 +563,11 @@ export default function TasksPage() {
                                 style={{ width: `${subPercent}%` }}
                               />
                             </div>
-                          </div>
+                          </button>
                         )}
 
-                        {/* ── Subtasks Section ── */}
-                        {task.subtasks.length > 0 && (
+                        {/* ── Subtasks Section (Collapsible) ── */}
+                        {task.subtasks.length > 0 && expandedTasksMap[task.id] && (
                           <div className={styles.subtasksBox}>
                             {task.subtasks.map((sub) => (
                               <div
@@ -708,18 +737,18 @@ export default function TasksPage() {
                                   background: 'transparent',
                                   border: '1px dashed var(--color-border)',
                                   borderRadius: 'var(--radius-sm)',
-                                  padding: '1px 6px',
-                                  fontSize: '10px',
+                                  padding: '2px 6px',
                                   color: 'var(--color-text-faint)',
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '3px',
+                                  justifyContent: 'center',
                                 }}
                                 onClick={() => openEditModal(task)}
-                                title="Add target deadline for calendar"
+                                title="Add to Calendar"
+                                aria-label="Add to Calendar"
                               >
-                                <Calendar size={11} /> + Add to Calendar
+                                <Calendar size={12} />
                               </button>
                             )}
 

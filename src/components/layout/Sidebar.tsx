@@ -14,7 +14,6 @@ import {
 import { NAV_SECTIONS } from '@/config/navigation';
 import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
-import { useReminders } from '@/context/ReminderContext';
 import { useAuth } from '@/context/AuthContext';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
@@ -40,7 +39,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { settings } = useSettings();
-  const { unreadCount } = useReminders();
   const { logout, user } = useAuth();
 
   const [moreOpen, setMoreOpen] = useState(true);
@@ -120,9 +118,6 @@ export default function Sidebar({
               title="Alerts & Reminders"
             >
               <span>Alerts</span>
-              {unreadCount > 0 && (
-                <span className={styles.bellCountBadge}>{unreadCount}</span>
-              )}
             </button>
           </div>
         </div>

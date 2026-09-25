@@ -58,6 +58,7 @@ interface TodayPlanContextType {
   removeFromToday: (taskId: string) => void;
   setScheduledTime: (taskId: string, slot: string) => void;
   clearScheduledTime: (taskId: string) => void;
+  batchApplyDayPlan: (params: { mainFocusTaskId?: string | null; selectedTaskIds: string[]; scheduledSlots: Record<string, string> }) => void;
   resetToDefaultPlan: () => void;
   isLoaded: boolean;
 }
@@ -159,6 +160,22 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const batchApplyDayPlan = (params: {
+    mainFocusTaskId?: string | null;
+    selectedTaskIds: string[];
+    scheduledSlots: Record<string, string>;
+  }) => {
+    savePlan({
+      ...todayPlan,
+      mainFocusTaskId: params.mainFocusTaskId !== undefined ? params.mainFocusTaskId : todayPlan.mainFocusTaskId,
+      selectedTaskIds: Array.from(new Set([...todayPlan.selectedTaskIds, ...params.selectedTaskIds])),
+      scheduledSlots: {
+        ...todayPlan.scheduledSlots,
+        ...params.scheduledSlots,
+      },
+    });
+  };
+
   const resetToDefaultPlan = () => {
     savePlan(DEFAULT_TODAY_PLAN);
   };
@@ -243,6 +260,7 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
         removeFromToday,
         setScheduledTime,
         clearScheduledTime,
+        batchApplyDayPlan,
         resetToDefaultPlan,
         isLoaded: isLoaded && tasksLoaded,
       }}

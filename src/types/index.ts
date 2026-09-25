@@ -22,7 +22,7 @@ export type PlanningStyle =
   | 'kanban'
   | 'weekly-focus';
 
-export type AppTheme = 'dark' | 'light' | 'nature' | 'system';
+export type AppTheme = 'dark' | 'light' | 'nature' | 'cyber' | 'system';
 
 export interface WorkingHours {
   start: string;       // e.g. "09:00"
@@ -74,6 +74,15 @@ export type AIProvider =
   | 'anthropic'
   | 'custom';
 
+export interface SavedApiKey {
+  id: string;
+  name: string;        // e.g. "Primary Studio Key", "Backup Key 2"
+  apiKey: string;      // API Key string
+  provider: AIProvider;
+  model?: string;
+  createdAt?: string;
+}
+
 export interface AISettings {
   enabled: boolean;
   provider: AIProvider;
@@ -84,6 +93,9 @@ export interface AISettings {
   spentBudgetUSD: number;
   totalTokensUsed: number;
   temperature: number;
+  autoFailover?: boolean;     // Auto-switch to next saved API key on 429 rate limit or quota limit
+  savedKeys?: SavedApiKey[];  // Multi-key vault for zero-friction switching and auto-failover
+  activeKeyId?: string;       // Active saved key identifier
 }
 
 export interface UserSettings {

@@ -53,8 +53,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Project>(PROJECTS_STORAGE_KEY);
-      if (parsed && parsed.length > 0) setProjects(parsed);
-      else if (!parsed) setProjects(DEFAULT_PROJECTS);
+      setProjects(parsed || []);
     } catch (err) {
       console.error('Failed to load Life OS projects:', err);
     }

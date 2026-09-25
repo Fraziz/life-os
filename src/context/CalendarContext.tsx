@@ -81,6 +81,7 @@ interface CalendarContextType {
   updateEvent: (id: string, partial: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
   scheduleTaskBlock: (taskId: string, date: string, startTime: string, durationMinutes: number, notes?: string) => void;
+  batchScheduleTaskBlocks: (blocks: { taskId: string; date: string; startTime: string; durationMinutes: number; notes?: string }[]) => void;
   removeScheduledBlock: (id: string) => void;
   getDeadlinesForDate: (dateStr: string) => DeadlineItem[];
   getScheduledBlocksForDate: (dateStr: string) => ScheduledWorkBlock[];
@@ -104,12 +105,10 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsedEvents = loadJsonArray<CalendarEvent>(EVENTS_STORAGE_KEY);
-      if (parsedEvents && parsedEvents.length > 0) setEvents(parsedEvents);
-      else if (!parsedEvents) setEvents(DEFAULT_CALENDAR_EVENTS);
+      setEvents(parsedEvents || []);
 
       const parsedBlocks = loadJsonArray<ScheduledWorkBlock>(BLOCKS_STORAGE_KEY);
-      if (parsedBlocks && parsedBlocks.length > 0) setScheduledBlocks(parsedBlocks);
-      else if (!parsedBlocks) setScheduledBlocks(DEFAULT_SCHEDULED_BLOCKS);
+      setScheduledBlocks(parsedBlocks || []);
     } catch (err) {
       console.error('Failed to load Calendar data:', err);
     }
@@ -183,6 +182,26 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     saveBlocks([newBlock, ...scheduledBlocks]);
+  };
+
+  const batchScheduleTaskBlocks = (
+    blocks: { taskId: string; date: string; startTime: string; durationMinutes: number; notes?: string }[]
+  ) => {
+    const newBlocks: ScheduledWorkBlock[] = blocks.map((b, idx) => {
+      const targetTask = tasks.find((t) => t.id === b.taskId);
+      return {
+        id: `block-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        taskId: b.taskId,
+        taskTitle: targetTask ? targetTask.title : 'Scheduled Task',
+        date: b.date,
+        startTime: b.startTime,
+        durationMinutes: b.durationMinutes,
+        notes: b.notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveBlocks([...newBlocks, ...scheduledBlocks]);
   };
 
   const removeScheduledBlock = (id: string) => {
@@ -274,6 +293,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         updateEvent,
         deleteEvent,
         scheduleTaskBlock,
+        batchScheduleTaskBlocks,
         removeScheduledBlock,
         getDeadlinesForDate,
         getScheduledBlocksForDate,

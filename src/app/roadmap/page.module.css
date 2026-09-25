@@ -1,11 +1,11 @@
 /* 
-   LIFE ROADMAP  Full-Screen Blueprint & Node Graph
-   Theme-adaptive styles supporting Light, Dark, and Nature themes flawlessly.
+   EXECUTIVE ROADMAP DESIGN SYSTEM
+   High-density, formal, clean SaaS interface inspired by Linear and Jira Roadmaps.
 */
 
-/* Full-screen page container */
 .roadmapPage {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
   overflow: hidden;
@@ -13,87 +13,192 @@
   user-select: none;
 }
 
-/* Floating Minimal Header (Linear / Figma style HUD) */
-.floatingHeader {
-  position: absolute;
-  top: 14px;
-  left: 20px;
-  right: 20px;
+/* ── Fixed Structured Top Bar ── */
+.topBar {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   z-index: 30;
+  flex-shrink: 0;
+}
+
+.topBarMain {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: 6px 14px;
-  background: var(--color-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-lg);
-  pointer-events: auto;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 12px 24px 12px 56px; /* 56px left padding clears the sidebar toggle icon */
+  gap: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.headerLeft {
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pageTitleGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pageTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.pageSubtitle {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* View Mode Switcher */
+.viewSwitcher {
+  display: inline-flex;
+  background: var(--color-surface-2);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.viewBtn {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.viewBtn:hover {
+  color: var(--color-text);
+}
+
+.viewBtnActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.topBarRight {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.navToggleBtn {
+/* Horizon Segmented Control */
+.horizonControl {
+  display: inline-flex;
+  background: var(--color-surface-2);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.horizonBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.horizonBtn:hover {
+  color: var(--color-text);
+}
+
+.horizonBtnActive {
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.auditBtn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 5px 12px;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.navToggleBtn:hover {
+.auditBtn:hover {
   background: var(--color-surface-hover);
-  color: var(--color-text);
   border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
-.headerDivider {
-  width: 1px;
-  height: 16px;
-  background: var(--color-border);
+.zoomControlGroup {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
 }
 
-.pageTitle {
-  font-size: 13px;
-  font-weight: 700;
+.ctrlBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ctrlBtn:hover {
+  background: var(--color-surface);
   color: var(--color-text);
-  letter-spacing: -0.01em;
+}
+
+.zoomLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  min-width: 30px;
+  text-align: center;
+}
+
+/* ── Secondary Bar: Filters & Metrics ── */
+.topBarSub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 24px 6px 56px;
+  gap: 16px;
+  font-size: 11px;
+  background: var(--color-surface);
+}
+
+.filterGroup {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.pageSub {
-  font-size: 10px;
-  color: var(--color-text-faint);
-  padding: 1px 6px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  font-weight: 500;
-}
-
-/* Center filters */
-.filterRow {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .filterPill {
@@ -103,12 +208,13 @@
   background: transparent;
   border: 1px solid transparent;
   color: var(--color-text-muted);
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .filterPill:hover {
@@ -118,48 +224,240 @@
 
 .filterPill.filterActive {
   background: var(--color-surface-2);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: var(--color-border);
+  color: var(--color-text);
   font-weight: 600;
 }
 
-/* Right controls */
-.headerRight {
+.metricsGroup {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-.ctrlBtn {
-  display: inline-flex;
+.metricBadge {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.ctrlBtn:hover {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border-color: var(--color-border);
-}
-
-.zoomLabel {
+  gap: 5px;
+  white-space: nowrap;
   font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-faint);
-  min-width: 34px;
-  text-align: center;
+  color: var(--color-text-muted);
 }
 
-/* Canvas Viewport */
+.metricBadge strong {
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.metricBadge.metricSuccess strong {
+  color: #10b981;
+}
+
+.metricBadge.metricWarning strong {
+  color: #f59e0b;
+}
+
+.metricDivider {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border-subtle);
+}
+
+/* ── Timeline (Gantt) View Layout ── */
+.timelineViewport {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px 40px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-bg);
+}
+
+.timelineGridHeader {
+  display: grid;
+  grid-template-columns: 360px repeat(4, 1fr);
+  gap: 0;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.quarterHeader {
+  text-align: center;
+  border-left: 1px solid var(--color-border-subtle);
+  padding: 0 4px;
+}
+
+.goalSection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.goalRow {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.goalInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.goalAreaIndicator {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.goalTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goalMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding-right: 8px;
+}
+
+.projectRow {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  transition: background var(--transition-fast);
+}
+
+.projectRow:last-child {
+  border-bottom: none;
+}
+
+.projectRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+  min-width: 0;
+}
+
+.projectTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectSub {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.projectTrackWrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: 22px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trackQuarterLine {
+  border-left: 1px solid var(--color-border-subtle);
+  height: 100%;
+}
+
+.trackQuarterLine:first-child {
+  border-left: none;
+}
+
+.projectBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  transition: width 0.4s ease;
+}
+
+.projectBarLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.emptyGoalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 8px 26px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.addProjectLink {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.addProjectLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Canvas Viewport (Graph Flow) ── */
 .canvasViewport {
+  flex: 1;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -172,26 +470,23 @@
   cursor: grabbing;
 }
 
-/* Canvas */
 .canvas {
   position: relative;
   will-change: transform;
 }
 
-/* Dot grid */
 .dotGrid {
   pointer-events: none;
   color: var(--color-text-muted);
-  opacity: 0.22;
+  opacity: 0.16;
 }
 
-/* SVG connection curves */
 .svgOverlay {
   pointer-events: none;
 }
 
 .connectionPath {
-  animation: drawPath 0.8s ease forwards;
+  animation: drawPath 0.6s ease forwards;
 }
 
 @keyframes drawPath {
@@ -199,45 +494,41 @@
   to   { stroke-dashoffset: 0; }
 }
 
-/* Column Headers on Canvas */
+/* Canvas Column Headers */
 .canvasColHeader {
   position: absolute;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--color-text-muted);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  padding: 5px 16px;
-  border-radius: var(--radius-full);
+  padding: 4px 14px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 
-/* Node Card: Formal, Clean, Theme-Synced */
+/* Node Cards */
 .nodeCard {
   position: absolute;
   background: var(--color-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 12px 14px 12px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: var(--shadow-sm);
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
     transform 0.15s ease,
-    opacity 0.2s ease,
-    background 0.2s ease;
+    opacity 0.2s ease;
   cursor: pointer;
   overflow: visible;
 }
@@ -251,41 +542,37 @@
 .nodeAccentBar {
   position: absolute;
   left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3.5px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
   border-radius: 0 2px 2px 0;
 }
 
 .nodeHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
 }
 
 .nodeTypeBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   border: 1px solid;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: var(--radius-sm);
-  flex-shrink: 0;
 }
 
 .nodeStatusDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .nodeExternalLink {
-  margin-left: auto;
   color: var(--color-text-faint);
   display: inline-flex;
   align-items: center;
@@ -303,7 +590,7 @@
 }
 
 .nodeTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.4;
@@ -311,7 +598,6 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  letter-spacing: -0.01em;
 }
 
 .nodeProgressArea {
@@ -339,16 +625,15 @@
 .nodeProgressLabel {
   font-size: 10px;
   font-weight: 700;
-  min-width: 26px;
+  min-width: 24px;
   text-align: right;
-  letter-spacing: -0.02em;
 }
 
 .portOut,
 .portIn {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   border: 2px solid var(--color-bg);
   top: 50%;
@@ -370,139 +655,49 @@
   left: -4px;
 }
 
-/* Minimal Floating Hint (Bottom Right) */
-.canvasHintBadge {
+/* ── Focus Action Pill (Bottom Center) ── */
+.focusBar {
   position: absolute;
-  bottom: 14px;
-  right: 18px;
-  z-index: 20;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: var(--color-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: 10px;
-  color: var(--color-text-muted);
-  box-shadow: var(--shadow-sm);
-  pointer-events: none;
-}
-
-/* ADHD Controls in Floating Header */
-.adhdBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  background: transparent;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.adhdBtn:hover {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border-color: var(--color-border);
-}
-
-.adhdBtnActive {
-  background: rgba(34, 211, 165, 0.12);
-  border-color: rgba(34, 211, 165, 0.4);
-  color: #22d3a5;
-}
-
-.unlinkedChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  background: rgba(245, 166, 35, 0.1);
-  border: 1px solid rgba(245, 166, 35, 0.3);
-  border-radius: var(--radius-full);
-  font-size: 10px;
-  font-weight: 600;
-  color: #f5a623;
-  text-decoration: none;
-  transition: all var(--transition-fast);
-}
-
-.unlinkedChip:hover {
-  background: rgba(245, 166, 35, 0.2);
-}
-
-/* ADHD Next Small Win: Sleek Floating Micro-Pill (Bottom Center) */
-.adhdFloatingPill {
-  position: absolute;
-  bottom: 14px;
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   padding: 6px 14px;
   background: var(--color-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-xl);
-  pointer-events: auto;
-  animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  max-width: calc(100vw - 32px);
+  box-shadow: var(--shadow-lg);
+  font-size: 11px;
 }
 
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translate(-50%, 8px); }
-  to   { opacity: 1; transform: translate(-50%, 0); }
-}
-
-.adhdTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  background: var(--color-accent-dim);
-  border: 1px solid var(--color-accent-light);
+.focusTag {
+  padding: 2px 7px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 700;
   color: var(--color-accent);
-  letter-spacing: 0.04em;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
-.adhdPathText {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--color-text-muted);
+.focusText {
+  color: var(--color-text);
+  font-weight: 600;
+  max-width: 360px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 440px;
 }
 
-.adhdHighlight {
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.adhdFocusBtn {
+.focusClearBtn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 2px 8px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -510,83 +705,64 @@
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
   transition: all var(--transition-fast);
 }
 
-.adhdFocusBtn:hover {
+.focusClearBtn:hover {
   background: var(--color-accent);
-  border-color: var(--color-accent);
   color: #fff;
-}
-
-.adhdDoneBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  background: rgba(34, 211, 165, 0.15);
-  border: 1px solid rgba(34, 211, 165, 0.4);
-  border-radius: var(--radius-full);
-  color: #22d3a5;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-}
-
-.adhdDoneBtn:hover {
-  background: #22d3a5;
-  color: #0c1017;
-  transform: scale(1.03);
-}
-
-.adhdCelebration {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #22d3a5;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.adhdUndoBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 9px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  color: var(--color-text);
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-}
-
-.adhdUndoBtn:hover {
-  background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #fff;
-  transform: translateY(-1px);
 }
 
-/* Loading screen */
-.loadingScreen {
+/* ── AI Strategy Audit Modal ── */
+.auditOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
-  height: 100vh;
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
+  padding: 20px;
 }
 
-/* Empty canvas state */
+.auditCard {
+  width: 100%;
+  max-width: 540px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auditTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.auditBody {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  white-space: pre-wrap;
+}
+
 .emptyCanvas {
   position: absolute;
   inset: 0;
@@ -594,44 +770,36 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  padding: var(--space-8);
   text-align: center;
+  padding: 24px;
 }
 
 .emptyTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
-  margin: 0 0 8px;
+  margin-bottom: 6px;
 }
 
 .emptySubtitle {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
-  max-width: 380px;
-  line-height: 1.6;
-  margin: 0 0 24px;
+  max-width: 360px;
+  margin-bottom: 16px;
 }
 
 .emptyActions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 8px;
 }
 
 .emptyActionBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  padding: 6px 14px;
+  color: var(--color-text);
+  padding: 5px 12px;
   border-radius: var(--radius-md);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -639,189 +807,17 @@
 }
 
 .emptyActionBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
   border-color: var(--color-accent);
+  background: var(--color-surface-hover);
 }
 
-/* ================================================================
-   LIGHT THEME ROADMAP STYLES
-   ================================================================ */
-:global([data-theme='light']) .floatingHeader {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+.loadingScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100vh;
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
-
-:global([data-theme='light']) .navToggleBtn {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #475569;
-}
-
-:global([data-theme='light']) .navToggleBtn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-:global([data-theme='light']) .pageSub {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  color: #64748b;
-}
-
-:global([data-theme='light']) .filterPill {
-  color: #64748b;
-}
-
-:global([data-theme='light']) .filterPill:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-:global([data-theme='light']) .filterPill.filterActive {
-  background: #e0e7ff;
-  border-color: #c7d2fe;
-  color: #4338ca;
-}
-
-:global([data-theme='light']) .ctrlBtn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #e2e8f0;
-}
-
-:global([data-theme='light']) .canvasColHeader {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-}
-
-:global([data-theme='light']) .nodeCard {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
-:global([data-theme='light']) .nodeCard:hover {
-  border-color: #818cf8;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
-}
-
-:global([data-theme='light']) .nodeTitle {
-  color: #0f172a;
-}
-
-:global([data-theme='light']) .nodeProgressTrack {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-}
-
-:global([data-theme='light']) .adhdFloatingPill {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-}
-
-:global([data-theme='light']) .canvasHintBadge {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
-/* ================================================================
-   DARK THEME ROADMAP STYLES
-   ================================================================ */
-:global([data-theme='dark']) .floatingHeader {
-  background: rgba(22, 25, 35, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-:global([data-theme='dark']) .canvasColHeader {
-  background: rgba(26, 29, 38, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #9ca3af;
-}
-
-:global([data-theme='dark']) .nodeCard {
-  background: rgba(26, 29, 38, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-:global([data-theme='dark']) .nodeCard:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-:global([data-theme='dark']) .nodeProgressTrack {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: transparent;
-}
-
-:global([data-theme='dark']) .adhdFloatingPill {
-  background: rgba(22, 25, 35, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-
-:global([data-theme='dark']) .canvasHintBadge {
-  background: rgba(22, 25, 35, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-:global([data-theme='nature']) .roadmapPage {
-  background: transparent;
-}
-
-:global([data-theme='nature']) .canvasViewport {
-  background: transparent;
-}
-
-:global([data-theme='nature']) .floatingHeader {
-  background: rgba(16, 32, 23, 0.85);
-  border: 1px solid rgba(134, 239, 172, 0.18);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-}
-
-:global([data-theme='nature']) .canvasColHeader {
-  background: rgba(16, 32, 23, 0.82);
-  border: 1px solid rgba(134, 239, 172, 0.16);
-  color: rgba(187, 247, 208, 0.85);
-}
-
-:global([data-theme='nature']) .nodeCard {
-  background: rgba(16, 32, 23, 0.88);
-  border: 1px solid rgba(134, 239, 172, 0.16);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-  color: #f0fdf4;
-}
-
-:global([data-theme='nature']) .nodeCard:hover {
-  border-color: #4ade80;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
-}
-
-:global([data-theme='nature']) .nodeTitle {
-  color: #f0fdf4;
-}
-
-:global([data-theme='nature']) .nodeProgressTrack {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(134, 239, 172, 0.1);
-}
-
-:global([data-theme='nature']) .adhdFloatingPill {
-  background: rgba(16, 32, 23, 0.92);
-  border: 1px solid rgba(134, 239, 172, 0.22);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-}
-
-:global([data-theme='nature']) .canvasHintBadge {
-  background: rgba(16, 32, 23, 0.85);
-  border: 1px solid rgba(134, 239, 172, 0.15);
-  color: rgba(187, 247, 208, 0.7);
-}
-

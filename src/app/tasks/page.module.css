@@ -452,6 +452,45 @@
   color: #94a3b8;
 }
 
+.subtaskBadgeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full, 99px);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.subtaskBadgeBtn:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.subtaskCollapseTrigger {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.subtaskCollapseTrigger:hover .subtaskProgressHeader {
+  color: var(--color-text);
+}
+
 /*  Formal Subtasks List (Clean & Integrated, No Nested Box)  */
 .subtasksBox {
   background: transparent;
@@ -460,9 +499,11 @@
   border-radius: 0;
   padding: 2px 0 2px var(--space-3);
   margin-left: 4px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  animation: fadeIn 0.15s ease-out;
 }
 
 .subtaskRow {

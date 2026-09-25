@@ -165,12 +165,10 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsedHabits = loadJsonArray<Habit>(HABITS_STORAGE_KEY);
-      if (parsedHabits && parsedHabits.length > 0) setHabits(parsedHabits);
-      else if (!parsedHabits) setHabits(DEFAULT_HABITS);
+      setHabits(parsedHabits || []);
 
       const parsedCheckIns = loadJsonArray<HabitCheckIn>(CHECKINS_STORAGE_KEY);
-      if (parsedCheckIns) setCheckIns(parsedCheckIns);
-      else setCheckIns(generateSeedCheckIns());
+      setCheckIns(parsedCheckIns || []);
     } catch (err) {
       console.error('Failed to load Habits data:', err);
     }

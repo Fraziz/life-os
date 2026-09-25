@@ -101,8 +101,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<InboxItem>(INBOX_STORAGE_KEY);
-      if (parsed && parsed.length > 0) setItems(parsed);
-      else if (!parsed) setItems(DEFAULT_INBOX_ITEMS);
+      setItems(parsed || []);
     } catch (err) {
       console.error('Failed to load inbox items:', err);
     }

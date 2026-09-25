@@ -7,6 +7,7 @@ import {
   Sun,
   Moon,
   Leaf,
+  Sparkles,
   Bell,
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -45,13 +46,14 @@ export default function RightSidebar() {
   const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
 
-  // ── Theme toggle (cycles: light → dark → nature → light) ────
+  // ── Theme toggle (cycles: light → dark → nature → cyber → light) ────
   const currentTheme = settings.theme;
   const toggleTheme = () => {
-    const cycle: Record<string, 'dark' | 'light' | 'nature'> = {
+    const cycle: Record<string, 'dark' | 'light' | 'nature' | 'cyber'> = {
       light: 'dark',
       dark: 'nature',
-      nature: 'light',
+      nature: 'cyber',
+      cyber: 'light',
       system: 'dark',
     };
     updateSettings({ theme: cycle[currentTheme] ?? 'dark' });
@@ -59,10 +61,12 @@ export default function RightSidebar() {
   const themeIcon =
     currentTheme === 'dark' ? <Moon size={17} /> :
     currentTheme === 'nature' ? <Leaf size={17} /> :
+    currentTheme === 'cyber' ? <Sparkles size={17} /> :
     <Sun size={17} />;
   const themeTitle =
     currentTheme === 'light' ? 'Switch to Dark Theme' :
     currentTheme === 'dark' ? 'Switch to Nature Theme' :
+    currentTheme === 'nature' ? 'Switch to Cyber Glow Theme' :
     'Switch to Light Theme';
 
   // ── Selected Date for Agenda Inspection ──────────────────────

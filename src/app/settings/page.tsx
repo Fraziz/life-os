@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { wipeCloudKv } from '@/lib/cloudStore';
-import type { PlanningStyle, AppTheme } from '@/types';
+import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
 import {
   User,
   Clock,
@@ -27,6 +27,12 @@ import {
   EyeOff,
   X,
   Sparkles,
+  Copy,
+  Plus,
+  Key,
+  Layers,
+  Zap,
+  Check,
 } from 'lucide-react';
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
 import { testAIConnection } from '@/utils/aiEngine';
@@ -80,6 +86,117 @@ export default function SettingsPage() {
       setFormData(settings);
     }
   }, [settings, isLoaded]);
+
+  // AI Vault & Auto-Save state
+  const [autoSavedAi, setAutoSavedAi] = useState(false);
+  const [newKeyNameInput, setNewKeyNameInput] = useState('');
+  const [isAddingNewKey, setIsAddingNewKey] = useState(false);
+
+  const triggerAutoSaveAI = (updatedAI: AISettings) => {
+    const updated = {
+      ...formData,
+      aiSettings: updatedAI,
+    };
+    setFormData(updated);
+    updateSettings(updated);
+    setAutoSavedAi(true);
+    setTimeout(() => setAutoSavedAi(false), 2500);
+  };
+
+  const handleApiKeyChange = (val: string) => {
+    if (!formData.aiSettings) return;
+    const curActiveId = formData.aiSettings.activeKeyId;
+    let updatedSavedKeys = [...(formData.aiSettings.savedKeys || [])];
+
+    if (curActiveId) {
+      updatedSavedKeys = updatedSavedKeys.map((k) => (k.id === curActiveId ? { ...k, apiKey: val } : k));
+    }
+
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      apiKey: val,
+      savedKeys: updatedSavedKeys,
+    };
+    triggerAutoSaveAI(updatedAI);
+  };
+
+  const handleSaveCurrentKeyToVault = () => {
+    if (!formData.aiSettings?.apiKey?.trim()) return;
+    const existing = formData.aiSettings.savedKeys || [];
+    const count = existing.length + 1;
+    const keyName = newKeyNameInput.trim() || `Key Profile ${count} (${formData.aiSettings.model || 'Flash'})`;
+    const newSavedKey: SavedApiKey = {
+      id: `key-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: keyName,
+      apiKey: formData.aiSettings.apiKey.trim(),
+      provider: formData.aiSettings.provider,
+      model: formData.aiSettings.model,
+      createdAt: new Date().toISOString(),
+    };
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      savedKeys: [...existing, newSavedKey],
+      activeKeyId: newSavedKey.id,
+    };
+    setNewKeyNameInput('');
+    setIsAddingNewKey(false);
+    triggerAutoSaveAI(updatedAI);
+  };
+
+  const handleDuplicateKey = (k: SavedApiKey) => {
+    if (!formData.aiSettings) return;
+    const existing = formData.aiSettings.savedKeys || [];
+    const duplicated: SavedApiKey = {
+      id: `key-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: `${k.name} (Copy)`,
+      apiKey: k.apiKey,
+      provider: k.provider,
+      model: k.model,
+      createdAt: new Date().toISOString(),
+    };
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      savedKeys: [...existing, duplicated],
+    };
+    triggerAutoSaveAI(updatedAI);
+  };
+
+  const handleSwitchActiveKey = (k: SavedApiKey) => {
+    if (!formData.aiSettings) return;
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      apiKey: k.apiKey,
+      model: k.model || formData.aiSettings.model,
+      provider: k.provider || formData.aiSettings.provider,
+      activeKeyId: k.id,
+      enabled: true,
+    };
+    setAiTestResult(null);
+    triggerAutoSaveAI(updatedAI);
+  };
+
+  const handleDeleteSavedKey = (keyId: string) => {
+    if (!formData.aiSettings) return;
+    const existing = formData.aiSettings.savedKeys || [];
+    const remaining = existing.filter((k) => k.id !== keyId);
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      savedKeys: remaining,
+      activeKeyId: formData.aiSettings.activeKeyId === keyId ? remaining[0]?.id || undefined : formData.aiSettings.activeKeyId,
+      apiKey: formData.aiSettings.activeKeyId === keyId ? remaining[0]?.apiKey || '' : formData.aiSettings.apiKey,
+    };
+    triggerAutoSaveAI(updatedAI);
+  };
+
+  const handleToggleFailover = () => {
+    if (!formData.aiSettings) return;
+    const cur = formData.aiSettings.autoFailover !== false;
+    const updatedAI: AISettings = {
+      ...formData.aiSettings,
+      autoFailover: !cur,
+    };
+    triggerAutoSaveAI(updatedAI);
+  };
 
   const handleTestAndSaveAI = async () => {
     if (!formData.aiSettings) return;
@@ -262,23 +379,29 @@ export default function SettingsPage() {
           </div>
 
           <div className={styles.themeGrid}>
-            {(['dark', 'light', 'nature', 'system'] as const).map((t) => (
+            {([
+              { id: 'cyber', label: 'Cyber Glow', desc: 'Neon Violet & Electric Cyan', icon: <Sparkles size={14} /> },
+              { id: 'nature', label: 'Nature Forest', desc: 'Organic Sage Glass & Timber', icon: <Leaf size={14} /> },
+              { id: 'dark', label: 'Sleek Dark', desc: 'Refined Charcoal & Slate', icon: <Moon size={14} /> },
+              { id: 'light', label: 'Clean Light', desc: 'Luminous Paper & Indigo', icon: <Sun size={14} /> },
+              { id: 'system', label: 'System Sync', desc: 'Match Operating System', icon: <Sliders size={14} /> },
+            ] as const).map((item) => (
               <button
-                key={t}
+                key={item.id}
                 type="button"
-                className={`${styles.themeBtn} ${formData.theme === t ? styles.themeBtnActive : ''}`}
+                className={`${styles.themeBtn} ${formData.theme === item.id ? styles.themeBtnActive : ''}`}
                 onClick={() => {
-                  const newTheme = t as AppTheme;
+                  const newTheme = item.id as AppTheme;
                   const updated = { ...formData, theme: newTheme };
                   setFormData(updated);
                   updateSettings(updated);
                 }}
               >
-                {t === 'dark' && <Moon size={14} />}
-                {t === 'light' && <Sun size={14} />}
-                {t === 'nature' && <Leaf size={14} />}
-                {t === 'system' && <Sliders size={14} />}
-                <span>{t === 'nature' ? 'Nature' : t.charAt(0).toUpperCase() + t.slice(1)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {item.icon}
+                  <span style={{ fontWeight: 600 }}>{item.label}</span>
+                </div>
+                <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
               </button>
             ))}
           </div>
@@ -864,7 +987,7 @@ export default function SettingsPage() {
                       const updatedAI = {
                         ...formData.aiSettings!,
                         provider: 'gemini' as const,
-                        model: 'gemini-2.5-flash',
+                        model: 'gemini-2.0-flash',
                       };
                       const updated = { ...formData, aiSettings: updatedAI };
                       setFormData(updated);
@@ -1068,7 +1191,7 @@ export default function SettingsPage() {
 
                   {formData.aiSettings?.provider === 'gemini' && (
                     <>
-                      {['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
+                      {['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'].map((m) => (
                         <button
                           key={m}
                           type="button"
@@ -1244,108 +1367,115 @@ export default function SettingsPage() {
               )}
 
               <div className={styles.formGroup}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <label className={styles.label}>API Key (Stored Locally)</label>
-                  {formData.aiSettings?.provider === 'openrouter' && (
-                    <a
-                      href="https://openrouter.ai/keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get OpenRouter Key (Free &amp; Paid)
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'groq' && (
-                    <a
-                      href="https://console.groq.com/keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get 100% Free Groq Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'gemini' && (
-                    <a
-                      href="https://aistudio.google.com/app/apikey"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get Free Gemini Key from Google AI Studio
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'deepseek' && (
-                    <a
-                      href="https://platform.deepseek.com/api_keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get DeepSeek Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'mistral' && (
-                    <a
-                      href="https://console.mistral.ai/api-keys/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get Mistral AI Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'huggingface' && (
-                    <a
-                      href="https://huggingface.co/settings/tokens"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get Free Hugging Face Token
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'cohere' && (
-                    <a
-                      href="https://dashboard.cohere.com/api-keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get Cohere Trial Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'openai' && (
-                    <a
-                      href="https://platform.openai.com/api-keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get OpenAI API Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'anthropic' && (
-                    <a
-                      href="https://console.anthropic.com/settings/keys"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Get Anthropic API Key
-                    </a>
-                  )}
-                  {formData.aiSettings?.provider === 'custom' && (
-                    <a
-                      href="https://ollama.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.externalGuideLink}
-                    >
-                      Learn about local Ollama setup
-                    </a>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {autoSavedAi && (
+                      <span className={styles.autoSaveBadge}>
+                        <Check size={12} /> Auto-saved
+                      </span>
+                    )}
+                    {formData.aiSettings?.provider === 'gemini' && (
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Free Gemini Key (Google AI Studio)
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'groq' && (
+                      <a
+                        href="https://console.groq.com/keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Free Groq API Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'openrouter' && (
+                      <a
+                        href="https://openrouter.ai/keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get OpenRouter Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'deepseek' && (
+                      <a
+                        href="https://platform.deepseek.com/api_keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get DeepSeek Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'mistral' && (
+                      <a
+                        href="https://console.mistral.ai/api-keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Mistral API Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'huggingface' && (
+                      <a
+                        href="https://huggingface.co/settings/tokens"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Free Hugging Face Token
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'cohere' && (
+                      <a
+                        href="https://dashboard.cohere.com/api-keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Cohere Trial Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'openai' && (
+                      <a
+                        href="https://platform.openai.com/api-keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get OpenAI API Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'anthropic' && (
+                      <a
+                        href="https://console.anthropic.com/settings/keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Get Anthropic API Key
+                      </a>
+                    )}
+                    {formData.aiSettings?.provider === 'custom' && (
+                      <a
+                        href="https://ollama.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.externalGuideLink}
+                      >
+                        Learn about local Ollama setup
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.apiKeyInputWrapper}>
@@ -1353,20 +1483,11 @@ export default function SettingsPage() {
                     type={showApiKey ? 'text' : 'password'}
                     className={styles.input}
                     value={formData.aiSettings?.apiKey || ''}
-                    onChange={(e) => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        apiKey: e.target.value,
-                      };
-                      setFormData({
-                        ...formData,
-                        aiSettings: updatedAI,
-                      });
-                    }}
+                    onChange={(e) => handleApiKeyChange(e.target.value)}
                     placeholder={
                       formData.aiSettings?.provider === 'gemini'
-                        ? 'Paste your Gemini API key'
-                        : 'Paste your API key'
+                        ? 'Paste your Gemini API key (auto-saves instantly)'
+                        : 'Paste your API key (auto-saves instantly)'
                     }
                     id="ai-api-key-input"
                   />
@@ -1385,9 +1506,8 @@ export default function SettingsPage() {
                         type="button"
                         className={styles.iconBtnSmall}
                         onClick={() => {
-                          const updatedAI = { ...formData.aiSettings!, apiKey: '' };
-                          setFormData({ ...formData, aiSettings: updatedAI });
-                          updateSettings({ aiSettings: updatedAI });
+                          const updatedAI = { ...formData.aiSettings!, apiKey: '', activeKeyId: undefined };
+                          triggerAutoSaveAI(updatedAI);
                           setAiTestResult(null);
                         }}
                         title="Clear key"
@@ -1398,9 +1518,159 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <span className={styles.hint}>
-                  Keys remain strictly on your device and are never transmitted to any third party.
-                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <span className={styles.hint}>
+                    Keys auto-save instantly and remain strictly on your local device.
+                  </span>
+                  {formData.aiSettings?.apiKey?.trim() && (
+                    <button
+                      type="button"
+                      className={styles.btnVaultAction}
+                      onClick={() => setIsAddingNewKey(!isAddingNewKey)}
+                      title="Save this key to your multi-key vault"
+                    >
+                      <Key size={13} /> Save to Key Vault
+                    </button>
+                  )}
+                </div>
+
+                {/* Save Key to Vault Dialog */}
+                {isAddingNewKey && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: 'var(--radius-md)' }}>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                      value={newKeyNameInput}
+                      onChange={(e) => setNewKeyNameInput(e.target.value)}
+                      placeholder="Identifier name (e.g. Primary Studio Key, Backup Flash 2)..."
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className={`${styles.btnVaultAction} ${styles.btnVaultActionPrimary}`}
+                      onClick={handleSaveCurrentKeyToVault}
+                    >
+                      <Plus size={13} /> Save Key
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnVaultAction}
+                      onClick={() => setIsAddingNewKey(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Key Vault & Multi-Key Switcher / Pool ── */}
+                <div className={styles.vaultContainer}>
+                  <div className={styles.vaultHeader}>
+                    <div className={styles.vaultTitle}>
+                      <Key size={15} style={{ color: 'var(--color-accent)' }} />
+                      Saved API Keys Vault ({formData.aiSettings?.savedKeys?.length || 0})
+                    </div>
+                    <div className={styles.vaultActions}>
+                      <button
+                        type="button"
+                        className={styles.btnVaultAction}
+                        onClick={() => {
+                          if (formData.aiSettings?.apiKey) {
+                            handleSaveCurrentKeyToVault();
+                          } else {
+                            setIsAddingNewKey(true);
+                          }
+                        }}
+                      >
+                        <Plus size={12} /> Add Key Profile
+                      </button>
+                    </div>
+                  </div>
+
+                  {(!formData.aiSettings?.savedKeys || formData.aiSettings.savedKeys.length === 0) ? (
+                    <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                      No key profiles saved yet. Click &quot;Save to Key Vault&quot; above to store multiple Gemini keys for instant 1-click switching and automatic failover when limits are reached.
+                    </p>
+                  ) : (
+                    <div className={styles.vaultList}>
+                      {formData.aiSettings.savedKeys.map((k) => {
+                        const isActive = formData.aiSettings?.apiKey === k.apiKey || formData.aiSettings?.activeKeyId === k.id;
+                        const maskedKey = k.apiKey.length > 10
+                          ? `${k.apiKey.slice(0, 7)}...${k.apiKey.slice(-5)}`
+                          : '••••••••';
+
+                        return (
+                          <div
+                            key={k.id}
+                            className={`${styles.vaultCard} ${isActive ? styles.vaultCardActive : ''}`}
+                          >
+                            <div className={styles.vaultCardInfo}>
+                              <div className={styles.vaultCardNameRow}>
+                                <span className={styles.vaultCardName}>{k.name}</span>
+                                {isActive && <span className={styles.activeTag}>Active</span>}
+                                {k.model && (
+                                  <span style={{ fontSize: '0.68rem', color: 'var(--color-accent)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                                    {k.model}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={styles.vaultCardKey}>{maskedKey}</span>
+                            </div>
+
+                            <div className={styles.vaultCardActions}>
+                              {!isActive && (
+                                <button
+                                  type="button"
+                                  className={`${styles.btnVaultAction} ${styles.btnVaultActionPrimary}`}
+                                  onClick={() => handleSwitchActiveKey(k)}
+                                  title="Switch to this API key instantly"
+                                >
+                                  <Zap size={12} /> Use
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className={styles.btnVaultAction}
+                                onClick={() => handleDuplicateKey(k)}
+                                title="Duplicate profile (switch model or label without retyping key)"
+                              >
+                                <Copy size={12} /> Duplicate
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.iconBtnSmall}
+                                onClick={() => handleDeleteSavedKey(k.id)}
+                                title="Delete key profile"
+                                aria-label="Delete key profile"
+                              >
+                                <Trash2 size={13} style={{ color: 'var(--color-danger, #ef4444)' }} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Auto-Failover setting */}
+                  <div className={styles.failoverRow}>
+                    <div className={styles.failoverLabel}>
+                      <span style={{ fontWeight: 600 }}>Auto-Switch on Rate Limit / Quota Exhaustion</span>
+                      <span style={{ fontSize: '0.70rem', color: 'var(--color-text-muted)' }}>
+                        Automatically failover to the next saved key in your pool if Gemini returns 429 or quota limit.
+                      </span>
+                    </div>
+                    <label className={styles.switch}>
+                      <input
+                        type="checkbox"
+                        checked={formData.aiSettings?.autoFailover !== false}
+                        onChange={handleToggleFailover}
+                      />
+                      <span className={styles.slider} />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className={styles.testConnectionArea}>

@@ -910,3 +910,27 @@
 :global([data-theme='nature']) .iconBtn:active {
   transform: scale(0.95) !important;
 }
+
+/*  Mobile & Tablet Responsiveness  */
+@media (max-width: 1200px) {
+  .rightSidebar {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .rightSidebar {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .topUtilityRow {
+    flex-wrap: wrap;
+  }
+
+  .searchBox {
+    min-width: 200px;
+  }
+}
+

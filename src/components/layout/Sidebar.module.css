@@ -33,6 +33,47 @@
   visibility: hidden;
 }
 
+/* Mobile backdrop overlay */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: calc(var(--z-modal) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    display: block;
+  }
+
+  .sidebar {
+    width: min(84vw, 300px);
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
+  }
+
+  .sidebar.mobileOpen {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
 /*  Brand Header  */
 
 .header {
@@ -209,8 +250,13 @@
 }
 
 :global([data-theme='dark']) .activeItem {
-  background-color: rgba(99, 102, 241, 0.16);
-  color: #c7d2fe;
+  background-color: #41331c;
+  color: #feefc3;
+  border-radius: var(--radius-full);
+}
+
+:global([data-theme='dark']) .activeItem svg {
+  color: #fbbc04;
 }
 
 .navLabel {

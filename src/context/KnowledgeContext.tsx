@@ -141,13 +141,12 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) setDocs(parsed);
-        else setDocs(defaultDocs());
+        setDocs(Array.isArray(parsed) ? parsed : []);
       } else {
-        setDocs(defaultDocs());
+        setDocs([]);
       }
     } catch {
-      setDocs(defaultDocs());
+      setDocs([]);
     }
   };
 

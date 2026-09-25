@@ -93,12 +93,32 @@ export default function HabitsPage() {
     setHabitColor('#7c6fff');
   };
 
+  // Quick Add State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickFrequency, setQuickFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [quickTargetDays, setQuickTargetDays] = useState<number>(7);
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    addHabit({
+      title: quickTitle.trim(),
+      frequency: quickFrequency,
+      targetCount: quickTargetDays,
+      parentGoalId: quickGoalId || undefined,
+      color: '#7c6fff',
+      isOptional: true,
+    });
+    setQuickTitle('');
+  };
+
   return (
     <div className={styles.page}>
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Optional Habits & Practice</h1>
+          <h1 className={styles.title}>Optional Habits &amp; Practice</h1>
           <p className={styles.subtitle}>
             Supportive, identity-driven daily and weekly practice. Consistency and total volume are celebrated — without punishing streaks.
           </p>
@@ -110,6 +130,62 @@ export default function HabitsPage() {
           </button>
         </div>
       </header>
+
+      {/* ── Quick Add Bar ── */}
+      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
+        <div className={styles.quickAddRow}>
+          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+          <input
+            type="text"
+            className={styles.quickAddInput}
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            placeholder="Type a habit and press Enter to add instantly (e.g. 20min Morning Workout)..."
+            autoFocus
+          />
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
+          </button>
+        </div>
+
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <select
+              className={styles.pillSelect}
+              value={quickTargetDays}
+              onChange={(e) => {
+                const count = Number(e.target.value);
+                setQuickTargetDays(count);
+                setQuickFrequency(count === 7 ? 'daily' : 'weekly');
+              }}
+            >
+              <option value="7">Frequency: Daily (7d/wk)</option>
+              <option value="5">Frequency: 5 Days/wk</option>
+              <option value="4">Frequency: 4 Days/wk</option>
+              <option value="3">Frequency: 3 Days/wk</option>
+              <option value="1">Frequency: 1 Day/wk</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickGoalId}
+              onChange={(e) => setQuickGoalId(e.target.value)}
+            >
+              <option value="">No Linked Goal (General Practice)</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  Goal: {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
+          </span>
+        </div>
+      </form>
 
       {/* ── Philosophy Banner ── */}
       <section className={styles.philosophyBanner}>

@@ -108,8 +108,7 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<LifeArea>(AREAS_STORAGE_KEY);
-      if (parsed && parsed.length > 0) setAreas(parsed);
-      else if (!parsed) setAreas(DEFAULT_LIFE_AREAS);
+      setAreas(parsed || []);
     } catch (err) {
       console.error('Failed to load Life Areas:', err);
     }

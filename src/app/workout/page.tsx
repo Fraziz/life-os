@@ -821,8 +821,8 @@ export default function WorkoutPage() {
                     href={`/goals?highlight=${resolvedGoal.id}`}
                     style={{ textDecoration: 'none' }}
                   >
-                    <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(34, 211, 165, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      🎯 {resolvedGoal.title.length > 28 ? `${resolvedGoal.title.slice(0, 28)}...` : resolvedGoal.title}
+                    <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(34, 211, 165, 0.3)', display: 'inline-flex', alignItems: 'center' }}>
+                      {resolvedGoal.title.length > 28 ? `${resolvedGoal.title.slice(0, 28)}...` : resolvedGoal.title}
                     </span>
                   </Link>
                 ) : (

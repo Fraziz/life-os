@@ -183,6 +183,29 @@ export default function GoalsPage() {
     setModalOpen(false);
   };
 
+  // Quick Add State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickHorizon, setQuickHorizon] = useState<GoalHorizon>('90-day');
+  const [quickPriority, setQuickPriority] = useState<GoalPriority>('high');
+  const [quickDreamId, setQuickDreamId] = useState<string>('');
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    addGoal({
+      title: quickTitle.trim(),
+      why: 'Key milestone toward core aspirations',
+      horizon: quickHorizon,
+      priority: quickPriority,
+      status: 'in-progress',
+      progress: 0,
+      parentDreamId: quickDreamId || undefined,
+      lifeAreaId: activeAreas[0]?.id || undefined,
+      targetDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+    });
+    setQuickTitle('');
+  };
+
   const filteredGoals = goals.filter((g) => {
     if (statusFilter === 'active' && (g.status === 'completed' || g.status === 'archived')) return false;
     if (statusFilter === 'completed' && g.status !== 'completed') return false;
@@ -213,6 +236,68 @@ export default function GoalsPage() {
           <Plus size={18} /> New Goal
         </button>
       </header>
+
+      {/* ── Quick Add Bar ── */}
+      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
+        <div className={styles.quickAddRow}>
+          <Target size={20} style={{ color: 'var(--color-accent)' }} />
+          <input
+            type="text"
+            className={styles.quickAddInput}
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            placeholder="Type a goal and press Enter to add instantly (e.g. Launch v1 SaaS Platform)..."
+            autoFocus
+          />
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
+          </button>
+        </div>
+
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <select
+              className={styles.pillSelect}
+              value={quickHorizon}
+              onChange={(e) => setQuickHorizon(e.target.value as GoalHorizon)}
+            >
+              <option value="90-day">Horizon: 90-Day</option>
+              <option value="yearly">Horizon: Yearly</option>
+              <option value="monthly">Horizon: Monthly</option>
+              <option value="long-term">Horizon: Long-term</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickPriority}
+              onChange={(e) => setQuickPriority(e.target.value as GoalPriority)}
+            >
+              <option value="high">Priority: High</option>
+              <option value="urgent">Priority: Urgent</option>
+              <option value="medium">Priority: Medium</option>
+              <option value="low">Priority: Low</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickDreamId}
+              onChange={(e) => setQuickDreamId(e.target.value)}
+            >
+              <option value="">No Parent Dream (Standalone)</option>
+              {dreams.map((d) => (
+                <option key={d.id} value={d.id}>
+                  Dream: {d.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
+          </span>
+        </div>
+      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
@@ -427,17 +512,17 @@ export default function GoalsPage() {
                         background: 'transparent',
                         border: '1px dashed var(--color-border)',
                         borderRadius: '6px',
-                        padding: '2px 8px',
-                        fontSize: '11px',
+                        padding: '2px 6px',
                         color: 'var(--color-text-faint)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        justifyContent: 'center',
                       }}
-                      title="Set target date for calendar tracking"
+                      title="Add to Calendar"
+                      aria-label="Add to Calendar"
                     >
-                      <Calendar size={12} /> + Add to Calendar
+                      <Calendar size={12} />
                     </button>
                   )}
                 </div>
@@ -464,13 +549,13 @@ export default function GoalsPage() {
                         <span style={{ color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{r.assessment}</span>
                       </div>
                       <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>🎯 Next Steps</div>
+                        <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>Next Steps</div>
                         {r.nextSteps.map((step, i) => (
                           <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>• {step}</div>
                         ))}
                       </div>
                       <div style={{ fontStyle: 'italic', color: 'var(--color-accent)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                        💬 {r.motivation}
+                        {r.motivation}
                       </div>
                     </div>
                   );

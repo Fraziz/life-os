@@ -16,7 +16,11 @@ import {
   RotateCcw,
   Copy,
   Check,
+  Mic,
+  MicOff,
+  Edit3,
 } from 'lucide-react';
+import { useSpeechToText } from '@/utils/useSpeechToText';
 import styles from './AIAssistantPanel.module.css';
 
 const SUGGESTED_QUESTIONS = [
@@ -68,7 +72,7 @@ function renderMessageContent(content: string) {
 }
 
 export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelProps) {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { tasks } = useTasks();
   const { goals } = useGoals();
   const { activeProjects } = useProjects();
@@ -81,6 +85,12 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
+    onTranscript: (spokenText) => {
+      setInput((prev) => (prev ? `${prev} ${spokenText}` : spokenText));
+    },
+  });
 
   const userName = settings.profile.displayName || 'there';
   const aiSettings = settings.aiSettings;
@@ -141,6 +151,87 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
     }
   };
 
+  const handleRetryUserMessage = async (index: number) => {
+    if (isThinking) return;
+    const targetMsg = messages[index];
+    if (!targetMsg || targetMsg.role !== 'user') return;
+
+    // Retain conversation history up to before this message
+    const previousHistory = messages.slice(0, index);
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: targetMsg.content,
+      timestamp: new Date().toISOString(),
+    };
+    const newHistory = [...previousHistory, userMsg];
+    setMessages(newHistory);
+    setIsThinking(true);
+
+    try {
+      const reply = await chatWithAssistant(
+        targetMsg.content,
+        previousHistory,
+        { tasks, goals, projects: activeProjects, habits, userName },
+        aiSettings
+      );
+      setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
+    } catch {
+      setMessages([
+        ...newHistory,
+        {
+          role: 'assistant',
+          content: 'Unable to regenerate a response. Please verify your connection or API settings.',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
+  const handleRegenerateResponse = async (assistantIndex: number) => {
+    if (isThinking) return;
+    // Find the user prompt directly before this assistant message
+    const userPromptMsg = messages[assistantIndex - 1];
+    if (!userPromptMsg || userPromptMsg.role !== 'user') return;
+
+    const previousHistory = messages.slice(0, assistantIndex - 1);
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: userPromptMsg.content,
+      timestamp: new Date().toISOString(),
+    };
+    const newHistory = [...previousHistory, userMsg];
+    setMessages(newHistory);
+    setIsThinking(true);
+
+    try {
+      const reply = await chatWithAssistant(
+        userPromptMsg.content,
+        previousHistory,
+        { tasks, goals, projects: activeProjects, habits, userName },
+        aiSettings
+      );
+      setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
+    } catch {
+      setMessages([
+        ...newHistory,
+        {
+          role: 'assistant',
+          content: 'Unable to regenerate response. Please check your API settings.',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
+  const handleEditAndResend = (content: string) => {
+    setInput(content);
+    inputRef.current?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -166,9 +257,48 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
               <div className={styles.headerTitle}>Assistant</div>
               <div className={styles.headerSub}>
                 {isAIConfigured ? (
-                  <span className={`${styles.statusPill} ${styles.statusPillActive}`}>
-                    <span>●</span> {aiSettings?.model || 'Gemini'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span className={`${styles.statusPill} ${styles.statusPillActive}`}>
+                      <span>●</span> {aiSettings?.model || 'Gemini'}
+                    </span>
+                    {aiSettings?.savedKeys && aiSettings.savedKeys.length > 1 && (
+                      <select
+                        style={{
+                          background: 'var(--color-surface-2)',
+                          border: '1px solid var(--color-border-subtle)',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '10px',
+                          borderRadius: '99px',
+                          padding: '1px 6px',
+                          outline: 'none',
+                          cursor: 'pointer',
+                        }}
+                        value={aiSettings.activeKeyId || aiSettings.apiKey}
+                        onChange={(e) => {
+                          const selected = aiSettings.savedKeys?.find(
+                            (k) => k.id === e.target.value || k.apiKey === e.target.value
+                          );
+                          if (selected) {
+                            updateSettings({
+                              aiSettings: {
+                                ...aiSettings,
+                                apiKey: selected.apiKey,
+                                model: selected.model || aiSettings.model,
+                                activeKeyId: selected.id,
+                              },
+                            });
+                          }
+                        }}
+                        title="Switch saved API Key Profile"
+                      >
+                        {aiSettings.savedKeys.map((k) => (
+                          <option key={k.id} value={k.id}>
+                            Key: {k.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 ) : (
                   <span className={`${styles.statusPill} ${styles.statusPillOffline}`}>
                     <span>○</span> Local Rules
@@ -220,22 +350,59 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
                   {isAssistant && i > 0 && (
                     <div className={styles.bubbleFooter}>
                       <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={() => handleCopy(msg.content, i)}
-                        title="Copy message text"
-                      >
-                        {copiedIndex === i ? (
-                          <>
-                            <Check size={11} style={{ color: 'var(--color-success)' }} /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={11} /> Copy
-                          </>
-                        )}
-                      </button>
+                      <div className={styles.footerActions}>
+                        <button
+                          type="button"
+                          className={styles.copyBtn}
+                          onClick={() => handleRegenerateResponse(i)}
+                          title="Regenerate response (Retry)"
+                          disabled={isThinking}
+                        >
+                          <RotateCcw size={11} /> Retry
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.copyBtn}
+                          onClick={() => handleCopy(msg.content, i)}
+                          title="Copy message text"
+                        >
+                          {copiedIndex === i ? (
+                            <>
+                              <Check size={11} style={{ color: 'var(--color-success)' }} /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={11} /> Copy
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isAssistant && (
+                    <div className={styles.userBubbleFooter}>
+                      <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div className={styles.footerActions}>
+                        <button
+                          type="button"
+                          className={styles.userActionBtn}
+                          onClick={() => handleRetryUserMessage(i)}
+                          title="Retry message (Ulit)"
+                          disabled={isThinking}
+                        >
+                          <RotateCcw size={11} /> Retry
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.userActionBtn}
+                          onClick={() => handleEditAndResend(msg.content)}
+                          title="Edit in input box"
+                          disabled={isThinking}
+                        >
+                          <Edit3 size={11} /> Edit
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -275,13 +442,24 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
             ref={inputRef}
             type="text"
             className={styles.input}
-            placeholder="Ask about tasks, schedule, goals, habits..."
+            placeholder={isListening ? 'Listening to voice...' : 'Ask about tasks, schedule, goals, habits...'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isThinking}
             id="ai-assistant-chat-input"
           />
+          {speechSupported && (
+            <button
+              type="button"
+              className={`${styles.micBtn} ${isListening ? styles.micActive : ''}`}
+              onClick={toggleListening}
+              title={isListening ? 'Stop voice recording' : 'Voice input'}
+              aria-label={isListening ? 'Stop voice recording' : 'Voice input'}
+            >
+              {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+            </button>
+          )}
           <button
             type="button"
             className={styles.sendBtn}

@@ -160,6 +160,25 @@
   border-top: 1px solid var(--color-border-subtle);
   font-size: 10px;
   color: var(--color-text-faint);
+  gap: 8px;
+}
+
+.userBubbleFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  gap: 8px;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .copyBtn {
@@ -167,16 +186,48 @@
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 5px;
   border-radius: 3px;
   font-size: 10px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  transition: all 0.15s ease;
 }
 
-.copyBtn:hover {
+.copyBtn:hover:not(:disabled) {
+  background: var(--color-surface-3, rgba(128, 128, 128, 0.1));
   color: var(--color-text);
+}
+
+.copyBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.userActionBtn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.userActionBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.userActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .thinkingBubble {
@@ -252,6 +303,38 @@
 .sendBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.micBtn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md, 6px);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.micBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.micBtn.micActive {
+  background: var(--color-danger, #ef4444);
+  color: #ffffff;
+  border-color: var(--color-danger, #ef4444);
+  animation: micPulse 1.5s infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
 }
 
 .spin {

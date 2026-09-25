@@ -51,16 +51,12 @@ export function QuickNotesProvider({ children }: { children: React.ReactNode }) 
       const raw = localStorage.getItem(QUICK_NOTES_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as QuickNote[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setNotes(parsed);
-        } else {
-          setNotes(DEFAULT_QUICK_NOTES);
-        }
+        setNotes(Array.isArray(parsed) ? parsed : []);
       } else {
-        setNotes(DEFAULT_QUICK_NOTES);
+        setNotes([]);
       }
     } catch {
-      setNotes(DEFAULT_QUICK_NOTES);
+      setNotes([]);
     }
   };
 

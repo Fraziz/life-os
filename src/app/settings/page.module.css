@@ -176,37 +176,36 @@
 
 /* ── Theme Buttons Grid ── */
 .themeGrid {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
 }
 
 .themeBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface-2);
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-  font-weight: 500;
+  color: var(--color-text);
+  text-align: left;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .themeBtn:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text);
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  transform: translateY(-1px);
 }
 
 .themeBtn.themeBtnActive {
   border-color: var(--color-accent);
   background: var(--color-surface);
-  color: var(--color-text);
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 0 0 1px var(--color-accent), var(--shadow-sm);
 }
 
 /* ── Form Inputs & Layout ── */
@@ -468,6 +467,174 @@
 
 .externalGuideLink:hover {
   color: var(--color-text);
+}
+
+/*  API Key Vault & Auto-Switching  */
+.autoSaveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--color-success, #10b981);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+}
+
+.vaultContainer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.vaultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vaultTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vaultActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnVaultAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnVaultAction:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.btnVaultActionPrimary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.btnVaultActionPrimary:hover {
+  opacity: 0.92;
+  color: #ffffff;
+}
+
+.vaultList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vaultCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.vaultCardActive {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.vaultCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vaultCardNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vaultCardName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.activeTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--color-accent);
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vaultCardKey {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.vaultCardActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.failoverRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  margin-top: 4px;
+}
+
+.failoverLabel {
+  font-size: 0.78rem;
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .testConnectionArea {

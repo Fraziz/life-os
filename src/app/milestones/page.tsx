@@ -129,6 +129,26 @@ export default function MilestonesPage() {
     setModalOpen(false);
   };
 
+  // Quick Add State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
+  const [quickStatus, setQuickStatus] = useState<MilestoneStatus>('in-progress');
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    const targetGoal = quickGoalId || goals[0]?.id;
+    if (!targetGoal) return;
+    addMilestone({
+      title: quickTitle.trim(),
+      goalId: targetGoal,
+      status: quickStatus,
+      progress: 0,
+      targetDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+    });
+    setQuickTitle('');
+  };
+
   const filteredMilestones = milestones
     .filter((m) => {
       if (statusFilter === 'active' && (m.status === 'completed' || m.status === 'archived')) return false;
@@ -143,7 +163,7 @@ export default function MilestonesPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Milestones & Checkpoints</h1>
+          <h1 className={styles.title}>Milestones &amp; Checkpoints</h1>
           <p className={styles.subtitle}>
             Major checkpoints bridging Goals and actionable Projects. Keep your long-term roadmap calibrated with concrete progress gates.
           </p>
@@ -153,6 +173,55 @@ export default function MilestonesPage() {
           <Plus size={18} /> New Milestone
         </button>
       </header>
+
+      {/* ── Quick Add Bar ── */}
+      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
+        <div className={styles.quickAddRow}>
+          <Flag size={20} style={{ color: 'var(--color-accent)' }} />
+          <input
+            type="text"
+            className={styles.quickAddInput}
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            placeholder="Type a milestone checkpoint and press Enter to add instantly (e.g. Beta release)..."
+            autoFocus
+          />
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
+          </button>
+        </div>
+
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <select
+              className={styles.pillSelect}
+              value={quickStatus}
+              onChange={(e) => setQuickStatus(e.target.value as MilestoneStatus)}
+            >
+              <option value="in-progress">Status: In Progress</option>
+              <option value="upcoming">Status: Upcoming</option>
+              <option value="completed">Status: Completed</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickGoalId || goals[0]?.id || ''}
+              onChange={(e) => setQuickGoalId(e.target.value)}
+            >
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  Goal: {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
+          </span>
+        </div>
+      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
@@ -331,17 +400,17 @@ export default function MilestonesPage() {
                         background: 'transparent',
                         border: '1px dashed var(--color-border)',
                         borderRadius: '6px',
-                        padding: '2px 8px',
-                        fontSize: '11px',
+                        padding: '2px 6px',
                         color: 'var(--color-text-faint)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        justifyContent: 'center',
                       }}
-                      title="Set target date for calendar tracking"
+                      title="Add to Calendar"
+                      aria-label="Add to Calendar"
                     >
-                      <Calendar size={12} /> + Add to Calendar
+                      <Calendar size={12} />
                     </button>
                   )}
                 </div>

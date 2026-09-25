@@ -84,52 +84,6 @@
   }
 }
 
-/*  Global Floating Back to Top Button  */
-.backToTopBtn {
-  position: fixed;
-  bottom: 24px;
-  right: 28px;
-  z-index: 999;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 9999px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.backToTopBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
-  border-color: #6366f1;
-  color: #6366f1;
-}
-
-:global([data-theme='dark']) .backToTopBtn {
-  background: rgba(30, 41, 59, 0.92);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-@media (max-width: 768px) {
-  .backToTopBtn {
-    bottom: 84px;
-    right: 16px;
-    padding: 7px 11px;
-    font-size: 0.75rem;
-  }
-}
-
-
 /* ================================================================
    NATURE THEME  -  Shell transparency so background shows through
    ================================================================ */
@@ -145,20 +99,6 @@
   /* Transparent so the nature forest background shows through the whole app */
   background: transparent;
   backdrop-filter: none;
-}
-
-:global([data-theme='nature']) .backToTopBtn {
-  background: rgba(243, 241, 232, 0.92);
-  border-color: rgba(45, 90, 63, 0.30);
-  color: #2d5a3f;
-  box-shadow: 0 4px 14px rgba(28, 43, 30, 0.18);
-}
-
-:global([data-theme='nature']) .backToTopBtn:hover {
-  background: rgba(220, 232, 212, 0.95);
-  border-color: #4a7c59;
-  color: #1b3a27;
-  box-shadow: 0 6px 20px rgba(45, 90, 63, 0.25);
 }
 
 :global([data-theme='nature']) .expandSidebarBtn {
@@ -209,6 +149,15 @@
   box-shadow: var(--shadow-lg);
 }
 
+@media (max-width: 768px) {
+  .aiChatBtn {
+    bottom: calc(72px + env(safe-area-inset-bottom, 8px));
+    right: 14px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 :global([data-theme='light']) .aiChatBtn {
   background: #ffffff;
   border-color: #e2e8f0;
@@ -254,4 +203,3 @@
     height: 42px;
   }
 }
-

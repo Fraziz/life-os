@@ -115,6 +115,23 @@ export default function DreamsPage() {
     setModalOpen(false);
   };
 
+  // Quick Add State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickAreaId, setQuickAreaId] = useState<string>('');
+  const [quickStatus, setQuickStatus] = useState<DreamStatus>('dream');
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    addDream({
+      title: quickTitle.trim(),
+      whyItMatters: 'A core aspirational vision for life',
+      lifeAreaId: quickAreaId || activeAreas[0]?.id || undefined,
+      status: quickStatus,
+    });
+    setQuickTitle('');
+  };
+
   const filteredDreams = dreams.filter((d) => {
     if (activeFilter === 'all') {
       if (d.status === 'archived') return false;
@@ -136,7 +153,7 @@ export default function DreamsPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Dreams & Vision Board</h1>
+          <h1 className={styles.title}>Dreams &amp; Vision Board</h1>
           <p className={styles.subtitle}>
             Capture what you want your life to become. Dreams represent your long-term direction, visual aspirations, and core human motivations.
           </p>
@@ -146,6 +163,57 @@ export default function DreamsPage() {
           <Plus size={18} /> New Dream
         </button>
       </header>
+
+      {/* ── Quick Add Bar ── */}
+      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
+        <div className={styles.quickAddRow}>
+          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+          <input
+            type="text"
+            className={styles.quickAddInput}
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            placeholder="Type a dream and press Enter to add instantly (e.g. Build financial independence)..."
+            autoFocus
+          />
+          <button type="submit" className={styles.quickAddBtn}>
+            Quick Add ↵
+          </button>
+        </div>
+
+        <div className={styles.quickAddMetaRow}>
+          <div className={styles.quickAddPills}>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
+            <select
+              className={styles.pillSelect}
+              value={quickStatus}
+              onChange={(e) => setQuickStatus(e.target.value as DreamStatus)}
+            >
+              <option value="dream">Status: Dream</option>
+              <option value="planning">Status: Planning</option>
+              <option value="active">Status: Active</option>
+              <option value="achieved">Status: Achieved</option>
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickAreaId}
+              onChange={(e) => setQuickAreaId(e.target.value)}
+            >
+              <option value="">Default Life Area</option>
+              {activeAreas.map((a) => (
+                <option key={a.id} value={a.id}>
+                  Area: {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
+          </span>
+        </div>
+      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>

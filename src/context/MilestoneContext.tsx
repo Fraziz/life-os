@@ -116,8 +116,7 @@ export function MilestoneProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Milestone>(MILESTONES_STORAGE_KEY);
-      if (parsed && parsed.length > 0) setMilestones(parsed);
-      else if (!parsed) setMilestones(DEFAULT_MILESTONES);
+      setMilestones(parsed || []);
     } catch (err) {
       console.error('Failed to load Life OS milestones:', err);
     }

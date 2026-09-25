@@ -82,8 +82,7 @@ export function DreamProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Dream>(DREAMS_STORAGE_KEY);
-      if (parsed && parsed.length > 0) setDreams(parsed);
-      else if (!parsed) setDreams(DEFAULT_DREAMS);
+      setDreams(parsed || []);
     } catch (err) {
       console.error('Failed to load Life OS dreams:', err);
     }

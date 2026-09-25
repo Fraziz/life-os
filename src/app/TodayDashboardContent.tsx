@@ -24,6 +24,7 @@ import {
   CheckSquare,
   Square,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -37,6 +38,9 @@ import { useKnowledge } from '@/context/KnowledgeContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import RightSidebar from '@/components/layout/RightSidebar';
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
+import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
+import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
+import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
 import styles from './page.module.css';
 
 export default function TodayDashboardContent() {
@@ -55,6 +59,22 @@ export default function TodayDashboardContent() {
     || docs[0];
 
   const [presetsModalOpen, setPresetsModalOpen] = useState(false);
+  const [briefingModalOpen, setBriefingModalOpen] = useState(false);
+  const [optimizeModalOpen, setOptimizeModalOpen] = useState(false);
+  const [briefingInitialMode, setBriefingInitialMode] = useState<'morning' | 'evening'>('morning');
+  const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
+
+  const toggleSubtasks = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setExpandedSubtasks((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleOpenBriefing = (mode?: 'morning' | 'evening') => {
+    const currentHour = new Date().getHours();
+    const targetMode = mode || (currentHour < 17 ? 'morning' : 'evening');
+    setBriefingInitialMode(targetMode);
+    setBriefingModalOpen(true);
+  };
 
   // ── Greeting & Date ──────────────────────────────────────────
   const [greeting, setGreeting] = useState('Good morning');
@@ -281,12 +301,36 @@ export default function TodayDashboardContent() {
             <Flame size={13} className={styles.pillIconOrange} />
             <span><strong>{habitsCompletedToday}</strong> / {todayHabits.length} habits</span>
           </div>
-          {totalTodayCalendarMarks > 0 && (
-            <Link href="/calendar" className={styles.summaryPill}>
-              <Calendar size={13} className={styles.pillIconSky} />
-              <span><strong>{totalTodayCalendarMarks}</strong> calendar marks</span>
-            </Link>
-          )}
+          <button
+            type="button"
+            className={styles.summaryPill}
+            style={{
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(56, 189, 248, 0.14))',
+              borderColor: 'rgba(99, 102, 241, 0.35)',
+              cursor: 'pointer',
+              color: 'var(--color-text)',
+            }}
+            onClick={() => setOptimizeModalOpen(true)}
+            title="1-Click AI Auto Time-Blocker: Optimize hourly day schedule"
+          >
+            <Clock size={13} style={{ color: 'var(--color-accent)' }} />
+            <span><strong>Optimize Day</strong></span>
+          </button>
+          <button
+            type="button"
+            className={styles.summaryPill}
+            style={{
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(139, 92, 246, 0.16))',
+              borderColor: 'rgba(245, 158, 11, 0.35)',
+              cursor: 'pointer',
+              color: 'var(--color-text)',
+            }}
+            onClick={() => handleOpenBriefing()}
+            title="Open Executive Morning Briefing / Evening Reflection"
+          >
+            <Sparkles size={13} style={{ color: '#f59e0b' }} />
+            <span><strong>AI Briefing</strong></span>
+          </button>
           <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>
             <span>Focus Space</span>
           </Link>
@@ -441,16 +485,6 @@ export default function TodayDashboardContent() {
             <Link href="/tasks" className={styles.viewAllNotesLink}>All tasks →</Link>
           </div>
 
-          {/* Low Energy Mode Reassurance */}
-          {energyLevel === 'low' && (
-            <div className={styles.energyNoticeCard}>
-              <Battery className={styles.energyNoticeIcon} size={18} />
-              <span>
-                <strong>Low Energy Mode active:</strong> Focus only on <strong>#1 The One Thing</strong> today. Don&apos;t worry about the rest of the list. Small wins count!
-              </span>
-            </div>
-          )}
-
           {/* Top 3 Priorities */}
           <div className={styles.subSectionWrap}>
             <h3 className={styles.subSectionTitle}>Top 3 Priorities</h3>
@@ -482,7 +516,18 @@ export default function TodayDashboardContent() {
                       </button>
                       <span className={styles.taskTitleText}>{item.title}</span>
                       {idx === 0 && (
-                        <span className={styles.priorityOneBadge}>👑 The One Thing</span>
+                        <span className={styles.priorityOneBadge}>#1 The One Thing</span>
+                      )}
+                      {item.subtasks && item.subtasks.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.subtaskBadgeBtn}
+                          onClick={(e) => toggleSubtasks(item.id, e)}
+                          title="Toggle subtask checklist"
+                        >
+                          <span>{item.subtasks.filter((s) => s.completed).length}/{item.subtasks.length} steps</span>
+                          <span style={{ fontSize: '9px' }}>{expandedSubtasks[item.id] ? '▲' : '▼'}</span>
+                        </button>
                       )}
                     </div>
                     {item.tags && item.tags.length > 0 && (
@@ -492,8 +537,8 @@ export default function TodayDashboardContent() {
                     )}
                   </div>
 
-                  {/* Subtask Step Breakdown */}
-                  {item.subtasks && item.subtasks.length > 0 && (
+                  {/* Subtask Step Breakdown (Collapsible) */}
+                  {item.subtasks && item.subtasks.length > 0 && expandedSubtasks[item.id] && (
                     <div style={{ marginLeft: '36px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '6px' }}>
                       {item.subtasks.map((sub) => (
                         <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
@@ -541,10 +586,21 @@ export default function TodayDashboardContent() {
                       )}
                     </button>
                     <span className={styles.otherTaskTitle}>{task.title}</span>
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <button
+                        type="button"
+                        className={styles.subtaskBadgeBtn}
+                        onClick={(e) => toggleSubtasks(task.id, e)}
+                        title="Toggle subtask checklist"
+                      >
+                        <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps</span>
+                        <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
+                      </button>
+                    )}
                   </div>
 
-                  {/* Subtask Step Breakdown for Other Tasks */}
-                  {task.subtasks && task.subtasks.length > 0 && (
+                  {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
+                  {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
                     <div style={{ marginLeft: '28px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '4px' }}>
                       {task.subtasks.map((sub) => (
                         <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
@@ -674,6 +730,9 @@ export default function TodayDashboardContent() {
           </div>
         </section>
 
+        {/* Consistency & Execution Heatmap */}
+        <ActivityHeatmap weeksToShow={24} />
+
         {/* Projects & Goals */}
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
@@ -725,7 +784,7 @@ export default function TodayDashboardContent() {
           </div>
         </section>
 
-        {/* Brain Dump — Unified Quick Capture (Firebase Synced) */}
+        {/* Brain Dump — Unified Quick Capture */}
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
             <div className={styles.sectionHeaderLeft}>
@@ -739,7 +798,7 @@ export default function TodayDashboardContent() {
           </div>
 
           <div className={styles.notesList}>
-            {brainDumpItems.slice(0, 5).map((item) => (
+            {brainDumpItems.slice(0, 4).map((item) => (
               <div key={item.id} className={styles.noteItemRow}>
                 <span className={styles.noteBullet}>•</span>
                 <span className={styles.noteText}>{item.content}</span>
@@ -834,19 +893,47 @@ export default function TodayDashboardContent() {
               <strong>Evening Anchor:</strong> You don&apos;t have to finish everything to deserve rest. Give your brain full permission to turn off now so you can recharge.
             </div>
 
-            <button
-              type="button"
-              className={styles.modalPrimaryBtn}
-              onClick={() => setWrapUpOpen(false)}
-            >
-              Complete Shutdown &amp; Rest
-            </button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button
+                type="button"
+                className={styles.modalPrimaryBtn}
+                style={{ flex: 1, background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                onClick={() => {
+                  setWrapUpOpen(false);
+                  handleOpenBriefing('evening');
+                }}
+              >
+                <Sparkles size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                AI Evening Reflection
+              </button>
+              <button
+                type="button"
+                className={styles.modalPrimaryBtn}
+                style={{ flex: 1 }}
+                onClick={() => setWrapUpOpen(false)}
+              >
+                Complete Shutdown
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Starter Presets Modal */}
       <StarterPresetsModal isOpen={presetsModalOpen} onClose={() => setPresetsModalOpen(false)} />
+
+      {/* Daily Briefing & Reflection Modal */}
+      <DailyBriefingModal
+        isOpen={briefingModalOpen}
+        onClose={() => setBriefingModalOpen(false)}
+        initialMode={briefingInitialMode}
+      />
+
+      {/* 1-Click AI Auto Time-Blocker Modal */}
+      <OptimizeDayModal
+        isOpen={optimizeModalOpen}
+        onClose={() => setOptimizeModalOpen(false)}
+      />
     </div>
   );
 }
