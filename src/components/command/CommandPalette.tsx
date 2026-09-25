@@ -107,17 +107,7 @@ export default function CommandPalette() {
         closePalette();
       },
     },
-    {
-      id: 'act-solve-problem',
-      category: 'Quick Actions',
-      title: 'Problem Breakdown & Analysis',
-      subtitle: 'Create structured analysis note',
-      keywords: ['problem', 'breakdown', 'solution', 'analyze'],
-      onSelect: () => {
-        router.push('/knowledge?mode=problem');
-        closePalette();
-      },
-    },
+
     {
       id: 'act-simple-mode',
       category: 'Quick Actions',

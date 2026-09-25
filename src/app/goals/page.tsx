@@ -578,7 +578,7 @@ export default function GoalsPage() {
                       id={`coach-goal-btn-${goal.id}`}
                       style={{ background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)', border: 'none', borderRadius: '8px', padding: '5px 12px', fontSize: '11px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
                     >
-                      <Bot size={12} /> 🤖 Coach Me
+                      <Bot size={13} /> Coach Me
                     </button>
                   )}
                 </div>

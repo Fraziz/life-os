@@ -356,14 +356,6 @@ export default function InboxPage() {
                     </button>
                     <button
                       className={styles.btnConvert}
-                      onClick={() => convertToProblemSolver(item.id)}
-                      title="Convert to Problem Breakdown Document"
-                      style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}
-                    >
-                      Solve Problem
-                    </button>
-                    <button
-                      className={styles.btnConvert}
                       onClick={() => setConvertModalItem(item)}
                       title="More conversion options"
                     >

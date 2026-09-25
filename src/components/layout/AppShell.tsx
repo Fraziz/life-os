@@ -87,6 +87,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleOpenNextAction = () => setNextActionOpen(true);
     const handleOpenAssistant = () => setAssistantOpen(true);
+    const handleOpenAiChat = () => setAiChatOpen(true);
     const handleOpenReminders = () => setRemindersOpen(true);
     const handleToggleSidebar = () => {
       setCollapsed(prev => {
@@ -98,12 +99,14 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('open-next-action', handleOpenNextAction);
     window.addEventListener('open-assistant', handleOpenAssistant);
+    window.addEventListener('open-ai-chat', handleOpenAiChat);
     window.addEventListener('open-reminders', handleOpenReminders);
     window.addEventListener('toggle-sidebar', handleToggleSidebar);
 
     return () => {
       window.removeEventListener('open-next-action', handleOpenNextAction);
       window.removeEventListener('open-assistant', handleOpenAssistant);
+      window.removeEventListener('open-ai-chat', handleOpenAiChat);
       window.removeEventListener('open-reminders', handleOpenReminders);
       window.removeEventListener('toggle-sidebar', handleToggleSidebar);
     };

@@ -7,8 +7,10 @@ import { useTasks } from '@/context/TaskContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useHabits } from '@/context/HabitContext';
+import { useKnowledge } from '@/context/KnowledgeContext';
 import { chatWithAssistant } from '@/utils/aiEngine';
 import type { ChatMessage } from '@/utils/aiEngine';
+import type { KnowledgeDocument } from '@/types';
 import {
   X,
   Send,
@@ -19,6 +21,7 @@ import {
   Mic,
   MicOff,
   Edit3,
+  BookOpen,
 } from 'lucide-react';
 import { useSpeechToText } from '@/utils/useSpeechToText';
 import styles from './AIAssistantPanel.module.css';
@@ -26,6 +29,7 @@ import styles from './AIAssistantPanel.module.css';
 const SUGGESTED_QUESTIONS = [
   'What should I focus on right now?',
   'Help me plan an optimized schedule for today',
+  'Summarize my active knowledge base notes',
   'Break down my most important goal',
   'Check my overdue tasks and potential blockers',
   'How is my habit consistency this week?',
@@ -77,7 +81,9 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   const { goals } = useGoals();
   const { activeProjects } = useProjects();
   const { habits } = useHabits();
+  const { docs } = useKnowledge();
 
+  const [activeDocContext, setActiveDocContext] = useState<KnowledgeDocument | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -96,12 +102,27 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   const aiSettings = settings.aiSettings;
   const isAIConfigured = aiSettings?.enabled && !!aiSettings.apiKey;
 
+  // Listen for context pre-seed events from Knowledge Base or other views
+  useEffect(() => {
+    const handleContextEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ activeDoc?: KnowledgeDocument; initialMessage?: string }>;
+      if (customEvent.detail?.activeDoc) {
+        setActiveDocContext(customEvent.detail.activeDoc);
+      }
+      if (customEvent.detail?.initialMessage) {
+        setInput(customEvent.detail.initialMessage);
+      }
+    };
+    window.addEventListener('open-ai-chat-with-context', handleContextEvent);
+    return () => window.removeEventListener('open-ai-chat-with-context', handleContextEvent);
+  }, []);
+
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
         {
           role: 'assistant',
-          content: `Hello ${userName}. I have live context on your active tasks, goals, habits, and projects.\n\n${
+          content: `Hello ${userName}. I have live context on your active tasks, goals, habits, projects, and knowledge base notes.\n\n${
             isAIConfigured
               ? `Connected: ${aiSettings?.model || 'Gemini'} is active.`
               : `Local Mode: Offline rules active. Add an API key in Settings to enable LLM generation.`
@@ -111,7 +132,11 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       ]);
     }
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      // Avoid jarring mobile keyboard jump on initial touch opening
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+      if (!isMobile) {
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
     }
   }, [isOpen, isAIConfigured, userName]);
 
@@ -133,7 +158,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       const reply = await chatWithAssistant(
         trimmed,
         messages,
-        { tasks, goals, projects: activeProjects, habits, userName },
+        { tasks, goals, projects: activeProjects, habits, userName, docs, currentDoc: activeDocContext || undefined },
         aiSettings
       );
       setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
@@ -171,7 +196,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       const reply = await chatWithAssistant(
         targetMsg.content,
         previousHistory,
-        { tasks, goals, projects: activeProjects, habits, userName },
+        { tasks, goals, projects: activeProjects, habits, userName, docs, currentDoc: activeDocContext || undefined },
         aiSettings
       );
       setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
@@ -209,7 +234,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       const reply = await chatWithAssistant(
         userPromptMsg.content,
         previousHistory,
-        { tasks, goals, projects: activeProjects, habits, userName },
+        { tasks, goals, projects: activeProjects, habits, userName, docs, currentDoc: activeDocContext || undefined },
         aiSettings
       );
       setMessages([...newHistory, { role: 'assistant', content: reply, timestamp: new Date().toISOString() }]);
@@ -330,6 +355,25 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
           </div>
         </div>
 
+        {/* Active Document Context Banner */}
+        {activeDocContext && (
+          <div className={styles.docContextBanner}>
+            <div className={styles.docContextBadge}>
+              <BookOpen size={12} style={{ flexShrink: 0 }} />
+              <span>Discussing: <strong>{activeDocContext.title}</strong></span>
+            </div>
+            <button
+              type="button"
+              className={styles.docContextDismiss}
+              onClick={() => setActiveDocContext(null)}
+              title="Clear note context"
+              aria-label="Clear note context"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {/* Message Thread */}
         <div className={styles.messages}>
           {messages.map((msg, i) => {
@@ -424,7 +468,14 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
         {/* Suggested Quick Question Chips */}
         {messages.length <= 1 && !isThinking && (
           <div className={styles.suggestions}>
-            {SUGGESTED_QUESTIONS.map((q, i) => (
+            {(activeDocContext
+              ? [
+                  `Summarize key takeaways from "${activeDocContext.title}"`,
+                  `Generate 3 study questions for this note`,
+                  `How can I apply "${activeDocContext.title}" to my goals?`,
+                ]
+              : SUGGESTED_QUESTIONS
+            ).map((q, i) => (
               <button
                 key={i}
                 className={styles.suggestionChip}

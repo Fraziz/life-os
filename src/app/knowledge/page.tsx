@@ -66,11 +66,15 @@ import {
   Pin,
   HelpCircle,
   ExternalLink,
+  ChevronLeft,
+  Bot,
+  Brain,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import { useSettings } from '@/context/SettingsContext';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
+import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
 
 // ── Color Highlight Palette ───────────────────────────────────────
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
@@ -445,6 +449,18 @@ function MarkdownToolbar({
         >
           <FileText size={11} style={{ marginRight: 3 }} /> Template
         </button>
+
+        {/* AI Auto-Format in toolbar */}
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${styles.toolbarAiBtn}`}
+          onClick={onAiFormat}
+          disabled={isAiFormatting}
+          title="AI Auto-Format and Structure Note"
+        >
+          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Sparkles size={11} />}
+          <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
+        </button>
       </div>
     </div>
   );
@@ -478,6 +494,20 @@ export default function KnowledgePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
 
+  // Mobile responsive view tab: 'list' (shows document search/list) vs 'editor' (shows canvas/book/editor)
+  const [mobileTab, setMobileTab] = useState<'list' | 'editor'>('list');
+
+  // AI Knowledge Suite state
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiModalTab, setAiModalTab] = useState<'format' | 'summary' | 'quiz' | 'ask'>('format');
+  const [aiSummaryResult, setAiSummaryResult] = useState<{ summary: string; keyPoints: string[]; actionItems: string[]; isAI: boolean } | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
+  const [insertedSummarySuccess, setInsertedSummarySuccess] = useState(false);
+  const [aiQuizResult, setAiQuizResult] = useState<{ questions: { question: string; answer: string }[]; isAI: boolean } | null>(null);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [revealedQuizAnswers, setRevealedQuizAnswers] = useState<Record<number, boolean>>({});
+
   // Form fields
   const [fTitle, setFTitle]           = useState('');
   const [fContent, setFContent]       = useState('');
@@ -497,20 +527,25 @@ export default function KnowledgePage() {
   const editorRef = useRef<HTMLDivElement>(null);
   const bookEditorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
+  const cachedSelectionRangeRef = useRef<Range | null>(null);
   const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
 
-  // Floating highlight & format toolbar when selecting text with mouse
+  // Floating highlight & format toolbar when selecting text (mouse drag, long-press, touch selection)
   useEffect(() => {
+    let selectionTimeout: any = null;
+
     const handleSelection = () => {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.rangeCount) {
         setFloatingMenu(null);
+        cachedSelectionRangeRef.current = null;
         return;
       }
 
       const text = sel.toString().trim();
       if (text.length === 0) {
         setFloatingMenu(null);
+        cachedSelectionRangeRef.current = null;
         return;
       }
 
@@ -525,26 +560,40 @@ export default function KnowledgePage() {
 
       if (!isInside) {
         setFloatingMenu(null);
+        cachedSelectionRangeRef.current = null;
         return;
       }
 
+      try {
+        cachedSelectionRangeRef.current = range.cloneRange();
+      } catch {
+        cachedSelectionRangeRef.current = range;
+      }
+
       const rect = range.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
+      if (rect.width === 0 && rect.height === 0) {
         setFloatingMenu(null);
         return;
       }
 
-      const x = Math.max(130, Math.min(window.innerWidth - 130, rect.left + rect.width / 2));
-      const y = Math.max(12, rect.top - 44);
+      let x = rect.left + rect.width / 2;
+      x = Math.max(130, Math.min(window.innerWidth - 130, x));
+
+      // In mobile viewports or top of screen, display below selection to prevent clipping
+      let y = rect.top - 46;
+      if (y < 60) {
+        y = rect.bottom + 12;
+      }
 
       setFloatingMenu({ x, y });
     };
 
-    const handleMouseUp = () => {
-      setTimeout(handleSelection, 20);
+    const debouncedSelection = () => {
+      if (selectionTimeout) clearTimeout(selectionTimeout);
+      selectionTimeout = setTimeout(handleSelection, 40);
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
+    const handlePointerDown = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target && target.closest?.('[data-floating-toolbar]')) {
         return;
@@ -553,18 +602,22 @@ export default function KnowledgePage() {
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed) {
           setFloatingMenu(null);
+          cachedSelectionRangeRef.current = null;
         }
-      }, 50);
+      }, 70);
     };
 
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('scroll', () => setFloatingMenu(null), true);
+    document.addEventListener('selectionchange', debouncedSelection);
+    document.addEventListener('mouseup', debouncedSelection);
+    document.addEventListener('touchend', debouncedSelection);
+    document.addEventListener('pointerdown', handlePointerDown);
 
     return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('scroll', () => setFloatingMenu(null), true);
+      if (selectionTimeout) clearTimeout(selectionTimeout);
+      document.removeEventListener('selectionchange', debouncedSelection);
+      document.removeEventListener('mouseup', debouncedSelection);
+      document.removeEventListener('touchend', debouncedSelection);
+      document.removeEventListener('pointerdown', handlePointerDown);
     };
   }, []);
 
@@ -590,6 +643,9 @@ export default function KnowledgePage() {
       setSelectedId(newDoc.id);
       setIsCreating(false);
       setEditorMode('book');
+      setMobileTab('editor');
+      setAiSummaryResult(null);
+      setAiQuizResult(null);
       setImportStatus(null);
     } catch (err) {
       console.error('Import failed:', err);
@@ -702,6 +758,9 @@ export default function KnowledgePage() {
     setIsCreating(true);
     clearEditor();
     setEditorMode('edit');
+    setMobileTab('editor');
+    setAiSummaryResult(null);
+    setAiQuizResult(null);
   };
 
   const handleSave = () => {
@@ -1187,17 +1246,28 @@ export default function KnowledgePage() {
     setActiveHighlightColor(colorName);
     const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
-    if (editorMode !== 'book') {
-      editor.focus();
-    }
 
     const sel = window.getSelection();
     const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
 
+    let range: Range | null = null;
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      range = sel.getRangeAt(0);
+    } else if (cachedSelectionRangeRef.current) {
+      range = cachedSelectionRangeRef.current;
+      try {
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } catch {}
+    }
+
     // If nothing selected
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+    if (!range || range.collapsed) {
       // In book mode, never insert dummy text or push content
       if (forceApply && editorMode !== 'book') {
+        editor.focus();
         document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;">highlighted text</mark>&nbsp;`);
         setFContent(editor.innerHTML);
         if (selectedDoc) {
@@ -1207,7 +1277,6 @@ export default function KnowledgePage() {
       return;
     }
 
-    const range = sel.getRangeAt(0);
     // Ensure selection is inside the editor/book container
     if (!editor.contains(range.commonAncestorContainer)) {
       return;
@@ -1257,10 +1326,13 @@ export default function KnowledgePage() {
       });
       mark.appendChild(frag);
       range.insertNode(mark);
-      sel.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.selectNodeContents(mark);
-      sel.addRange(newRange);
+      if (sel) {
+        sel.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(mark);
+        sel.addRange(newRange);
+        cachedSelectionRangeRef.current = newRange;
+      }
     } catch {
       try {
         document.execCommand('hiliteColor', false, c.bg);
@@ -1281,14 +1353,17 @@ export default function KnowledgePage() {
   const handleRemoveHighlight = () => {
     const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
     if (!editor) return;
-    if (editorMode !== 'book') {
-      editor.focus();
-    }
+
     const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
+    let range: Range | null = null;
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      range = sel.getRangeAt(0);
+    } else if (cachedSelectionRangeRef.current) {
+      range = cachedSelectionRangeRef.current;
+    }
+    if (!range) return;
 
     try {
-      const range = sel.getRangeAt(0);
       const container = range.commonAncestorContainer;
       
       // If common ancestor or parent is MARK
@@ -1308,7 +1383,7 @@ export default function KnowledgePage() {
       // Also unwrap any marks within the selection range
       const marks = editor.querySelectorAll('mark');
       marks.forEach((m) => {
-        if (sel.containsNode(m, true)) {
+        if (sel && sel.containsNode && sel.containsNode(m, true)) {
           const parent = m.parentNode;
           while (m.firstChild) {
             parent?.insertBefore(m.firstChild, m);
@@ -1357,6 +1432,97 @@ export default function KnowledgePage() {
     } finally {
       setIsAiFormatting(false);
     }
+  };
+
+  // AI Executive Summary Generator
+  const handleGenerateSummary = async () => {
+    const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || selectedDoc?.content || '';
+    if (!raw.trim() || raw.trim().length < 5) {
+      alert('Please add some content to this document before generating an executive summary.');
+      return;
+    }
+    setIsGeneratingSummary(true);
+    setInsertedSummarySuccess(false);
+    try {
+      const res = await summarizeDocumentWithAI(fTitle || 'Document', raw, settings);
+      setAiSummaryResult(res);
+    } catch (err) {
+      console.error('Summary generation error:', err);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  // Copy Executive Summary to Clipboard
+  const handleCopySummary = async () => {
+    if (!aiSummaryResult) return;
+    const text = `## Executive Summary: ${fTitle || 'Document'}\n\n${aiSummaryResult.summary}\n\n### Key Takeaways:\n${aiSummaryResult.keyPoints.map((p) => `• ${p}`).join('\n')}\n\n### Next Steps:\n${aiSummaryResult.actionItems.map((a) => `• ${a}`).join('\n')}`;
+    await navigator.clipboard.writeText(text);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2000);
+  };
+
+  // Insert Executive Summary at Top of Document
+  const handleInsertSummaryIntoDoc = () => {
+    if (!aiSummaryResult) return;
+    const summaryHtml = `
+      <div class="key-idea" style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(6,182,212,0.08));border-left:3.5px solid #6366f1;border-radius:0 6px 6px 0;padding:12px 16px;margin:14px 0;">
+        <p style="margin:0 0 6px 0;font-weight:700;">💡 Executive Summary: ${aiSummaryResult.summary}</p>
+        <p style="margin:0;font-size:12px;color:var(--color-text-muted);"><strong>Core Takeaways:</strong> ${aiSummaryResult.keyPoints.join(' &bull; ')}</p>
+      </div>
+      <hr />
+    `;
+    const newHtml = summaryHtml + (fContent || '');
+    setFContent(newHtml);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = newHtml;
+    }
+    if (bookEditorRef.current) {
+      bookEditorRef.current.innerHTML = newHtml;
+    }
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, { content: newHtml });
+    }
+    setInsertedSummarySuccess(true);
+    setTimeout(() => setInsertedSummarySuccess(false), 2500);
+  };
+
+  // AI Active Recall Study Quiz Generator
+  const handleGenerateQuiz = async () => {
+    const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || selectedDoc?.content || '';
+    if (!raw.trim() || raw.trim().length < 5) {
+      alert('Please add some content to this document before generating study questions.');
+      return;
+    }
+    setIsGeneratingQuiz(true);
+    setRevealedQuizAnswers({});
+    try {
+      const res = await generateStudyQuizWithAI(fTitle || 'Document', raw, settings);
+      setAiQuizResult(res);
+    } catch (err) {
+      console.error('Quiz generation error:', err);
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const toggleQuizAnswer = (idx: number) => {
+    setRevealedQuizAnswers((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Open Global AI Chat Assistant with this document preloaded
+  const handleOpenAiChatForDoc = () => {
+    if (selectedDoc) {
+      window.dispatchEvent(
+        new CustomEvent('open-ai-chat-with-context', {
+          detail: {
+            activeDoc: selectedDoc,
+            initialMessage: `I am studying "${selectedDoc.title}". Can you give me an executive overview of this note?`,
+          },
+        })
+      );
+    }
+    window.dispatchEvent(new CustomEvent('open-ai-chat'));
   };
 
   // Filter & sort docs list (pinned items always at the top)
@@ -1423,10 +1589,31 @@ export default function KnowledgePage() {
         </div>
       </header>
 
+      {/* ── Mobile View Switcher (Notes List vs Document Reader/Editor) ── */}
+      <div className={styles.mobileViewSwitcher}>
+        <button
+          type="button"
+          className={`${styles.mobileTabBtn} ${mobileTab === 'list' ? styles.mobileTabBtnActive : ''}`}
+          onClick={() => setMobileTab('list')}
+        >
+          <List size={13} />
+          <span>Documents ({filteredDocs.length})</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.mobileTabBtn} ${mobileTab === 'editor' ? styles.mobileTabBtnActive : ''}`}
+          onClick={() => setMobileTab('editor')}
+          disabled={!hasEditor}
+        >
+          <BookOpen size={13} />
+          <span>{editorMode === 'book' ? 'Reader' : 'Editor'}</span>
+        </button>
+      </div>
+
       {/* ── Workbench Layout (No nested boxes) ── */}
       <div className={styles.workbench}>
         {/* ── Left: Document List (Clean Linear Rows) ── */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${mobileTab !== 'list' ? styles.sidebarHiddenMobile : ''}`}>
 
           {/* Search & Tag Filter */}
           <div className={styles.searchBar}>
@@ -1488,6 +1675,9 @@ export default function KnowledgePage() {
                     onClick={() => {
                       setSelectedId(doc.id);
                       setIsCreating(false);
+                      setMobileTab('editor');
+                      setAiSummaryResult(null);
+                      setAiQuizResult(null);
                     }}
                   >
                     <div className={styles.docRowContent}>
@@ -1576,7 +1766,7 @@ export default function KnowledgePage() {
         </aside>
 
         {/* ── Right: Clean Editorial Document Canvas ── */}
-        <main className={styles.editorCanvas}>
+        <main className={`${styles.editorCanvas} ${mobileTab !== 'editor' ? styles.canvasHiddenMobile : ''}`}>
           {!hasEditor ? (
             <div className={styles.canvasEmpty}>
               <BookOpen size={44} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
@@ -1601,7 +1791,18 @@ export default function KnowledgePage() {
             <div className={styles.editorWrapper}>
               {/* Document Action Header */}
               <div className={styles.canvasHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div className={styles.canvasHeaderLeft}>
+                  {/* Mobile Back Button to Notes List */}
+                  <button
+                    type="button"
+                    className={styles.mobileBackBtn}
+                    onClick={() => setMobileTab('list')}
+                    title="Back to all documents list"
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Notes</span>
+                  </button>
+
                   <div className={styles.segmentedControl}>
                     <button
                       className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
@@ -1632,27 +1833,35 @@ export default function KnowledgePage() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <div className={styles.canvasActionsRight}>
                   {selectedDoc && (
                     <span className={styles.lastSavedText}>
                       <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                       Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
-                  
-                  {/* AI Format Button in Header (edit mode only) */}
-                  {editorMode === 'edit' && (
-                    <button
-                      type="button"
-                      className={styles.headerBtn}
-                      onClick={handleAiFormat}
-                      disabled={isAiFormatting}
-                      title="AI Auto-Correct Spacing & Organize into Formal Study Notes"
-                    >
-                      {isAiFormatting ? <Loader2 size={12} className={styles.spin} /> : <Sparkles size={12} />}
-                      {isAiFormatting ? 'Formatting...' : 'AI Format'}
-                    </button>
-                  )}
+
+                  {/* AI Knowledge Tools Suite (Works in all modes: Book, Edit, Preview) */}
+                  <button
+                    type="button"
+                    className={`${styles.headerBtn} ${styles.headerAiBtn}`}
+                    onClick={() => setAiModalOpen(true)}
+                    title="AI Note Tools: Auto-Format, Executive Summary, Study Quiz"
+                  >
+                    <Sparkles size={13} className={styles.aiSparkleIcon} />
+                    <span>AI Tools</span>
+                  </button>
+
+                  {/* Direct Ask AI Assistant button */}
+                  <button
+                    type="button"
+                    className={styles.headerBtn}
+                    onClick={handleOpenAiChatForDoc}
+                    title="Ask AI Assistant about this document"
+                  >
+                    <Bot size={13} />
+                    <span>Ask AI</span>
+                  </button>
 
                   {/* Export PDF Button */}
                   <button
@@ -1715,7 +1924,6 @@ export default function KnowledgePage() {
                     >
                       <option value="general">General</option>
                       <option value="learning">🧠 Learning &amp; Study</option>
-                      <option value="problem-solving">🎯 Problem Solving</option>
                       <option value="guides">📖 Guides &amp; Manuals</option>
                       <option value="ideas">💡 Ideas &amp; Insights</option>
                       <option value="reference">📚 Reference</option>
@@ -2028,6 +2236,9 @@ export default function KnowledgePage() {
           data-floating-toolbar="true"
           className={styles.floatingHighlightMenu}
           style={{ left: `${floatingMenu.x}px`, top: `${floatingMenu.y}px` }}
+          onPointerDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.preventDefault()}
         >
           {HIGHLIGHT_COLORS.slice(0, 8).map((c) => (
             <button
@@ -2038,8 +2249,21 @@ export default function KnowledgePage() {
                 background: c.bg,
                 borderColor: c.border,
               }}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 handleHighlight(c.name, false);
                 setFloatingMenu(null);
               }}
@@ -2051,8 +2275,21 @@ export default function KnowledgePage() {
           <button
             type="button"
             className={styles.floatingEraserBtn}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => {
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               handleRemoveHighlight();
               setFloatingMenu(null);
             }}
@@ -2060,6 +2297,272 @@ export default function KnowledgePage() {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/* ── AI Knowledge Suite Modal ── */}
+      {aiModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setAiModalOpen(false)}>
+          <div className={styles.aiModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.aiModalHeader}>
+              <div className={styles.aiModalTitleGroup}>
+                <span className={styles.aiModalBadge}>
+                  <Sparkles size={13} /> AI Knowledge Suite
+                </span>
+                <h2 className={styles.aiModalTitle}>{fTitle || 'Untitled Document'}</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.aiModalCloseBtn}
+                onClick={() => setAiModalOpen(false)}
+                aria-label="Close AI tools"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className={styles.aiModalTabs}>
+              <button
+                type="button"
+                className={`${styles.aiModalTab} ${aiModalTab === 'format' ? styles.aiModalTabActive : ''}`}
+                onClick={() => setAiModalTab('format')}
+              >
+                <Wand2 size={13} />
+                <span>Auto-Format</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.aiModalTab} ${aiModalTab === 'summary' ? styles.aiModalTabActive : ''}`}
+                onClick={() => {
+                  setAiModalTab('summary');
+                  if (!aiSummaryResult && !isGeneratingSummary) {
+                    handleGenerateSummary();
+                  }
+                }}
+              >
+                <FileText size={13} />
+                <span>Summary</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.aiModalTab} ${aiModalTab === 'quiz' ? styles.aiModalTabActive : ''}`}
+                onClick={() => {
+                  setAiModalTab('quiz');
+                  if (!aiQuizResult && !isGeneratingQuiz) {
+                    handleGenerateQuiz();
+                  }
+                }}
+              >
+                <Brain size={13} />
+                <span>Study Quiz</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.aiModalTab} ${aiModalTab === 'ask' ? styles.aiModalTabActive : ''}`}
+                onClick={() => setAiModalTab('ask')}
+              >
+                <Bot size={13} />
+                <span>Ask AI</span>
+              </button>
+            </div>
+
+            <div className={styles.aiModalBody}>
+              {/* TAB 1: Format */}
+              {aiModalTab === 'format' && (
+                <div className={styles.aiToolCard}>
+                  <div className={styles.aiToolHeader}>
+                    <Wand2 size={20} className={styles.aiToolIcon} />
+                    <div>
+                      <h3 className={styles.aiToolHeading}>Intelligent Note Formatting</h3>
+                      <p className={styles.aiToolDesc}>
+                        Automatically fixes clumsy formatting, creates clean section headings, organizes lists, highlights key definitions, and optimizes spacing for reading and study.
+                      </p>
+                    </div>
+                  </div>
+                  <div className={styles.aiActionRow}>
+                    <button
+                      type="button"
+                      className={styles.btnPrimaryGradient}
+                      onClick={async () => {
+                        await handleAiFormat();
+                        setAiModalOpen(false);
+                      }}
+                      disabled={isAiFormatting}
+                    >
+                      {isAiFormatting ? <Loader2 size={14} className={styles.spin} /> : <Sparkles size={14} />}
+                      <span>{isAiFormatting ? 'Formatting Document...' : 'Run Auto-Format'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: Summary */}
+              {aiModalTab === 'summary' && (
+                <div className={styles.aiToolCard}>
+                  {isGeneratingSummary ? (
+                    <div className={styles.aiLoadingState}>
+                      <Loader2 size={24} className={styles.spin} />
+                      <p>Generating executive summary & key takeaways...</p>
+                    </div>
+                  ) : aiSummaryResult ? (
+                    <div className={styles.aiSummaryContent}>
+                      <div className={styles.aiSummarySection}>
+                        <div className={styles.aiSectionLabel}>Executive Summary</div>
+                        <p className={styles.aiSummaryText}>{aiSummaryResult.summary}</p>
+                      </div>
+
+                      <div className={styles.aiSummarySection}>
+                        <div className={styles.aiSectionLabel}>Core Takeaways</div>
+                        <ul className={styles.aiBulletList}>
+                          {aiSummaryResult.keyPoints.map((pt, idx) => (
+                            <li key={idx}>{pt}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {aiSummaryResult.actionItems && aiSummaryResult.actionItems.length > 0 && (
+                        <div className={styles.aiSummarySection}>
+                          <div className={styles.aiSectionLabel}>Actionable Next Steps</div>
+                          <ul className={styles.aiBulletList}>
+                            {aiSummaryResult.actionItems.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className={styles.aiActionButtons}>
+                        <button
+                          type="button"
+                          className={styles.btnPrimaryGradient}
+                          onClick={handleInsertSummaryIntoDoc}
+                        >
+                          {insertedSummarySuccess ? <Check size={14} /> : <Plus size={14} />}
+                          <span>{insertedSummarySuccess ? 'Inserted at Top!' : 'Insert into Document'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          onClick={handleCopySummary}
+                        >
+                          {copiedSummary ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedSummary ? 'Copied!' : 'Copy Summary'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          onClick={handleGenerateSummary}
+                        >
+                          <RotateCcw size={14} />
+                          <span>Regenerate</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.aiEmptyState}>
+                      <p className={styles.aiToolDesc}>Generate an executive TL;DR, core insights, and next actions for this note.</p>
+                      <button
+                        type="button"
+                        className={styles.btnPrimaryGradient}
+                        onClick={handleGenerateSummary}
+                      >
+                        <Sparkles size={14} /> Generate Executive Summary
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: Study Quiz */}
+              {aiModalTab === 'quiz' && (
+                <div className={styles.aiToolCard}>
+                  {isGeneratingQuiz ? (
+                    <div className={styles.aiLoadingState}>
+                      <Loader2 size={24} className={styles.spin} />
+                      <p>Generating active recall questions from your notes...</p>
+                    </div>
+                  ) : aiQuizResult ? (
+                    <div className={styles.aiQuizList}>
+                      <p className={styles.aiToolDesc}>
+                        Active recall strengthens memory retention. Tap any question to reveal its answer!
+                      </p>
+                      {aiQuizResult.questions.map((q, idx) => {
+                        const isRevealed = revealedQuizAnswers[idx];
+                        return (
+                          <div
+                            key={idx}
+                            className={styles.quizCard}
+                            onClick={() => toggleQuizAnswer(idx)}
+                          >
+                            <div className={styles.quizQuestionRow}>
+                              <span className={styles.quizNumber}>Q{idx + 1}</span>
+                              <span className={styles.quizQuestion}>{q.question}</span>
+                            </div>
+                            {isRevealed ? (
+                              <div className={styles.quizAnswer}>
+                                <strong>Answer:</strong> {q.answer}
+                              </div>
+                            ) : (
+                              <div className={styles.quizTapPrompt}>
+                                <span>Tap card to reveal answer ▾</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <div style={{ marginTop: 12 }}>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          onClick={handleGenerateQuiz}
+                        >
+                          <RotateCcw size={13} /> Regenerate Questions
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.aiEmptyState}>
+                      <p className={styles.aiToolDesc}>Generate 3 to 4 flashcard-style testing questions from this document.</p>
+                      <button
+                        type="button"
+                        className={styles.btnPrimaryGradient}
+                        onClick={handleGenerateQuiz}
+                      >
+                        <Brain size={14} /> Generate Study Questions
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: Ask AI Assistant */}
+              {aiModalTab === 'ask' && (
+                <div className={styles.aiToolCard}>
+                  <div className={styles.aiToolHeader}>
+                    <Bot size={22} className={styles.aiToolIcon} />
+                    <div>
+                      <h3 className={styles.aiToolHeading}>Discuss with AI Assistant</h3>
+                      <p className={styles.aiToolDesc}>
+                        Opens the floating chat assistant with <strong>&ldquo;{fTitle || 'this document'}&rdquo;</strong> pre-loaded into live context. Ask questions, clarify difficult concepts, or generate action plans connected to your goals.
+                      </p>
+                    </div>
+                  </div>
+                  <div className={styles.aiActionRow}>
+                    <button
+                      type="button"
+                      className={styles.btnPrimaryGradient}
+                      onClick={() => {
+                        setAiModalOpen(false);
+                        handleOpenAiChatForDoc();
+                      }}
+                    >
+                      <Bot size={14} /> Open AI Assistant Chat
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

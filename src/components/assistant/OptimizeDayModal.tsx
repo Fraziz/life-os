@@ -34,10 +34,39 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
   const [schedule, setSchedule] = useState<OptimizedDaySchedule | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
+  const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set());
   const [startHour, setStartHour] = useState<number>(() => {
     const currentH = new Date().getHours();
     return Math.max(7, Math.min(currentH >= 12 ? currentH : 9, 18));
   });
+
+  // When a new schedule arrives, select all blocks by default
+  useEffect(() => {
+    if (schedule?.blocks) {
+      setSelectedBlockIds(new Set(schedule.blocks.map((b) => b.id)));
+    }
+  }, [schedule]);
+
+  const toggleBlockSelection = (blockId: string) => {
+    setSelectedBlockIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(blockId)) {
+        next.delete(blockId);
+      } else {
+        next.add(blockId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllToggle = () => {
+    if (!schedule) return;
+    if (selectedBlockIds.size === schedule.blocks.length) {
+      setSelectedBlockIds(new Set());
+    } else {
+      setSelectedBlockIds(new Set(schedule.blocks.map((b) => b.id)));
+    }
+  };
 
   const generateSchedule = useCallback(
     async (customStartHour?: number) => {
@@ -78,7 +107,9 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
   const handleApplySchedule = () => {
     if (!schedule) return;
 
-    const taskBlocks = schedule.blocks.filter((b) => b.taskId);
+    // Filter only the blocks the user explicitly selected
+    const activeBlocks = schedule.blocks.filter((b) => selectedBlockIds.has(b.id));
+    const taskBlocks = activeBlocks.filter((b) => b.taskId);
     const selectedTaskIds = taskBlocks.map((b) => b.taskId!).filter(Boolean);
     const scheduledSlots: Record<string, string> = {};
 
@@ -88,9 +119,14 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
       }
     });
 
+    // Determine the main focus from selected tasks
+    const effectiveMainFocus = selectedTaskIds.includes(schedule.mainFocusTaskId || '')
+      ? schedule.mainFocusTaskId
+      : selectedTaskIds[0] || undefined;
+
     // 1. Commit to TodayPlanContext (Sets Main Focus, Curated Tasks, Scheduled Slots)
     batchApplyDayPlan({
-      mainFocusTaskId: schedule.mainFocusTaskId,
+      mainFocusTaskId: effectiveMainFocus,
       selectedTaskIds,
       scheduledSlots,
     });
@@ -212,31 +248,66 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
                 </div>
               )}
 
-              {/* Timeline Blocks */}
-              <div className={styles.timelineList}>
-                {schedule.blocks.map((b) => (
-                  <div key={b.id} className={`${styles.blockCard} ${styles[`type_${b.type}`]}`}>
-                    <div className={styles.blockTimeCol}>
-                      <span className={styles.blockTimeStart}>{b.startTime}</span>
-                      <span className={styles.blockTimeEnd}>{b.endTime}</span>
-                    </div>
+              {/* Timeline Blocks with Selection */}
+              <div className={styles.selectionBar}>
+                <span className={styles.selectionCount}>
+                  {selectedBlockIds.size} of {schedule.blocks.length} blocks selected
+                </span>
+                <button
+                  type="button"
+                  className={styles.btnSelectAll}
+                  onClick={handleSelectAllToggle}
+                >
+                  {selectedBlockIds.size === schedule.blocks.length ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
 
-                    <div className={styles.blockBody}>
-                      <div className={styles.blockTitleRow}>
-                        <span className={styles.blockTitle}>{b.title}</span>
-                        <div className={styles.blockBadges}>
-                          <span className={styles.blockTypeBadge}>
-                            {getBlockTypeLabel(b.type)}
-                          </span>
-                          <span className={styles.blockDurationBadge}>
-                            {b.durationMinutes}m
-                          </span>
-                        </div>
+              <div className={styles.timelineList}>
+                {schedule.blocks.map((b) => {
+                  const isSelected = selectedBlockIds.has(b.id);
+                  return (
+                    <div
+                      key={b.id}
+                      className={`${styles.blockCard} ${styles[`type_${b.type}`]} ${
+                        isSelected ? styles.blockSelected : styles.blockUnselected
+                      }`}
+                      onClick={() => toggleBlockSelection(b.id)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className={styles.blockCheckboxCol}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleBlockSelection(b.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={styles.blockCheckbox}
+                          aria-label={`Select ${b.title} for My Day`}
+                        />
                       </div>
-                      <p className={styles.blockRationale}>{b.rationale}</p>
+
+                      <div className={styles.blockTimeCol}>
+                        <span className={styles.blockTimeStart}>{b.startTime}</span>
+                        <span className={styles.blockTimeEnd}>{b.endTime}</span>
+                      </div>
+
+                      <div className={styles.blockBody}>
+                        <div className={styles.blockTitleRow}>
+                          <span className={styles.blockTitle}>{b.title}</span>
+                          <div className={styles.blockBadges}>
+                            <span className={styles.blockTypeBadge}>
+                              {getBlockTypeLabel(b.type)}
+                            </span>
+                            <span className={styles.blockDurationBadge}>
+                              {b.durationMinutes}m
+                            </span>
+                          </div>
+                        </div>
+                        <p className={styles.blockRationale}>{b.rationale}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -253,7 +324,7 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
           <button
             className={styles.btnPrimary}
             onClick={handleApplySchedule}
-            disabled={isLoading || !schedule || isApplied}
+            disabled={isLoading || !schedule || isApplied || selectedBlockIds.size === 0}
           >
             {isApplied ? (
               <>
@@ -263,7 +334,9 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
             ) : (
               <>
                 <Zap size={14} />
-                Apply to My Day
+                {selectedBlockIds.size === 0
+                  ? 'Select at least 1 Block'
+                  : `Apply ${selectedBlockIds.size} Block${selectedBlockIds.size === 1 ? '' : 's'} to My Day`}
               </>
             )}
           </button>

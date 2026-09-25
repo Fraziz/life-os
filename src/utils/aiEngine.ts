@@ -8,6 +8,7 @@ import type {
   UserSettings,
   Habit,
   CalendarEvent,
+  KnowledgeDocument,
 } from '@/types';
 
 /**
@@ -988,10 +989,12 @@ export async function chatWithAssistant(
     projects: Project[];
     habits: Habit[];
     userName: string;
+    docs?: KnowledgeDocument[];
+    currentDoc?: KnowledgeDocument;
   },
   aiSettings?: AISettings
 ): Promise<string> {
-  const { tasks, goals, projects, habits, userName } = context;
+  const { tasks, goals, projects, habits, userName, docs = [], currentDoc } = context;
 
   // Smart deterministic responses for common questions (no API key needed)
   const q = userMessage.toLowerCase();
@@ -1009,6 +1012,18 @@ export async function chatWithAssistant(
       return top
         ? `🎯 Right now I'd recommend: **"${top.title}"** — it's ${top.priority} priority. Set a 25-minute timer and go!`
         : `✅ You're all caught up, ${userName}! No pending tasks. Add something new or take a well-earned break.`;
+    }
+
+    if (/note|doc|knowledge|reading|book|study/.test(q)) {
+      if (currentDoc) {
+        return `📖 You are currently viewing **"${currentDoc.title}"** (${currentDoc.category || 'General'}${currentDoc.readProgress != null ? `, ${currentDoc.readProgress}% completed` : ''}).\n\nTips for this note:\n• Use **AI Format** to structure paragraphs and headings.\n• Highlight key definitions with the colored highlighter.\n• Connect this note to a Goal or Project in Properties for structured review.`;
+      }
+      if (docs.length > 0) {
+        const pinned = docs.filter(d => d.isPinned);
+        const topDocs = (pinned.length > 0 ? pinned : docs).slice(0, 4);
+        return `📚 You have **${docs.length} document(s)** in your Knowledge Base:\n${topDocs.map(d => `• **"${d.title}"** (${d.category || 'general'}${d.readProgress ? ` — ${d.readProgress}%` : ''})`).join('\n')}\n\nSelect any document in Knowledge Base to study, highlight, or auto-format with AI!`;
+      }
+      return `You don't have any notes in your Knowledge Base yet. Tap **+ New Document** or **Import File** in Knowledge Base to start! 📝`;
     }
 
     if (/behind|progress|goal/.test(q)) {
@@ -1034,7 +1049,7 @@ export async function chatWithAssistant(
         : `You don't have any habits set up yet. Head to Habits to start building your streak! 🔥`;
     }
 
-    return `Hi ${userName}! I'm your Life OS assistant. I can answer questions about your tasks, goals, habits, and progress. Try asking: "What should I focus on?", "Am I behind on any goals?", or "What did I accomplish today?" 🤖\n\n*Tip: Add a Gemini or OpenAI API key in Settings → AI for real AI responses.*`;
+    return `Hi ${userName}! I'm your Life OS assistant. I have live context on your tasks, goals, habits, and knowledge base notes. Try asking: "What should I focus on?", "Summarize my notes", or "What did I accomplish today?" 🤖\n\n*Tip: Add a Gemini or OpenAI API key in Settings → AI for real AI responses.*`;
   }
 
   // Real AI chat with full user context
@@ -1056,6 +1071,20 @@ export async function chatWithAssistant(
         .slice(0, 5)
         .map((p) => ({ title: p.title, progress: `${p.progress ?? 0}%` })),
       habits: habits.slice(0, 6).map((h) => ({ title: h.title, frequency: h.frequency })),
+      knowledgeDocs: docs.slice(0, 6).map(d => ({
+        title: d.title,
+        category: d.category,
+        readProgress: d.readProgress,
+        tags: d.tags,
+      })),
+      ...(currentDoc ? {
+        activeNoteBeingViewed: {
+          title: currentDoc.title,
+          category: currentDoc.category,
+          readProgress: currentDoc.readProgress,
+          excerpt: currentDoc.content.replace(/<[^>]+>/g, ' ').slice(0, 600),
+        },
+      } : {}),
     };
 
     const historyMessages = history
@@ -1064,15 +1093,16 @@ export async function chatWithAssistant(
       .join('\n\n');
 
     const systemPrompt = `You are the executive AI Life OS Assistant for ${userName}.
-You have direct, real-time visibility into their tasks, goals, active projects, habits, and deadlines.
+You have direct, real-time visibility into their tasks, goals, active projects, habits, deadlines, and knowledge base documents.
 
 Your Mission:
 1. Provide concise, ultra-clear, highly actionable advice tailored specifically to their live context.
 2. Structure recommendations with bold highlights, bullet points, or step numbers when helpful.
 3. If they ask what to work on, select specific tasks from their actual active backlog.
-4. If they need to create new tasks or break something down, suggest clean concrete action items.
-5. Keep tone supportive, sharp, focused, and free of fluff.
-6. Today's date is ${todayStr}.
+4. If they ask about their notes or documents, reference their actual knowledge base documents.
+5. If they need to create new tasks or break something down, suggest clean concrete action items.
+6. Keep tone supportive, sharp, focused, and free of fluff.
+7. Today's date is ${todayStr}.
 
 Current User Life OS Data:
 ${JSON.stringify(contextSummary, null, 2)}`;
@@ -1087,6 +1117,120 @@ ${JSON.stringify(contextSummary, null, 2)}`;
     console.warn('AI chat error (fallback):', err);
     return `⚠️ AI Error: ${err?.message || 'Could not connect to AI provider'}.\n\nPlease check your API key in Settings → AI Assistant.`;
   }
+}
+
+/**
+ * AI Document Executive Summary & Key Takeaways Generator
+ */
+export async function summarizeDocumentWithAI(
+  docTitle: string,
+  docContent: string,
+  userSettings?: UserSettings
+): Promise<{ summary: string; keyPoints: string[]; actionItems: string[]; isAI: boolean }> {
+  const plainText = docContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const aiSettings = userSettings?.aiSettings;
+  const isAI = Boolean(aiSettings?.enabled && aiSettings?.apiKey);
+
+  if (isAI && aiSettings) {
+    try {
+      const systemPrompt = `You are an executive knowledge architect. Analyze the given document notes and generate a high-impact summary.
+Respond strictly in valid JSON with this exact structure:
+{
+  "summary": "1-3 concise sentences summarizing core premise and conclusion",
+  "keyPoints": ["Key takeaway 1", "Key takeaway 2", "Key takeaway 3"],
+  "actionItems": ["Actionable next step 1", "Actionable next step 2"]
+}
+Keep each point punchy, clear, and actionable. No markdown fences.`;
+
+      const prompt = `Title: "${docTitle}"\n\nContent:\n${plainText.slice(0, 3000)}`;
+      const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.summary && Array.isArray(parsed.keyPoints)) {
+          return {
+            summary: parsed.summary,
+            keyPoints: parsed.keyPoints,
+            actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
+            isAI: true,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('AI Document summary failed, using fallback:', err);
+    }
+  }
+
+  // Deterministic Fallback Summary
+  const sentences = plainText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+  const summary = sentences.slice(0, 2).join('. ') + (sentences.length > 0 ? '.' : 'Core notes on ' + docTitle);
+  const keyPoints = sentences.slice(2, 6).length > 0
+    ? sentences.slice(2, 6)
+    : [`Key concept covered in "${docTitle}"`, 'Core principles and definitions documented'];
+  const actionItems = [
+    `Review key terms in "${docTitle}"`,
+    'Apply core insight to active roadmap projects',
+  ];
+
+  return { summary, keyPoints, actionItems, isAI: false };
+}
+
+/**
+ * AI Study Quiz & Flashcards Generator for Active Recall
+ */
+export async function generateStudyQuizWithAI(
+  docTitle: string,
+  docContent: string,
+  userSettings?: UserSettings
+): Promise<{ questions: { question: string; answer: string }[]; isAI: boolean }> {
+  const plainText = docContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const aiSettings = userSettings?.aiSettings;
+  const isAI = Boolean(aiSettings?.enabled && aiSettings?.apiKey);
+
+  if (isAI && aiSettings) {
+    try {
+      const systemPrompt = `You are a learning science expert specializing in active recall and spaced repetition.
+Generate 3 to 4 high-yield study questions with concise, accurate answers from the provided notes.
+Respond strictly in valid JSON:
+{
+  "questions": [
+    { "question": "Clear testing question", "answer": "Clear, direct answer explaining the concept" }
+  ]
+}
+No markdown fences.`;
+
+      const prompt = `Document Title: "${docTitle}"\n\nNotes Content:\n${plainText.slice(0, 3000)}`;
+      const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+          return { questions: parsed.questions, isAI: true };
+        }
+      }
+    } catch (err) {
+      console.warn('AI Quiz generation failed, using fallback:', err);
+    }
+  }
+
+  // Deterministic Active Recall Questions
+  return {
+    questions: [
+      {
+        question: `What is the core premise or objective of "${docTitle}"?`,
+        answer: plainText.slice(0, 180) || `The foundational concepts explored in ${docTitle}.`,
+      },
+      {
+        question: `How does the insight in "${docTitle}" apply to your current goals?`,
+        answer: 'Identify 1 practical scenario where this concept resolves an execution roadblock.',
+      },
+      {
+        question: `What is the most critical rule or formula from this note?`,
+        answer: 'Refer to highlighted key ideas and formulas in the document text.',
+      },
+    ],
+    isAI: false,
+  };
 }
 
 /**

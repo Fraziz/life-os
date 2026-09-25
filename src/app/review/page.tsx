@@ -135,9 +135,6 @@ export default function WeeklyReviewPage() {
       {/* ── 1. Weekly Performance Summary Grid ── */}
       <section className={styles.metricsGrid}>
         <div className={styles.metricCard}>
-          <div className={styles.metricIcon} style={{ color: 'var(--color-success)' }}>
-            <CheckSquare size={18} />
-          </div>
           <div className={styles.metricInfo}>
             <span className={styles.metricVal}>{currentWeekStats.completedTasks.length} Done</span>
             <span className={styles.metricLabel}>{currentWeekStats.openTasks.length} Remaining</span>

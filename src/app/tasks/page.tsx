@@ -23,6 +23,7 @@ import {
   Sparkles,
   Search,
   ChevronRight,
+  ChevronDown,
   ListTodo,
   ListTree,
   ExternalLink,
@@ -85,6 +86,14 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [taskSearch, setTaskSearch] = useState<string>('');
   const [hideDone, setHideDone] = useState<boolean>(false);
+
+  // Mobile View Switcher & Column Collapse (for managing large task lists)
+  const [mobileColFilter, setMobileColFilter] = useState<'all' | TaskStatus>('all');
+  const [collapsedCols, setCollapsedCols] = useState<Record<string, boolean>>({});
+
+  const toggleColumnCollapse = (colId: string) => {
+    setCollapsedCols((prev) => ({ ...prev, [colId]: !prev[colId] }));
+  };
 
   // Breakdown Modal State
   const [breakdownModalOpen, setBreakdownModalOpen] = useState(false);
@@ -429,10 +438,35 @@ export default function TasksPage() {
         </div>
       </div>
 
+      {/* ── Mobile Column Switcher (Visible on mobile view) ── */}
+      <div className={styles.mobileColumnSwitcher}>
+        <button
+          type="button"
+          className={`${styles.mobileColTab} ${mobileColFilter === 'all' ? styles.mobileColTabActive : ''}`}
+          onClick={() => setMobileColFilter('all')}
+        >
+          All ({filteredTasks.length})
+        </button>
+        {STATUS_COLUMNS.map((col) => {
+          const count = filteredTasks.filter((t) => t.status === col.id).length;
+          return (
+            <button
+              key={col.id}
+              type="button"
+              className={`${styles.mobileColTab} ${mobileColFilter === col.id ? styles.mobileColTabActive : ''}`}
+              onClick={() => setMobileColFilter(col.id)}
+            >
+              {col.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Kanban Grid: Backlog | To Do | Doing | Done ── */}
       <div className={styles.kanbanGrid}>
-        {STATUS_COLUMNS.map((col) => {
+        {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
+          const isCollapsed = Boolean(collapsedCols[col.id]);
           const columnAccents: Record<string, string> = {
             backlog: '#64748b',
             todo: '#38bdf8',
@@ -442,15 +476,26 @@ export default function TasksPage() {
           const colAccent = columnAccents[col.id] || '#7c6fff';
 
           return (
-            <div key={col.id} className={styles.column}>
-              <div className={styles.columnHeader} style={{ borderBottom: `2px solid ${colAccent}` }}>
-                <span className={styles.columnTitle} style={{ color: colAccent }}>
-                  {col.label}
-                </span>
+            <div key={col.id} className={`${styles.column} ${isCollapsed ? styles.columnCollapsed : ''}`}>
+              <div
+                className={styles.columnHeader}
+                style={{ borderBottom: `2px solid ${colAccent}` }}
+                onClick={() => toggleColumnCollapse(col.id)}
+                title="Tap to toggle column"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.colChevron}>
+                    {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                  </span>
+                  <span className={styles.columnTitle} style={{ color: colAccent }}>
+                    {col.label}
+                  </span>
+                </div>
                 <span className={styles.columnCount}>{colTasks.length}</span>
               </div>
 
-              <div className={styles.taskList}>
+              {!isCollapsed && (
+                <div className={styles.taskList}>
                 {colTasks.length === 0 ? (
                   <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
                     No {col.label.toLowerCase()} tasks
@@ -825,6 +870,7 @@ export default function TasksPage() {
                   })
                 )}
               </div>
+              )}
             </div>
           );
         })}

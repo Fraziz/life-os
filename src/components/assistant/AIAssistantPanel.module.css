@@ -337,15 +337,129 @@
   50% { transform: scale(1.08); }
 }
 
-.spin {
-  animation: spin 1s linear infinite;
+.docContextBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.08));
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 11px;
+  color: var(--color-accent-light);
 }
 
-@keyframes spin {
+.docContextBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.docContextDismiss {
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: var(--radius-sm, 4px);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.docContextDismiss:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+@keyframes slideInUp {
   from {
-    transform: rotate(0deg);
+    transform: translateY(100%);
   }
   to {
-    transform: rotate(360deg);
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+  }
+
+  .panel {
+    max-width: 100vw;
+    width: 100%;
+    height: 100dvh;
+    border-left: none;
+    border-radius: 16px 16px 0 0;
+    animation: slideInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .header {
+    padding: 12px 14px;
+  }
+
+  .headerTitle {
+    font-size: 14px;
+  }
+
+  .messages {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .msgRow {
+    max-width: 92%;
+  }
+
+  .bubble {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .suggestions {
+    flex-direction: row;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .suggestionChip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  .inputRow {
+    padding: 8px 12px max(14px, env(safe-area-inset-bottom, 14px));
+    gap: 8px;
+  }
+
+  .input {
+    font-size: 16px; /* Prevents iOS Safari from auto-zooming */
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  .sendBtn,
+  .micBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
   }
 }

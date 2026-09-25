@@ -99,6 +99,22 @@ export default function HabitsPage() {
   const [quickTargetDays, setQuickTargetDays] = useState<number>(7);
   const [quickGoalId, setQuickGoalId] = useState<string>('');
 
+  // Habits Filter State for clean, organized viewing
+  const [habitFilter, setHabitFilter] = useState<'all' | 'pending' | 'daily' | 'weekly'>('all');
+
+  const filteredHabits = habits.filter((habit) => {
+    if (habitFilter === 'pending') {
+      return !isHabitCompletedOnDate(habit.id, todayStr);
+    }
+    if (habitFilter === 'daily') {
+      return habit.frequency === 'daily' || habit.targetCount >= 7;
+    }
+    if (habitFilter === 'weekly') {
+      return habit.frequency === 'weekly' && habit.targetCount < 7;
+    }
+    return true;
+  });
+
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickTitle.trim()) return;
@@ -197,9 +213,46 @@ export default function HabitsPage() {
         </div>
       </section>
 
+      {/* ── Habits Filter Tabs (Clean & Responsive) ── */}
+      <div className={styles.filterTabsRow}>
+        <button
+          type="button"
+          className={`${styles.filterTab} ${habitFilter === 'all' ? styles.filterTabActive : ''}`}
+          onClick={() => setHabitFilter('all')}
+        >
+          All Practices ({habits.length})
+        </button>
+        <button
+          type="button"
+          className={`${styles.filterTab} ${habitFilter === 'pending' ? styles.filterTabActive : ''}`}
+          onClick={() => setHabitFilter('pending')}
+        >
+          To Do Today ({habits.filter((h) => !isHabitCompletedOnDate(h.id, todayStr)).length})
+        </button>
+        <button
+          type="button"
+          className={`${styles.filterTab} ${habitFilter === 'daily' ? styles.filterTabActive : ''}`}
+          onClick={() => setHabitFilter('daily')}
+        >
+          Daily ({habits.filter((h) => h.frequency === 'daily' || h.targetCount >= 7).length})
+        </button>
+        <button
+          type="button"
+          className={`${styles.filterTab} ${habitFilter === 'weekly' ? styles.filterTabActive : ''}`}
+          onClick={() => setHabitFilter('weekly')}
+        >
+          Weekly ({habits.filter((h) => h.frequency === 'weekly' && h.targetCount < 7).length})
+        </button>
+      </div>
+
       {/* ── Habits Grid ── */}
       <div className={styles.habitsGrid}>
-        {habits.map((habit) => {
+        {filteredHabits.length === 0 ? (
+          <div className={styles.emptyFilterState}>
+            <p>No habits matching this filter.</p>
+          </div>
+        ) : (
+          filteredHabits.map((habit) => {
           const completedToday = isHabitCompletedOnDate(habit.id, todayStr);
           const weeklyCount = getWeeklyCompletionsCount(habit.id);
           const totalCount = getTotalCompletionsCount(habit.id);
@@ -309,7 +362,7 @@ export default function HabitsPage() {
               </div>
             </article>
           );
-        })}
+        }))}
       </div>
 
       {/* ── Modal: Add Habit ── */}
