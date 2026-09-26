@@ -259,7 +259,14 @@ export default function TodayDashboardContent() {
 
   const tasksDone = tasks.filter((t) => t.status === 'done').length;
   const habitColor = (color?: string) => color || '#6366f1';
+  const getActionTitleFontSize = (text: string) => {
+    if (text.length > 28) return '0.70rem';
+    if (text.length > 18) return '0.76rem';
+    if (text.length > 12) return '0.82rem';
+    return '0.88rem';
+  };
 
+  const readingTitle = currentReadingDoc?.title || 'Knowledge Book';
 
   return (
     <div className={styles.dashboardContainer}>
@@ -485,17 +492,32 @@ export default function TodayDashboardContent() {
             <div className={styles.actionCardSub}>AI picks next</div>
           </button>
 
-          <button
-            type="button"
+          <Link
+            href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
             className={styles.actionCard}
-            onClick={() => setTimerRunning((r) => !r)}
+            style={{ textDecoration: 'none' }}
+            title={currentReadingDoc ? `Continue reading: ${currentReadingDoc.title}` : 'Open Knowledge Books'}
           >
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`}>
-              {timerRunning ? <Pause size={19} strokeWidth={2.2} /> : <Play size={19} strokeWidth={2.2} />}
+            <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+              <BookOpen size={19} strokeWidth={2.2} />
             </div>
-            <div className={styles.actionCardTitle}>{fmtTimer(timerSecs)}</div>
-            <div className={styles.actionCardSub}>{timerRunning ? 'Running…' : 'Pomodoro'}</div>
-          </button>
+            <div
+              className={styles.actionCardTitle}
+              style={{
+                fontSize: getActionTitleFontSize(readingTitle),
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                lineHeight: 1.25,
+              }}
+            >
+              {readingTitle}
+            </div>
+            <div className={styles.actionCardSub}>
+              {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
+                ? `${currentReadingDoc.readProgress}% completed`
+                : 'Knowledge Book'}
+            </div>
+          </Link>
         </div>
 
         {/* Today's Tasks */}
