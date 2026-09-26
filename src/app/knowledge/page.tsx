@@ -657,12 +657,44 @@ export default function KnowledgePage() {
     }
   };
 
-  // Default select first doc on initial load if none selected
+  // Select doc from URL param or default to first doc on initial load
   useEffect(() => {
-    if (isLoaded && docs.length > 0 && !selectedId && !isCreating) {
+    if (!isLoaded || docs.length === 0) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlDocId = params.get('docId');
+      if (urlDocId && docs.some((d) => d.id === urlDocId)) {
+        setSelectedId(urlDocId);
+        setEditorMode('book');
+        setMobileTab('editor');
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    if (!selectedId && !isCreating) {
       setSelectedId(docs[0].id);
     }
   }, [isLoaded, docs, selectedId, isCreating]);
+
+  // Also listen for URL changes via popstate
+  useEffect(() => {
+    const handleUrlDoc = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlDocId = params.get('docId');
+        if (urlDocId && docs.some((d) => d.id === urlDocId)) {
+          setSelectedId(urlDocId);
+          setEditorMode('book');
+          setMobileTab('editor');
+        }
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('popstate', handleUrlDoc);
+    return () => window.removeEventListener('popstate', handleUrlDoc);
+  }, [docs]);
 
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
 

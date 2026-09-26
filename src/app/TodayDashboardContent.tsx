@@ -51,12 +51,66 @@ export default function TodayDashboardContent() {
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
-  const { docs } = useKnowledge();
+  const { docs, addDoc } = useKnowledge();
 
-  const currentReadingDoc = docs.find((d) => d.readStatus === 'reading')
+  const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
+  const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [bookSearchQuery, setBookSearchQuery] = useState('');
+  const [newBookTitleInput, setNewBookTitleInput] = useState('');
+
+  // Load user's selected book from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('life_os_featured_book_id');
+      if (saved) setFeaturedBookId(saved);
+    } catch {
+      // ignore
+    }
+
+    const onBookChanged = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      if (custom.detail) setFeaturedBookId(custom.detail);
+    };
+    window.addEventListener('life_os_featured_book_changed', onBookChanged);
+    return () => window.removeEventListener('life_os_featured_book_changed', onBookChanged);
+  }, []);
+
+  const currentReadingDoc = (featuredBookId ? docs.find((d) => d.id === featuredBookId) : null)
+    || docs.find((d) => d.readStatus === 'reading')
     || docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100)
     || docs.find((d) => d.isPinned)
     || docs[0];
+
+  const handleSelectFeaturedBook = (id: string) => {
+    setFeaturedBookId(id);
+    try {
+      localStorage.setItem('life_os_featured_book_id', id);
+    } catch {
+      // ignore
+    }
+    setBookPickerOpen(false);
+  };
+
+  const handleCreateAndSelectBook = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBookTitleInput.trim()) return;
+    const title = newBookTitleInput.trim();
+    const created = addDoc({
+      title,
+      content: `# ${title}\n\nStart reading notes or key insights here...`,
+      status: 'active',
+      category: 'learning',
+      readStatus: 'reading',
+      readProgress: 0,
+      tags: ['book', 'reading'],
+    });
+    setNewBookTitleInput('');
+    handleSelectFeaturedBook(created.id);
+  };
+
+  const filteredPickerDocs = docs.filter((d) =>
+    !bookSearchQuery.trim() || d.title.toLowerCase().includes(bookSearchQuery.toLowerCase())
+  );
 
   const [presetsModalOpen, setPresetsModalOpen] = useState(false);
   const [briefingModalOpen, setBriefingModalOpen] = useState(false);
@@ -492,32 +546,48 @@ export default function TodayDashboardContent() {
             <div className={styles.actionCardSub}>AI picks next</div>
           </button>
 
-          <Link
-            href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
-            className={styles.actionCard}
-            style={{ textDecoration: 'none' }}
-            title={currentReadingDoc ? `Continue reading: ${currentReadingDoc.title}` : 'Open Knowledge Books'}
-          >
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-              <BookOpen size={19} strokeWidth={2.2} />
-            </div>
-            <div
-              className={styles.actionCardTitle}
-              style={{
-                fontSize: getActionTitleFontSize(readingTitle),
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
-                lineHeight: 1.25,
-              }}
+          <div className={styles.actionCard} style={{ position: 'relative' }}>
+            <Link
+              href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
+              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%' }}
+              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
             >
-              {readingTitle}
-            </div>
-            <div className={styles.actionCardSub}>
-              {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
-                ? `${currentReadingDoc.readProgress}% completed`
-                : 'Knowledge Book'}
-            </div>
-          </Link>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+                <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', marginBottom: 0 }}>
+                  <BookOpen size={19} strokeWidth={2.2} />
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setBookPickerOpen(true);
+                  }}
+                  className={styles.changeBookBtn}
+                  title="Choose which book to put here"
+                >
+                  Change
+                </button>
+              </div>
+
+              <div
+                className={styles.actionCardTitle}
+                style={{
+                  fontSize: getActionTitleFontSize(readingTitle),
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  lineHeight: 1.25,
+                }}
+              >
+                {readingTitle}
+              </div>
+              <div className={styles.actionCardSub}>
+                {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
+                  ? `${currentReadingDoc.readProgress}% completed`
+                  : 'Knowledge Book'}
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* Today's Tasks */}
@@ -1044,6 +1114,90 @@ export default function TodayDashboardContent() {
         isOpen={optimizeModalOpen}
         onClose={() => setOptimizeModalOpen(false)}
       />
+
+      {/* Featured Dashboard Book Picker Modal */}
+      {bookPickerOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setBookPickerOpen(false)}>
+          <div className={styles.bookPickerModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.bookPickerHeader}>
+              <div>
+                <h3 className={styles.bookPickerTitle}>Choose Dashboard Book</h3>
+                <p className={styles.bookPickerDesc}>
+                  Select which book appears on your Today dashboard. Clicking it opens the book immediately.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={() => setBookPickerOpen(false)}
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Search your library..."
+              value={bookSearchQuery}
+              onChange={(e) => setBookSearchQuery(e.target.value)}
+              className={styles.bookSearchInput}
+              autoFocus
+            />
+
+            <div className={styles.bookListScroll}>
+              {filteredPickerDocs.length > 0 ? (
+                filteredPickerDocs.map((doc) => {
+                  const isSelected = currentReadingDoc?.id === doc.id;
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      className={`${styles.bookListItem} ${isSelected ? styles.bookListItemActive : ''}`}
+                      onClick={() => handleSelectFeaturedBook(doc.id)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, textAlign: 'left' }}>
+                        <BookOpen size={16} style={{ color: isSelected ? '#38bdf8' : 'var(--color-text-muted)', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div className={styles.bookItemTitle}>{doc.title}</div>
+                          <div className={styles.bookItemMeta}>
+                            {doc.readProgress != null && doc.readProgress > 0 ? `${doc.readProgress}% read · ` : ''}
+                            {doc.category || 'document'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={styles.bookSelectBadge}>
+                        {isSelected ? '✓ Active' : 'Select'}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div style={{ padding: '20px 0', textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                  No matching books found.
+                </div>
+              )}
+            </div>
+
+            <div className={styles.bookCreateDivider}>
+              <span>Or add a new book to read</span>
+            </div>
+
+            <form onSubmit={handleCreateAndSelectBook} className={styles.bookCreateForm}>
+              <input
+                type="text"
+                placeholder="Enter new book title (e.g. Atomic Habits)..."
+                value={newBookTitleInput}
+                onChange={(e) => setNewBookTitleInput(e.target.value)}
+                className={styles.bookCreateInput}
+              />
+              <button type="submit" className={styles.bookCreateBtn}>
+                + Set &amp; Open
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
