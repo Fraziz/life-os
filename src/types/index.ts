@@ -280,10 +280,16 @@ export interface FocusSession {
 export type InboxItemStatus = 'inbox' | 'converted' | 'someday' | 'archived';
 export type InboxConvertedType = 'task' | 'project' | 'goal' | 'dream' | 'note' | 'someday';
 
+export type BrainDumpItemType = 'thought' | 'reminder';
+
 export interface InboxItem {
   id: string;
   content: string;
   status: InboxItemStatus;
+  isReminder?: boolean;
+  itemType?: BrainDumpItemType;
+  reminderTime?: string;
+  dueDate?: string;
   convertedTo?: InboxConvertedType;
   convertedEntityId?: string;
   isApplied?: boolean;

@@ -375,7 +375,7 @@
 .docRow {
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-border-subtle);
-  border-left: 3px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
   background: transparent;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -384,7 +384,6 @@
 .docRow:hover {
   background: var(--color-surface-hover);
   transform: translateX(4px);
-  border-left-color: var(--color-accent);
 }
 
 .docRow:active {
@@ -393,7 +392,6 @@
 
 .docRowActive {
   background: var(--color-surface-2);
-  border-left-color: var(--color-accent);
   font-weight: 600;
 }
 
@@ -963,8 +961,8 @@
 
 .richEditor :global(blockquote) {
   background: var(--color-surface-2);
-  border-left: 3.5px solid var(--color-accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   margin: 18px 0;
   color: var(--color-text-muted);
@@ -993,8 +991,8 @@
 .richEditor :global(.key-idea) {
   display: block;
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(99, 102, 241, 0.08));
-  border-left: 3.5px solid #06b6d4;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   margin: 14px 0;
   font-weight: 600;
@@ -1114,8 +1112,8 @@
 .previewCanvas :global(.key-idea) {
   display: block;
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(99, 102, 241, 0.08));
-  border-left: 3px solid #06b6d4;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
   padding: 10px 14px 10px 12px;
   margin: 12px 0;
   font-weight: 600;
@@ -1212,8 +1210,8 @@
 
 .previewCanvas :global(blockquote.callout) {
   background: var(--color-surface-2);
-  border-left: 3px solid var(--color-accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   margin: 14px 0;
   color: var(--color-text-muted);
@@ -1575,8 +1573,8 @@
 
 .bookContent :global(blockquote.callout) {
   background: var(--color-surface-2);
-  border-left: 4px solid var(--color-accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px 18px;
   margin: 18px 0;
   color: var(--color-text-muted);
@@ -1692,8 +1690,8 @@
 .bookContent :global(.key-idea) {
   display: block;
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(99, 102, 241, 0.08));
-  border-left: 4px solid #06b6d4;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   margin: 16px 0;
   font-weight: 600;
@@ -2257,8 +2255,8 @@
   margin-top: 10px;
   padding: 10px 12px;
   background: var(--color-surface-2);
-  border-left: 3px solid var(--color-accent);
-  border-radius: 0 6px 6px 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
   font-size: 11px;
   color: var(--color-text);
   line-height: 1.5;

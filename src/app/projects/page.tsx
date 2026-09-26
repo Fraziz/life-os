@@ -76,8 +76,7 @@ function ProjectRow({
         display: 'flex',
         gap: '12px',
         padding: compact ? '10px 14px' : '14px 18px',
-        borderBottom: '1px solid var(--color-border-subtle)',
-        borderLeft: `4px solid ${accent}`,
+        border: '1px solid var(--color-border-subtle)',
         background: 'var(--color-surface)',
         borderRadius: compact ? '10px' : '12px',
         marginBottom: compact ? '6px' : '8px',
@@ -432,7 +431,7 @@ function CalendarView({ projects, onEdit }: {
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '8px 10px', marginBottom: '6px', borderRadius: '8px',
                 background: 'var(--color-surface)', border: `1px solid var(--color-border-subtle)`,
-                borderLeft: `3px solid ${accent}`, cursor: 'pointer',
+                cursor: 'pointer',
               }}
             >
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>

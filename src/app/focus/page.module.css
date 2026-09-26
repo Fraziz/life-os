@@ -1105,8 +1105,8 @@
 
 .focusBookBody :global(blockquote) {
   background: var(--color-surface-2);
-  border-left: 4px solid var(--color-accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px 18px;
   margin: 18px 0;
   font-style: italic;

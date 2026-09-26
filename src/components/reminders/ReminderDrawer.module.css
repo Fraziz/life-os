@@ -138,12 +138,11 @@
 }
 
 .item.unread {
-  border-left: 3px solid var(--color-accent);
   background: rgba(124, 111, 255, 0.04);
 }
 
 .item.urgent {
-  border-left: 3px solid var(--color-danger);
+  background: rgba(239, 68, 68, 0.04);
 }
 
 .itemTop {

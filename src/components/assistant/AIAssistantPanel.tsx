@@ -92,11 +92,21 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const baseVoiceTextRef = useRef('');
+
   const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
     onTranscript: (spokenText) => {
-      setInput((prev) => (prev ? `${prev} ${spokenText}` : spokenText));
+      const base = baseVoiceTextRef.current;
+      setInput(base ? `${base} ${spokenText}` : spokenText);
     },
   });
+
+  const handleToggleListening = () => {
+    if (!isListening) {
+      baseVoiceTextRef.current = input.trim();
+    }
+    toggleListening();
+  };
 
   const userName = settings.profile.displayName || 'there';
   const aiSettings = settings.aiSettings;
@@ -504,7 +514,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
             <button
               type="button"
               className={`${styles.micBtn} ${isListening ? styles.micActive : ''}`}
-              onClick={toggleListening}
+              onClick={handleToggleListening}
               title={isListening ? 'Stop voice recording' : 'Voice input'}
               aria-label={isListening ? 'Stop voice recording' : 'Voice input'}
             >

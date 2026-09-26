@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Inbox,
   Send,
@@ -42,12 +42,15 @@ export default function InboxPage() {
   const {
     items,
     activeItems,
+    activeReminders,
     convertedItems,
     somedayItems,
     quickDump,
     bulkDump,
     deleteInboxItem,
     toggleItemApplied,
+    toggleItemReminder,
+    setReminderTime,
     convertToTask,
     convertToProject,
     convertToGoal,
@@ -70,6 +73,8 @@ export default function InboxPage() {
 
   // Input states
   const [quickInput, setQuickInput] = useState('');
+  const [dumpType, setDumpType] = useState<'thought' | 'reminder'>('thought');
+  const [reminderTime, setReminderTimeInput] = useState('');
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
 
@@ -102,7 +107,7 @@ export default function InboxPage() {
   };
 
   // Active filter tab
-  const [filterTab, setFilterTab] = useState<'inbox' | 'converted' | 'someday'>('inbox');
+  const [filterTab, setFilterTab] = useState<'inbox' | 'reminders' | 'converted' | 'someday'>('inbox');
 
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
@@ -120,29 +125,45 @@ export default function InboxPage() {
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickInput.trim()) return;
-    quickDump(quickInput.trim());
+    quickDump(quickInput.trim(), {
+      isReminder: dumpType === 'reminder',
+      reminderTime: dumpType === 'reminder' && reminderTime.trim() ? reminderTime.trim() : undefined,
+    });
     setQuickInput('');
+    setReminderTimeInput('');
   };
 
   const handleBulkSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bulkInput.trim()) return;
     const lines = bulkInput.split('\n');
-    bulkDump(lines);
+    bulkDump(lines, dumpType === 'reminder');
     setBulkInput('');
     setIsBulkOpen(false);
   };
 
   // Voice brain dump
+  const baseVoiceTextRef = useRef('');
+
   const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
     onTranscript: (spokenText) => {
-      setQuickInput((prev) => (prev ? `${prev} ${spokenText}` : spokenText));
+      const base = baseVoiceTextRef.current;
+      setQuickInput(base ? `${base} ${spokenText}` : spokenText);
     },
   });
+
+  const handleToggleListening = () => {
+    if (!isListening) {
+      baseVoiceTextRef.current = quickInput.trim();
+    }
+    toggleListening();
+  };
 
   const currentList =
     filterTab === 'inbox'
       ? activeItems
+      : filterTab === 'reminders'
+      ? activeReminders
       : filterTab === 'converted'
       ? convertedItems
       : somedayItems;
@@ -162,20 +183,56 @@ export default function InboxPage() {
       {/* ── Fast Brain Dump Capture Bar ── */}
       <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
         <div className={styles.quickAddRow}>
-          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+          <div className={styles.typeToggle}>
+            <button
+              type="button"
+              className={`${styles.typeToggleBtn} ${dumpType === 'thought' ? styles.typeToggleActive : ''}`}
+              onClick={() => setDumpType('thought')}
+              title="Normal Brain Dump / Idea"
+            >
+              Dump
+            </button>
+            <button
+              type="button"
+              className={`${styles.typeToggleBtn} ${dumpType === 'reminder' ? styles.typeToggleActiveReminder : ''}`}
+              onClick={() => setDumpType('reminder')}
+              title="Set as Reminder (pops up on Today moving ticker)"
+            >
+              Reminder
+            </button>
+          </div>
+
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
-            placeholder={isListening ? 'Listening to voice...' : 'Dump a thought, task, idea, or reminder...'}
+            placeholder={
+              isListening
+                ? 'Listening to voice...'
+                : dumpType === 'reminder'
+                ? 'Set a reminder (will scroll on Today screen)...'
+                : 'Dump a thought, task, idea, or worry...'
+            }
             autoFocus
           />
+
+          {dumpType === 'reminder' && (
+            <input
+              type="text"
+              className={styles.reminderTimeInput}
+              value={reminderTime}
+              onChange={(e) => setReminderTimeInput(e.target.value)}
+              placeholder="Time note (e.g. 3:00 PM, Today)"
+              title="Optional reminder time note"
+            />
+          )}
+
           {speechSupported && (
             <button
               type="button"
               className={styles.pillSelect}
-              onClick={toggleListening}
+              onClick={handleToggleListening}
               style={{
                 background: isListening ? 'var(--color-danger, #ef4444)' : 'var(--color-surface-2)',
                 color: isListening ? '#ffffff' : 'var(--color-text)',
@@ -193,7 +250,7 @@ export default function InboxPage() {
             </button>
           )}
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            {dumpType === 'reminder' ? 'Add Reminder ↵' : 'Quick Add ↵'}
           </button>
         </div>
 
@@ -244,6 +301,12 @@ export default function InboxPage() {
             onClick={() => setFilterTab('inbox')}
           >
             Inbox ({activeItems.length})
+          </button>
+          <button
+            className={`${styles.tab} ${filterTab === 'reminders' ? styles.activeTab : ''}`}
+            onClick={() => setFilterTab('reminders')}
+          >
+            Reminders ({activeReminders.length})
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'converted' ? styles.activeTab : ''}`}
@@ -326,6 +389,35 @@ export default function InboxPage() {
                 </button>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    {item.status === 'inbox' && (
+                      <button
+                        type="button"
+                        onClick={() => toggleItemReminder(item.id)}
+                        className={item.isReminder ? styles.reminderBadge : styles.dumpBadge}
+                        title={
+                          item.isReminder
+                            ? 'Reminder: active on Today dashboard (click to convert to thought)'
+                            : 'Thought (click to convert to Reminder)'
+                        }
+                      >
+                        {item.isReminder ? 'Reminder' : 'Thought'}
+                      </button>
+                    )}
+                    {item.reminderTime && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--color-text-muted)',
+                          background: 'var(--color-surface-2)',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {item.reminderTime}
+                      </span>
+                    )}
+                  </div>
                   <p
                     className={styles.itemContent}
                     style={{
@@ -337,8 +429,9 @@ export default function InboxPage() {
                   </p>
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    {item.isApplied && ' • Applied / Done ✓'}
+                    {item.isApplied && ' • Applied / Done'}
                     {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}`}
+                    {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today Ticker'}
                   </span>
                 </div>
               </div>
@@ -467,6 +560,17 @@ export default function InboxPage() {
                 }}
               >
                 <Clock size={16} style={{ color: 'var(--color-text-faint)' }} /> Someday / Maybe
+              </button>
+
+              <button
+                className={styles.dumpBtn}
+                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
+                onClick={() => {
+                  toggleItemReminder(convertModalItem.id);
+                  setConvertModalItem(null);
+                }}
+              >
+                {convertModalItem.isReminder ? 'Convert to Normal Thought' : 'Set as Active Reminder'}
               </button>
             </div>
           </div>

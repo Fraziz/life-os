@@ -191,8 +191,8 @@
   margin: 0.85rem 0;
   padding: 0.65rem 1rem;
   background: rgba(255, 255, 255, 0.04);
-  border-left: 3px solid #f59e0b;
-  border-radius: 0 8px 8px 0;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
   font-style: italic;
   color: #fde68a;
 }

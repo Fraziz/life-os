@@ -5,7 +5,8 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: 248px;
+  width: var(--sidebar-width, 248px);
+  max-width: 85vw;
   background-color: var(--color-bg);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -250,13 +251,13 @@
 }
 
 :global([data-theme='dark']) .activeItem {
-  background-color: #41331c;
-  color: #feefc3;
+  background-color: rgba(99, 102, 241, 0.18);
+  color: #c7d2fe;
   border-radius: var(--radius-full);
 }
 
 :global([data-theme='dark']) .activeItem svg {
-  color: #fbbc04;
+  color: #818cf8;
 }
 
 .navLabel {
@@ -271,7 +272,9 @@
 .sidebarQuote {
   margin: 16px 8px 12px;
   padding: 8px 10px;
-  border-left: 2px solid var(--color-accent, #6366f1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface-2);
   opacity: 0.85;
   transition: opacity var(--transition-fast);
 }

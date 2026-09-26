@@ -598,7 +598,7 @@
 }
 
 .logItemDone {
-  border-left: 3px solid #22c55e;
+  opacity: 0.85;
 }
 
 .logItemLeft {

@@ -103,9 +103,9 @@
 /*  WHY Section  */
 .sectionWhy {
   background: rgba(124, 111, 255, 0.08);
-  border-left: 3px solid var(--color-accent);
+  border: 1px solid var(--color-border-subtle);
   padding: var(--space-3) var(--space-4);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-radius: var(--radius-md);
 }
 
 .whyLabel {

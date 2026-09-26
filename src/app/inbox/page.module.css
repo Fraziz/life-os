@@ -314,3 +314,103 @@
   font-size: var(--text-xs);
   cursor: pointer;
 }
+
+/* Type Switcher */
+.typeToggle {
+  display: inline-flex;
+  background: var(--color-surface-2);
+  padding: 2px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  gap: 2px;
+}
+
+.typeToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.typeToggleBtn:hover {
+  color: var(--color-text);
+}
+
+.typeToggleActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.typeToggleActiveReminder {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 0 10px var(--color-accent-glow, rgba(99, 102, 241, 0.3));
+}
+
+.reminderTimeInput {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--color-text);
+  outline: none;
+  width: 190px;
+  transition: border-color var(--transition-fast);
+}
+
+.reminderTimeInput:focus {
+  border-color: var(--color-accent);
+}
+
+.reminderBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(99, 102, 241, 0.14);
+  color: var(--color-accent-light, #818cf8);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.reminderBadge:hover {
+  background: rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
+}
+
+.dumpBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dumpBadge:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}

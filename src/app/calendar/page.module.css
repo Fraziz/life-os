@@ -218,8 +218,8 @@
 
 /*  Scheduled Task Block vs Event Pill  */
 .scheduledWorkCard {
-  background: rgba(124, 106, 255, 0.15);
-  border-left: 3px solid var(--color-accent);
+  background: rgba(124, 106, 255, 0.12);
+  border: 1px solid rgba(124, 106, 255, 0.2);
   border-radius: var(--radius-sm);
   padding: 4px 8px;
   font-size: 11px;
@@ -231,8 +231,8 @@
 }
 
 .eventCard {
-  background: rgba(56, 189, 248, 0.15);
-  border-left: 3px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: var(--radius-sm);
   padding: 4px 8px;
   font-size: 11px;
@@ -346,19 +346,19 @@
 .monthDeadlineBadge {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
-  border-left: 2px solid #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .monthScheduleBadge {
   background: rgba(124, 106, 255, 0.15);
   color: var(--color-accent-light);
-  border-left: 2px solid var(--color-accent);
+  border: 1px solid rgba(124, 106, 255, 0.25);
 }
 
 .monthEventBadge {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
-  border-left: 2px solid #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
 /*  Modal  */

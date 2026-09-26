@@ -267,9 +267,6 @@ export default function HabitsPage() {
               key={habit.id}
               className={styles.habitCard}
               style={{
-                borderLeft: completedToday
-                  ? `4px solid var(--color-success)`
-                  : `4px solid ${accentColor}`,
                 background: completedToday
                   ? `linear-gradient(135deg, var(--color-surface) 0%, rgba(34,211,165,0.06) 100%)`
                   : habit.color

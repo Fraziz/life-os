@@ -517,13 +517,7 @@ export default function TasksPage() {
                     const completedSubs = task.subtasks.filter((s) => s.completed).length;
                     const subPercent = task.subtasks.length > 0 ? Math.round((completedSubs / task.subtasks.length) * 100) : 0;
 
-                    // Color accent: left border using task.color; inverted/muted when done
                     const accentColor = task.color || null;
-                    const cardBorderLeft = accentColor
-                      ? `4px solid ${isDone ? 'rgba(120,120,140,0.35)' : accentColor}`
-                      : isCompound
-                      ? `4px solid var(--color-accent)`
-                      : undefined;
                     const cardBg = accentColor && !isDone
                       ? `linear-gradient(135deg, var(--color-surface) 0%, ${accentColor}18 100%)`
                       : undefined;
@@ -536,7 +530,6 @@ export default function TasksPage() {
                         id={`task-card-${task.id}`}
                         className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
                         style={{
-                          borderLeft: cardBorderLeft,
                           background: cardBg,
                           boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
                           borderColor: isHighlighted ? 'var(--color-accent)' : undefined,

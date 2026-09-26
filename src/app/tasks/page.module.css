@@ -237,14 +237,14 @@
 /*  Kanban Columns Grid  */
 .kanbanGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
   align-items: start;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .kanbanGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -389,10 +389,6 @@
   border-color: var(--color-border);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
-}
-
-.taskCard.compoundCard {
-  border-left: 3px solid var(--color-accent);
 }
 
 .compoundBadge {

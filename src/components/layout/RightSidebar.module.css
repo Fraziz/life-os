@@ -432,15 +432,12 @@
 }
 
 .agendaDeadlineItem {
-  border-left: 2.5px solid #ef4444;
 }
 
 .agendaEventItem {
-  border-left: 2.5px solid #0ea5e9;
 }
 
 .agendaBlockItem {
-  border-left: 2.5px solid #a855f7;
 }
 
 .agendaItemIconWrap {

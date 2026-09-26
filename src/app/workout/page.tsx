@@ -797,7 +797,6 @@ export default function WorkoutPage() {
       <div style={{
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
-        borderLeft: '4px solid var(--color-accent)',
         borderRadius: '14px',
         padding: '16px 20px',
         marginBottom: '16px',

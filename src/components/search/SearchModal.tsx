@@ -122,7 +122,6 @@ export default function SearchModal() {
                       <button
                         key={r.id}
                         className={styles.resultItem}
-                        style={{ borderLeft: `3px solid ${accent}` }}
                         onClick={() => handleResultClick(r.href)}
                       >
                         <div className={styles.resultMain}>

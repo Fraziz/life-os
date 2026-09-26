@@ -48,7 +48,7 @@ export default function TodayDashboardContent() {
   const { tasks, toggleTaskDone, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
-  const { quickDump, activeItems: brainDumpItems, deleteInboxItem } = useInbox();
+  const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
   const { docs } = useKnowledge();
@@ -185,15 +185,17 @@ export default function TodayDashboardContent() {
 
   // ── Brain Dump (Single Unified Source of Truth) ───────────────
   const [dumpText, setDumpText] = useState('');
+  const [dumpIsReminder, setDumpIsReminder] = useState(false);
   const [addingDump, setAddingDump] = useState(false);
   const dumpInputRef = useRef<HTMLInputElement>(null);
 
   const handleDump = (e: React.FormEvent) => {
     e.preventDefault();
     if (dumpText.trim()) {
-      quickDump(dumpText.trim());
+      quickDump(dumpText.trim(), { isReminder: dumpIsReminder });
       setDumpText('');
       setAddingDump(false);
+      setDumpIsReminder(false);
       playSuccessChime();
     }
   };
@@ -290,6 +292,52 @@ export default function TodayDashboardContent() {
             </div>
           </div>
         </div>
+
+        {/* ── Today Moving Reminders Ticker (Right to Left Marquee) ── */}
+        {activeReminders.length > 0 && (
+          <div className={styles.reminderTickerContainer}>
+            <div className={styles.reminderTickerHeader}>
+              <span className={styles.tickerLabel}>Reminders</span>
+              <span className={styles.tickerBadgeCount}>{activeReminders.length}</span>
+            </div>
+
+            <div className={styles.reminderTickerTrackMask}>
+              <div
+                className={styles.reminderTickerTrack}
+                style={{
+                  animationDuration: `${Math.max(28, activeReminders.length * 12)}s`,
+                }}
+              >
+                {/* Repeat list to guarantee a seamless, smooth infinite right-to-left loop */}
+                {[...activeReminders, ...activeReminders, ...activeReminders, ...activeReminders].map((item, idx) => (
+                  <div key={`${item.id}-${idx}`} className={styles.tickerPill}>
+                    <span className={styles.tickerPillText} title={item.content}>
+                      {item.content}
+                    </span>
+                    {item.reminderTime && (
+                      <span className={styles.tickerPillTime}>{item.reminderTime}</span>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.tickerDismissBtn}
+                      onClick={() => {
+                        toggleItemApplied(item.id);
+                        playSuccessChime();
+                      }}
+                      title="Mark reminder as done"
+                    >
+                      Done
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Link href="/inbox?tab=reminders" className={styles.tickerManageLink} title="Manage all Brain Dump reminders">
+              Inbox
+            </Link>
+          </div>
+        )}
 
         {/* Daily Snapshot */}
         <div className={styles.dailySummaryRow}>
@@ -798,10 +846,33 @@ export default function TodayDashboardContent() {
           </div>
 
           <div className={styles.notesList}>
-            {brainDumpItems.slice(0, 4).map((item) => (
+            {brainDumpItems.slice(0, 5).map((item) => (
               <div key={item.id} className={styles.noteItemRow}>
                 <span className={styles.noteBullet}>•</span>
-                <span className={styles.noteText}>{item.content}</span>
+                <span className={styles.noteText} style={{ flex: 1 }}>
+                  {item.content}
+                  {item.reminderTime && (
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginLeft: '6px' }}>
+                      ({item.reminderTime})
+                    </span>
+                  )}
+                </span>
+                {item.isReminder && (
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      background: 'rgba(99, 102, 241, 0.12)',
+                      color: 'var(--color-accent-light, #818cf8)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      marginRight: '6px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Reminder
+                  </span>
+                )}
                 <button
                   type="button"
                   className={styles.noteDeleteBtn}
@@ -815,21 +886,60 @@ export default function TodayDashboardContent() {
 
             {addingDump ? (
               <form onSubmit={handleDump} className={styles.addTaskForm} style={{ marginTop: 8 }}>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDumpIsReminder(false)}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: !dumpIsReminder ? 600 : 400,
+                      background: !dumpIsReminder ? 'var(--color-surface-2)' : 'transparent',
+                      color: !dumpIsReminder ? 'var(--color-text)' : 'var(--color-text-muted)',
+                      border: '1px solid var(--color-border)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Thought
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDumpIsReminder(true)}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: dumpIsReminder ? 600 : 400,
+                      background: dumpIsReminder ? 'var(--color-accent)' : 'transparent',
+                      color: dumpIsReminder ? '#ffffff' : 'var(--color-text-muted)',
+                      border: '1px solid var(--color-border)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reminder
+                  </button>
+                </div>
                 <input
                   ref={dumpInputRef}
                   type="text"
                   value={dumpText}
                   onChange={(e) => setDumpText(e.target.value)}
-                  placeholder="Dump a thought, idea, or worry..."
+                  placeholder={dumpIsReminder ? "Set a reminder (moves right to left on Today screen)..." : "Dump a thought, idea, or worry..."}
                   className={styles.addTaskInput}
                   autoFocus
                 />
                 <div className={styles.addTaskBtnGroup}>
-                  <button type="submit" className={styles.addTaskSubmitBtn}>Capture</button>
+                  <button type="submit" className={styles.addTaskSubmitBtn}>
+                    {dumpIsReminder ? 'Add Reminder' : 'Capture'}
+                  </button>
                   <button
                     type="button"
                     className={styles.addTaskCancelBtn}
-                    onClick={() => setAddingDump(false)}
+                    onClick={() => {
+                      setAddingDump(false);
+                      setDumpIsReminder(false);
+                    }}
                   >
                     Cancel
                   </button>

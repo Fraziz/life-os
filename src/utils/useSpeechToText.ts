@@ -9,13 +9,22 @@ interface UseSpeechToTextOptions {
 }
 
 export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
-  const { onTranscript, lang = 'en-US', continuous = false } = options;
+  const { onTranscript, continuous = true } = options;
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(false);
 
   const recognitionRef = useRef<any>(null);
+  const shouldListenRef = useRef(false);
+  const onTranscriptRef = useRef(onTranscript);
+  onTranscriptRef.current = onTranscript;
+
+  const defaultLang =
+    options.lang ||
+    (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US');
+  const langRef = useRef(defaultLang);
+  langRef.current = defaultLang;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -26,6 +35,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   }, []);
 
   const stopListening = useCallback(() => {
+    shouldListenRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -47,13 +57,18 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
 
     try {
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try {
+          recognitionRef.current.abort();
+        } catch {}
       }
 
       const recognition = new SpeechRecognition();
-      recognition.lang = lang;
+      recognition.lang = langRef.current;
       recognition.continuous = continuous;
       recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      shouldListenRef.current = true;
 
       recognition.onstart = () => {
         setIsListening(true);
@@ -61,13 +76,28 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       };
 
       recognition.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
+        let finalChunk = '';
+        let interimChunk = '';
+
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          const text = result[0]?.transcript || '';
+          if (result.isFinal) {
+            finalChunk += text + ' ';
+          } else {
+            interimChunk += text;
+          }
         }
-        setTranscript(currentTranscript);
-        if (onTranscript) {
-          onTranscript(currentTranscript);
+
+        const combinedRaw = (finalChunk + interimChunk).replace(/\s+/g, ' ').trim();
+        if (!combinedRaw) return;
+
+        // Auto-capitalize first character
+        const combined = combinedRaw.charAt(0).toUpperCase() + combinedRaw.slice(1);
+
+        setTranscript(combined);
+        if (onTranscriptRef.current) {
+          onTranscriptRef.current(combined);
         }
       };
 
@@ -75,10 +105,16 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
         if (event.error !== 'no-speech') {
           setError(`Speech error: ${event.error}`);
         }
-        setIsListening(false);
       };
 
       recognition.onend = () => {
+        // If continuous listening is desired and user hasn't explicitly clicked stop, auto-restart
+        if (shouldListenRef.current && continuous) {
+          try {
+            recognition.start();
+            return;
+          } catch {}
+        }
         setIsListening(false);
       };
 
@@ -87,8 +123,9 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
     } catch (err: any) {
       setError(err?.message || 'Could not start microphone');
       setIsListening(false);
+      shouldListenRef.current = false;
     }
-  }, [lang, continuous, onTranscript]);
+  }, [continuous]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -97,6 +134,17 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       startListening();
     }
   }, [isListening, startListening, stopListening]);
+
+  useEffect(() => {
+    return () => {
+      shouldListenRef.current = false;
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
 
   return {
     isListening,

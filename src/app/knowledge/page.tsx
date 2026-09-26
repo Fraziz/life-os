@@ -993,8 +993,8 @@ export default function KnowledgePage() {
           .key-idea {
             display: block;
             background: #f0fdfa !important;
-            border-left: 3.5px solid #0d9488 !important;
-            border-radius: 0 6px 6px 0;
+            border: 1px solid #0d9488 !important;
+            border-radius: 6px;
             padding: 10px 14px;
             margin: 14px 0;
             font-weight: 600;
@@ -1003,8 +1003,8 @@ export default function KnowledgePage() {
           }
           blockquote.callout {
             background: #f8fafc;
-            border-left: 3.5px solid #475569;
-            border-radius: 0 6px 6px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             padding: 10px 14px;
             margin: 14px 0;
             color: #334155;
@@ -1155,7 +1155,7 @@ export default function KnowledgePage() {
       </ul>
       <hr />
       <h2>3. Key Takeaways &amp; Strategic Insights</h2>
-      <div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border-left:3.5px solid #06b6d4;border-radius:0 6px 6px 0;padding:10px 14px;margin:12px 0;font-weight:600;">
+      <div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border:1px solid rgba(6,182,212,0.25);border-radius:6px;padding:10px 14px;margin:12px 0;font-weight:600;">
         💡 <strong>Key Idea:</strong> Core principle or foundational insight
       </div>
       <p><span class="important-mark" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);border-radius:4px;padding:2px 8px;font-weight:700;">⚡ Critical Requirement:</span> Must-know parameter or benchmark.</p>
@@ -1220,7 +1220,7 @@ export default function KnowledgePage() {
     } else if (cmd === 'key-idea') {
       const sel = window.getSelection();
       const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Core principle / key concept';
-      document.execCommand('insertHTML', false, `<div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border-left:3.5px solid #06b6d4;border-radius:0 6px 6px 0;padding:10px 14px;margin:12px 0;font-weight:600;color:var(--color-text);">💡 <strong>Key Idea:</strong> ${text}</div><p></p>`);
+      document.execCommand('insertHTML', false, `<div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border:1px solid rgba(6,182,212,0.25);border-radius:6px;padding:10px 14px;margin:12px 0;font-weight:600;color:var(--color-text);">💡 <strong>Key Idea:</strong> ${text}</div><p></p>`);
     } else if (cmd === 'strikethrough') {
       document.execCommand('strikeThrough');
     } else if (cmd === 'alignLeft') {
@@ -1466,7 +1466,7 @@ export default function KnowledgePage() {
   const handleInsertSummaryIntoDoc = () => {
     if (!aiSummaryResult) return;
     const summaryHtml = `
-      <div class="key-idea" style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(6,182,212,0.08));border-left:3.5px solid #6366f1;border-radius:0 6px 6px 0;padding:12px 16px;margin:14px 0;">
+      <div class="key-idea" style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(6,182,212,0.08));border:1px solid rgba(99,102,241,0.25);border-radius:6px;padding:12px 16px;margin:14px 0;">
         <p style="margin:0 0 6px 0;font-weight:700;">💡 Executive Summary: ${aiSummaryResult.summary}</p>
         <p style="margin:0;font-size:12px;color:var(--color-text-muted);"><strong>Core Takeaways:</strong> ${aiSummaryResult.keyPoints.join(' &bull; ')}</p>
       </div>
@@ -1671,7 +1671,6 @@ export default function KnowledgePage() {
                   <div
                     key={doc.id}
                     className={`${styles.docRow} ${isActive ? styles.docRowActive : ''}`}
-                    style={{ borderLeft: `3px solid ${isActive ? statusColor : 'transparent'}` }}
                     onClick={() => {
                       setSelectedId(doc.id);
                       setIsCreating(false);

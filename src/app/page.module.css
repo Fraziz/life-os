@@ -7,14 +7,19 @@
   max-width: 1380px;
   margin: 0 auto;
   align-items: flex-start;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .mainColumn {
   flex: 1;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-sizing: border-box;
 }
 
 /*  Daily Summary Row  */
@@ -100,15 +105,12 @@
 }
 
 .scheduleCardDeadline {
-  border-left: 3px solid #ef4444;
 }
 
 .scheduleCardEvent {
-  border-left: 3px solid #0ea5e9;
 }
 
 .scheduleCardBlock {
-  border-left: 3px solid #a855f7;
 }
 
 .scheduleItemIconWrap {
@@ -531,6 +533,7 @@
   );
   min-height: 120px;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .heroLeft {
@@ -538,6 +541,8 @@
   flex-direction: column;
   gap: 3px;
   max-width: 500px;
+  flex: 1;
+  min-width: 0;
   color: #ffffff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
@@ -580,7 +585,8 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 12px;
   padding: 10px 14px;
-  max-width: 210px;
+  max-width: 220px;
+  flex-shrink: 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -613,8 +619,10 @@
 
 .quickActionsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .actionCard {
@@ -626,6 +634,7 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 94px;
+  min-width: 0;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
@@ -912,7 +921,6 @@
 .priorityOneRow {
   background: var(--color-accent-subtle, rgba(99, 102, 241, 0.08));
   border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-accent);
 }
 
 .priorityOneRow:hover {
@@ -1016,6 +1024,164 @@
   padding: 2px 7px;
   border-radius: 99px;
   font-weight: 600;
+}
+
+/* ── Moving Reminders Ticker (Right to Left Marquee) — Clean & ADHD Friendly ── */
+.reminderTickerContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 7px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: var(--space-2);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.reminderTickerContainer:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.reminderTickerHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.tickerLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.tickerBadgeCount {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.reminderTickerTrackMask {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 25px, black calc(100% - 25px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 25px, black calc(100% - 25px), transparent);
+}
+
+.reminderTickerTrack {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  animation: marqueeRightToLeft 32s linear infinite;
+  will-change: transform;
+}
+
+.reminderTickerTrack:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marqueeRightToLeft {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.tickerPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  color: var(--color-text);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.tickerPill:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  transform: translateY(-1px);
+}
+
+.tickerPillText {
+  font-weight: 500;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tickerPillTime {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-surface-3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tickerDismissBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tickerDismissBtn:hover {
+  background: var(--color-success);
+  color: #ffffff;
+  border-color: var(--color-success);
+}
+
+.tickerManageLink {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  padding-left: 10px;
+  flex-shrink: 0;
+  z-index: 2;
+  background: var(--color-surface);
+  transition: color var(--transition-fast);
+}
+
+.tickerManageLink:hover {
+  color: var(--color-accent);
 }
 
 /*  Wrap Up Day & Shutdown Modal  */
@@ -1125,7 +1291,7 @@
 
 .modalReflection {
   background: rgba(99, 102, 241, 0.08);
-  border-left: 3px solid #6366f1;
+  border: 1px solid var(--color-border-subtle);
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 0.84rem;
@@ -1884,9 +2050,34 @@
 
 /*  Responsive Layout  */
 
-@media (max-width: 1200px) {
+@media (max-width: 1280px) {
+  .heroOverlay {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .quickActionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 1080px) {
   .dashboardContainer {
     flex-direction: column;
+  }
+
+  .heroOverlay {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .heroQuoteCard {
+    max-width: 100%;
+    width: 100%;
+    padding: 10px 14px;
   }
 }
 
@@ -1928,7 +2119,7 @@
   }
 
   .quickActionsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -1939,14 +2130,14 @@
 
   .heroOverlay {
     flex-direction: column;
-    padding: 16px;
-    gap: 12px;
+    padding: 14px;
+    gap: 10px;
   }
 
   .heroQuoteCard {
     max-width: 100%;
     width: 100%;
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
 
   .sectionHeaderRow {
@@ -1982,12 +2173,28 @@
 
 @media (max-width: 480px) {
   .quickActionsGrid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
+  }
+
+  .actionCard {
+    padding: 8px 10px;
+    min-height: 80px;
+  }
+
+  .actionCardTitle {
+    font-size: 0.78rem;
   }
 
   .heroOverlay {
     padding: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .quickActionsGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
 

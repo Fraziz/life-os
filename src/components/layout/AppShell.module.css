@@ -1,20 +1,30 @@
 .shell {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /*  Main content area  */
 .main {
   flex: 1;
+  min-width: 0;
+  max-width: calc(100vw - var(--sidebar-width));
+  width: calc(100% - var(--sidebar-width));
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: margin-left var(--transition-base);
+  box-sizing: border-box;
+  transition: margin-left var(--transition-base), width var(--transition-base), max-width var(--transition-base);
 }
 
 .main.sidebarCollapsed {
   margin-left: 0;
+  max-width: 100vw;
+  width: 100%;
 }
 
 /*  Floating show sidebar button when hidden  */
@@ -50,6 +60,7 @@
   padding: 20px 24px;
   max-width: 100%;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   animation: fadeIn 0.3s ease forwards;
 }
@@ -60,15 +71,32 @@
   height: 100vh;
 }
 
+/*  Intermediate screen & zoom adjustments  */
+@media (max-width: 1240px) {
+  .content {
+    padding: 18px 18px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .content {
+    padding: 16px 14px;
+  }
+}
+
 /*  Mobile adjustments  */
 @media (max-width: 768px) {
   .main {
     margin-left: 0;
+    max-width: 100vw;
+    width: 100%;
     padding-top: var(--topbar-height);
   }
 
   .main.sidebarCollapsed {
     margin-left: 0;
+    max-width: 100vw;
+    width: 100%;
   }
 
   .content {

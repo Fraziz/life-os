@@ -67,12 +67,15 @@ export const DEFAULT_INBOX_ITEMS: InboxItem[] = [
 interface InboxContextType {
   items: InboxItem[];
   activeItems: InboxItem[];
+  activeReminders: InboxItem[];
   convertedItems: InboxItem[];
   somedayItems: InboxItem[];
-  quickDump: (content: string) => void;
-  bulkDump: (lines: string[]) => void;
+  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string }) => void;
+  bulkDump: (lines: string[], defaultIsReminder?: boolean) => void;
   deleteInboxItem: (id: string) => void;
   toggleItemApplied: (id: string) => void;
+  toggleItemReminder: (id: string) => void;
+  setReminderTime: (id: string, reminderTime?: string) => void;
   convertToTask: (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string }) => void;
   convertToProject: (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => void;
   convertToGoal: (id: string, overrides?: { horizon?: 'yearly' | '90-day' | 'monthly'; dreamId?: string }) => void;
@@ -98,10 +101,24 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
+  const normalizeItems = (list: InboxItem[]): InboxItem[] => {
+    return list.map((item) => {
+      const isAutoReminder =
+        item.isReminder !== undefined
+          ? !!item.isReminder
+          : /reminder|deadline|due|don't\s+forget|important|tomorrow/i.test(item.content);
+      return {
+        ...item,
+        isReminder: isAutoReminder,
+        itemType: item.itemType || (isAutoReminder ? 'reminder' : 'thought'),
+      };
+    });
+  };
+
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<InboxItem>(INBOX_STORAGE_KEY);
-      setItems(parsed || []);
+      setItems(normalizeItems(parsed || []));
     } catch (err) {
       console.error('Failed to load inbox items:', err);
     }
@@ -125,31 +142,66 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const quickDump = (content: string) => {
+  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string }) => {
     if (!content.trim()) return;
+    const isReminder = options?.isReminder ?? false;
     const newItem: InboxItem = {
       id: `inbox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       content: content.trim(),
       status: 'inbox',
+      isReminder,
+      itemType: isReminder ? 'reminder' : 'thought',
+      reminderTime: options?.reminderTime,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     saveItems([newItem, ...items]);
   };
 
-  const bulkDump = (lines: string[]) => {
+  const bulkDump = (lines: string[], defaultIsReminder: boolean = false) => {
     const valid = lines.map((l) => l.trim()).filter(Boolean);
     if (valid.length === 0) return;
 
-    const newItems: InboxItem[] = valid.map((content, idx) => ({
-      id: `inbox-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
-      content,
-      status: 'inbox',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+    const newItems: InboxItem[] = valid.map((content, idx) => {
+      const isReminder = defaultIsReminder || /reminder|deadline|due|don't\s+forget/i.test(content);
+      return {
+        id: `inbox-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        content,
+        status: 'inbox',
+        isReminder,
+        itemType: isReminder ? 'reminder' : 'thought',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
 
     saveItems([...newItems, ...items]);
+  };
+
+  const toggleItemReminder = (id: string) => {
+    const updated = items.map((item) => {
+      if (item.id !== id) return item;
+      const nextIsReminder = !item.isReminder;
+      return {
+        ...item,
+        isReminder: nextIsReminder,
+        itemType: (nextIsReminder ? 'reminder' : 'thought') as InboxItem['itemType'],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveItems(updated);
+  };
+
+  const setReminderTime = (id: string, reminderTime?: string) => {
+    const updated = items.map((item) => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        reminderTime,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveItems(updated);
   };
 
   const deleteInboxItem = (id: string) => {
@@ -282,6 +334,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activeItems = items.filter((i) => i.status === 'inbox');
+  const activeReminders = items.filter((i) => i.status === 'inbox' && i.isReminder && !i.isApplied);
   const convertedItems = items.filter((i) => i.status === 'converted');
   const somedayItems = items.filter((i) => i.status === 'someday');
 
@@ -290,12 +343,15 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         activeItems,
+        activeReminders,
         convertedItems,
         somedayItems,
         quickDump,
         bulkDump,
         deleteInboxItem,
         toggleItemApplied,
+        toggleItemReminder,
+        setReminderTime,
         convertToTask,
         convertToProject,
         convertToGoal,
