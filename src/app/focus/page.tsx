@@ -127,7 +127,7 @@ export default function FocusPage() {
   // Live Highlighter State in Focus Mode
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
   const [showSaveToast, setShowSaveToast] = useState(false);
-  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
+  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number; targetMark?: HTMLElement | null } | null>(null);
   const bookContainerRef = useRef<HTMLDivElement>(null);
 
   // ADHD Superpowers state
@@ -180,20 +180,38 @@ export default function FocusPage() {
 
   // Floating mouse selection toolbar handler
   useEffect(() => {
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
+      const container = bookContainerRef.current;
+      if (!container) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target?.closest(`.${styles.floatingHighlightMenu}`)) {
+        return;
+      }
+
+      const clickedMark = target?.closest('mark') as HTMLElement | null;
       const sel = window.getSelection();
+
       if (
         sel &&
         !sel.isCollapsed &&
         sel.rangeCount > 0 &&
-        bookContainerRef.current &&
-        bookContainerRef.current.contains(sel.getRangeAt(0).commonAncestorContainer)
+        (container.contains(sel.getRangeAt(0).commonAncestorContainer) ||
+          container === sel.getRangeAt(0).commonAncestorContainer)
       ) {
         const range = sel.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         setFloatingMenu({
-          x: Math.max(10, rect.left + rect.width / 2 - 100),
+          x: Math.max(10, rect.left + rect.width / 2 - 110),
           y: Math.max(10, rect.top - 48 + window.scrollY),
+          targetMark: clickedMark,
+        });
+      } else if (clickedMark && container.contains(clickedMark)) {
+        const rect = clickedMark.getBoundingClientRect();
+        setFloatingMenu({
+          x: Math.max(10, rect.left + rect.width / 2 - 110),
+          y: Math.max(10, rect.top - 48 + window.scrollY),
+          targetMark: clickedMark,
         });
       } else {
         setFloatingMenu(null);
@@ -208,18 +226,29 @@ export default function FocusPage() {
     setTimeout(() => setShowSaveToast(false), 2000);
   };
 
-  const handleHighlightInFocus = (colorName: string) => {
+  const handleHighlightInFocus = (colorName: string, explicitMark?: HTMLElement | null) => {
     setActiveHighlightColor(colorName);
     const container = bookContainerRef.current;
     if (!container || !activeDoc) return;
 
-    const sel = window.getSelection();
     const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
 
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    // If explicit mark was passed and clicked
+    if (explicitMark && container.contains(explicitMark)) {
+      explicitMark.style.background = c.bg;
+      explicitMark.style.border = `1px solid ${c.border}`;
+      explicitMark.style.color = c.text;
+      const saved = container.innerHTML;
+      updateDoc(activeDoc.id, { content: saved });
+      triggerSaveToast();
+      return;
+    }
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
 
     const range = sel.getRangeAt(0);
-    if (!container.contains(range.commonAncestorContainer)) return;
+    if (!container.contains(range.commonAncestorContainer) && container !== range.commonAncestorContainer) return;
 
     let cur: Node | null = range.commonAncestorContainer;
     while (cur && cur !== container) {
@@ -235,6 +264,8 @@ export default function FocusPage() {
       }
       cur = cur.parentNode;
     }
+
+    if (sel.isCollapsed) return;
 
     const mark = document.createElement('mark');
     mark.className = 'highlight-mark';
@@ -271,29 +302,89 @@ export default function FocusPage() {
     triggerSaveToast();
   };
 
-  const handleRemoveHighlightInFocus = () => {
+  const handleRemoveHighlightInFocus = (explicitMark?: HTMLElement | null) => {
     const container = bookContainerRef.current;
     if (!container || !activeDoc) return;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-    if (!container.contains(range.commonAncestorContainer)) return;
 
-    let cur: Node | null = range.commonAncestorContainer;
-    while (cur && cur !== container) {
-      if (cur.nodeName === 'MARK') {
-        const markEl = cur as HTMLElement;
-        const parent = markEl.parentNode;
-        while (markEl.firstChild) {
-          parent?.insertBefore(markEl.firstChild, markEl);
-        }
-        parent?.removeChild(markEl);
-        const saved = container.innerHTML;
-        updateDoc(activeDoc.id, { content: saved });
-        triggerSaveToast();
-        return;
+    let modified = false;
+
+    // 1. Direct explicit mark (from clicking or toolbar)
+    if (explicitMark && container.contains(explicitMark)) {
+      const parent = explicitMark.parentNode;
+      while (explicitMark.firstChild) {
+        parent?.insertBefore(explicitMark.firstChild, explicitMark);
       }
-      cur = cur.parentNode;
+      parent?.removeChild(explicitMark);
+      modified = true;
+    }
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (
+        container.contains(range.commonAncestorContainer) ||
+        container === range.commonAncestorContainer
+      ) {
+        // 2. Check if common ancestor or its parents is a MARK
+        let cur: Node | null = range.commonAncestorContainer;
+        while (cur && cur !== container) {
+          if (cur.nodeName === 'MARK') {
+            const markEl = cur as HTMLElement;
+            const parent = markEl.parentNode;
+            while (markEl.firstChild) {
+              parent?.insertBefore(markEl.firstChild, markEl);
+            }
+            parent?.removeChild(markEl);
+            modified = true;
+            break;
+          }
+          cur = cur.parentNode;
+        }
+
+        // 3. Check all marks in container that intersect or are contained in the selection
+        const marks = container.querySelectorAll('mark');
+        marks.forEach((m) => {
+          try {
+            const isContained = sel.containsNode ? sel.containsNode(m, true) : false;
+            const isIntersected = range.intersectsNode ? range.intersectsNode(m) : false;
+            if (isContained || isIntersected) {
+              const parent = m.parentNode;
+              while (m.firstChild) {
+                parent?.insertBefore(m.firstChild, m);
+              }
+              parent?.removeChild(m);
+              modified = true;
+            }
+          } catch {
+            // fallback
+          }
+        });
+      }
+    }
+
+    // 4. Fallback if cursor/anchor is inside a mark
+    if (!modified && sel && sel.anchorNode && container.contains(sel.anchorNode)) {
+      let cur: Node | null = sel.anchorNode;
+      while (cur && cur !== container) {
+        if (cur.nodeName === 'MARK') {
+          const markEl = cur as HTMLElement;
+          const parent = markEl.parentNode;
+          while (markEl.firstChild) {
+            parent?.insertBefore(markEl.firstChild, markEl);
+          }
+          parent?.removeChild(markEl);
+          modified = true;
+          break;
+        }
+        cur = cur.parentNode;
+      }
+    }
+
+    if (modified) {
+      const saved = container.innerHTML;
+      updateDoc(activeDoc.id, { content: saved });
+      triggerSaveToast();
+      setFloatingMenu(null);
     }
   };
 
@@ -511,9 +602,10 @@ export default function FocusPage() {
                     type="button"
                     className={styles.focusBookBtn}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleRemoveHighlightInFocus}
-                    title="Clear highlight"
+                    onClick={() => handleRemoveHighlightInFocus()}
+                    title="Clear highlight from selection or current word"
                   >
+                    <Eraser size={13} style={{ marginRight: '4px' }} />
                     Clear
                   </button>
 
@@ -1128,12 +1220,26 @@ export default function FocusPage() {
               }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                handleHighlightInFocus(c.name);
+                handleHighlightInFocus(c.name, floatingMenu.targetMark);
                 setFloatingMenu(null);
               }}
               title={`Highlight in ${c.label}`}
             />
           ))}
+
+          <div className={styles.floatingDivider} />
+
+          <button
+            type="button"
+            className={styles.floatingEraserBtn}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              handleRemoveHighlightInFocus(floatingMenu.targetMark);
+            }}
+            title="Remove Highlight (Clear)"
+          >
+            <Eraser size={12} />
+          </button>
         </div>
       )}
     </div>

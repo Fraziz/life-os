@@ -149,8 +149,8 @@ export default function LoginPage() {
           <button className={styles.primary} type="submit" disabled={busy || !email || !password}>
             <LogIn size={18} />
             {busy
-              ? (mode === 'signup' ? 'Creating your OS…' : 'Opening your OS…')
-              : (mode === 'signup' ? 'Create Account & Open OS' : 'Log in to Life OS')}
+              ? (mode === 'signup' ? 'Creating your account…' : 'Opening Sariling Mundo…')
+              : (mode === 'signup' ? 'Create Account & Open Sariling Mundo' : 'Log in to Sariling Mundo')}
           </button>
         </form>
 

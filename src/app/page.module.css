@@ -2347,6 +2347,42 @@
   }
 }
 
+}
+
+@media (max-width: 1200px) {
+  .dashboardContainer {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .mainColumn {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroOverlay {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .heroQuoteCard {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .projectGoalsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduleItemsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .quickActionsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2365,12 +2401,35 @@
   .heroOverlay {
     padding: 12px;
   }
+
+  .dailySummaryRow {
+    gap: 6px;
+  }
+
+  .summaryPill {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 360px) {
   .quickActionsGrid {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .heroGreeting {
+    font-size: 1.2rem;
+  }
+
+  .heroSubtitle {
+    font-size: 0.75rem;
+  }
+
+  .summaryPill {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
   }
 }
 

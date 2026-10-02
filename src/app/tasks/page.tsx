@@ -438,32 +438,47 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* ── Mobile Column Switcher (Visible on mobile view) ── */}
-      <div className={styles.mobileColumnSwitcher}>
+      {/* ── Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) ── */}
+      <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
         <button
           type="button"
-          className={`${styles.mobileColTab} ${mobileColFilter === 'all' ? styles.mobileColTabActive : ''}`}
+          role="tab"
+          aria-selected={mobileColFilter === 'all'}
+          className={`${styles.taskTabBtn} ${mobileColFilter === 'all' ? styles.taskTabBtnActive : ''}`}
           onClick={() => setMobileColFilter('all')}
         >
-          All ({filteredTasks.length})
+          <span>All</span>
+          <span className={styles.tabBadge}>{filteredTasks.length}</span>
         </button>
         {STATUS_COLUMNS.map((col) => {
           const count = filteredTasks.filter((t) => t.status === col.id).length;
+          const columnAccents: Record<string, string> = {
+            backlog: '#64748b',
+            todo: '#38bdf8',
+            doing: '#f59e0b',
+            done: '#22d3a5',
+          };
+          const dotColor = columnAccents[col.id] || 'var(--color-accent)';
+
           return (
             <button
               key={col.id}
               type="button"
-              className={`${styles.mobileColTab} ${mobileColFilter === col.id ? styles.mobileColTabActive : ''}`}
+              role="tab"
+              aria-selected={mobileColFilter === col.id}
+              className={`${styles.taskTabBtn} ${mobileColFilter === col.id ? styles.taskTabBtnActive : ''}`}
               onClick={() => setMobileColFilter(col.id)}
             >
-              {col.label} ({count})
+              <span className={styles.tabDot} style={{ background: dotColor }} />
+              <span>{col.label}</span>
+              <span className={styles.tabBadge}>{count}</span>
             </button>
           );
         })}
       </div>
 
       {/* ── Kanban Grid: Backlog | To Do | Doing | Done ── */}
-      <div className={styles.kanbanGrid}>
+      <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
           const isCollapsed = Boolean(collapsedCols[col.id]);

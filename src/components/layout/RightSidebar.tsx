@@ -161,9 +161,9 @@ export default function RightSidebar() {
   };
 
   const energyTips = {
-    low: '🔋 Low Energy Mode: Pick just 1 tiny task. Momentum beats perfection today.',
-    normal: '⚡ Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks.',
-    high: '🔥 High Energy: Tackle your #1 hardest priority right now while focus is sharp.',
+    low: 'Low Energy Mode: Pick just 1 tiny task. Momentum beats perfection today.',
+    normal: 'Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks.',
+    high: 'High Energy: Tackle your #1 hardest priority right now while focus is sharp.',
   };
 
   return (
@@ -287,17 +287,17 @@ export default function RightSidebar() {
             const tooltipParts: string[] = [];
             if (hasDeadline) {
               tooltipParts.push(
-                `🚩 ${dayDeadlines.length} deadline${dayDeadlines.length > 1 ? 's' : ''}: ${dayDeadlines.map((i) => i.title).join(', ')}`
+                `[Deadline] ${dayDeadlines.length} deadline${dayDeadlines.length > 1 ? 's' : ''}: ${dayDeadlines.map((i) => i.title).join(', ')}`
               );
             }
             if (hasEvent) {
               tooltipParts.push(
-                `📅 ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}: ${dayEvents.map((i) => i.title).join(', ')}`
+                `[Event] ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}: ${dayEvents.map((i) => i.title).join(', ')}`
               );
             }
             if (hasBlock) {
               tooltipParts.push(
-                `⏳ ${dayBlocks.length} focus block${dayBlocks.length > 1 ? 's' : ''}: ${dayBlocks.map((i) => i.taskTitle).join(', ')}`
+                `[Focus Block] ${dayBlocks.length} focus block${dayBlocks.length > 1 ? 's' : ''}: ${dayBlocks.map((i) => i.taskTitle).join(', ')}`
               );
             }
             const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('\n') : undefined;

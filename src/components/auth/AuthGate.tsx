@@ -62,6 +62,16 @@ export default function AuthGate({
     };
   }, [user]);
 
+  const [takingLong, setTakingLong] = useState(false);
+
+  // Safety timer: if auth takes more than 2.5s, give user a direct responsive button
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTakingLong(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // If not logged in: only render children on /login page where no dashboard providers are needed
   if (!user) {
     if (pathname === '/login') {
@@ -71,15 +81,64 @@ export default function AuthGate({
       <div
         style={{
           minHeight: '100vh',
-          display: 'grid',
-          placeItems: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
           background: '#0b0d17',
-          color: 'rgba(255, 255, 255, 0.7)',
+          color: 'rgba(255, 255, 255, 0.85)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
           fontSize: '15px',
+          padding: '24px',
+          textAlign: 'center',
         }}
       >
-        Opening Life OS…
+        <div
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: '3px solid rgba(255, 255, 255, 0.15)',
+            borderTopColor: '#38bdf8',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `,
+          }}
+        />
+        <div style={{ fontWeight: 500, letterSpacing: '0.01em' }}>
+          Opening Sariling Mundo…
+        </div>
+
+        {takingLong && (
+          <button
+            type="button"
+            onClick={() => router.replace('/login')}
+            style={{
+              marginTop: '8px',
+              padding: '8px 20px',
+              borderRadius: '999px',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.16)')}
+            onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+          >
+            Taking longer than usual? Click to open Login →
+          </button>
+        )}
       </div>
     );
   }

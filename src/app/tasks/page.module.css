@@ -225,9 +225,74 @@
   outline: none;
 }
 
-/*  Mobile Column Switcher  */
-.mobileColumnSwitcher {
+/*  Task View & Column Tabs (Responsive across PC, Tablet, Fold, Mobile)  */
+.taskTabsSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.taskTabsSwitcher::-webkit-scrollbar {
   display: none;
+}
+
+.taskTabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.taskTabBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.taskTabBtnActive {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.tabDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tabBadge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.08));
+  color: var(--color-text-muted);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+}
+
+.taskTabBtnActive .tabBadge {
+  background: var(--color-accent-dim, rgba(99, 102, 241, 0.2));
+  color: var(--color-accent);
 }
 
 .colChevron {
@@ -240,6 +305,13 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
   align-items: start;
+  transition: all var(--transition-normal);
+}
+
+.kanbanGridSingleCol {
+  grid-template-columns: minmax(0, 1fr) !important;
+  max-width: 820px;
+  margin: 0 auto;
 }
 
 @media (max-width: 1200px) {
@@ -249,43 +321,49 @@
 }
 
 @media (max-width: 768px) {
-  .mobileColumnSwitcher {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .filtersGroup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .searchWrap {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .searchInput:focus {
+    width: 100%;
+  }
+
+  .selectFilter {
+    width: 100%;
+  }
+
+  .taskTabsSwitcher {
+    width: 100%;
+    margin-bottom: var(--space-3);
     padding: 4px;
-    background: var(--color-surface-2);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-subtle);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin-bottom: var(--space-2);
+    gap: 4px;
   }
 
-  .mobileColumnSwitcher::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mobileColTab {
+  .taskTabBtn {
     flex: 1;
     min-width: max-content;
-    padding: 7px 12px;
-    border-radius: var(--radius-md);
+    padding: 7px 10px;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all var(--transition-fast);
-  }
-
-  .mobileColTabActive {
-    background: var(--color-surface);
-    color: var(--color-text);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    justify-content: center;
   }
 
   .colChevron {
@@ -298,6 +376,25 @@
     grid-template-columns: 1fr;
     gap: var(--space-3);
   }
+}
+
+/* Foldables, very small phones, and split-screen (<= 360px) */
+@media (max-width: 360px) {
+  .filtersGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .taskTabBtn {
+    padding: 6px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .tabBadge {
+    padding: 0 4px;
+    font-size: 10px;
+  }
+}
 
   .column {
     min-height: auto !important;

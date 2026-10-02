@@ -96,9 +96,18 @@ export default function InboxPage() {
     setIsAiProcessing(false);
   };
 
-  const TYPE_ICONS: Record<string, string> = {
-    task: '✅', goal: '🎯', project: '📁', dream: '✨', idea: '💡', note: '📝',
+
+  const renderTypeIcon = (type: string) => {
+    switch (type) {
+      case 'task': return <CheckSquare size={16} style={{ color: '#22d3a5' }} />;
+      case 'goal': return <Target size={16} style={{ color: '#7c6fff' }} />;
+      case 'project': return <FolderKanban size={16} style={{ color: '#3b82f6' }} />;
+      case 'dream': return <CloudSun size={16} style={{ color: '#f59e0b' }} />;
+      case 'idea': return <Sparkles size={16} style={{ color: '#ec4899' }} />;
+      default: return <FileText size={16} style={{ color: '#64748b' }} />;
+    }
   };
+
   const TYPE_COLORS: Record<string, string> = {
     task: '#22d3a5', goal: '#7c6fff', project: '#3b82f6', dream: '#f59e0b', idea: '#ec4899', note: '#64748b',
   };
@@ -599,7 +608,7 @@ export default function InboxPage() {
               {aiResults.map((r) => (
                 <div key={r.itemId} style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '12px 14px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                    <span style={{ fontSize: '18px', flexShrink: 0 }}>{TYPE_ICONS[r.suggestedType] || '📝'}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: '2px', flexShrink: 0 }}>{renderTypeIcon(r.suggestedType)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', color: 'var(--color-text)', marginBottom: '5px', wordBreak: 'break-word' }}>{r.text}</div>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

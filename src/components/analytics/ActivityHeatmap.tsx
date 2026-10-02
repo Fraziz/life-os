@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useTasks } from '@/context/TaskContext';
 import { useHabits } from '@/context/HabitContext';
-import { Sparkles, Calendar } from 'lucide-react';
+import { Sparkles, Calendar, Flame } from 'lucide-react';
 import styles from './ActivityHeatmap.module.css';
 
 interface ActivityHeatmapProps {
@@ -107,8 +107,9 @@ export default function ActivityHeatmap({ weeksToShow = 20, title = 'Consistency
         </div>
         <div className={styles.statsText}>
           <strong>{totalActivityCount}</strong> actions logged &middot;{' '}
-          <span style={{ color: 'var(--color-success, #22c55e)' }}>
-            🔥 {maxStreak} day streak
+          <span style={{ color: 'var(--color-success, #22c55e)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Flame size={13} style={{ color: '#f97316' }} />
+            <span>{maxStreak} day streak</span>
           </span>
         </div>
       </div>
