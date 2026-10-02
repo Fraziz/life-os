@@ -32,9 +32,11 @@ import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useTasks } from '@/context/TaskContext';
 import type { InboxItem, InboxConvertedType } from '@/types';
-import { processBrainDumpWithAI } from '@/utils/aiEngine';
+import { processBrainDumpWithAI, breakdownThoughtWithAI, type ThoughtBreakdownResult } from '@/utils/aiEngine';
 import type { BrainDumpClassification } from '@/utils/aiEngine';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 
@@ -69,7 +71,113 @@ export default function InboxPage() {
   const { dreams } = useDreams();
   const { activeAreas } = useLifeAreas();
 
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
+  const { addTask } = useTasks();
+
+  // AI Breakdown State
+  const [aiBreakdownModal, setAiBreakdownModal] = useState<{
+    item: InboxItem;
+    result: ThoughtBreakdownResult | null;
+    loading: boolean;
+  } | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleActivateGroqKey = (text: string) => {
+    const keyMatch = text.match(/gsk_[A-Za-z0-9_]{20,}/);
+    if (!keyMatch) return;
+    const extractedKey = keyMatch[0];
+
+    const currentSaved = settings.aiSettings?.savedKeys || [];
+    const existingIndex = currentSaved.findIndex((k) => k.apiKey === extractedKey);
+    let updatedSaved = [...currentSaved];
+
+    if (existingIndex < 0) {
+      updatedSaved.push({
+        id: `groq-key-${Date.now()}`,
+        name: `Groq Key (${extractedKey.slice(0, 8)}...)`,
+        apiKey: extractedKey,
+        provider: 'groq',
+        model: 'openai/gpt-oss-120b',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    updateSettings({
+      aiSettings: {
+        ...(settings.aiSettings || {
+          monthlyBudgetUSD: 20,
+          spentBudgetUSD: 0,
+          totalTokensUsed: 0,
+          temperature: 0.7,
+        }),
+        enabled: true,
+        provider: 'groq',
+        apiKey: extractedKey,
+        model: settings.aiSettings?.model || 'openai/gpt-oss-120b',
+        autoFailover: true,
+        savedKeys: updatedSaved,
+        monthlyBudgetUSD: settings.aiSettings?.monthlyBudgetUSD ?? 20,
+        spentBudgetUSD: settings.aiSettings?.spentBudgetUSD ?? 0,
+        totalTokensUsed: settings.aiSettings?.totalTokensUsed ?? 0,
+        temperature: settings.aiSettings?.temperature ?? 0.7,
+      },
+    });
+
+    playSuccessChime();
+    showToast(`✓ Groq API Key Activated! Model: openai/gpt-oss-120b`);
+  };
+
+  const handleAiBreakdown = async (item: InboxItem) => {
+    setAiBreakdownModal({ item, result: null, loading: true });
+    try {
+      const result = await breakdownThoughtWithAI(item.content, settings.aiSettings);
+      setAiBreakdownModal({ item, result, loading: false });
+      playSuccessChime();
+    } catch {
+      setAiBreakdownModal(null);
+      alert('Could not break down thought with AI. Please check your Groq API key.');
+    }
+  };
+
+  const handleApplyBreakdownAsTasks = (item: InboxItem, result: ThoughtBreakdownResult, createMultiple: boolean) => {
+    if (createMultiple) {
+      result.steps.forEach((step, idx) => {
+        addTask({
+          title: step,
+          status: 'todo',
+          priority: idx === 0 ? 'high' : 'medium',
+          tags: ['from-thought', ...(result.tags || [])],
+          subtasks: [],
+        });
+      });
+      convertToTask(item.id);
+      showToast(`✓ Created ${result.steps.length} tasks from Thought!`);
+    } else {
+      addTask({
+        title: result.title || item.content,
+        description: `${result.summary}\n\nActionable Steps:\n${result.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+        status: 'todo',
+        priority: 'high',
+        isCompound: true,
+        tags: ['from-thought', ...(result.tags || [])],
+        subtasks: result.steps.map((s, idx) => ({
+          id: `subtask-${Date.now()}-${idx}`,
+          title: s,
+          completed: false,
+        })),
+      });
+      convertToTask(item.id);
+      showToast(`✓ Converted Thought to Task with actionable checklist!`);
+    }
+    setAiBreakdownModal(null);
+    playSuccessChime();
+  };
 
   // Input states
   const [quickInput, setQuickInput] = useState('');
@@ -449,6 +557,31 @@ export default function InboxPage() {
                 <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
                 {item.status === 'inbox' ? (
                   <>
+                    {/* Groq Key auto-detector */}
+                    {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
+                      <button
+                        type="button"
+                        className={styles.groqKeyBadge}
+                        onClick={() => handleActivateGroqKey(item.content)}
+                        title="Set this Groq API Key as the active key in your Life OS"
+                      >
+                        <Sparkles size={11} />
+                        {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
+                          ? '✓ Active Groq Key'
+                          : '⚡ Set as Groq Key'}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className={styles.btnAi}
+                      onClick={() => handleAiBreakdown(item)}
+                      title="Break down this thought into action steps with Groq AI"
+                    >
+                      <Sparkles size={11} />
+                      AI Breakdown
+                    </button>
+
                     <button
                       className={styles.btnConvert}
                       onClick={() => convertToTask(item.id)}
@@ -640,6 +773,142 @@ export default function InboxPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── AI Thought Breakdown Modal (Groq Powered) ── */}
+      {aiBreakdownModal && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            if (!aiBreakdownModal.loading) setAiBreakdownModal(null);
+          }}
+        >
+          <div
+            className={styles.modalCard}
+            style={{ maxWidth: '580px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} style={{ color: '#818cf8' }} />
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                  Groq AI Thought Breakdown
+                </h3>
+              </div>
+              {!aiBreakdownModal.loading && (
+                <button
+                  style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }}
+                  onClick={() => setAiBreakdownModal(null)}
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            <div style={{ background: 'var(--color-surface-2)', padding: '12px 14px', borderRadius: '10px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '4px' }}>
+                Original Thought
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--color-text)', fontWeight: 500 }}>
+                &ldquo;{aiBreakdownModal.item.content}&rdquo;
+              </div>
+            </div>
+
+            {aiBreakdownModal.loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 16px', gap: '12px' }}>
+                <Loader2 size={26} className={styles.spin} style={{ color: 'var(--color-accent)' }} />
+                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                  Breaking down with Groq Llama/GPT...
+                </span>
+              </div>
+            ) : aiBreakdownModal.result ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '6px' }}>
+                    Executive Summary &amp; Proposed Title
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text)', marginBottom: '4px' }}>
+                    {aiBreakdownModal.result.title}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                    {aiBreakdownModal.result.summary}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    Concrete Action Steps ({aiBreakdownModal.result.steps.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {aiBreakdownModal.result.steps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                          background: 'var(--color-surface-2)',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--color-border-subtle)',
+                        }}
+                      >
+                        <span
+                          style={{
+                            background: 'var(--color-accent-dim)',
+                            color: 'var(--color-accent)',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            flexShrink: 0,
+                            marginTop: '1px',
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.4 }}>
+                          {step}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className={styles.dumpBtn}
+                    style={{ flex: 1, minWidth: '200px', background: 'var(--color-accent)', color: '#ffffff', fontWeight: 700, padding: '10px 14px' }}
+                    onClick={() => handleApplyBreakdownAsTasks(aiBreakdownModal.item, aiBreakdownModal.result!, false)}
+                  >
+                    ✓ Create Task with Checklist
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.dumpBtn}
+                    style={{ flex: 1, minWidth: '200px', background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', fontWeight: 600, padding: '10px 14px' }}
+                    onClick={() => handleApplyBreakdownAsTasks(aiBreakdownModal.item, aiBreakdownModal.result!, true)}
+                  >
+                    + Create as {aiBreakdownModal.result.steps.length} Separate Tasks
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast Notification ── */}
+      {toastMessage && (
+        <div className={styles.toastBanner}>
+          <CheckCircle2 size={16} />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

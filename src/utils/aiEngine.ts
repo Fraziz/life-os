@@ -687,8 +687,13 @@ export async function executeOptionalAICall(
     'Content-Type': 'application/json',
   };
 
+  const envGroqKey1 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '') : '';
+  const envGroqKey2 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_2 || '') : '';
+
   if (aiSettings.apiKey?.trim()) {
     headers['Authorization'] = `Bearer ${aiSettings.apiKey.trim()}`;
+  } else if (aiSettings.provider === 'groq' && envGroqKey1) {
+    headers['Authorization'] = `Bearer ${envGroqKey1}`;
   }
 
   if (aiSettings.provider === 'openrouter') {
@@ -698,7 +703,7 @@ export async function executeOptionalAICall(
     headers['X-Title'] = 'Life OS';
   } else if (aiSettings.provider === 'groq') {
     endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    defaultModel = 'llama-3.3-70b-versatile';
+    defaultModel = 'openai/gpt-oss-120b';
   } else if (aiSettings.provider === 'deepseek') {
     endpoint = 'https://api.deepseek.com/v1/chat/completions';
     defaultModel = 'deepseek-chat';
@@ -719,7 +724,7 @@ export async function executeOptionalAICall(
 
   const modelName = aiSettings.model?.trim() || defaultModel;
 
-  const response = await fetch(endpoint, {
+  let response = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -732,6 +737,33 @@ export async function executeOptionalAICall(
       max_tokens: 2048,
     }),
   });
+
+  // Automatic Failover for Groq: if rate-limited (429) or unauthorized (401), try backup key
+  if (!response.ok && aiSettings.provider === 'groq' && (response.status === 429 || response.status === 401)) {
+    const backupKey = aiSettings.savedKeys?.find((k) => k.apiKey && k.apiKey !== aiSettings.apiKey)?.apiKey || envGroqKey2;
+    if (backupKey) {
+      const retryHeaders = {
+        ...headers,
+        Authorization: `Bearer ${backupKey}`,
+      };
+      const retryResp = await fetch(endpoint, {
+        method: 'POST',
+        headers: retryHeaders,
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt },
+        ],
+        temperature: aiSettings.temperature ?? 0.7,
+        max_tokens: 2048,
+      }),
+    });
+    if (retryResp.ok) {
+      response = retryResp;
+    }
+  }
+}
 
   if (!response.ok) {
     const errJson = await response.json().catch(() => ({}));
@@ -846,6 +878,74 @@ Keep reasoning to 1 short sentence. No markdown fences.`;
     // fall through to local
   }
   return local;
+}
+
+// ── Feature 1b: Breakdown Single Thought / Brain Dump Item with AI ────────
+export interface ThoughtBreakdownResult {
+  title: string;
+  summary: string;
+  steps: string[];
+  suggestedType: 'task' | 'goal' | 'project' | 'idea';
+  tags: string[];
+}
+
+export async function breakdownThoughtWithAI(
+  thoughtText: string,
+  aiSettings?: AISettings
+): Promise<ThoughtBreakdownResult> {
+  const defaultResult: ThoughtBreakdownResult = {
+    title: thoughtText.slice(0, 60),
+    summary: thoughtText,
+    steps: [
+      `Define clear immediate action for: "${thoughtText.slice(0, 40)}"`,
+      'Prepare necessary tools and resources',
+      'Execute the first 15-minute focused milestone',
+    ],
+    suggestedType: /goal|achieve|target/i.test(thoughtText) ? 'goal' : /project|build|launch/i.test(thoughtText) ? 'project' : 'task',
+    tags: ['thought', 'action-plan'],
+  };
+
+  const effectiveSettings: AISettings = aiSettings || {
+    enabled: true,
+    provider: 'groq',
+    apiKey: typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '') : '',
+    model: 'openai/gpt-oss-120b',
+    monthlyBudgetUSD: 20,
+    spentBudgetUSD: 0,
+    totalTokensUsed: 0,
+    temperature: 0.7,
+  };
+
+  try {
+    const systemPrompt = `You are a world-class productivity execution coach.
+Analyze the user's raw thought or brain dump and turn it into actionable next steps.
+Respond ONLY with a valid JSON object:
+{
+  "title": "Clean, concise action title",
+  "summary": "1 sentence executive summary",
+  "steps": ["Step 1 (immediate action, 10-15 min)", "Step 2", "Step 3", "Step 4"],
+  "suggestedType": "task" | "goal" | "project" | "idea",
+  "tags": ["tag1", "tag2"]
+}
+No markdown fences, valid JSON only.`;
+
+    const { text } = await executeOptionalAICall(`Thought: "${thoughtText}"`, systemPrompt, effectiveSettings);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        title: parsed.title || defaultResult.title,
+        summary: parsed.summary || defaultResult.summary,
+        steps: Array.isArray(parsed.steps) && parsed.steps.length > 0 ? parsed.steps : defaultResult.steps,
+        suggestedType: parsed.suggestedType || defaultResult.suggestedType,
+        tags: Array.isArray(parsed.tags) ? parsed.tags : defaultResult.tags,
+      };
+    }
+  } catch (err) {
+    console.warn('Thought breakdown with AI failed, using fallback:', err);
+  }
+
+  return defaultResult;
 }
 
 // ── Feature 2: AI Goal Coach ──────────────────────────────────────────────
