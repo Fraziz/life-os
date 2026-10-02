@@ -244,6 +244,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .chainLabel {
@@ -253,6 +254,7 @@
   letter-spacing: 0.05em;
   color: var(--color-text-faint);
   min-width: 55px;
+  flex-shrink: 0;
 }
 
 .chainVal {
@@ -260,6 +262,8 @@
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .cardTopRow {
@@ -375,12 +379,16 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .projectDesc {
   font-size: 11.5px;
   color: var(--color-text-muted);
   line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .notesBox {
@@ -391,6 +399,8 @@
   font-size: 11px;
   color: var(--color-text-muted);
   line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /*  Progress Section  */

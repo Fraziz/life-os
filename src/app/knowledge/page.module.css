@@ -412,6 +412,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .docRowTitle {
@@ -421,6 +422,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .deleteBtn {
@@ -727,6 +729,8 @@
   margin-bottom: var(--space-3);
   padding: 0;
   width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .docTitle::placeholder {
@@ -1430,6 +1434,8 @@
   line-height: 1.2;
   letter-spacing: -0.03em;
   margin-bottom: var(--space-3);
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .bookMeta {
@@ -1492,6 +1498,8 @@
   user-select: text;
   cursor: text;
   outline: none;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 [data-theme='light'] .bookContent {

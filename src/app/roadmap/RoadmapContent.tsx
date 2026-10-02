@@ -479,6 +479,24 @@ export default function RoadmapContent() {
 
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
+  // Mobile Touch Pan & Swipe
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      if ((e.target as HTMLElement).closest('[data-node]') || (e.target as HTMLElement).closest('[data-interactive]')) return;
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    setPan({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+  }, [isDragging, dragStart]);
+
+  const handleTouchEnd = useCallback(() => setIsDragging(false), []);
+
   const handleWheel = useCallback((e: WheelEvent) => {
     if (viewMode !== 'graph') return;
     e.preventDefault();
@@ -838,6 +856,10 @@ Keep language professional, crisp, and clean. No emojis.`;
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
         >
           {isEmpty ? (
             <div className={styles.emptyCanvas}>
