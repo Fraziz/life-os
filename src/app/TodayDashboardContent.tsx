@@ -414,7 +414,6 @@ export default function TodayDashboardContent() {
             onClick={() => setOptimizeModalOpen(true)}
             title="1-Click AI Auto Time-Blocker: Optimize hourly day schedule"
           >
-            <Clock size={13} style={{ color: 'var(--color-accent)' }} />
             <span><strong>Optimize Day</strong></span>
           </button>
           <button
@@ -429,7 +428,6 @@ export default function TodayDashboardContent() {
             onClick={() => handleOpenBriefing()}
             title="Open Executive Morning Briefing / Evening Reflection"
           >
-            <Sparkles size={13} style={{ color: '#f59e0b' }} />
             <span><strong>AI Briefing</strong></span>
           </button>
           <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>

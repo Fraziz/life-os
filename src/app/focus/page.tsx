@@ -768,8 +768,8 @@ export default function FocusPage() {
               {/* Subtasks checklist (for tasks) */}
               {!activeDoc && (
                 <div className={styles.subtasksBox}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <div className={styles.subtasksHeaderRow}>
+                    <span className={styles.subtasksLabel}>
                       Micro-Steps ({liveActiveTask?.subtasks?.filter((s) => s.completed).length || 0}/{liveActiveTask?.subtasks?.length || 0}):
                     </span>
 

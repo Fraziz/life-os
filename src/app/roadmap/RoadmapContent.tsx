@@ -101,6 +101,11 @@ export default function RoadmapContent() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = useRef<boolean>(false);
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number>(1);
+  const hasMoved = useCallback(() => touchMovedRef.current, []);
 
   const isLoaded = dreamsLoaded && goalsLoaded && projectsLoaded && tasksLoaded;
 
@@ -479,23 +484,59 @@ export default function RoadmapContent() {
 
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
-  // Mobile Touch Pan & Swipe
+  // Mobile Touch Pan, Swipe & Pinch
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Only block if user taps an actual button, link, or interactive control
+    if ((e.target as HTMLElement).closest('a, button, select, input, [data-interactive]')) {
+      return;
+    }
+
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      if ((e.target as HTMLElement).closest('[data-node]') || (e.target as HTMLElement).closest('[data-interactive]')) return;
+      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+      touchMovedRef.current = false;
       setIsDragging(true);
       setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    } else if (e.touches.length === 2) {
+      setIsDragging(false);
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchStartDistRef.current = dist;
+      pinchStartZoomRef.current = zoom;
     }
-  }, [pan]);
+  }, [pan, zoom]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    setPan({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      if (touchStartPosRef.current) {
+        const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+        const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+        if (dx > 4 || dy > 4) {
+          touchMovedRef.current = true;
+        }
+      }
+      setPan({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+    } else if (e.touches.length === 2 && pinchStartDistRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = dist / pinchStartDistRef.current;
+      const nextZoom = Math.max(0.3, Math.min(1.8, pinchStartZoomRef.current * factor));
+      setZoom(nextZoom);
+    }
   }, [isDragging, dragStart]);
 
-  const handleTouchEnd = useCallback(() => setIsDragging(false), []);
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    pinchStartDistRef.current = null;
+    setTimeout(() => {
+      touchMovedRef.current = false;
+    }, 120);
+  }, []);
 
   const handleWheel = useCallback((e: WheelEvent) => {
     if (viewMode !== 'graph') return;
@@ -989,6 +1030,7 @@ Keep language professional, crisp, and clean. No emojis.`;
                     focusedNodeId={focusedNodeId}
                     onHover={setHoveredNode}
                     onFocus={setFocusedNodeId}
+                    hasMoved={hasMoved}
                   />
                 );
               })}
@@ -1062,6 +1104,7 @@ interface NodeCardProps {
   focusedNodeId: string | null;
   onHover: (id: string | null) => void;
   onFocus: (id: string | null) => void;
+  hasMoved?: () => boolean;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -1081,7 +1124,7 @@ const STATUS_COLORS: Record<string, string> = {
   'todo':        '#8888a8',
 };
 
-function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeId, onHover, onFocus }: NodeCardProps) {
+function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeId, onHover, onFocus, hasMoved }: NodeCardProps) {
   const typeHrefs: Record<string, string> = {
     dream:   '/dreams',
     goal:    '/goals',
@@ -1109,7 +1152,10 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
       }}
       onMouseEnter={() => onHover(node.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={() => onFocus(focusedNodeId === node.id ? null : node.id)}
+      onClick={() => {
+        if (hasMoved && hasMoved()) return;
+        onFocus(focusedNodeId === node.id ? null : node.id);
+      }}
     >
       <div className={styles.nodeAccentBar} style={{ background: node.color }} />
 

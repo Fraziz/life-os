@@ -842,16 +842,20 @@
 
 @media (max-width: 768px) {
   .roadmapPage {
-    height: auto;
-    min-height: 100vh;
-    overflow-y: auto;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .pageTitleGroup {
+    display: none;
   }
 
   .topBarMain {
     flex-direction: column;
     align-items: flex-start;
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 10px 14px;
+    gap: 8px;
   }
 
   .topBarLeft,

@@ -112,6 +112,27 @@
   gap: var(--space-3);
 }
 
+.btnZen {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.btnZen:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+}
+
 /*  Zen Focus Container  */
 .focusContainer {
   display: grid;
@@ -383,6 +404,42 @@
   flex-direction: column;
   gap: var(--space-2);
   text-align: left;
+  box-sizing: border-box;
+}
+
+.subtasksHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.subtasksLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btnMagicBreakdown {
+  background: linear-gradient(135deg, rgba(124, 106, 255, 0.2), rgba(167, 139, 250, 0.2));
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-light);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.btnMagicBreakdown:hover {
+  background: var(--color-accent);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .subtaskRow {
@@ -1397,24 +1454,45 @@
     font-size: 0.95rem;
   }
 
-  .modeTabs {
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    padding: 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .modeTabs::-webkit-scrollbar {
+  .header {
     display: none;
   }
 
+  .modeTabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 4px;
+    border-radius: var(--radius-xl);
+  }
+
   .modeTab {
-    flex-shrink: 0;
+    width: 100%;
+    text-align: center;
+    padding: 7px 4px;
+    font-size: 11px;
     white-space: nowrap;
-    padding: 6px 12px;
+  }
+
+  .subtasksBox {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-2) 0 var(--space-2) var(--space-3);
+  }
+
+  .subtasksHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btnMagicBreakdown {
+    align-self: flex-start;
+    font-size: 10px;
+    padding: 4px 8px;
   }
 
   .sideCard {

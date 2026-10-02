@@ -96,6 +96,8 @@
   font-size: var(--text-xs);
   outline: none;
   cursor: pointer;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
 }
 
@@ -961,6 +963,29 @@
 
   .quickAddCard {
     padding: 12px 14px;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .quickAddMetaRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .quickAddPills {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .pillSelect {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .quickAddRow {
