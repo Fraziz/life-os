@@ -546,30 +546,36 @@ export default function TodayDashboardContent() {
             <div className={styles.actionCardSub}>AI picks next</div>
           </button>
 
-          <div className={styles.actionCard} style={{ position: 'relative' }}>
-            <Link
-              href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
-              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%' }}
-              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+          <div className={styles.actionCard} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+              <Link
+                href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
+                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+                title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
+              >
                 <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', marginBottom: 0 }}>
                   <BookOpen size={19} strokeWidth={2.2} />
                 </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setBookPickerOpen(true);
-                  }}
-                  className={styles.changeBookBtn}
-                  title="Choose which book to put here"
-                >
-                  Change
-                </button>
-              </div>
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBookPickerOpen(true);
+                }}
+                className={styles.changeBookBtn}
+                title="Choose which book to put here"
+              >
+                Change
+              </button>
+            </div>
 
+            <Link
+              href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
+              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, justifyContent: 'center' }}
+              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
+            >
               <div
                 className={styles.actionCardTitle}
                 style={{

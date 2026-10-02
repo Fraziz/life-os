@@ -487,6 +487,36 @@ export default function KnowledgePage() {
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   const importFileRef = useRef<HTMLInputElement>(null);
+  const hasHandledInitialUrlDoc = useRef(false);
+
+  // Featured book on Today Dashboard
+  const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('life_os_featured_book_id');
+      if (saved) setFeaturedBookId(saved);
+    } catch {
+      // ignore
+    }
+
+    const onBookChanged = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      if (custom.detail) setFeaturedBookId(custom.detail);
+    };
+    window.addEventListener('life_os_featured_book_changed', onBookChanged);
+    return () => window.removeEventListener('life_os_featured_book_changed', onBookChanged);
+  }, []);
+
+  const handleSetFeaturedOnDashboard = (docId: string) => {
+    setFeaturedBookId(docId);
+    try {
+      localStorage.setItem('life_os_featured_book_id', docId);
+      window.dispatchEvent(new CustomEvent('life_os_featured_book_changed', { detail: docId }));
+    } catch {
+      // ignore
+    }
+  };
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -657,27 +687,28 @@ export default function KnowledgePage() {
     }
   };
 
-  // Select doc from URL param or default to first doc on initial load
+  // Select doc from URL param on initial mount, or fallback to first doc
   useEffect(() => {
     if (!isLoaded || docs.length === 0) return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const urlDocId = params.get('docId');
-      if (urlDocId && docs.some((d) => d.id === urlDocId)) {
-        setSelectedId(urlDocId);
-        setEditorMode('book');
-        setMobileTab('editor');
-        return;
+    if (!hasHandledInitialUrlDoc.current) {
+      hasHandledInitialUrlDoc.current = true;
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlDocId = params.get('docId');
+        if (urlDocId && docs.some((d) => d.id === urlDocId)) {
+          setSelectedId(urlDocId);
+          setEditorMode('book');
+          setMobileTab('editor');
+          return;
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
+      setSelectedId((prev) => prev || docs[0].id);
     }
-    if (!selectedId && !isCreating) {
-      setSelectedId(docs[0].id);
-    }
-  }, [isLoaded, docs, selectedId, isCreating]);
+  }, [isLoaded, docs]);
 
-  // Also listen for URL changes via popstate
+  // Also listen for URL changes via popstate (browser back/forward)
   useEffect(() => {
     const handleUrlDoc = () => {
       try {
@@ -695,6 +726,22 @@ export default function KnowledgePage() {
     window.addEventListener('popstate', handleUrlDoc);
     return () => window.removeEventListener('popstate', handleUrlDoc);
   }, [docs]);
+
+  // Helper to switch documents and update browser URL without locking state
+  const handleSelectDoc = (docId: string) => {
+    setSelectedId(docId);
+    setIsCreating(false);
+    setMobileTab('editor');
+    setAiSummaryResult(null);
+    setAiQuizResult(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('docId', docId);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
 
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
 
@@ -1703,13 +1750,7 @@ export default function KnowledgePage() {
                   <div
                     key={doc.id}
                     className={`${styles.docRow} ${isActive ? styles.docRowActive : ''}`}
-                    onClick={() => {
-                      setSelectedId(doc.id);
-                      setIsCreating(false);
-                      setMobileTab('editor');
-                      setAiSummaryResult(null);
-                      setAiQuizResult(null);
-                    }}
+                    onClick={() => handleSelectDoc(doc.id)}
                   >
                     <div className={styles.docRowContent}>
                       <div className={styles.docRowTitleRow}>
@@ -1718,6 +1759,17 @@ export default function KnowledgePage() {
                           <span className={styles.docRowTitle}>{doc.title}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetFeaturedOnDashboard(doc.id);
+                            }}
+                            title={featuredBookId === doc.id ? "Currently featured on Today Dashboard" : "Set as Today's Reading Book"}
+                            style={{ color: featuredBookId === doc.id ? '#38bdf8' : 'var(--color-text-faint)' }}
+                          >
+                            <BookOpen size={12} />
+                          </button>
                           <button
                             className={styles.deleteBtn}
                             onClick={(e) => {
@@ -1870,6 +1922,23 @@ export default function KnowledgePage() {
                       <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                       Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                  )}
+
+                  {selectedDoc && (
+                    <button
+                      type="button"
+                      className={styles.headerBtn}
+                      onClick={() => handleSetFeaturedOnDashboard(selectedDoc.id)}
+                      title={featuredBookId === selectedDoc.id ? 'Currently featured on Today Dashboard' : 'Put this book on Today Dashboard'}
+                      style={
+                        featuredBookId === selectedDoc.id
+                          ? { color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)', background: 'rgba(56, 189, 248, 0.12)' }
+                          : {}
+                      }
+                    >
+                      <BookOpen size={12} />
+                      <span>{featuredBookId === selectedDoc.id ? '★ Today Book' : 'Put on Dashboard'}</span>
+                    </button>
                   )}
 
                   {/* AI Knowledge Tools Suite (Works in all modes: Book, Edit, Preview) */}
