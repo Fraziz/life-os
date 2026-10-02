@@ -396,6 +396,7 @@
   }
 }
 
+@media (max-width: 768px) {
   .column {
     min-height: auto !important;
     background: var(--color-surface-2);
