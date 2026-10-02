@@ -2347,68 +2347,6 @@ export default function KnowledgePage() {
                   </div>
 
                   <div className={styles.bookPage}>
-                    {selectedDoc && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '10px 14px',
-                          background: featuredBookId === selectedDoc.id
-                            ? 'rgba(56, 189, 248, 0.12)'
-                            : 'var(--color-surface-2)',
-                          border: `1px solid ${featuredBookId === selectedDoc.id ? 'rgba(56, 189, 248, 0.4)' : 'var(--color-border)'}`,
-                          borderRadius: '10px',
-                          marginBottom: '20px',
-                          gap: '12px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                          <BookOpen
-                            size={18}
-                            style={{
-                              color: featuredBookId === selectedDoc.id ? '#38bdf8' : 'var(--color-text-muted)',
-                              flexShrink: 0,
-                            }}
-                          />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.84rem', color: featuredBookId === selectedDoc.id ? '#38bdf8' : 'var(--color-text)' }}>
-                              {featuredBookId === selectedDoc.id
-                                ? '★ Featured on Today Dashboard'
-                                : "Feature on Today's Dashboard"}
-                            </div>
-                            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                              {featuredBookId === selectedDoc.id
-                                ? "This book is currently featured on Today's main dashboard card."
-                                : "Click button to display this book on Today's Dashboard card."}
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSetFeaturedOnDashboard(selectedDoc.id)}
-                          style={{
-                            padding: '6px 14px',
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            borderRadius: '8px',
-                            border: 'none',
-                            background: featuredBookId === selectedDoc.id
-                              ? '#38bdf8'
-                              : 'linear-gradient(135deg, #6366f1, #38bdf8)',
-                            color: '#ffffff',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 8px rgba(56, 189, 248, 0.25)',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {featuredBookId === selectedDoc.id ? '✓ Set on Today' : "Put on Today's"}
-                        </button>
-                      </div>
-                    )}
-
                     <div className={styles.bookTitle}>{fTitle || 'Untitled'}</div>
                     {fTags && (
                       <div className={styles.bookMeta}>
