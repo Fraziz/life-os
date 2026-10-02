@@ -130,10 +130,13 @@ export default function TopBar({
           <button
             className={styles.iconBtn}
             onClick={onOpenReminders}
-            title="Reminders & Alerts"
-            aria-label="Reminders"
+            title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+            aria-label="Notifications"
           >
             <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
           </button>
         )}
 

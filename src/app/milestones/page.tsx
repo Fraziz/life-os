@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 const STATUS_CONFIG: Record<MilestoneStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: styles.upcoming },
@@ -71,15 +72,10 @@ export default function MilestonesPage() {
   const [status, setStatus] = useState<MilestoneStatus>('upcoming');
   const [progress, setProgress] = useState<number>(0);
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Milestones...
-        </p>
-      </div>
-    );
-  }
+  // Quick Add State (must be declared before any conditional return)
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
+  const [quickStatus, setQuickStatus] = useState<MilestoneStatus>('in-progress');
 
   const openCreateModal = () => {
     setEditingMilestone(null);
@@ -129,10 +125,9 @@ export default function MilestonesPage() {
     setModalOpen(false);
   };
 
-  // Quick Add State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickGoalId, setQuickGoalId] = useState<string>('');
-  const [quickStatus, setQuickStatus] = useState<MilestoneStatus>('in-progress');
+  if (!isLoaded) {
+    return <PageSkeleton variant="cards" cardsCount={4} showMetrics={true} showControls={true} />;
+  }
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();

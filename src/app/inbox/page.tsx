@@ -39,6 +39,7 @@ import type { BrainDumpClassification } from '@/utils/aiEngine';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 export default function InboxPage() {
   const {
@@ -229,15 +230,22 @@ export default function InboxPage() {
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Brain Dump Inbox...
-        </p>
-      </div>
-    );
-  }
+  // Voice brain dump (must be declared before any conditional returns)
+  const baseVoiceTextRef = useRef('');
+
+  const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
+    onTranscript: (spokenText) => {
+      const base = baseVoiceTextRef.current;
+      setQuickInput(base ? `${base} ${spokenText}` : spokenText);
+    },
+  });
+
+  const handleToggleListening = () => {
+    if (!isListening) {
+      baseVoiceTextRef.current = quickInput.trim();
+    }
+    toggleListening();
+  };
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,22 +267,9 @@ export default function InboxPage() {
     setIsBulkOpen(false);
   };
 
-  // Voice brain dump
-  const baseVoiceTextRef = useRef('');
-
-  const { isListening, toggleListening, isSupported: speechSupported } = useSpeechToText({
-    onTranscript: (spokenText) => {
-      const base = baseVoiceTextRef.current;
-      setQuickInput(base ? `${base} ${spokenText}` : spokenText);
-    },
-  });
-
-  const handleToggleListening = () => {
-    if (!isListening) {
-      baseVoiceTextRef.current = quickInput.trim();
-    }
-    toggleListening();
-  };
+  if (!isLoaded) {
+    return <PageSkeleton variant="tasks" cardsCount={5} showMetrics={false} showControls={true} />;
+  }
 
   const currentList =
     filterTab === 'inbox'
@@ -290,14 +285,14 @@ export default function InboxPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Brain Dump & Inbox</h1>
+          <h1 className={styles.title}>Idea Parking & Inbox</h1>
           <p className={styles.subtitle}>
-            Capture anything on your mind in seconds with zero friction. Clean your head first, organize into Tasks, Projects, Goals, or Dreams later.
+            Capture ideas, thoughts, and flashes of inspiration in seconds with zero friction. Park ideas here first, organize into Tasks, Projects, Goals, or Dreams later.
           </p>
         </div>
       </header>
 
-      {/* ── Fast Brain Dump Capture Bar ── */}
+      {/* ── Fast Idea Parking Capture Bar ── */}
       <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
         <div className={styles.quickAddRow}>
           <div className={styles.typeToggle}>
@@ -305,9 +300,9 @@ export default function InboxPage() {
               type="button"
               className={`${styles.typeToggleBtn} ${dumpType === 'thought' ? styles.typeToggleActive : ''}`}
               onClick={() => setDumpType('thought')}
-              title="Normal Brain Dump / Idea"
+              title="Park Idea / Thought"
             >
-              Dump
+              Idea
             </button>
             <button
               type="button"

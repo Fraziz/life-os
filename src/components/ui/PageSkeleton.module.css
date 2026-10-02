@@ -1,0 +1,282 @@
+/* ── Executive Page Skeleton Loader ── */
+.skeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 40px;
+  animation: fadeInFast 0.2s ease forwards;
+}
+
+@keyframes fadeInFast {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Shimmer Animation Effect ── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-surface-3) 50%,
+    var(--color-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+  border-radius: var(--radius-md, 8px);
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Header Skeleton ── */
+.headerSkeleton {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.titleBar {
+  height: 28px;
+  width: 220px;
+  border-radius: 6px;
+}
+
+.subtitleBar {
+  height: 14px;
+  width: 380px;
+  max-width: 85%;
+  border-radius: 4px;
+}
+
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btnSkeleton {
+  height: 34px;
+  width: 110px;
+  border-radius: var(--radius-lg, 10px);
+}
+
+/* ── Summary Stats / Metric Cards ── */
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.metricCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 14px);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metricIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg, 10px);
+  flex-shrink: 0;
+}
+
+.metricTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.metricValue {
+  height: 20px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+.metricLabel {
+  height: 12px;
+  width: 90px;
+  border-radius: 4px;
+}
+
+/* ── Toolbar & Filter Row ── */
+.controlsSkeleton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchBarSkeleton {
+  height: 38px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+  border-radius: var(--radius-lg, 10px);
+}
+
+.tabsSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tabPill {
+  height: 30px;
+  width: 72px;
+  border-radius: var(--radius-full, 99px);
+}
+
+/* ── Card Feed / Grid ── */
+.feedList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gridList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.cardItem {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 14px);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTag {
+  height: 18px;
+  width: 80px;
+  border-radius: 4px;
+}
+
+.cardDate {
+  height: 16px;
+  width: 65px;
+  border-radius: 4px;
+}
+
+.cardTitle {
+  height: 18px;
+  width: 85%;
+  border-radius: 4px;
+}
+
+.cardDesc {
+  height: 14px;
+  width: 65%;
+  border-radius: 4px;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.cardBadge {
+  height: 20px;
+  width: 70px;
+  border-radius: 99px;
+}
+
+.cardAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+/* ── Responsive Mobile Rules ── */
+@media (max-width: 1024px) {
+  .metricsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .skeletonContainer {
+    gap: 16px;
+  }
+
+  .headerSkeleton {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .actionsGroup {
+    width: 100%;
+  }
+
+  .btnSkeleton {
+    flex: 1;
+    width: 100%;
+  }
+
+  .metricsRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .controlsSkeleton {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .searchBarSkeleton {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .tabsSkeleton {
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .gridList {
+    grid-template-columns: 1fr;
+  }
+}

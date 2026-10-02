@@ -88,8 +88,8 @@ export default function CommandPalette() {
     {
       id: 'act-brain-dump',
       category: 'Quick Actions',
-      title: 'Quick Brain Dump',
-      subtitle: 'Capture thought to Inbox',
+      title: 'Quick Idea Parking',
+      subtitle: 'Park idea or thought to Inbox',
       keywords: ['inbox', 'capture', 'note', 'idea', 'dump'],
       onSelect: () => {
         router.push('/inbox');
@@ -201,7 +201,7 @@ export default function CommandPalette() {
     {
       id: 'nav-inbox',
       category: 'Navigation',
-      title: 'Brain Dump / Inbox',
+      title: 'Idea Parking / Inbox',
       subtitle: '/inbox',
       keywords: ['capture', 'thoughts', 'someday'],
       onSelect: () => {

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Disable reactStrictMode double-mounting in dev to cut tab transition latency in half
+  reactStrictMode: false,
 };
 
 export default nextConfig;

@@ -530,7 +530,7 @@ export default function TodayDashboardContent() {
             <div className={`${styles.actionIconWrap} ${styles.iconWrapBrain}`}>
               <Brain size={19} strokeWidth={2.2} />
             </div>
-            <div className={styles.actionCardTitle}>Brain Dump</div>
+            <div className={styles.actionCardTitle}>Idea Parking</div>
             <div className={styles.actionCardSub}>Quick capture</div>
           </button>
 
@@ -913,7 +913,7 @@ export default function TodayDashboardContent() {
           <div className={styles.sectionHeaderRow}>
             <div className={styles.sectionHeaderLeft}>
               <Brain size={17} style={{ color: '#8b5cf6' }} />
-              <h2 className={styles.sectionHeading}>Brain Dump</h2>
+              <h2 className={styles.sectionHeading}>Idea Parking</h2>
               <span className={styles.sectionHeaderDate}>
                 {brainDumpItems.length} thoughts
               </span>

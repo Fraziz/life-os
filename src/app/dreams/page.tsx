@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> = {
   dream: { label: 'Dream', className: styles.dream },
@@ -49,15 +50,10 @@ export default function DreamsPage() {
   const [notes, setNotes] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Dreams & Vision Board...
-        </p>
-      </div>
-    );
-  }
+  // Quick Add State (must be declared before any conditional return)
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickAreaId, setQuickAreaId] = useState<string>('');
+  const [quickStatus, setQuickStatus] = useState<DreamStatus>('dream');
 
   const openCreateModal = () => {
     setEditingDream(null);
@@ -115,10 +111,9 @@ export default function DreamsPage() {
     setModalOpen(false);
   };
 
-  // Quick Add State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickAreaId, setQuickAreaId] = useState<string>('');
-  const [quickStatus, setQuickStatus] = useState<DreamStatus>('dream');
+  if (!isLoaded) {
+    return <PageSkeleton variant="cards" cardsCount={6} showMetrics={false} showControls={true} />;
+  }
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();

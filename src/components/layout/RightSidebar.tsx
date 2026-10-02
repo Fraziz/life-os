@@ -190,8 +190,8 @@ export default function RightSidebar() {
             type="button"
             className={styles.iconBtn}
             onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
-            title="Notifications & Alerts"
-            aria-label="Alerts"
+            title="Notifications"
+            aria-label="Notifications"
           >
             <Bell size={17} />
             {unreadCount > 0 && <span className={styles.notificationDot} />}

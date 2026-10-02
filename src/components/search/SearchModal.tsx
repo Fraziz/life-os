@@ -15,7 +15,7 @@ const TYPE_META: Record<SearchResultType, { label: string; icon: React.ReactNode
   project:    { label: 'Project',    icon: <FolderKanban size={14} />, color: '#22d3a5' },
   task:       { label: 'Task',       icon: <CheckSquare size={14} />, color: '#f59e0b' },
   habit:      { label: 'Habit',      icon: <Repeat      size={14} />, color: '#ec4899' },
-  brain_dump: { label: 'Brain Dump', icon: <Inbox       size={14} />, color: '#84cc16' },
+  brain_dump: { label: 'Idea Parking', icon: <Inbox       size={14} />, color: '#84cc16' },
   document:   { label: 'Document',   icon: <BookOpen    size={14} />, color: '#6366f1' },
 };
 

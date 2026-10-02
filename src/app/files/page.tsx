@@ -13,11 +13,13 @@ const LABELS: Record<FileEntityType, string> = {
   task: 'Tasks',
   milestone: 'Milestones',
   area: 'Life Areas',
-  inbox: 'Brain Dump',
+  inbox: 'Idea Parking',
   knowledge: 'Knowledge',
   habit: 'Habits',
   vault: 'General',
 };
+
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 export default function FilesPage() {
   const { files, isLoaded, error } = useAttachments();
@@ -54,7 +56,7 @@ export default function FilesPage() {
       )}
 
       {!isLoaded ? (
-        <p style={{ color: 'var(--color-text-muted)' }}>Loading files…</p>
+        <PageSkeleton variant="cards" cardsCount={3} showMetrics={false} showControls={false} />
       ) : groups.length === 0 ? (
         <div style={{
           padding: 32,

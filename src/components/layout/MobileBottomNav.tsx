@@ -45,6 +45,7 @@ export default function MobileBottomNav({ onOpenNextAction }: MobileBottomNavPro
           <Link
             key={item.label}
             href={item.href || '/'}
+            prefetch={true}
             className={`${styles.navLink} ${isActive ? styles.active : ''}`}
             aria-current={isActive ? 'page' : undefined}
           >

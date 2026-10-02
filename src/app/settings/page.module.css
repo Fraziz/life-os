@@ -833,3 +833,166 @@
 .btnDangerSolid:hover {
   opacity: 0.92;
 }
+
+/* ============================================================
+   RESPONSIVE DESIGN (Tablets & Mobile Devices)
+   ============================================================ */
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-2) 0 var(--space-8);
+    gap: var(--space-4);
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .sectionCard {
+    padding: 16px 14px;
+    border-radius: var(--radius-md);
+    gap: var(--space-4);
+  }
+
+  .sectionHeader {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .sectionIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sectionTitle {
+    font-size: 0.9rem;
+  }
+
+  .modeGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .themeGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .gridTwo {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .starterPresetRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .starterPresetRow .btnSecondary {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .vaultCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .vaultCardActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .failoverRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .failoverRow .checkbox {
+    align-self: flex-start;
+  }
+
+  .backupCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .backupCard .btnSecondary {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .testButtonsRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .btnTestConnection {
+    justify-content: center;
+    width: 100%;
+    padding: 8px 14px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  .btnDanger,
+  .btnDangerSolid {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionCard {
+    padding: 14px 12px;
+  }
+
+  .themeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .providerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .daysGrid {
+    gap: 4px;
+  }
+
+  .dayChip {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+
+  .toggleRow {
+    gap: 10px;
+  }
+
+  .apiKeyInputWrapper .input {
+    padding-right: 58px;
+  }
+}
+

@@ -25,7 +25,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         id: 'inbox',
-        label: 'Brain Dump',
+        label: 'Idea Parking',
         href: '/inbox',
         icon: 'inbox',
         isAvailable: true,

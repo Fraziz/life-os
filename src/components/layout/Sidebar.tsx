@@ -9,12 +9,14 @@ import {
   LogOut,
   PanelLeftClose,
   Settings,
+  Bell,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
 import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import { useReminders } from '@/context/ReminderContext';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
 
@@ -40,6 +42,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { settings } = useSettings();
   const { logout, user } = useAuth();
+  const { unreadCount } = useReminders();
 
   const [moreOpen, setMoreOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -93,7 +96,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Quick Utility Row (Next Action + Alerts) */}
+        {/* Quick Utility Row (Next Action + Notification) */}
         <div className={styles.topActionsGroup}>
           <div className={styles.quickUtilityRow}>
             <button
@@ -115,9 +118,17 @@ export default function Sidebar({
                 else window.dispatchEvent(new CustomEvent('open-reminders'));
               }}
               className={styles.utilityPillBtn}
-              title="Alerts & Reminders"
+              title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
             >
-              <span>Alerts</span>
+              <div className={styles.bellIconWrap}>
+                <Bell size={13} />
+                {unreadCount > 0 && (
+                  <span className={styles.bellCountBadge}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
+              <span>Notification</span>
             </button>
           </div>
         </div>
@@ -156,6 +167,7 @@ export default function Sidebar({
                           <Link
                             key={item.id}
                             href={item.href}
+                            prefetch={true}
                             onClick={handleNavClick}
                             className={`${styles.navItem} ${
                               isActive ? styles.activeItem : ''
@@ -187,6 +199,7 @@ export default function Sidebar({
                       <Link
                         key={item.id}
                         href={item.href}
+                        prefetch={true}
                         onClick={handleNavClick}
                         className={`${styles.navItem} ${
                           isActive ? styles.activeItem : ''

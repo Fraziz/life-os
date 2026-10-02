@@ -109,6 +109,12 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
+@media (max-width: 1024px) {
+  .workbench {
+    grid-template-columns: 240px 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .workbench {
     grid-template-columns: 1fr;
@@ -2326,3 +2332,209 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Canvas Study & Review Hub ── */
+.quizStudyCanvas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fadeIn 0.25s ease;
+}
+
+.quizStudyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.quizStudyTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quizStudyIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quizStudyTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.quizStudySubtitle {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 3px 0 0 0;
+  line-height: 1.4;
+}
+
+.quizStudyActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quizProgressBox {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quizProgressMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.quizProgressCount {
+  color: var(--color-accent-light);
+}
+
+.quizProgressBarTrack {
+  height: 8px;
+  background: var(--color-surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.quizProgressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #22c55e);
+  border-radius: 99px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studyCard {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border-subtle);
+  border-radius: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.studyCard:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.studyCardMastered {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.04), transparent);
+}
+
+.studyCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.studyCardQuestion {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.studyMasteredBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.studyAnswerBox {
+  margin-top: 6px;
+  padding: 14px 16px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  line-height: 1.55;
+  animation: fadeIn 0.2s ease;
+}
+
+.studyAnswerControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.studyFeedbackBtn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.studyFeedbackMastered {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.studyFeedbackMastered:hover {
+  background: #22c55e;
+  color: white;
+}
+
+.studyFeedbackLearning {
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.studyFeedbackLearning:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+

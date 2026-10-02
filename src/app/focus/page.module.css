@@ -1340,4 +1340,115 @@
   border-color: rgba(134, 239, 172, 0.2);
 }
 
+/* ============================================================
+   RESPONSIVE DESIGN (Focus Mode Mobile & Tablet)
+   ============================================================ */
+@media (max-width: 768px) {
+  .page {
+    gap: var(--space-5);
+  }
+
+  .title {
+    font-size: 1.4rem;
+  }
+
+  .subtitle {
+    font-size: var(--text-xs);
+  }
+
+  .focusCard {
+    padding: 20px 16px;
+    border-radius: 20px;
+    gap: 16px;
+  }
+
+  .timerDisplayCard {
+    padding: 16px 20px;
+    max-width: 100%;
+    border-radius: 18px;
+  }
+
+  .timerNumber {
+    font-size: 3rem;
+  }
+
+  .taskTitle {
+    font-size: 1.15rem;
+  }
+
+  .controlsRow {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .btnStart {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+  }
+
+  .modeTabs {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    padding: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modeTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .modeTab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 6px 12px;
+  }
+
+  .sideCard {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .ambientGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .zenMode {
+    padding: 16px;
+  }
+
+  .zenTopBar {
+    top: max(14px, env(safe-area-inset-top, 14px));
+    left: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .focusCard {
+    padding: 16px 12px;
+  }
+
+  .timerDisplayCard {
+    padding: 14px 12px;
+  }
+
+  .timerNumber {
+    font-size: 2.45rem;
+  }
+
+  .timerMetaRow {
+    font-size: 10px;
+  }
+
+  .ambientGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 

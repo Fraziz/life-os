@@ -1192,3 +1192,86 @@
   font-style: italic;
   margin: 0;
 }
+
+/* ============================================================
+   RESPONSIVE DESIGN (Workout Mobile & Tablet)
+   ============================================================ */
+@media (max-width: 768px) {
+  .page {
+    padding: 14px 14px 80px;
+    gap: 14px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .pageHeader .btnSecondary,
+  .pageHeader button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .statsBar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .statCard {
+    padding: 12px 10px;
+  }
+
+  .statValue {
+    font-size: 1.3rem;
+  }
+
+  .weekStrip {
+    gap: 4px;
+  }
+
+  .weekDay {
+    padding: 6px 2px;
+    min-height: 58px;
+    border-radius: var(--radius-md);
+  }
+
+  .weekDayLabel {
+    font-size: 9px;
+  }
+
+  .weekDayNum {
+    font-size: 0.95rem;
+  }
+
+  .modalCard {
+    padding: 18px 16px;
+    border-radius: 18px;
+    max-height: 88vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.3rem;
+  }
+
+  .modalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modalCard {
+    border-radius: 20px 20px 0 0;
+    max-height: 90dvh;
+    max-width: 100vw;
+    width: 100%;
+    padding: 16px 14px;
+  }
+
+  .weekDay {
+    min-height: 52px;
+  }
+}
+

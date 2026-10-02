@@ -190,3 +190,17 @@
   color: var(--color-success);
   flex-shrink: 0;
 }
+
+@media (max-width: 480px) {
+  .wrap {
+    padding: 16px 12px;
+  }
+  .card {
+    padding: 24px 18px 20px;
+    border-radius: var(--radius-xl);
+  }
+  .title {
+    font-size: var(--text-xl);
+  }
+}
+

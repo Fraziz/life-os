@@ -384,6 +384,13 @@ export type DocumentStatus = 'draft' | 'active' | 'archived';
 export type DocumentCategory = 'learning' | 'problem-solving' | 'guides' | 'ideas' | 'reference' | 'general';
 export type DocumentReadStatus = 'to-read' | 'reading' | 'completed';
 
+export interface QuizQuestionItem {
+  id?: string;
+  question: string;
+  answer: string;
+  userMastered?: boolean;
+}
+
 export interface KnowledgeDocument {
   id: string;
   title: string;
@@ -402,6 +409,8 @@ export interface KnowledgeDocument {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  studyQuiz?: QuizQuestionItem[];
+  lastReviewedAt?: string;
 }
 
 // ── Reminders & Notifications (Phase 24) ───────────────────

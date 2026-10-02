@@ -439,3 +439,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 420px) {
+  .drawer {
+    padding: 16px 14px 28px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+}
+

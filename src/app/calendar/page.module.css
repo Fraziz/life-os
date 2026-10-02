@@ -289,76 +289,450 @@
   flex: 1;
 }
 
-/*  Month View Grid  */
-.monthGrid {
+/* ── Month View: Today's Tab Design with Event Dots & Full Detail Side Panel ── */
+.monthViewSplit {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: var(--color-border-subtle);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-2xl);
-  overflow: hidden;
+  grid-template-columns: 1fr 380px;
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.monthHeaderCell {
-  background: var(--color-surface-2);
-  padding: var(--space-2);
+@media (max-width: 1024px) {
+  .monthViewSplit {
+    grid-template-columns: 1fr;
+  }
+}
+
+.monthCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.calDaysHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted);
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.calDayLabel {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
   text-transform: uppercase;
 }
 
-.monthDayCell {
-  background: var(--color-surface);
-  min-height: 100px;
-  padding: var(--space-2);
+.calGridDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.calEmptyCell {
+  min-height: 54px;
+}
+
+.calDayCell {
+  min-height: 54px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  padding: 6px 4px;
   transition: all var(--transition-fast);
+  user-select: none;
 }
 
-.monthDayCell:hover {
-  background: var(--color-surface-hover);
+.calDayCell:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
 }
 
-.monthDayCell.todayCell {
-  background: rgba(124, 106, 255, 0.05);
-}
-
-.monthDayNum {
-  font-size: 11px;
+.calDayNumber {
   font-weight: 600;
+  line-height: 1;
+}
+
+.calActiveDay {
+  background-color: var(--color-primary-light, rgba(99, 102, 241, 0.12)) !important;
+  color: var(--color-primary, #6366f1) !important;
+  font-weight: 700;
+  border-color: var(--color-primary, #6366f1) !important;
+}
+
+:global([data-theme='dark']) .calActiveDay {
+  background-color: rgba(129, 140, 248, 0.18) !important;
+  color: #a5b4fc !important;
+  border-color: #818cf8 !important;
+}
+
+.calSelectedDay {
+  box-shadow: 0 0 0 2px var(--color-primary, #6366f1) !important;
+  border-color: var(--color-primary, #6366f1) !important;
+  background-color: var(--color-surface-2) !important;
+}
+
+/* Dots Row */
+.calDotsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+  height: 6px;
+  margin-top: 5px;
+}
+
+.calDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calDotDeadline {
+  background-color: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+.calDotEvent {
+  background-color: #0ea5e9;
+  box-shadow: 0 0 4px rgba(14, 165, 233, 0.4);
+}
+
+.calDotBlock {
+  background-color: #a855f7;
+  box-shadow: 0 0 4px rgba(168, 85, 247, 0.4);
+}
+
+/* Legend Row */
+.calLegendRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  padding: 10px 4px 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 0.74rem;
   color: var(--color-text-muted);
 }
 
-.monthItemBadge {
-  font-size: 9px;
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+
+/* ── Side Full Detail Agenda Panel ── */
+.sideDetailPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 16px;
+}
+
+.sideDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 10px;
+}
+
+.sideDetailTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sideDetailDate {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.todayBadge {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background-color: var(--color-primary-light, rgba(99, 102, 241, 0.15));
+  color: var(--color-primary, #6366f1);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.jumpTodayBtn {
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  color: var(--color-primary, #6366f1);
+  cursor: pointer;
   padding: 2px 4px;
-  border-radius: var(--radius-sm);
+  font-weight: 600;
+  border-radius: 4px;
+  transition: opacity var(--transition-fast);
+}
+
+.jumpTodayBtn:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+.sideQuickActionRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sideQuickActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.monthDeadlineBadge {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+.sideQuickActionBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
-.monthScheduleBadge {
-  background: rgba(124, 106, 255, 0.15);
+.sideSectionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.sideSectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sideSectionTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sideDetailCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.sideDetailCard:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.sideCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sideCardTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.sideCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.sideCardNotes {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  margin-top: 2px;
+}
+
+.sideCardDeleteBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.sideCardDeleteBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.focusNowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--color-accent-light);
-  border: 1px solid rgba(124, 106, 255, 0.25);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all var(--transition-fast);
 }
 
-.monthEventBadge {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.25);
+.focusNowBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent-light);
+}
+
+.sourceBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.priorityBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.priorityUrgent {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.priorityHigh {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.priorityMedium {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+}
+
+.priorityLow {
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+
+.emptyDayNotice {
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.emptyDayIcon {
+  color: var(--color-text-faint);
+  opacity: 0.6;
+}
+
+.emptyDayText {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.emptyDayActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emptyAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.emptyAddBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
 }
 
 /*  Modal  */
@@ -387,3 +761,114 @@
   gap: var(--space-4);
   box-shadow: var(--shadow-xl);
 }
+
+.gridScrollWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-2xl);
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN (Calendar Mobile & Tablet)
+   ============================================================ */
+@media (max-width: 768px) {
+  .page {
+    gap: var(--space-4);
+  }
+
+  .header {
+    gap: 12px;
+  }
+
+  .actionButtons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .actionButtons button,
+  .actionButtons a {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dateNavGroup {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .currentDateLabel {
+    min-width: 0;
+    text-align: center;
+    font-size: var(--text-sm);
+  }
+
+  .viewTabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .viewTab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+  }
+
+  .deadlinesBanner {
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .timelineHourRow {
+    grid-template-columns: 50px 1fr;
+    min-height: 48px;
+  }
+
+  .hourLabel {
+    font-size: 10px;
+  }
+
+  .weekGrid {
+    min-width: 600px;
+  }
+
+  .monthGrid {
+    min-width: 600px;
+  }
+
+  .modalCard {
+    padding: 18px 16px;
+    border-radius: 18px;
+    max-height: 88vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modalCard {
+    border-radius: 20px 20px 0 0;
+    max-height: 90dvh;
+    max-width: 100vw;
+    width: 100%;
+    padding: 16px 14px;
+  }
+
+  .dayViewContainer {
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+  }
+}
+

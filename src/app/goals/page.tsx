@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 import { coachGoalWithAI } from '@/utils/aiEngine';
 import type { GoalCoachResult } from '@/utils/aiEngine';
 
@@ -109,15 +110,11 @@ export default function GoalsPage() {
   const [status, setStatus] = useState<GoalStatus>('in-progress');
   const [progress, setProgress] = useState<number>(0);
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Goals...
-        </p>
-      </div>
-    );
-  }
+  // Quick Add State (must be declared before any conditional return)
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickHorizon, setQuickHorizon] = useState<GoalHorizon>('90-day');
+  const [quickPriority, setQuickPriority] = useState<GoalPriority>('high');
+  const [quickDreamId, setQuickDreamId] = useState<string>('');
 
   const openCreateModal = () => {
     setEditingGoal(null);
@@ -183,11 +180,9 @@ export default function GoalsPage() {
     setModalOpen(false);
   };
 
-  // Quick Add State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickHorizon, setQuickHorizon] = useState<GoalHorizon>('90-day');
-  const [quickPriority, setQuickPriority] = useState<GoalPriority>('high');
-  const [quickDreamId, setQuickDreamId] = useState<string>('');
+  if (!isLoaded) {
+    return <PageSkeleton variant="cards" cardsCount={4} showMetrics={true} showControls={true} />;
+  }
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();

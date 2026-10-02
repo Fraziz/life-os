@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
@@ -24,6 +24,7 @@ import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import styles from './page.module.css';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -50,8 +51,10 @@ export default function CalendarPage() {
   const { goals, updateGoal } = useGoals();
   const { milestones, updateMilestone } = useMilestones();
 
-  const [view, setView] = useState<CalendarView>('week');
+  const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // Modals
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -78,14 +81,37 @@ export default function CalendarPage() {
   const [dlNewTaskTitle, setDlNewTaskTitle] = useState('');
   const [dlDate, setDlDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Helper date formatters & quick-add launchers
+  const formatFullFriendlyDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDayDateString = (y: number, m: number, d: number) => {
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const openAddEvent = (date?: string) => {
+    setEventDate(date || selectedDate || todayStr);
+    setEventModalOpen(true);
+  };
+
+  const openScheduleBlock = (date?: string) => {
+    setSchedDate(date || selectedDate || todayStr);
+    setScheduleModalOpen(true);
+  };
+
+  const openAddDeadline = (date?: string) => {
+    setDlDate(date || selectedDate || todayStr);
+    setDeadlineModalOpen(true);
+  };
+
   if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Calendar...
-        </p>
-      </div>
-    );
+    return <PageSkeleton variant="calendar" cardsCount={4} showMetrics={false} showControls={true} />;
   }
 
   const currentDateStr = currentDate.toISOString().split('T')[0];
@@ -116,7 +142,9 @@ export default function CalendarPage() {
   };
 
   const navigateToday = () => {
-    setCurrentDate(new Date());
+    const now = new Date();
+    setCurrentDate(now);
+    setSelectedDate(todayStr);
   };
 
   // Week View dates calculation (Monday to Sunday)
@@ -226,13 +254,13 @@ export default function CalendarPage() {
         </div>
 
         <div className={styles.actionButtons}>
-          <button className={styles.btnSecondary} onClick={() => setDeadlineModalOpen(true)} style={{ border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444' }}>
+          <button className={styles.btnSecondary} onClick={() => openAddDeadline()} style={{ border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444' }}>
             <Flag size={13} /> + Add Deadline
           </button>
-          <button className={styles.btnSecondary} onClick={() => setEventModalOpen(true)}>
+          <button className={styles.btnSecondary} onClick={() => openAddEvent()}>
             <Plus size={13} /> Add Event
           </button>
-          <button className={styles.btnSchedule} onClick={() => setScheduleModalOpen(true)}>
+          <button className={styles.btnSchedule} onClick={() => openScheduleBlock()}>
             <Clock size={13} /> Schedule Work Block
           </button>
         </div>
@@ -391,156 +419,393 @@ export default function CalendarPage() {
 
       {/* ── WEEK VIEW ── */}
       {view === 'week' && (
-        <div className={styles.weekGrid}>
-          {getWeekDates(currentDate).map((dayDate, idx) => {
-            const dayStr = dayDate.toISOString().split('T')[0];
-            const isToday = dayStr === new Date().toISOString().split('T')[0];
-            const dayDeadlines = getDeadlinesForDate(dayStr);
-            const dayBlocks = getScheduledBlocksForDate(dayStr);
-            const dayEvents = getEventsForDate(dayStr);
-
-            return (
-              <div key={idx} className={styles.weekCol}>
-                <div className={styles.weekColHeader} style={{ background: isToday ? 'rgba(124, 106, 255, 0.15)' : undefined }}>
-                  <div className={styles.weekDayName}>
-                    {dayDate.toLocaleDateString([], { weekday: 'short' })}
-                  </div>
-                  <div className={styles.weekDayNum}>{dayDate.getDate()}</div>
-                </div>
-
-                <div className={styles.weekColBody}>
-                  {/* Daily Deadlines Row */}
-                  {dayDeadlines.map((dl) => (
-                    <Link
-                      key={dl.id}
-                      href={getDeadlineHref(dl.sourceType, dl.entityId)}
-                      className={`${styles.monthItemBadge} ${styles.monthDeadlineBadge}`}
-                      style={{ textDecoration: 'none', cursor: 'pointer', display: 'block' }}
-                      title={`Click to view ${dl.title} in ${dl.sourceType} tab`}
-                    >
-                      <Flag size={9} style={{ display: 'inline', marginRight: '2px' }} />
-                      {dl.title}
-                    </Link>
-                  ))}
-
-                  {/* Daily Events */}
-                  {dayEvents.map((evt) => (
-                    <div key={evt.id} className={styles.eventCard}>
-                      <div>
-                        <strong>{evt.title}</strong>
-                        <div style={{ fontSize: '9px', opacity: 0.8 }}>{evt.startTime}</div>
-                      </div>
-                      <button
-                        style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
-                        onClick={() => deleteEvent(evt.id)}
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Daily Scheduled Work */}
-                  {dayBlocks.map((block) => (
-                    <div key={block.id} className={styles.scheduledWorkCard}>
-                      <div>
-                        <Clock size={10} style={{ display: 'inline', marginRight: '2px' }} />
-                        <Link href={`/tasks?highlight=${block.taskId}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
-                          {block.taskTitle}
-                        </Link>
-                        <div style={{ fontSize: '9px', opacity: 0.8 }}>{block.startTime} ({block.durationMinutes}m)</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '2px' }}>
-                        <Link
-                          href={`/focus?taskId=${block.taskId}`}
-                          style={{ color: 'var(--color-accent-light)', display: 'inline-flex', padding: 0 }}
-                          title="Focus Now"
-                        >
-                          <Play size={10} />
-                        </Link>
-                        <button
-                          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
-                          onClick={() => removeScheduledBlock(block.id)}
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── MONTH VIEW ── */}
-      {view === 'month' && (
-        <div>
-          <div className={styles.monthGrid} style={{ borderBottom: 'none' }}>
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayName) => (
-              <div key={dayName} className={styles.monthHeaderCell}>
-                {dayName}
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.monthGrid}>
-            {getMonthDays(currentDate).map(({ date, isCurrentMonth }, idx) => {
-              const dayStr = date.toISOString().split('T')[0];
+        <div className={styles.gridScrollWrap}>
+          <div className={styles.weekGrid}>
+            {getWeekDates(currentDate).map((dayDate, idx) => {
+              const dayStr = dayDate.toISOString().split('T')[0];
               const isToday = dayStr === new Date().toISOString().split('T')[0];
               const dayDeadlines = getDeadlinesForDate(dayStr);
               const dayBlocks = getScheduledBlocksForDate(dayStr);
               const dayEvents = getEventsForDate(dayStr);
 
               return (
-                <div
-                  key={idx}
-                  className={`${styles.monthDayCell} ${isToday ? styles.todayCell : ''}`}
-                  style={{ opacity: isCurrentMonth ? 1 : 0.4 }}
-                  onClick={() => {
-                    setCurrentDate(date);
-                    setView('day');
-                  }}
-                >
-                  <span className={styles.monthDayNum}>{date.getDate()}</span>
-
-                  {dayDeadlines.map((dl) => (
-                    <Link
-                      key={dl.id}
-                      href={getDeadlineHref(dl.sourceType, dl.entityId)}
-                      className={`${styles.monthItemBadge} ${styles.monthDeadlineBadge}`}
-                      title={`Click to view ${dl.title} in ${dl.sourceType} tab`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '2px' }}
-                    >
-                      🚩 {dl.title} <ExternalLink size={9} style={{ opacity: 0.6 }} />
-                    </Link>
-                  ))}
-
-                  {dayEvents.map((evt) => (
-                    <div key={evt.id} className={`${styles.monthItemBadge} ${styles.monthEventBadge}`} title={`Event: ${evt.title}`}>
-                      📅 {evt.title}
+                <div key={idx} className={styles.weekCol}>
+                  <div className={styles.weekColHeader} style={{ background: isToday ? 'rgba(124, 106, 255, 0.15)' : undefined }}>
+                    <div className={styles.weekDayName}>
+                      {dayDate.toLocaleDateString([], { weekday: 'short' })}
                     </div>
-                  ))}
+                    <div className={styles.weekDayNum}>{dayDate.getDate()}</div>
+                  </div>
 
-                  {dayBlocks.map((b) => (
-                    <Link
-                      key={b.id}
-                      href={`/tasks?highlight=${b.taskId}`}
-                      className={`${styles.monthItemBadge} ${styles.monthScheduleBadge}`}
-                      title={`Focus block: ${b.taskTitle}`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ textDecoration: 'none', display: 'block' }}
-                    >
-                      ⏳ {b.taskTitle}
-                    </Link>
-                  ))}
+                  <div className={styles.weekColBody}>
+                    {/* Daily Deadlines Row */}
+                    {dayDeadlines.map((dl) => (
+                      <Link
+                        key={dl.id}
+                        href={getDeadlineHref(dl.sourceType, dl.entityId)}
+                        className={`${styles.monthItemBadge} ${styles.monthDeadlineBadge}`}
+                        style={{ textDecoration: 'none', cursor: 'pointer', display: 'block' }}
+                        title={`Click to view ${dl.title} in ${dl.sourceType} tab`}
+                      >
+                        <Flag size={9} style={{ display: 'inline', marginRight: '2px' }} />
+                        {dl.title}
+                      </Link>
+                    ))}
+
+                    {/* Daily Events */}
+                    {dayEvents.map((evt) => (
+                      <div key={evt.id} className={styles.eventCard}>
+                        <div>
+                          <strong>{evt.title}</strong>
+                          <div style={{ fontSize: '9px', opacity: 0.8 }}>{evt.startTime}</div>
+                        </div>
+                        <button
+                          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
+                          onClick={() => deleteEvent(evt.id)}
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Daily Scheduled Work */}
+                    {dayBlocks.map((block) => (
+                      <div key={block.id} className={styles.scheduledWorkCard}>
+                        <div>
+                          <Clock size={10} style={{ display: 'inline', marginRight: '2px' }} />
+                          <Link href={`/tasks?highlight=${block.taskId}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                            {block.taskTitle}
+                          </Link>
+                          <div style={{ fontSize: '9px', opacity: 0.8 }}>{block.startTime} ({block.durationMinutes}m)</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          <Link
+                            href={`/focus?taskId=${block.taskId}`}
+                            style={{ color: 'var(--color-accent-light)', display: 'inline-flex', padding: 0 }}
+                            title="Focus Now"
+                          >
+                            <Play size={10} />
+                          </Link>
+                          <button
+                            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
+                            onClick={() => removeScheduledBlock(block.id)}
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
       )}
+
+      {/* ── MONTH VIEW: Today's Tab Design with Event Dots & Full Detail Side Panel ── */}
+      {view === 'month' && (() => {
+        const monthYear = currentDate.getFullYear();
+        const monthIdx = currentDate.getMonth();
+        const firstDayOfMonthIdx = new Date(monthYear, monthIdx, 1).getDay(); // 0 = Sunday
+        const totalDaysInMonth = new Date(monthYear, monthIdx + 1, 0).getDate();
+
+        const monthCalendarDays: (number | null)[] = [];
+        for (let i = 0; i < firstDayOfMonthIdx; i++) {
+          monthCalendarDays.push(null);
+        }
+        for (let d = 1; d <= totalDaysInMonth; d++) {
+          monthCalendarDays.push(d);
+        }
+        while (monthCalendarDays.length % 7 !== 0) {
+          monthCalendarDays.push(null);
+        }
+
+        const selectedDeadlines = getDeadlinesForDate(selectedDate);
+        const selectedEvents = getEventsForDate(selectedDate);
+        const selectedBlocks = getScheduledBlocksForDate(selectedDate);
+        const totalSelectedItems = selectedDeadlines.length + selectedEvents.length + selectedBlocks.length;
+
+        return (
+          <div className={styles.monthViewSplit}>
+            {/* Left Column: Month Grid with Event Dots */}
+            <div className={styles.monthCard}>
+              <div className={styles.calDaysHeader}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                  <div key={d} className={styles.calDayLabel}>
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.calGridDays}>
+                {monthCalendarDays.map((d, index) => {
+                  if (d === null) {
+                    return <div key={`empty-${index}`} className={styles.calEmptyCell} />;
+                  }
+
+                  const dayDateStr = formatDayDateString(monthYear, monthIdx, d);
+                  const dayDeadlines = getDeadlinesForDate(dayDateStr);
+                  const dayEvents = getEventsForDate(dayDateStr);
+                  const dayBlocks = getScheduledBlocksForDate(dayDateStr);
+
+                  const hasDeadline = dayDeadlines.length > 0;
+                  const hasEvent = dayEvents.length > 0;
+                  const hasBlock = dayBlocks.length > 0;
+                  const isSelected = dayDateStr === selectedDate;
+                  const isToday = dayDateStr === todayStr;
+
+                  const tooltipParts: string[] = [];
+                  if (hasEvent) tooltipParts.push(`${dayEvents.length} Event(s)`);
+                  if (hasDeadline) tooltipParts.push(`${dayDeadlines.length} Deadline(s)`);
+                  if (hasBlock) tooltipParts.push(`${dayBlocks.length} Focus Block(s)`);
+                  const tooltipText = tooltipParts.length > 0 ? `${dayDateStr} (${tooltipParts.join(', ')})` : dayDateStr;
+
+                  return (
+                    <div
+                      key={`day-${d}`}
+                      onClick={() => setSelectedDate(dayDateStr)}
+                      className={`${styles.calDayCell} ${isToday ? styles.calActiveDay : ''} ${isSelected ? styles.calSelectedDay : ''}`}
+                      title={tooltipText}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setSelectedDate(dayDateStr);
+                        }
+                      }}
+                      aria-label={`${dayDateStr} ${tooltipParts.join('. ')}`}
+                    >
+                      <span className={styles.calDayNumber}>{d}</span>
+                      <div className={styles.calDotsRow}>
+                        {hasDeadline && <span className={`${styles.calDot} ${styles.calDotDeadline}`} />}
+                        {hasEvent && <span className={`${styles.calDot} ${styles.calDotEvent}`} />}
+                        {hasBlock && <span className={`${styles.calDot} ${styles.calDotBlock}`} />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Dot Legend Row */}
+              <div className={styles.calLegendRow}>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.calDot} ${styles.calDotDeadline}`} /> Deadline
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.calDot} ${styles.calDotEvent}`} /> Event
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.calDot} ${styles.calDotBlock}`} /> Focus Block
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column: Full Detail Side Panel */}
+            <aside className={styles.sideDetailPanel} aria-label="Selected date full details">
+              <div className={styles.sideDetailHeader}>
+                <div className={styles.sideDetailTitleRow}>
+                  <span className={styles.sideDetailDate}>
+                    {formatFullFriendlyDate(selectedDate)}
+                  </span>
+                  {selectedDate === todayStr && (
+                    <span className={styles.todayBadge}>Today</span>
+                  )}
+                </div>
+                {selectedDate !== todayStr && (
+                  <button
+                    type="button"
+                    className={styles.jumpTodayBtn}
+                    onClick={() => {
+                      setSelectedDate(todayStr);
+                      setCurrentDate(new Date());
+                    }}
+                  >
+                    Jump to Today
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.sideQuickActionRow}>
+                <button
+                  type="button"
+                  className={styles.sideQuickActionBtn}
+                  onClick={() => openAddEvent(selectedDate)}
+                  title="Add an event for this date"
+                >
+                  <Plus size={12} /> Add Event
+                </button>
+                <button
+                  type="button"
+                  className={styles.sideQuickActionBtn}
+                  onClick={() => openScheduleBlock(selectedDate)}
+                  title="Schedule a focus block for this date"
+                >
+                  <Clock size={12} /> Focus Block
+                </button>
+                <button
+                  type="button"
+                  className={styles.sideQuickActionBtn}
+                  onClick={() => openAddDeadline(selectedDate)}
+                  title="Add a deadline for this date"
+                  style={{ color: '#ef4444' }}
+                >
+                  <Flag size={12} /> Add Deadline
+                </button>
+              </div>
+
+              <div className={styles.sideSectionsList}>
+                {totalSelectedItems === 0 ? (
+                  <div className={styles.emptyDayNotice}>
+                    <CalendarIcon size={24} className={styles.emptyDayIcon} />
+                    <p className={styles.emptyDayText}>No scheduled items for this date.</p>
+                    <div className={styles.emptyDayActions}>
+                      <button
+                        type="button"
+                        onClick={() => openAddEvent(selectedDate)}
+                        className={styles.emptyAddBtn}
+                      >
+                        <Plus size={11} /> Add Event
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openScheduleBlock(selectedDate)}
+                        className={styles.emptyAddBtn}
+                      >
+                        <Clock size={11} /> Schedule Focus
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Events with Full Detail */}
+                    {selectedEvents.length > 0 && (
+                      <div className={styles.sideSectionGroup}>
+                        <div className={styles.sideSectionTitle}>
+                          <CalendarIcon size={12} style={{ color: '#0ea5e9' }} />
+                          <span>Events ({selectedEvents.length})</span>
+                        </div>
+                        {selectedEvents.map((evt) => (
+                          <div key={evt.id} className={styles.sideDetailCard}>
+                            <div className={styles.sideCardTop}>
+                              <span className={styles.sideCardTitle}>{evt.title}</span>
+                              <button
+                                type="button"
+                                className={styles.sideCardDeleteBtn}
+                                onClick={() => deleteEvent(evt.id)}
+                                title="Delete event"
+                                aria-label={`Delete event ${evt.title}`}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                            <div className={styles.sideCardMeta}>
+                              <Clock size={11} style={{ opacity: 0.7 }} />
+                              <span>{evt.startTime}{evt.endTime ? ` – ${evt.endTime}` : ''}</span>
+                            </div>
+                            {evt.notes && (
+                              <p className={styles.sideCardNotes}>{evt.notes}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Scheduled Focus Blocks with Full Detail */}
+                    {selectedBlocks.length > 0 && (
+                      <div className={styles.sideSectionGroup}>
+                        <div className={styles.sideSectionTitle}>
+                          <Clock size={12} style={{ color: '#a855f7' }} />
+                          <span>Scheduled Focus ({selectedBlocks.length})</span>
+                        </div>
+                        {selectedBlocks.map((block) => (
+                          <div key={block.id} className={styles.sideDetailCard}>
+                            <div className={styles.sideCardTop}>
+                              <Link
+                                href={`/tasks?highlight=${block.taskId}`}
+                                className={styles.sideCardTitle}
+                                style={{ textDecoration: 'none', color: 'inherit' }}
+                                title="Open task in tasks tab"
+                              >
+                                {block.taskTitle}
+                              </Link>
+                              <button
+                                type="button"
+                                className={styles.sideCardDeleteBtn}
+                                onClick={() => removeScheduledBlock(block.id)}
+                                title="Remove scheduled block"
+                                aria-label={`Remove block ${block.taskTitle}`}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                            <div className={styles.sideCardMeta}>
+                              <Clock size={11} style={{ opacity: 0.7 }} />
+                              <span>{block.startTime}</span>
+                              <span>·</span>
+                              <span>{block.durationMinutes}m duration</span>
+                              <Link
+                                href={`/focus?taskId=${block.taskId}`}
+                                className={styles.focusNowBtn}
+                                title="Launch timer now"
+                              >
+                                <Play size={10} /> Focus Now
+                              </Link>
+                            </div>
+                            {block.notes && (
+                              <p className={styles.sideCardNotes}>{block.notes}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Deadlines with Full Detail */}
+                    {selectedDeadlines.length > 0 && (
+                      <div className={styles.sideSectionGroup}>
+                        <div className={styles.sideSectionTitle}>
+                          <Flag size={12} style={{ color: '#ef4444' }} />
+                          <span>Obligations Due ({selectedDeadlines.length})</span>
+                        </div>
+                        {selectedDeadlines.map((dl) => (
+                          <Link
+                            key={dl.id}
+                            href={getDeadlineHref(dl.sourceType, dl.entityId)}
+                            className={styles.sideDetailCard}
+                            style={{ textDecoration: 'none' }}
+                            title={`Jump to ${dl.sourceType}: ${dl.title}`}
+                          >
+                            <div className={styles.sideCardTop}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Flag size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
+                                <span className={styles.sideCardTitle}>{dl.title}</span>
+                              </div>
+                              <ExternalLink size={12} style={{ color: 'var(--color-text-faint)' }} />
+                            </div>
+                            <div className={styles.sideCardMeta}>
+                              <span className={styles.sourceBadge}>{dl.sourceType}</span>
+                              {dl.priority && (
+                                <span className={`${styles.priorityBadge} ${
+                                  dl.priority === 'urgent' ? styles.priorityUrgent :
+                                  dl.priority === 'high' ? styles.priorityHigh :
+                                  dl.priority === 'medium' ? styles.priorityMedium :
+                                  styles.priorityLow
+                                }`}>
+                                  {dl.priority}
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </aside>
+          </div>
+        );
+      })()}
 
       {/* ── Modal: Add Deadline to Calendar ── */}
       {deadlineModalOpen && (

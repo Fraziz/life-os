@@ -8,7 +8,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { extractTextFromFile } from '@/utils/fileImporter';
-import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus } from '@/types';
+import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus, QuizQuestionItem } from '@/types';
 import {
   BookOpen,
   Plus,
@@ -72,6 +72,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 import { useSettings } from '@/context/SettingsContext';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
@@ -521,7 +522,7 @@ export default function KnowledgePage() {
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book'>('book');
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book' | 'quiz'>('book');
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
 
@@ -535,7 +536,7 @@ export default function KnowledgePage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [insertedSummarySuccess, setInsertedSummarySuccess] = useState(false);
-  const [aiQuizResult, setAiQuizResult] = useState<{ questions: { question: string; answer: string }[]; isAI: boolean } | null>(null);
+  const [aiQuizResult, setAiQuizResult] = useState<{ questions: QuizQuestionItem[]; isAI: boolean } | null>(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [revealedQuizAnswers, setRevealedQuizAnswers] = useState<Record<number, boolean>>({});
 
@@ -812,6 +813,26 @@ export default function KnowledgePage() {
       }
     }
   }, [editorMode, fContent]);
+
+  // Load saved active recall quiz from selected document
+  useEffect(() => {
+    if (selectedDoc?.studyQuiz && selectedDoc.studyQuiz.length > 0) {
+      setAiQuizResult({ questions: selectedDoc.studyQuiz, isAI: true });
+    } else {
+      setAiQuizResult(null);
+    }
+    setRevealedQuizAnswers({});
+  }, [selectedDoc?.id, selectedDoc?.studyQuiz]);
+
+  // Auto-generate quiz when switching to quiz mode if no quiz exists yet
+  useEffect(() => {
+    if (editorMode === 'quiz' && selectedDoc && (!selectedDoc.studyQuiz || selectedDoc.studyQuiz.length === 0) && !isGeneratingQuiz) {
+      const raw = selectedDoc.content || fContent || '';
+      if (raw.trim().length >= 10) {
+        void handleGenerateQuiz(selectedDoc);
+      }
+    }
+  }, [editorMode, selectedDoc?.id, selectedDoc?.studyQuiz]);
 
   const clearEditor = () => {
     setFTitle('');
@@ -1567,9 +1588,11 @@ export default function KnowledgePage() {
     setTimeout(() => setInsertedSummarySuccess(false), 2500);
   };
 
-  // AI Active Recall Study Quiz Generator
-  const handleGenerateQuiz = async () => {
-    const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || selectedDoc?.content || '';
+  // AI Active Recall Study Quiz Generator (Auto-saved to document for persistent study & review)
+  const handleGenerateQuiz = async (docToUse?: KnowledgeDocument) => {
+    const targetDoc = docToUse || selectedDoc;
+    if (!targetDoc) return;
+    const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || targetDoc.content || '';
     if (!raw.trim() || raw.trim().length < 5) {
       alert('Please add some content to this document before generating study questions.');
       return;
@@ -1577,8 +1600,13 @@ export default function KnowledgePage() {
     setIsGeneratingQuiz(true);
     setRevealedQuizAnswers({});
     try {
-      const res = await generateStudyQuizWithAI(fTitle || 'Document', raw, settings);
+      const res = await generateStudyQuizWithAI(fTitle || targetDoc.title || 'Document', raw, settings);
       setAiQuizResult(res);
+      // Auto-save quiz persistently to the document!
+      updateDoc(targetDoc.id, {
+        studyQuiz: res.questions,
+        lastReviewedAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error('Quiz generation error:', err);
     } finally {
@@ -1588,6 +1616,35 @@ export default function KnowledgePage() {
 
   const toggleQuizAnswer = (idx: number) => {
     setRevealedQuizAnswers((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const handleToggleMastery = (qIndex: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!selectedDoc || !aiQuizResult) return;
+    const currentQuiz = aiQuizResult.questions.map((q, idx) => {
+      if (idx === qIndex) {
+        return { ...q, userMastered: !q.userMastered };
+      }
+      return q;
+    });
+    setAiQuizResult({ ...aiQuizResult, questions: currentQuiz });
+    updateDoc(selectedDoc.id, {
+      studyQuiz: currentQuiz,
+      lastReviewedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleResetQuizMastery = () => {
+    if (!selectedDoc || !aiQuizResult) return;
+    const currentQuiz = aiQuizResult.questions.map((q) => ({
+      ...q,
+      userMastered: false,
+    }));
+    setAiQuizResult({ ...aiQuizResult, questions: currentQuiz });
+    setRevealedQuizAnswers({});
+    updateDoc(selectedDoc.id, {
+      studyQuiz: currentQuiz,
+    });
   };
 
   // Open Global AI Chat Assistant with this document preloaded
@@ -1632,7 +1689,7 @@ export default function KnowledgePage() {
   const linkedTask = tasks.find((t) => t.id === fTaskId);
 
   if (!isLoaded) {
-    return <div className={styles.page}><p style={{ color: 'var(--color-text-muted)' }}>Loading Knowledge Base...</p></div>;
+    return <PageSkeleton variant="knowledge" cardsCount={5} showMetrics={false} showControls={true} />;
   }
 
   return (
@@ -1950,6 +2007,13 @@ export default function KnowledgePage() {
                     >
                       <BookMarked size={12} /> Book
                     </button>
+                    <button
+                      className={`${styles.segmentBtn} ${editorMode === 'quiz' ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('quiz')}
+                      title="Active recall study quiz & flashcards"
+                    >
+                      <Brain size={12} /> Study Quiz {selectedDoc?.studyQuiz?.length ? `(${selectedDoc.studyQuiz.length})` : ''}
+                    </button>
                   </div>
 
                   <button
@@ -1966,23 +2030,6 @@ export default function KnowledgePage() {
                       <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                       Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                  )}
-
-                  {selectedDoc && (
-                    <button
-                      type="button"
-                      className={styles.headerBtn}
-                      onClick={() => handleSetFeaturedOnDashboard(selectedDoc.id)}
-                      title={featuredBookId === selectedDoc.id ? 'Currently featured on Today Dashboard' : 'Put this book on Today Dashboard'}
-                      style={
-                        featuredBookId === selectedDoc.id
-                          ? { color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)', background: 'rgba(56, 189, 248, 0.12)' }
-                          : {}
-                      }
-                    >
-                      <BookOpen size={12} />
-                      <span>{featuredBookId === selectedDoc.id ? '★ Today Book' : 'Put on Dashboard'}</span>
-                    </button>
                   )}
 
                   {/* AI Knowledge Tools Suite (Works in all modes: Book, Edit, Preview) */}
@@ -2290,7 +2337,7 @@ export default function KnowledgePage() {
                       : '<p style="color:var(--color-text-faint)">No content to preview.</p>',
                   }}
                 />
-              ) : (
+              ) : editorMode === 'book' ? (
                 /* ── Book Mode with Live Highlighter (Locked / Read-Only) ── */
                 <div className={styles.bookWrapper}>
                   {/* Sticky Book Highlighter Bar */}
@@ -2367,6 +2414,150 @@ export default function KnowledgePage() {
                       <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
                     </div>
                   </div>
+                </div>
+              ) : (
+                /* ── Study & Review Quiz Mode (Active Recall Hub) ── */
+                <div className={styles.quizStudyCanvas}>
+                  <div className={styles.quizStudyHeader}>
+                    <div className={styles.quizStudyTitleRow}>
+                      <div className={styles.quizStudyIcon}>
+                        <Brain size={22} />
+                      </div>
+                      <div>
+                        <h2 className={styles.quizStudyTitle}>Study &amp; Review Quiz</h2>
+                        <p className={styles.quizStudySubtitle}>
+                          Active recall flashcards for <strong>&ldquo;{selectedDoc?.title || fTitle || 'this note'}&rdquo;</strong>. Tap cards to reveal answers and test your retention!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={styles.quizStudyActions}>
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        onClick={() => handleGenerateQuiz()}
+                        disabled={isGeneratingQuiz}
+                        title="Regenerate questions using AI"
+                      >
+                        <Sparkles size={13} className={isGeneratingQuiz ? styles.spin : ''} />
+                        <span>{isGeneratingQuiz ? 'Generating...' : 'Regenerate Questions'}</span>
+                      </button>
+
+                      {aiQuizResult && aiQuizResult.questions.some((q) => q.userMastered) && (
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          onClick={handleResetQuizMastery}
+                          title="Reset mastery status to study again"
+                        >
+                          <RotateCcw size={13} />
+                          <span>Reset Progress</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {aiQuizResult && aiQuizResult.questions.length > 0 && (
+                    <div className={styles.quizProgressBox}>
+                      {(() => {
+                        const qs = aiQuizResult.questions;
+                        const mastered = qs.filter((q) => q.userMastered).length;
+                        const pct = Math.round((mastered / qs.length) * 100);
+                        return (
+                          <>
+                            <div className={styles.quizProgressMeta}>
+                              <span>Active Recall Mastery</span>
+                              <span className={styles.quizProgressCount}>
+                                {mastered} / {qs.length} Mastered ({pct}%)
+                              </span>
+                            </div>
+                            <div className={styles.quizProgressBarTrack}>
+                              <div
+                                className={styles.quizProgressBarFill}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {isGeneratingQuiz ? (
+                    <div className={styles.aiLoadingState} style={{ padding: '48px 20px', textAlign: 'center' }}>
+                      <Loader2 size={28} className={styles.spin} style={{ color: 'var(--color-accent)', margin: '0 auto 12px' }} />
+                      <p style={{ fontSize: '0.92rem', color: 'var(--color-text-muted)' }}>
+                        AI is reading your document and generating high-yield study questions...
+                      </p>
+                    </div>
+                  ) : aiQuizResult && aiQuizResult.questions.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {aiQuizResult.questions.map((q, idx) => {
+                        const isRevealed = revealedQuizAnswers[idx];
+                        const isMastered = q.userMastered;
+                        return (
+                          <div
+                            key={idx}
+                            className={`${styles.studyCard} ${isMastered ? styles.studyCardMastered : ''}`}
+                            onClick={() => toggleQuizAnswer(idx)}
+                          >
+                            <div className={styles.studyCardHeader}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: 1 }}>
+                                <span className={styles.quizNumber}>Q{idx + 1}</span>
+                                <span className={styles.studyCardQuestion}>{q.question}</span>
+                              </div>
+                              {isMastered && (
+                                <span className={styles.studyMasteredBadge}>
+                                  ✓ Mastered
+                                </span>
+                              )}
+                            </div>
+
+                            {isRevealed ? (
+                              <div className={styles.studyAnswerBox} onClick={(e) => e.stopPropagation()}>
+                                <strong style={{ color: 'var(--color-accent-light)', display: 'block', marginBottom: 4 }}>
+                                  Answer &amp; Key Insight:
+                                </strong>
+                                {q.answer}
+
+                                <div className={styles.studyAnswerControls}>
+                                  <button
+                                    type="button"
+                                    className={`${styles.studyFeedbackBtn} ${isMastered ? styles.studyFeedbackMastered : styles.studyFeedbackLearning}`}
+                                    onClick={(e) => handleToggleMastery(idx, e)}
+                                    title={isMastered ? 'Mark as still learning' : 'Mark as mastered'}
+                                  >
+                                    {isMastered ? '✓ Mastered' : 'Mark as Mastered'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className={styles.quizTapPrompt}>
+                                <span>Tap card to reveal answer ▾</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className={styles.aiEmptyState} style={{ padding: '48px 20px', textAlign: 'center' }}>
+                      <Brain size={38} style={{ color: 'var(--color-accent)', opacity: 0.85, margin: '0 auto 12px' }} />
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--color-text)' }}>
+                        No Study Questions Generated Yet
+                      </h3>
+                      <p className={styles.aiToolDesc} style={{ maxWidth: 440, margin: '0 auto 18px', lineHeight: 1.5 }}>
+                        Lock this note into your long-term memory. Click below to automatically create flashcard-style active recall questions.
+                      </p>
+                      <button
+                        type="button"
+                        className={styles.btnPrimaryGradient}
+                        onClick={() => handleGenerateQuiz()}
+                      >
+                        <Sparkles size={14} /> Auto-Create Study Quiz
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2645,6 +2836,15 @@ export default function KnowledgePage() {
                             {isRevealed ? (
                               <div className={styles.quizAnswer}>
                                 <strong>Answer:</strong> {q.answer}
+                                <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                                  <button
+                                    type="button"
+                                    className={`${styles.studyFeedbackBtn} ${q.userMastered ? styles.studyFeedbackMastered : styles.studyFeedbackLearning}`}
+                                    onClick={(e) => handleToggleMastery(idx, e)}
+                                  >
+                                    {q.userMastered ? '✓ Mastered' : 'Mark as Mastered'}
+                                  </button>
+                                </div>
                               </div>
                             ) : (
                               <div className={styles.quizTapPrompt}>
@@ -2658,7 +2858,7 @@ export default function KnowledgePage() {
                         <button
                           type="button"
                           className={styles.btnSecondary}
-                          onClick={handleGenerateQuiz}
+                          onClick={() => handleGenerateQuiz()}
                         >
                           <RotateCcw size={13} /> Regenerate Questions
                         </button>
@@ -2670,7 +2870,7 @@ export default function KnowledgePage() {
                       <button
                         type="button"
                         className={styles.btnPrimaryGradient}
-                        onClick={handleGenerateQuiz}
+                        onClick={() => handleGenerateQuiz()}
                       >
                         <Brain size={14} /> Generate Study Questions
                       </button>

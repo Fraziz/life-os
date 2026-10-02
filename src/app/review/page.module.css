@@ -279,3 +279,41 @@
   line-height: 1.4;
   margin: 0;
 }
+
+@media (max-width: 768px) {
+  .page {
+    gap: var(--space-4);
+  }
+
+  .header {
+    gap: 12px;
+  }
+
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .reviewCard {
+    padding: 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .winsBanner {
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewCardTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+

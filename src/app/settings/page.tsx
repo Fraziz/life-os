@@ -37,6 +37,7 @@ import {
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
 import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 const TIMEZONES = [
   'UTC',
@@ -226,13 +227,7 @@ export default function SettingsPage() {
   };
 
   if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your personal settings...
-        </p>
-      </div>
-    );
+    return <PageSkeleton variant="default" cardsCount={4} showMetrics={false} showControls={false} />;
   }
 
   const handleSave = (e: React.FormEvent) => {
@@ -832,7 +827,7 @@ export default function SettingsPage() {
 
           <div className={styles.toggleRow}>
             <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Task Due Date Alerts</span>
+              <span className={styles.toggleTitle}>Task Due Date Notifications</span>
               <span className={styles.toggleDesc}>Notify when scheduled tasks reach their deadline</span>
             </div>
             <input
@@ -853,8 +848,8 @@ export default function SettingsPage() {
 
           <div className={styles.toggleRow}>
             <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Milestone &amp; Goal Target Alerts</span>
-              <span className={styles.toggleDesc}>Alert on upcoming project and milestone target dates</span>
+              <span className={styles.toggleTitle}>Milestone &amp; Goal Target Notifications</span>
+              <span className={styles.toggleDesc}>Notify on upcoming project and milestone target dates</span>
             </div>
             <input
               type="checkbox"
@@ -866,6 +861,48 @@ export default function SettingsPage() {
                   notifications: {
                     ...formData.notifications,
                     deadlineAlerts: e.target.checked,
+                  },
+                })
+              }
+            />
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Focus Block &amp; Calendar Notifications</span>
+              <span className={styles.toggleDesc}>Notify when scheduled calendar focus sessions are approaching</span>
+            </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.scheduledWorkAlerts}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    scheduledWorkAlerts: e.target.checked,
+                  },
+                })
+              }
+            />
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Daily Habit Practice Cues</span>
+              <span className={styles.toggleDesc}>Remind on uncompleted habits at their configured reminder times</span>
+            </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.habitReminders}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    habitReminders: e.target.checked,
                   },
                 })
               }
@@ -890,6 +927,31 @@ export default function SettingsPage() {
                   },
                 })
               }
+            />
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleLabel}>
+              <span className={styles.toggleTitle}>Desktop Operating System Notifications</span>
+              <span className={styles.toggleDesc}>Send system-level browser push notifications for critical alarms</span>
+            </div>
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={formData.notifications.browserNotifications}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                if (checked && typeof window !== 'undefined' && 'Notification' in window) {
+                  void Notification.requestPermission();
+                }
+                setFormData({
+                  ...formData,
+                  notifications: {
+                    ...formData.notifications,
+                    browserNotifications: checked,
+                  },
+                });
+              }}
             />
           </div>
         </section>
@@ -1175,6 +1237,7 @@ export default function SettingsPage() {
                     <>
                       {[
                         'openai/gpt-oss-120b',
+                        'openai/gpt-oss-20b',
                         'qwen/qwen3.8-27b',
                         'llama-3.3-70b-versatile',
                         'llama-3.1-8b-instant',

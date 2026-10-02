@@ -85,6 +85,21 @@ Every action in Life OS cascades downwards from long-term vision to daily execut
       tags: ['manual', 'guide', 'life-os', 'hierarchy'],
       createdAt: t,
       updatedAt: t,
+      studyQuiz: [
+        {
+          question: 'What is the core execution hierarchy in Life OS from top to bottom?',
+          answer: 'Dream → Goal → Milestone → Project → Task → Focus Session.',
+          userMastered: true,
+        },
+        {
+          question: 'What keyboard shortcut opens the "What Should I Do Right Now?" AI Next Action picker?',
+          answer: 'Ctrl + J (or the Center Compass button on mobile bottom navigation).',
+        },
+        {
+          question: 'Which view is designed for overwhelm recovery when your backlog is cluttered?',
+          answer: 'Reset Plan (/reset), which clears mental noise and gives you 1 high-leverage next action.',
+        },
+      ],
     },
     {
       id: generateId(),
@@ -94,6 +109,16 @@ Every action in Life OS cascades downwards from long-term vision to daily execut
       tags: ['game', 'design', 'blobbit'],
       createdAt: t,
       updatedAt: t,
+      studyQuiz: [
+        {
+          question: 'What is Blobbit\'s primary movement mechanic for gaining momentum?',
+          answer: 'Stretching and compressing to propel forward and build speed.',
+        },
+        {
+          question: 'What are Blobbit\'s core mobility abilities?',
+          answer: 'Wall cling, double jump, and dash.',
+        },
+      ],
     },
     {
       id: generateId(),

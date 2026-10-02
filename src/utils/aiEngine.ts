@@ -449,6 +449,39 @@ export async function executeOptionalAICall(
     );
   }
 
+  // When running in the browser, route through the Next.js server proxy (/api/ai/chat)
+  // to avoid browser CORS preflight blocking (e.g. Groq & OpenAI APIs return "Failed to fetch" in browser)
+  if (typeof window !== 'undefined') {
+    try {
+      const serverResp = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, systemPrompt, aiSettings }),
+      });
+
+      if (serverResp.ok) {
+        const data = await serverResp.json();
+        return {
+          text: data.text || '',
+          tokensUsed: data.tokensUsed || 400,
+          costUSD: data.costUSD || 0,
+          modelUsed: data.modelUsed || aiSettings.model,
+        };
+      }
+
+      const errData = await serverResp.json().catch(() => ({}));
+      if (errData?.error) {
+        throw new Error(errData.error);
+      }
+    } catch (proxyErr: any) {
+      // If the proxy gave a specific error (e.g., auth failure, rate limit, model not found), rethrow it
+      if (proxyErr?.message && !proxyErr.message.includes('Failed to fetch') && !proxyErr.message.includes('NetworkError')) {
+        throw proxyErr;
+      }
+      // If proxy was unreachable, continue to direct client-side fetch below
+    }
+  }
+
   // 1. Google Gemini API
   if (aiSettings.provider === 'gemini') {
     const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';

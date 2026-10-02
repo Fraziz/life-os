@@ -22,6 +22,7 @@ interface ReminderContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   dismissReminder: (id: string) => void;
+  dismissAllRead: () => void;
   snoozeReminder: (id: string, minutes?: number) => void;
   requestBrowserPermission: () => Promise<boolean>;
 }
@@ -295,6 +296,17 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const dismissAllRead = useCallback(() => {
+    setDismissedSet((prev) => {
+      const readIds = generatedReminders.filter((r) => readSet.has(r.id)).map((r) => r.id);
+      const next = new Set([...prev, ...readIds]);
+      try {
+        localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(Array.from(next)));
+      } catch { /* noop */ }
+      return next;
+    });
+  }, [generatedReminders, readSet]);
+
   const snoozeReminder = useCallback((id: string, minutes: number = 60) => {
     const until = new Date(Date.now() + minutes * 60 * 1000).toISOString();
     setSnoozedMap((prev) => {
@@ -324,6 +336,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
         markAsRead,
         markAllAsRead,
         dismissReminder,
+        dismissAllRead,
         snoozeReminder,
         requestBrowserPermission,
       }}

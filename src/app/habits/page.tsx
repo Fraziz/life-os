@@ -23,6 +23,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 import EntityFiles from '@/components/files/EntityFiles';
 
 export default function HabitsPage() {
@@ -56,15 +57,14 @@ export default function HabitsPage() {
   const [reminderNote, setReminderNote] = useState('');
   const [habitColor, setHabitColor] = useState('#7c6fff');
 
-  if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Habits...
-        </p>
-      </div>
-    );
-  }
+  // Quick Add State (must be declared before any conditional return)
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickFrequency, setQuickFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [quickTargetDays, setQuickTargetDays] = useState<number>(7);
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
+
+  // Habits Filter State for clean, organized viewing
+  const [habitFilter, setHabitFilter] = useState<'all' | 'pending' | 'daily' | 'weekly'>('all');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -93,14 +93,9 @@ export default function HabitsPage() {
     setHabitColor('#7c6fff');
   };
 
-  // Quick Add State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickFrequency, setQuickFrequency] = useState<'daily' | 'weekly'>('daily');
-  const [quickTargetDays, setQuickTargetDays] = useState<number>(7);
-  const [quickGoalId, setQuickGoalId] = useState<string>('');
-
-  // Habits Filter State for clean, organized viewing
-  const [habitFilter, setHabitFilter] = useState<'all' | 'pending' | 'daily' | 'weekly'>('all');
+  if (!isLoaded) {
+    return <PageSkeleton variant="cards" cardsCount={6} showMetrics={true} showControls={true} />;
+  }
 
   const filteredHabits = habits.filter((habit) => {
     if (habitFilter === 'pending') {

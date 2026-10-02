@@ -53,9 +53,23 @@
   pointer-events: auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .overlay {
     display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: calc(var(--z-modal) - 1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .sidebar {
@@ -158,15 +172,22 @@
 
 .bellCountBadge {
   position: absolute;
-  top: -4px;
-  right: -6px;
-  background-color: #ef4444;
-  color: #ffffff;
-  font-size: 0.62rem;
-  font-weight: 700;
+  top: -5px;
+  right: -7px;
+  background-color: var(--color-surface-3);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  font-size: 0.58rem;
+  font-weight: 600;
+  min-width: 14px;
+  height: 14px;
   padding: 0 3px;
   border-radius: 9999px;
-  line-height: 1.2;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /*  Navigation Sections  */
@@ -407,39 +428,7 @@
   background-color: var(--color-surface-2);
 }
 
-/*  Mobile Overlay  */
 
-.overlay {
-  display: none;
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%);
-    box-shadow: var(--shadow-xl);
-  }
-
-  .mobileOpen {
-    transform: translateX(0);
-  }
-
-  .overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    z-index: calc(var(--z-sticky) - 1);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--transition-fast);
-  }
-
-  .overlay.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
 
 /* 
    NATURE THEME OVERRIDES  Sidebar

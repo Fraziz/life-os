@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 // Available icon options for custom Life Areas
 const ICON_OPTIONS: Record<string, LucideIcon> = {
@@ -90,13 +91,7 @@ export default function LifeAreasPage() {
   const [description, setDescription] = useState('');
 
   if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Life Areas...
-        </p>
-      </div>
-    );
+    return <PageSkeleton variant="cards" cardsCount={6} showMetrics={false} showControls={true} />;
   }
 
   const openCreateModal = () => {

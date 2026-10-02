@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   active:    { label: 'Active',       color: '#3b82f6' },
@@ -521,13 +522,7 @@ export default function ProjectsPage() {
   const [quickGoalId, setQuickGoalId] = useState<string>('');
 
   if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Projects...
-        </p>
-      </div>
-    );
+    return <PageSkeleton variant="cards" cardsCount={4} showMetrics={true} showControls={true} />;
   }
 
   const openCreateModal = () => {

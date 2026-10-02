@@ -34,6 +34,7 @@ import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils
 import { generateMicroBreakdown } from '@/utils/adhdBreakdown';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'backlog', label: 'Backlog' },
@@ -130,13 +131,7 @@ export default function TasksPage() {
   const [modalColor, setModalColor] = useState('');
 
   if (!isLoaded) {
-    return (
-      <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Loading your Tasks...
-        </p>
-      </div>
-    );
+    return <PageSkeleton variant="tasks" cardsCount={6} showMetrics={true} showControls={true} />;
   }
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {

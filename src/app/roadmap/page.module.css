@@ -821,3 +821,56 @@
   color: var(--color-text-muted);
   font-size: 13px;
 }
+
+/* ============================================================
+   RESPONSIVE DESIGN (Roadmap Mobile & Tablet)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .topBarMain {
+    padding: 12px 18px;
+  }
+
+  .timelineViewport {
+    padding: 16px 18px 40px 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .roadmapPage {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .topBarMain {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .topBarLeft,
+  .topBarRight {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .timelineViewport {
+    padding: 12px 12px 80px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .timelineGridHeader,
+  .goalRow {
+    min-width: 600px;
+  }
+
+  .metricsGroup {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
