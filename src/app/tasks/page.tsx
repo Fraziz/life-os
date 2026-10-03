@@ -541,7 +541,7 @@ export default function TasksPage() {
                         className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
                         style={{
                           background: cardBg,
-                          boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+                          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
                           borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                         }}
                       >

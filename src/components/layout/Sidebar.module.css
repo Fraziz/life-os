@@ -167,7 +167,7 @@
   border-color: var(--color-accent);
   color: var(--color-accent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(124, 106, 255, 0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 .nextActionLeft {
@@ -216,7 +216,7 @@
   background: var(--color-surface-hover, var(--color-surface-2));
   border-color: var(--color-accent);
   transform: scale(1.06);
-  box-shadow: 0 4px 14px rgba(124, 106, 255, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 /*  Navigation Sections  */

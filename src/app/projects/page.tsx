@@ -82,7 +82,7 @@ function ProjectRow({
         borderRadius: compact ? '10px' : '12px',
         marginBottom: compact ? '6px' : '8px',
         transition: 'all 0.2s ease',
-        boxShadow: isHighlighted ? '0 0 16px rgba(124, 106, 255, 0.65)' : undefined,
+        boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
         borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
       }}
     >

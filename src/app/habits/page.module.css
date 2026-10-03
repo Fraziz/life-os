@@ -386,7 +386,6 @@
 .dotCircle.filled {
   background: var(--color-accent);
   border-color: var(--color-accent-light);
-  box-shadow: 0 0 6px rgba(124, 106, 255, 0.4);
 }
 
 /*  Metrics & Goal Tag  */

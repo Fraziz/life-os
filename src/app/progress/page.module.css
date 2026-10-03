@@ -73,7 +73,7 @@
 .perspectiveTab.activeTab {
   background: var(--color-accent);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(124, 106, 255, 0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 /*  High-Level Snapshot Stats Grid  */
