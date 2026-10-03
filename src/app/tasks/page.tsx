@@ -31,7 +31,6 @@ import {
   Wand2,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
-import { generateMicroBreakdown } from '@/utils/adhdBreakdown';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -196,20 +195,6 @@ export default function TasksPage() {
     toggleSubtask(taskId, subId);
     playSubtaskTick();
     triggerDopamineBurst(e.clientX, e.clientY);
-  };
-
-  const handleDirectMagicBreakdown = (taskId: string, title: string, desc?: string) => {
-    const steps = generateMicroBreakdown(title, desc);
-    breakdownTask(taskId, steps);
-    playSuccessChime();
-    triggerDopamineBurst();
-  };
-
-  const handleAutoFillBreakdownModal = () => {
-    if (!breakdownTargetTask) return;
-    const steps = generateMicroBreakdown(breakdownTargetTask.title, breakdownTargetTask.description);
-    setBreakdownStepsText(steps.join('\n'));
-    playSubtaskTick();
   };
 
   const handleBreakdownSubmit = (e: React.FormEvent) => {
@@ -706,26 +691,6 @@ export default function TasksPage() {
 
                           <button
                             type="button"
-                            style={{
-                              background: 'rgba(124, 106, 255, 0.12)',
-                              border: '1px solid rgba(124, 106, 255, 0.3)',
-                              color: 'var(--color-accent-light)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              padding: '2px 8px',
-                              borderRadius: 'var(--radius-full)',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                            }}
-                            onClick={() => handleDirectMagicBreakdown(task.id, task.title, task.description)}
-                            title="1-Click Micro-Breakdown into 5-minute easy steps"
-                          >
-                            5-Min Steps
-                          </button>
-
-                          <button
-                            type="button"
                             className={styles.btnBreakdown}
                             onClick={() => openBreakdownModal(task)}
                             title="Quick multi-line task breakdown"
@@ -1105,27 +1070,7 @@ export default function TasksPage() {
 
             <form onSubmit={handleBreakdownSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <div className={styles.formGroup}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <label className={styles.label} style={{ margin: 0 }}>Actionable Steps (One step per line)</label>
-                  <button
-                    type="button"
-                    style={{
-                      background: 'rgba(124, 106, 255, 0.15)',
-                      border: '1px solid var(--color-accent)',
-                      color: 'var(--color-accent-light)',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: 'var(--radius-full)',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
-                    onClick={handleAutoFillBreakdownModal}
-                  >
-                    Auto-Suggest 5-Min Steps
-                  </button>
-                </div>
+                <label className={styles.label} style={{ marginBottom: '4px' }}>Actionable Steps (One step per line)</label>
                 <textarea
                   className={styles.textarea}
                   style={{ minHeight: '160px', fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--text-xs)' }}
@@ -1138,7 +1083,7 @@ export default function TasksPage() {
               </div>
 
               <div style={{ background: 'var(--color-surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                💡 <strong>Tip:</strong> Click <strong>Auto-Suggest 5-Min Steps</strong> or paste multi-line step lists. Each line will become a trackable subtask checklist item on this card.
+                <strong>Tip:</strong> Type or paste one step per line. Each line becomes a checklist item on this task.
               </div>
 
               <div className={styles.modalFooter}>

@@ -46,7 +46,6 @@ import { useProjects } from '@/context/ProjectContext';
 import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import {
-  playSuccessChime,
   playSubtaskTick,
   playTimerCompleteFanfare,
   triggerDopamineBurst,
@@ -55,7 +54,6 @@ import {
   setAmbientVolume,
   type AmbientSoundType,
 } from '@/utils/soundAndDopamine';
-import { generateMicroBreakdown } from '@/utils/adhdBreakdown';
 import type { Task, FocusModeType, KnowledgeDocument } from '@/types';
 import styles from './page.module.css';
 
@@ -109,7 +107,7 @@ export default function FocusPage() {
   } = useFocus();
 
   const { docs, updateDoc, addDoc } = useKnowledge();
-  const { tasks, toggleSubtask, breakdownTask } = useTasks();
+  const { tasks, toggleSubtask } = useTasks();
   const { goals } = useGoals();
   const { projects } = useProjects();
   const { quickDump } = useInbox();
@@ -414,14 +412,6 @@ export default function FocusPage() {
 
   // Live active task derived from TaskContext to ensure reactive subtask sync
   const liveActiveTask = activeTask ? tasks.find((t) => t.id === activeTask.id) || activeTask : null;
-
-  const handleMagicBreakdown = () => {
-    if (!liveActiveTask) return;
-    const generated = generateMicroBreakdown(liveActiveTask.title, liveActiveTask.description);
-    breakdownTask(liveActiveTask.id, generated);
-    playSuccessChime();
-    triggerDopamineBurst();
-  };
 
   const handleSubtaskCheck = (e: React.MouseEvent, subtaskId: string) => {
     e.stopPropagation();
@@ -770,18 +760,8 @@ export default function FocusPage() {
                 <div className={styles.subtasksBox}>
                   <div className={styles.subtasksHeaderRow}>
                     <span className={styles.subtasksLabel}>
-                      Micro-Steps ({liveActiveTask?.subtasks?.filter((s) => s.completed).length || 0}/{liveActiveTask?.subtasks?.length || 0}):
+                      Steps ({liveActiveTask?.subtasks?.filter((s) => s.completed).length || 0}/{liveActiveTask?.subtasks?.length || 0}):
                     </span>
-
-                    {liveActiveTask && (
-                      <button
-                        className={styles.btnMagicBreakdown}
-                        onClick={handleMagicBreakdown}
-                        title="Break this task down into tiny 2-to-5 minute steps"
-                      >
-                        Break into 5-Min Steps
-                      </button>
-                    )}
                   </div>
 
                   {liveActiveTask?.subtasks && liveActiveTask.subtasks.length > 0 ? (
@@ -809,7 +789,7 @@ export default function FocusPage() {
                     ))
                   ) : (
                     <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0, padding: '4px 0', textAlign: 'left' }}>
-                      Feeling stuck? Click <strong>Break into 5-Min Steps</strong> to break this into easy bite-sized actions.
+                      No steps yet. Add steps to this task from the Tasks page.
                     </p>
                   )}
                 </div>
