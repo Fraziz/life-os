@@ -7,6 +7,7 @@ import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStor
 import { AttachmentProvider } from '@/context/AttachmentContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
+import { startDeviceSessionTracking } from '@/lib/deviceSessions';
 
 export default function AuthGate({
   children,
@@ -55,6 +56,16 @@ export default function AuthGate({
       // offline/firestore failsafe
     }
   }, [user, logout]);
+
+  // Per-device session record (shown in Settings → Active Sessions & Devices)
+  useEffect(() => {
+    if (!user) return;
+    return startDeviceSessionTracking(user.uid, () => {
+      console.warn('[SarilingMundo] This device was signed out from another device.');
+      void logout();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   // Cloud sync in background - NEVER blocks rendering
   useEffect(() => {

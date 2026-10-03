@@ -15,6 +15,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { explainFirebaseError, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { removeCurrentDeviceSession, revokeAllOtherDeviceSessions } from '@/lib/deviceSessions';
 
 interface OwnerRecord {
   uid: string;
@@ -226,6 +227,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setError(null);
     try {
+      const current = getFirebaseAuth().currentUser;
+      // Remove this device from the account's device list while still authenticated
+      if (current) await removeCurrentDeviceSession(current.uid);
       await signOut(getFirebaseAuth());
     } finally {
       clearUserLocalStorage();
@@ -250,6 +254,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             { merge: true }
           );
+        } catch {
+          // ignore firestore error
+        }
+        try {
+          await revokeAllOtherDeviceSessions(current.uid);
         } catch {
           // ignore firestore error
         }

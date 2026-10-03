@@ -36,6 +36,7 @@ import {
   Check,
 } from 'lucide-react';
 import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
+import ActiveDevices from '@/components/settings/ActiveDevices';
 import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -355,20 +356,16 @@ export default function SettingsPage() {
 
             {/* Active Devices & Session Management */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                <div>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
-                    Active Sessions &amp; Devices
-                  </span>
-                  <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                    Manage signed-in devices across your phones, tablets, and computers.
-                  </span>
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: 'var(--color-success)', background: 'rgba(16, 185, 129, 0.08)', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
-                  This Device (Active now)
-                </div>
+              <div>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                  Active Sessions &amp; Devices
+                </span>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                  Devices currently signed in to your account. Sign out any device you don&apos;t recognize.
+                </span>
               </div>
+
+              {user?.uid && <ActiveDevices uid={user.uid} />}
 
               {/* Action Buttons Row */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
