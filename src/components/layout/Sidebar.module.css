@@ -1,6 +1,18 @@
-/*  Sidebar Component Styles (Instagram PC Hover Style)  */
+/*  Sidebar Component Styles (Instagram PC Hover Style)
+ *
+ *  Smooth-hover rules:
+ *  - Only `width` animates on the sidebar. Padding never changes between states.
+ *  - Every row has a fixed height, and icons sit in fixed boxes, so nothing
+ *    moves vertically or horizontally while the sidebar expands.
+ *  - Labels stay mounted and simply fade/slide in (opacity + transform only).
+ *  - No spring/overshoot easing and no hover transforms that move items
+ *    out from under the cursor.
+ */
 
 .sidebar {
+  --sb-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sb-duration: 0.26s;
+
   position: fixed;
   top: 0;
   left: 0;
@@ -13,36 +25,66 @@
   flex-direction: column;
   z-index: 50;
   user-select: none;
-  transition: width 0.24s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.24s ease, transform var(--transition-base);
-  padding: 16px 10px;
+  padding: 14px 12px;
+  box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  transform: translateZ(0);
-  will-change: width, box-shadow;
-  backface-visibility: hidden;
+  scrollbar-width: none;
+  transition:
+    width var(--sb-duration) var(--sb-ease),
+    box-shadow var(--sb-duration) ease;
+  will-change: width;
 }
 
 .sidebar::-webkit-scrollbar {
-  width: 4px;
-}
-.sidebar::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-.sidebar:hover::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  width: 0;
 }
 
-/* Expanded state: when pinned, hovered on desktop, or mobile drawer */
+/* Expanded state: pinned, hovered on desktop, or mobile drawer */
 .sidebar.isExpanded {
   width: var(--sidebar-width, 248px);
-  padding: 16px 12px;
 }
 
 /* Elevated floating shadow on hover when not pinned */
 .sidebar.isHovered:not(.isPinned) {
-  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.45);
-  border-right-color: var(--color-border-subtle);
+  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.35);
   z-index: 60;
+}
+
+/* Shared fade for any text that appears only when expanded */
+.navLabel,
+.nextActionLabel,
+.nextActionKbd,
+.sectionTitle,
+.moreChevron,
+.userInfo,
+.userChevron,
+.sidebarQuote,
+.pinSidebarBtn {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.2s var(--sb-ease);
+  pointer-events: none;
+}
+
+.sidebar.isExpanded .navLabel,
+.sidebar.isExpanded .nextActionLabel,
+.sidebar.isExpanded .nextActionKbd,
+.sidebar.isExpanded .sectionTitle,
+.sidebar.isExpanded .moreChevron,
+.sidebar.isExpanded .userInfo,
+.sidebar.isExpanded .userChevron,
+.sidebar.isExpanded .sidebarQuote,
+.sidebar.isExpanded .pinSidebarBtn {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  /* Slight delay on open so text appears as the panel widens */
+  transition:
+    opacity 0.2s ease 0.06s,
+    transform 0.24s var(--sb-ease) 0.04s;
 }
 
 /* Mobile backdrop overlay */
@@ -76,8 +118,13 @@
     box-shadow: 6px 0 28px rgba(0, 0, 0, 0.5);
     visibility: hidden;
     pointer-events: none;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
-    padding: 18px 14px;
+    transition:
+      transform 0.28s var(--sb-ease),
+      visibility 0.28s;
+  }
+
+  .sidebar.isExpanded {
+    width: min(84vw, 300px);
   }
 
   .sidebar.mobileOpen {
@@ -90,18 +137,13 @@
 /*  Brand Header  */
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  min-height: 38px;
-  position: relative;
-  transition: justify-content var(--transition-fast);
-}
-
-.sidebar.isExpanded .header {
-  justify-content: space-between;
-  padding: 0 4px;
+  height: 42px;
+  margin-bottom: 14px;
+  padding-left: 8px;
+  flex-shrink: 0;
 }
 
 .brand {
@@ -110,9 +152,14 @@
   text-decoration: none;
   border-radius: var(--radius-md, 8px);
   outline: none;
+  min-width: 0;
 }
 
 .pinSidebarBtn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  margin-top: -14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -123,8 +170,6 @@
   border-radius: var(--radius-md, 6px);
   color: var(--color-text-faint);
   cursor: pointer;
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
 }
 
 .pinSidebarBtn:hover {
@@ -139,22 +184,21 @@
   border-color: rgba(124, 106, 255, 0.3);
 }
 
-/*  Next Action Button Area (Notification button removed as requested)  */
+/*  Next Action Button (single element for both states)  */
 
 .nextActionWrap {
-  margin-bottom: 14px;
-  display: flex;
-  justify-content: center;
+  margin-bottom: 12px;
   width: 100%;
+  flex-shrink: 0;
 }
 
-/* Full-width expanded Next Action button */
 .nextActionBtn {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
-  padding: 8px 12px;
+  height: 40px;
+  padding: 0 8px 0 5px;
   border-radius: 10px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -162,20 +206,35 @@
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .nextActionBtn:hover {
   background: var(--color-surface-2);
   border-color: var(--color-accent);
   color: var(--color-accent);
-  box-shadow: var(--shadow-sm);
 }
 
 .nextActionLeft {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nextActionIconBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
 .nextActionIcon {
@@ -188,6 +247,7 @@
 }
 
 .nextActionKbd {
+  margin-left: auto;
   font-size: 0.66rem;
   font-family: inherit;
   font-weight: 600;
@@ -196,28 +256,7 @@
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-faint);
-}
-
-/* Collapsed rail Next Action icon button */
-.railActionBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-accent);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
-  position: relative;
-}
-
-.railActionBtn:hover {
-  background: var(--color-surface-hover, var(--color-surface-2));
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
 /*  Navigation Sections  */
@@ -225,20 +264,24 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   width: 100%;
-}
-
-.sidebar:not(.isExpanded) .nav {
-  gap: 8px;
-  align-items: center;
 }
 
 .sectionGroup {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  width: 100%;
+}
+
+/* Fixed-height header row: title when expanded, thin divider when collapsed */
+.sectionHeaderRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 22px;
   width: 100%;
 }
 
@@ -248,27 +291,54 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-faint);
-  padding: 4px 10px 2px;
+  padding: 0 10px;
   white-space: nowrap;
+}
+
+.sectionDividerRail {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 1px;
+  margin-left: -11px;
+  background: var(--color-border);
+  opacity: 1;
+  transition: opacity 0.16s ease;
+  pointer-events: none;
+}
+
+.sidebar.isExpanded .sectionDividerRail {
+  opacity: 0;
 }
 
 .sectionHeaderBtn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
+  height: 22px;
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px 10px;
+  padding: 0;
   width: 100%;
+  white-space: nowrap;
+}
+
+.sidebar:not(.isExpanded) .sectionHeaderBtn {
+  pointer-events: none;
 }
 
 .moreChevron {
   color: var(--color-text-faint);
-  transition: transform var(--transition-fast);
+  flex-shrink: 0;
 }
 
-.moreChevronOpen {
+.moreChevron.moreChevronOpen {
+  transform: rotate(180deg);
+}
+
+.sidebar.isExpanded .moreChevron.moreChevronOpen {
   transform: rotate(180deg);
 }
 
@@ -285,38 +355,36 @@
   width: 100%;
 }
 
-.sidebar:not(.isExpanded) .navItemWrapper {
-  justify-content: center;
-}
-
+/* Identical geometry in both states: icon never moves */
 .navItem {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 6px;
+  border-radius: 10px;
   font-size: 0.86rem;
   font-weight: 500;
   color: var(--color-text-muted);
   text-decoration: none;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
   cursor: pointer;
-  width: 100%;
-  position: relative;
-}
-
-.sidebar:not(.isExpanded) .navItem {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  justify-content: center;
-  margin: 2px auto;
-  border-radius: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .navItem:hover {
   background-color: var(--color-surface-2);
   color: var(--color-text);
+}
+
+.navItem:active {
+  background-color: var(--color-surface-3, var(--color-surface-2));
 }
 
 .activeItem {
@@ -334,66 +402,49 @@
   color: #818cf8;
 }
 
+.navIconBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
 .navIcon {
   flex-shrink: 0;
-  transition: color var(--transition-fast);
+  transition: color 0.15s ease;
 }
 
 .navLabel {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
 
-/* Floating Tooltip in Collapsed Rail Mode (Instagram PC Style) */
+/* Tooltip (only rendered in collapsed rail, e.g. keyboard focus) */
 .navTooltip {
   display: none;
-}
-
-@media (min-width: 1025px) {
-  .sidebar:not(.isExpanded) .navTooltip {
-    display: block;
-    position: absolute;
-    left: calc(100% + 12px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-    background: var(--color-surface-3, #1e1e24);
-    color: var(--color-text, #fff);
-    padding: 5px 11px;
-    border-radius: 7px;
-    font-size: 0.74rem;
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-    border: 1px solid var(--color-border);
-    z-index: 100;
-  }
-
-  .sidebar:not(.isExpanded) .navItem:hover .navTooltip,
-  .sidebar:not(.isExpanded) .railActionBtn:hover .navTooltip {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
 }
 
 /*  Subtle, Formal Inspiration Quote  */
 
 .sidebarQuote {
-  margin: 16px 8px 12px;
+  /* Fixed width so text never re-wraps (and changes height) while width animates */
+  width: calc(var(--sidebar-width, 248px) - 25px);
+  flex-shrink: 0;
+  margin: 14px 0 10px;
   padding: 8px 10px;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm, 6px);
   background: var(--color-surface-2);
-  opacity: 0.85;
-  transition: opacity var(--transition-fast);
+  box-sizing: border-box;
 }
 
-.sidebarQuote:hover {
-  opacity: 1;
+.sidebar.isExpanded .sidebarQuote {
+  opacity: 0.85;
 }
 
 .quoteText {
@@ -412,31 +463,21 @@
   padding-top: 10px;
   border-top: 1px solid var(--color-border-subtle);
   width: 100%;
-}
-
-.sidebar:not(.isExpanded) .footer {
-  display: flex;
-  justify-content: center;
-  padding-top: 8px;
+  flex-shrink: 0;
 }
 
 .userCard {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px;
+  height: 44px;
+  padding: 0 8px 0 7px;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
   width: 100%;
-}
-
-.sidebar:not(.isExpanded) .userCard {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  justify-content: center;
-  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease;
 }
 
 .userCard:hover {
@@ -469,6 +510,8 @@
   flex-direction: column;
   overflow: hidden;
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .userName {
@@ -476,6 +519,7 @@
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.2;
+  overflow: hidden;
 }
 
 .userRole {
@@ -483,23 +527,26 @@
   color: var(--color-text-faint);
   line-height: 1.2;
   margin-top: 1px;
-  white-space: nowrap;
   overflow: hidden;
+}
+
+.sidebar.isExpanded .userName,
+.sidebar.isExpanded .userRole {
   text-overflow: ellipsis;
 }
 
 .userChevron {
   color: var(--color-text-faint);
-  transition: transform var(--transition-fast);
+  flex-shrink: 0;
 }
 
-.userChevronOpen {
+.sidebar.isExpanded .userChevron.userChevronOpen {
   transform: rotate(180deg);
 }
 
 .profileDropdown {
   position: absolute;
-  bottom: 54px;
+  bottom: 58px;
   left: 0;
   right: 0;
   background-color: var(--color-surface);
@@ -530,10 +577,20 @@
   transition: background-color var(--transition-fast);
   width: 100%;
   text-align: left;
+  white-space: nowrap;
 }
 
 .dropdownItem:hover {
   background-color: var(--color-surface-2);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar * {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
 }
 
 /*  NATURE THEME OVERRIDES  */
@@ -564,15 +621,13 @@
   color: #5eead4;
 }
 
-:global([data-theme='nature']) .nextActionBtn,
-:global([data-theme='nature']) .railActionBtn {
+:global([data-theme='nature']) .nextActionBtn {
   background: rgba(52, 211, 153, 0.14);
   color: #6ee7b7;
   border-color: rgba(52, 211, 153, 0.28);
 }
 
-:global([data-theme='nature']) .nextActionBtn:hover,
-:global([data-theme='nature']) .railActionBtn:hover {
+:global([data-theme='nature']) .nextActionBtn:hover {
   background: rgba(52, 211, 153, 0.25);
   border-color: rgba(52, 211, 153, 0.45);
 }

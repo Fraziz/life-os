@@ -117,10 +117,10 @@ export default function Sidebar({
 
   const handleMouseLeave = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    // Smooth 220ms debounce so rapid mouse movements and edge crossings don't flicker or shake
+    // Smooth 180ms debounce so rapid mouse movements don't flicker or shake
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 220);
+    }, 180);
   };
 
   const handlePinClick = () => {
@@ -179,67 +179,56 @@ export default function Sidebar({
             />
           </Link>
 
-          {isExpanded && (
-            <button
-              type="button"
-              className={`${styles.pinSidebarBtn} ${isPinned ? styles.pinActive : ''}`}
-              onClick={handlePinClick}
-              title={
-                isPinned
-                  ? 'Unpin sidebar (Auto-collapse on mouse leave)'
-                  : 'Pin sidebar open (Ctrl+B)'
-              }
-              aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-            >
-              {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
-            </button>
-          )}
+          <button
+            type="button"
+            className={`${styles.pinSidebarBtn} ${isPinned ? styles.pinActive : ''}`}
+            onClick={handlePinClick}
+            title={
+              isPinned
+                ? 'Unpin sidebar (Auto-collapse on mouse leave)'
+                : 'Pin sidebar open (Ctrl+B)'
+            }
+            aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+            tabIndex={isExpanded ? 0 : -1}
+          >
+            {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
+          </button>
         </div>
 
-        {/* Next Action Quick Launcher (Notification button removed as requested) */}
+        {/* Next Action Quick Launcher */}
         <div className={styles.nextActionWrap}>
-          {isExpanded ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenNextAction) onOpenNextAction();
-                else window.dispatchEvent(new CustomEvent('open-next-action'));
-              }}
-              className={styles.nextActionBtn}
-              title="What should I do right now? (Ctrl+J / ⌘J)"
-            >
-              <div className={styles.nextActionLeft}>
-                <Compass size={16} className={styles.nextActionIcon} />
-                <span className={styles.nextActionLabel}>Next Action</span>
-              </div>
-              <kbd className={styles.nextActionKbd}>Ctrl+J</kbd>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenNextAction) onOpenNextAction();
-                else window.dispatchEvent(new CustomEvent('open-next-action'));
-              }}
-              className={styles.railActionBtn}
-              title="What should I do right now? (Ctrl+J / ⌘J)"
-              aria-label="What should I do right now? (Ctrl+J)"
-            >
-              <Compass size={18} className={styles.nextActionIcon} />
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenNextAction) onOpenNextAction();
+              else window.dispatchEvent(new CustomEvent('open-next-action'));
+            }}
+            className={styles.nextActionBtn}
+            title={!isExpanded ? 'Next Action (Ctrl+J)' : 'What should I do right now? (Ctrl+J / ⌘J)'}
+            aria-label="What should I do right now? (Ctrl+J)"
+          >
+            <div className={styles.nextActionLeft}>
+              <span className={styles.nextActionIconBox}>
+                <Compass size={18} className={styles.nextActionIcon} />
+              </span>
+              <span className={styles.nextActionLabel}>Next Action</span>
+            </div>
+            <kbd className={styles.nextActionKbd}>Ctrl+J</kbd>
+            {!isExpanded && (
               <span className={styles.navTooltip}>Next Action (Ctrl+J)</span>
-            </button>
-          )}
+            )}
+          </button>
         </div>
 
         {/* Navigation Sections */}
         <nav className={styles.nav}>
-          {displayedSections.map((section) => {
+          {displayedSections.map((section, sIndex) => {
             const isMore = section.id === 'more';
 
-            if (isMore) {
-              return (
-                <div key={section.id} className={styles.sectionGroup}>
-                  {isExpanded ? (
+            return (
+              <div key={section.id} className={styles.sectionGroup}>
+                <div className={styles.sectionHeaderRow}>
+                  {isMore ? (
                     <button
                       type="button"
                       className={styles.sectionHeaderBtn}
@@ -248,106 +237,68 @@ export default function Sidebar({
                     >
                       <span className={styles.sectionTitle}>{section.label}</span>
                       <ChevronDown
-                        size={14}
+                        size={13}
                         className={`${styles.moreChevron} ${
                           moreOpen ? styles.moreChevronOpen : ''
                         }`}
                       />
                     </button>
-                  ) : null}
+                  ) : (
+                    <span className={styles.sectionTitle}>{section.label}</span>
+                  )}
+                  {sIndex > 0 && (
+                    <div className={styles.sectionDividerRail} aria-hidden="true" />
+                  )}
+                </div>
 
-                  {(!isExpanded || moreOpen) && (
-                    <div className={styles.sectionItemsList}>
-                      {section.items.map((item: NavItem) => {
-                        const isActive = pathname === item.href;
-                        const IconComponent = NAV_ICON_MAP[item.icon] || Layers;
+                {(!isMore || moreOpen) && (
+                  <div className={styles.sectionItemsList}>
+                    {section.items.map((item: NavItem) => {
+                      const isActive =
+                        item.href === '/'
+                          ? pathname === '/'
+                          : pathname.startsWith(item.href);
+                      const IconComponent = NAV_ICON_MAP[item.icon] || Layers;
 
-                        return (
-                          <div key={item.id} className={styles.navItemWrapper}>
-                            <Link
-                              href={item.href}
-                              prefetch={true}
-                              onClick={handleNavClick}
-                              className={`${styles.navItem} ${
-                                isActive ? styles.activeItem : ''
-                              }`}
-                              title={!isExpanded ? item.label : undefined}
-                            >
+                      return (
+                        <div key={item.id} className={styles.navItemWrapper}>
+                          <Link
+                            href={item.href}
+                            prefetch={true}
+                            onClick={handleNavClick}
+                            className={`${styles.navItem} ${
+                              isActive ? styles.activeItem : ''
+                            }`}
+                            title={!isExpanded ? item.label : undefined}
+                          >
+                            <span className={styles.navIconBox}>
                               <IconComponent
-                                size={isExpanded ? 18 : 20}
+                                size={19}
                                 strokeWidth={isActive ? 2.2 : 1.8}
                                 className={styles.navIcon}
                               />
-                              {isExpanded && (
-                                <span className={styles.navLabel}>{item.label}</span>
-                              )}
-                              {!isExpanded && (
-                                <span className={styles.navTooltip}>{item.label}</span>
-                              )}
-                            </Link>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <div key={section.id} className={styles.sectionGroup}>
-                {isExpanded && (
-                  <div className={styles.sectionTitle}>{section.label}</div>
-                )}
-                <div className={styles.sectionItemsList}>
-                  {section.items.map((item: NavItem) => {
-                    const isActive =
-                      item.href === '/'
-                        ? pathname === '/'
-                        : pathname.startsWith(item.href);
-                    const IconComponent = NAV_ICON_MAP[item.icon] || Layers;
-
-                    return (
-                      <div key={item.id} className={styles.navItemWrapper}>
-                        <Link
-                          key={item.id}
-                          href={item.href}
-                          prefetch={true}
-                          onClick={handleNavClick}
-                          className={`${styles.navItem} ${
-                            isActive ? styles.activeItem : ''
-                          }`}
-                          title={!isExpanded ? item.label : undefined}
-                        >
-                          <IconComponent
-                            size={isExpanded ? 18 : 20}
-                            strokeWidth={isActive ? 2.2 : 1.8}
-                            className={styles.navIcon}
-                          />
-                          {isExpanded && (
+                            </span>
                             <span className={styles.navLabel}>{item.label}</span>
-                          )}
-                          {!isExpanded && (
-                            <span className={styles.navTooltip}>{item.label}</span>
-                          )}
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
+                            {!isExpanded && (
+                              <span className={styles.navTooltip}>{item.label}</span>
+                            )}
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
         </nav>
 
         {/* Subtle, Formal Inspiration */}
-        {isExpanded && (
-          <div className={styles.sidebarQuote}>
-            <p className={styles.quoteText}>
-              &ldquo;Small steps every day build the life you want.&rdquo;
-            </p>
-          </div>
-        )}
+        <div className={styles.sidebarQuote}>
+          <p className={styles.quoteText}>
+            &ldquo;Small steps every day build the life you want.&rdquo;
+          </p>
+        </div>
 
         {/* User Profile Footer */}
         <div className={styles.footer}>
@@ -366,28 +317,24 @@ export default function Sidebar({
               )}
             </div>
 
-            {isExpanded && (
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>
-                  {userDisplayName}
-                </span>
-                <span className={styles.userRole}>
-                  {userSubtitle}
-                </span>
-              </div>
-            )}
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>
+                {userDisplayName}
+              </span>
+              <span className={styles.userRole}>
+                {userSubtitle}
+              </span>
+            </div>
 
-            {isExpanded && (
-              <ChevronDown
-                size={14}
-                className={`${styles.userChevron} ${
-                  profileMenuOpen ? styles.userChevronOpen : ''
-                }`}
-              />
-            )}
+            <ChevronDown
+              size={14}
+              className={`${styles.userChevron} ${
+                profileMenuOpen ? styles.userChevronOpen : ''
+              }`}
+            />
           </div>
 
-          {profileMenuOpen && (
+          {profileMenuOpen && isExpanded && (
             <div className={styles.profileDropdown}>
               <Link
                 href="/settings"

@@ -57,6 +57,7 @@
   background: var(--color-surface-hover);
   color: var(--color-accent);
   border-color: var(--color-accent);
+  transform: scale(1.04);
 }
 
 /*  Page content wrapper  */

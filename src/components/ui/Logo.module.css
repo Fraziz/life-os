@@ -47,6 +47,19 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  white-space: nowrap;
+  animation: logoFadeIn 0.2s ease;
+}
+
+@keyframes logoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .brandTitle {
