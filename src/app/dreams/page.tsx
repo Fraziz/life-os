@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> =
   planning: { label: 'Planning', className: styles.planning },
   active: { label: 'Active', className: styles.active },
   paused: { label: 'Paused', className: styles.paused },
-  achieved: { label: 'Achieved ✓', className: styles.achieved },
+  achieved: { label: 'Achieved', className: styles.achieved },
   archived: { label: 'Archived', className: styles.archived },
 };
 
@@ -296,10 +296,8 @@ export default function DreamsPage() {
 
             return (
               <article key={d.id} className={styles.dreamCard}>
-                {d.imageUrl ? (
+                {d.imageUrl && (
                   <img src={d.imageUrl} alt={d.title} className={styles.cardCover} />
-                ) : (
-                  <div className={styles.cardCoverFallback} />
                 )}
 
                 <div className={styles.cardBody}>
@@ -309,12 +307,19 @@ export default function DreamsPage() {
                     </span>
 
                     <div className={styles.cardActions}>
+                      <EntityFiles
+                        variant="icon"
+                        entityType="dream"
+                        entityId={d.id}
+                        title={d.title}
+                        className={styles.fileActionBtn}
+                      />
                       <button
                         className={styles.actionBtn}
                         onClick={() => openEditModal(d)}
                         title="Edit Dream"
                       >
-                        <Edit2 size={16} />
+                        <Edit2 size={14} />
                       </button>
 
                       <button
@@ -326,7 +331,7 @@ export default function DreamsPage() {
                         }}
                         title="Delete Dream"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -336,15 +341,17 @@ export default function DreamsPage() {
                     {d.description && <p className={styles.dreamDesc}>{d.description}</p>}
                   </div>
 
-                  <div className={styles.whyBanner}>
-                    <span className={styles.whyLabel}>Why it matters</span>
-                    <p className={styles.whyText}>&ldquo;{d.whyItMatters}&rdquo;</p>
-                  </div>
+                  {d.whyItMatters && (
+                    <div className={styles.whyBanner}>
+                      <span className={styles.whyLabel}>Why it matters</span>
+                      <p className={styles.whyText}>&ldquo;{d.whyItMatters}&rdquo;</p>
+                    </div>
+                  )}
 
                   {d.notes && (
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', background: 'var(--color-surface)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
-                      <strong>Notes:</strong> {d.notes}
-                    </div>
+                    <p className={styles.notesText}>
+                      <span className={styles.notesLabel}>Notes:</span> {d.notes}
+                    </p>
                   )}
 
                   <div className={styles.cardFooter}>
@@ -354,23 +361,21 @@ export default function DreamsPage() {
                         style={{
                           backgroundColor: `${area.color}15`,
                           color: area.color,
-                          border: `1px solid ${area.color}40`,
+                          border: `1px solid ${area.color}35`,
                         }}
                       >
-                        <AreaIcon name={area.icon} size={14} /> {area.name}
+                        <AreaIcon name={area.icon} size={12} /> {area.name}
                       </span>
                     ) : (
-                      <span style={{ color: 'var(--color-text-faint)' }}>General Life</span>
+                      <span className={styles.generalArea}>General Life</span>
                     )}
 
                     {d.targetDate && (
                       <span className={styles.targetDate}>
-                        <Calendar size={13} /> {d.targetDate}
+                        <Calendar size={12} /> {d.targetDate}
                       </span>
                     )}
                   </div>
-
-                  <EntityFiles entityType="dream" entityId={d.id} title={d.title} />
                 </div>
               </article>
             );

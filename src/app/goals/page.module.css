@@ -373,21 +373,45 @@
   gap: 2px;
 }
 
-.actionBtn {
-  display: flex;
+.fileActionBtn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
+  width: 26px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  border-radius: var(--radius-md, 6px);
   background: transparent;
   border: none;
   color: var(--color-text-faint);
   cursor: pointer;
   transition: all var(--transition-fast);
+  opacity: 0.75;
+}
+
+.fileActionBtn:hover {
+  opacity: 1;
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-md, 6px);
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.75;
 }
 
 .actionBtn:hover {
+  opacity: 1;
   color: var(--color-text);
   background: var(--color-surface-hover);
 }
@@ -398,46 +422,47 @@
 }
 
 .goalTitle {
-  font-size: 14px;
-  font-weight: var(--weight-semibold);
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--color-text);
   letter-spacing: -0.01em;
-  line-height: 1.3;
+  line-height: 1.35;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .goalDesc {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.45;
+  margin-top: 2px;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .whyBanner {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  padding: 5px 8px;
-  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--color-accent);
+  padding: 2px 0 2px 9px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .whyLabel {
-  font-size: 9px;
-  font-weight: var(--weight-bold);
+  font-size: 9.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-accent);
+  letter-spacing: 0.05em;
+  color: var(--color-text-faint);
 }
 
 .whyText {
-  font-size: 11px;
-  color: var(--color-text);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
   font-style: italic;
-  line-height: 1.35;
+  line-height: 1.4;
   word-break: break-word;
   overflow-wrap: anywhere;
 }

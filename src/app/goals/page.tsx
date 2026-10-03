@@ -421,12 +421,19 @@ export default function GoalsPage() {
                   </div>
 
                   <div className={styles.cardActions}>
+                    <EntityFiles
+                      variant="icon"
+                      entityType="goal"
+                      entityId={goal.id}
+                      title={goal.title}
+                      className={styles.fileActionBtn}
+                    />
                     <button
                       className={styles.actionBtn}
                       onClick={() => openEditModal(goal)}
                       title="Edit Goal"
                     >
-                      <Edit2 size={16} />
+                      <Edit2 size={14} />
                     </button>
 
                     <button
@@ -438,7 +445,7 @@ export default function GoalsPage() {
                       }}
                       title="Delete Goal"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -522,7 +529,6 @@ export default function GoalsPage() {
                   )}
                 </div>
 
-                <EntityFiles entityType="goal" entityId={goal.id} title={goal.title} />
 
                 {/* ── AI Coach Panel ── */}
                 {coachState[goal.id]?.loading && (
