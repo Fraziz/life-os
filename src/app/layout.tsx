@@ -9,6 +9,7 @@ import './globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
+  charset: 'utf-8',
   title: {
     default: 'Sariling Mundo — Turn Dreams Into Action',
     template: '%s | Sariling Mundo',
@@ -43,6 +44,9 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+      </head>
       <body>
         {/* PWA Service Worker Registration */}
         <PwaRegister />
