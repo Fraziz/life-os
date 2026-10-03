@@ -1,4 +1,5 @@
 import { executeOptionalAICall } from './aiEngine';
+import { removeEmojisAndIcons, removeHashtags, removeAiChatter } from './fileImporter';
 import type { UserSettings } from '@/types';
 
 /**
@@ -27,8 +28,12 @@ export function formatNotesLocally(rawText: string, docTitle = 'Document'): stri
     return `<p>Start typing or pasting your notes here...</p>`;
   }
 
-  // 1. Initial cleanup of dirty HTML/spam markers
-  let text = rawText
+  // 1. Initial cleanup of dirty HTML, AI chatter, hashtags, icons, and spam markers
+  let text = removeAiChatter(rawText);
+  text = removeHashtags(text);
+  text = removeEmojisAndIcons(text);
+
+  text = text
     .replace(/(💡\s*(Core Takeaway|Key Idea):\s*)+/gi, '')
     .replace(/(⚡\s*(Must-Know Rule|Important):\s*)+/gi, '')
     .replace(/<div class="key-idea"[^>]*>([\s\S]*?)<\/div>/gi, (_, inner) => inner.replace(/<[^>]+>/g, ' ').trim() + '\n\n')
@@ -212,7 +217,7 @@ export async function formatStudyNotesWithAI(
   if (aiSettings?.apiKey && aiSettings?.provider) {
     try {
       const systemPrompt = `You are a world-class executive document designer and note architect.
-Your job is to format the given raw notes into a formal, beautifully organized, magazine-grade HTML document.
+Your job is to format the given raw notes into a formal, beautifully organized, magazine-grade publication document.
 
 Formatting Rules:
 1. Fix all clumping, messy linebreaks, and awkward formatting.
@@ -223,15 +228,19 @@ Formatting Rules:
 6. Format step sequences or chains (A → B → C) as: <div class="process-flow"><span class="flow-step">Step 1</span> <span class="flow-arrow">&rarr;</span> <span class="flow-step">Step 2</span></div>.
 7. Format examples, sub-points, and instructions into clean bulleted <ul><li>...</li></ul> or numbered <ol><li>...</li></ol> lists.
 8. Format definitions as <p><strong>TERM:</strong> Description...</p>.
-9. Mark critical takeaways with <div class="key-idea">💡 <strong>Key Idea:</strong> ...</div> or <span class="important-mark">⚡ Important</span>.
+9. Mark critical takeaways with <div class="key-idea"><strong>Key Idea:</strong> ...</div> or <span class="important-mark">Important:</span> without icons.
 10. NEVER wrap your answer in markdown code fences (\`\`\`html or \`\`\`). Return ONLY the pure HTML body.
-11. Preserve 100% of the original meaning and content faithfully.`;
+11. Preserve 100% of the original meaning and content faithfully.
+12. NEVER include emojis, icons, or social hashtags (#tag) anywhere in the output. Remove duplicate paragraphs and repetitive lines so the text is pristine.`;
 
       const prompt = `Document Title: "${docTitle}"\n\nRaw Notes to Format:\n${rawContent}`;
       const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
 
       let cleanHtml = result.text.trim();
       cleanHtml = cleanHtml.replace(/^```html\s*/i, '').replace(/```\s*$/i, '').trim();
+      cleanHtml = removeAiChatter(cleanHtml);
+      cleanHtml = removeHashtags(cleanHtml);
+      cleanHtml = removeEmojisAndIcons(cleanHtml);
 
       if (cleanHtml.length > 20) {
         return { formattedHtml: cleanHtml, isAI: true };

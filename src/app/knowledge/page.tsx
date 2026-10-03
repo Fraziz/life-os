@@ -858,7 +858,7 @@ export default function KnowledgePage() {
     if (editorRef.current) {
       setFContent(editorRef.current.innerHTML);
     }
-    setPasteToast('Pasted in clean Book format!');
+    setPasteToast('Pasted in clean Book format (icons & tags cleaned)!');
     setTimeout(() => setPasteToast(null), 3000);
   };
 

@@ -338,90 +338,7 @@ export function formatAsNotes(raw: string, docTitle: string): string {
   if (!raw || raw.trim().length < 5) {
     return `# ${docTitle}\n\n`;
   }
-
-  let text = raw
-    .replace(/\r\n|\r/g, '\n')
-    .replace(/\f/g, '\n\n')
-    .replace(/[^\S\n]{2,}/g, ' ')
-    .replace(/([a-z,;])\n([A-Za-z])/g, '$1 $2')
-    .replace(/-\s*\n\s*([a-z])/gi, '$1')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  // If text already has markdown headings, preserve them
-  if (/^#{1,3}\s+/m.test(text)) {
-    if (!text.startsWith('# ')) {
-      text = `# ${docTitle}\n\n${text}`;
-    }
-    return text;
-  }
-
-  const lines = text.split('\n');
-  const formatted: string[] = [];
-  let currentParagraph: string[] = [];
-
-  const titleCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map((w) => (w.length > 2 || w === 'a' || w === 'an' || w === 'the' ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-      .join(' ');
-  };
-
-  const flushParagraph = () => {
-    if (currentParagraph.length > 0) {
-      const para = currentParagraph.join(' ').trim();
-      if (para) formatted.push(para);
-      currentParagraph = [];
-    }
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) {
-      flushParagraph();
-      continue;
-    }
-
-    // Numbered section headings: "1. Overview", "Chapter 2 - Methods"
-    const numHeadingMatch = line.match(/^(\d+)[\.\)]\s+(.+)$/);
-    if (numHeadingMatch) {
-      flushParagraph();
-      const num = numHeadingMatch[1];
-      const heading = titleCase(numHeadingMatch[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
-      formatted.push(`## ${num}. ${heading}`);
-      continue;
-    }
-
-    // Short ALL-CAPS titles
-    if (line.length > 3 && line.length < 60 && line === line.toUpperCase() && /[A-Z]/.test(line) && !line.includes(':')) {
-      flushParagraph();
-      formatted.push(`## ${titleCase(line)}`);
-      continue;
-    }
-
-    // Definition terms like "CONNECT: ...", "KEY CONCEPT: ..."
-    const termMatch = line.match(/^([A-Z\s]{2,25}):\s+(.+)$/);
-    if (termMatch) {
-      flushParagraph();
-      formatted.push(`**${termMatch[1].trim()}:** ${termMatch[2].trim()}`);
-      continue;
-    }
-
-    // Bullet items
-    if (/^[\u2022\u2013\u2014\-\*\u00b7]\s/.test(line)) {
-      flushParagraph();
-      const bullet = line.replace(/^[\u2022\u2013\u2014\-\*\u00b7]\s+/, '').trim();
-      formatted.push(`- ${bullet}`);
-      continue;
-    }
-
-    currentParagraph.push(line);
-  }
-  flushParagraph();
-
-  const bodyContent = formatted.join('\n\n').trim();
-  return `# ${docTitle}\n\n${bodyContent}`;
+  return cleanAndFormatPastedText(raw, undefined, docTitle).markdown;
 }
 
 /**
@@ -580,9 +497,164 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
 }
 
 /**
+ * Strips Unicode emojis, decorative icons, and AI bullet symbols from text.
+ * Converts decorative bullets (✦, ➤, ✔, etc.) into clean standard markdown dashes (-).
+ */
+export function removeEmojisAndIcons(text: string): string {
+  if (!text) return '';
+
+  // 1. Convert decorative bullet symbols at start of lines into standard markdown list bullets
+  let res = text.replace(/^[ \t]*[✦✧★☆➤➢➔➜✔✖✗✘◆◇■□●○►▸▼▾❯❮❖❍❏❐❑❒▪•][ \t]*/gm, '- ');
+
+  // 2. Remove all Unicode emojis and pictographs
+  const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{FE00}-\u{FE0F}\u{200D}]/gu;
+  res = res.replace(EMOJI_REGEX, '');
+
+  // 3. Remove lingering icon decorators in headings or text
+  res = res.replace(/[🚀📚💡🎯✨📌📝🔥🧠⚡🤖🌟📖🔍✅❌📊🔑🏆🕒🌿💎💬🏷️✦✧★☆➤➢➔➜✔✖✗✘◆◇■□●○►▸▼▾❯❮❖❍❏❐❑❒]/g, '');
+
+  // 4. Normalize multiple horizontal spaces
+  res = res.replace(/[^\S\n]{2,}/g, ' ');
+
+  return res;
+}
+
+/**
+ * Removes social / AI hashtags while preserving Markdown headings (# Heading, ## Heading).
+ * - Drops pure hashtag lines: "#mindset #habits #growth"
+ * - Drops tag metadata lines: "Tags: #tag1, #tag2"
+ * - Strips trailing hashtags: "Text content. #tag1 #tag2" -> "Text content."
+ * - Converts inline hashtags: "Focus on #productivity" -> "Focus on productivity"
+ */
+export function removeHashtags(text: string): string {
+  if (!text) return '';
+
+  const lines = text.split('\n');
+  const cleanedLines: string[] = [];
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      cleanedLines.push('');
+      continue;
+    }
+
+    // A. Discard lines that are solely hashtags
+    if (/^(#[A-Za-z0-9_\u0080-\uFFFF-]+\s*)+$/.test(trimmed)) {
+      continue;
+    }
+
+    // B. Discard tag label lines
+    if (/^(tags|hashtags|topics|keywords):\s*(#[A-Za-z0-9_\u0080-\uFFFF-]+\s*,?\s*)+$/i.test(trimmed)) {
+      continue;
+    }
+
+    // C. Remove trailing hashtags from line end
+    let l = rawLine.replace(/(\s+#[A-Za-z0-9_\u0080-\uFFFF-]+)+$/g, '');
+
+    // D. Convert inline hashtags in sentences (preserving Markdown headings with space after #)
+    l = l.replace(/(^|[^#&A-Za-z0-9_])#([A-Za-z][A-Za-z0-9_-]*)/g, '$1$2');
+
+    cleanedLines.push(l);
+  }
+
+  return cleanedLines.join('\n');
+}
+
+/**
+ * Removes conversational AI chatbot introductions and closers
+ * (e.g. "Certainly! Here is...", "Hope this helps!", "Let me know if you need anything else")
+ */
+export function removeAiChatter(text: string): string {
+  if (!text) return '';
+
+  const lines = text.split('\n');
+  const filtered: string[] = [];
+
+  const AI_OPENER_REGEX = /^(certainly|sure thing|sure|of course|here is|here are|here's|below is|following is|as requested|glad to help|here you go)\b.*[:.!]?$/i;
+  const AI_CLOSER_REGEX = /\b(hope this helps|let me know if you need anything else|feel free to ask|hope you found this (helpful|useful)|let me know if you('d| would) like)\b.*[.!]?$/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Only strip openers near the very start
+    if (filtered.length < 3 && AI_OPENER_REGEX.test(line)) {
+      continue;
+    }
+    // Only strip closers near the very end
+    if (i >= lines.length - 4 && AI_CLOSER_REGEX.test(line)) {
+      continue;
+    }
+    filtered.push(lines[i]);
+  }
+
+  return filtered.join('\n');
+}
+
+/**
+ * Deduplicates paragraphs, sections, list items, and consecutive duplicate lines.
+ */
+export function deduplicateContentBlocks(blocks: string[], documentTitle?: string): string[] {
+  const seenSignatures = new Set<string>();
+  const normalizedTitle = documentTitle ? documentTitle.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+  const result: string[] = [];
+
+  for (let i = 0; i < blocks.length; i++) {
+    const rawBlock = blocks[i].trim();
+    if (!rawBlock) continue;
+
+    // Preserved dividers
+    if (rawBlock === '---' || rawBlock === '***') {
+      result.push('---');
+      continue;
+    }
+
+    // Split block into individual lines to check for list items and duplicate lines
+    const lines = rawBlock.split('\n');
+    const seenLineSignatures = new Set<string>();
+    const cleanLines: string[] = [];
+
+    for (let lIdx = 0; lIdx < lines.length; lIdx++) {
+      const line = lines[lIdx].trim();
+      if (!line) continue;
+
+      const isListItem = /^([-*•]|\d+[\.\)])\s+/.test(line);
+      const lineSig = line.toLowerCase().replace(/^([-*•]|\d+[\.\)]|#{1,6})\s+/, '').replace(/[^a-z0-9]/g, '');
+
+      // Deduplicate identical list items or repeated lines inside this block
+      if (isListItem && lineSig && seenLineSignatures.has(lineSig)) {
+        continue;
+      }
+      if (lineSig) seenLineSignatures.add(lineSig);
+      cleanLines.push(line);
+    }
+
+    if (cleanLines.length === 0) continue;
+    const cleanedBlock = cleanLines.join('\n');
+
+    const blockSig = cleanedBlock
+      .toLowerCase()
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/^[*-•]\s+/gm, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    if (i === 0 && normalizedTitle && blockSig === normalizedTitle) {
+      continue;
+    }
+    if (blockSig.length > 8 && seenSignatures.has(blockSig)) {
+      continue;
+    }
+
+    if (blockSig.length > 8) seenSignatures.add(blockSig);
+    result.push(cleanedBlock);
+  }
+
+  return result;
+}
+
+/**
  * Transforms pasted text or HTML (from websites, PDFs, Word, emails, notes)
  * into clean, publication-ready Book format markdown with structured headings,
- * flowing paragraphs, and clean typography.
+ * flowing paragraphs, and clean typography without icons, hashtags, or duplicate text.
  */
 export function cleanAndFormatPastedText(
   plainText: string,
@@ -635,13 +707,19 @@ export function cleanAndFormatPastedText(
     return { title: fallbackTitle || 'Untitled Note', markdown: '' };
   }
 
-  // 2. Un-break artificial line wraps from PDFs / copied text
+  // 2. Sanitization Pipeline: Remove AI chatter, remove hashtags, and remove icons/emojis
+  sourceText = removeAiChatter(sourceText);
+  sourceText = removeHashtags(sourceText);
+  sourceText = removeEmojisAndIcons(sourceText);
+
+  // 3. Un-break artificial line wraps from PDFs / copied text
   // Fix hyphenated word breaks: "devel-\n opment" -> "development"
   const clean = sourceText
     .replace(/\r\n|\r/g, '\n')
     .replace(/\f/g, '\n\n')
     .replace(/(\b[A-Za-z]{2,})-\s*\n\s*([a-z]{2,}\b)/g, '$1$2')
     .replace(/[^\S\n]{2,}/g, ' ')
+    .replace(/^(#{1,6}\s+[^\n]+)\n+(?=[-*\d•])/gm, '$1\n\n')
     .trim();
 
   // Split into rough blocks
@@ -769,7 +847,10 @@ export function cleanAndFormatPastedText(
   }
 
   const finalTitle = extractedTitle || fallbackTitle || 'Untitled Note';
-  const body = formattedBlocks.join('\n\n').trim();
+
+  // 4. Run deduplication on all formatted blocks and lists
+  const deduplicatedBlocks = deduplicateContentBlocks(formattedBlocks, finalTitle);
+  const body = deduplicatedBlocks.join('\n\n').trim();
 
   let finalMarkdown = body;
   if (!finalMarkdown.startsWith('# ')) {
