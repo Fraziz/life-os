@@ -287,7 +287,7 @@ export async function POST(request: Request) {
 
       if (provider === 'openrouter') {
         headers['HTTP-Referer'] = 'https://lifeos.app';
-        headers['X-Title'] = 'Life OS';
+        headers['X-Title'] = 'Sariling Mundo';
       }
 
       for (const m of candidateModels) {

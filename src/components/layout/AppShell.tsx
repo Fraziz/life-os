@@ -46,7 +46,7 @@ function getPageTitle(pathname: string): string {
   const match = allItems.find((item) =>
     item.href !== '/' && pathname.startsWith(item.href)
   );
-  return match?.label ?? 'Life OS';
+  return match?.label ?? 'Sariling Mundo';
 }
 
 /** Wraps shell content to access Search and Reminders Context */

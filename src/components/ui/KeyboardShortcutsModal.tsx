@@ -13,7 +13,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: '⌘ K / Ctrl+K', desc: 'Global Full-Text Search across Life OS' },
+    { key: '⌘ K / Ctrl+K', desc: 'Global Full-Text Search across Sariling Mundo' },
     { key: '⌘ J / Ctrl+J', desc: 'What Should I Do Right Now? (Decision Engine)' },
     { key: 'ESC', desc: 'Close any active modal, drawer, or search overlay' },
     { key: '?', desc: 'Open Keyboard Shortcuts Reference' },

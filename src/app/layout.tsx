@@ -10,19 +10,19 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Life OS — Turn Dreams Into Action',
-    template: '%s | Life OS',
+    default: 'Sariling Mundo — Turn Dreams Into Action',
+    template: '%s | Sariling Mundo',
   },
   description:
-    'Life OS helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions.',
+    'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions.',
   keywords: ['goal setting', 'productivity', 'life planning', 'habits', 'focus', 'task management'],
-  authors: [{ name: 'Life OS' }],
-  creator: 'Life OS',
+  authors: [{ name: 'Sariling Mundo' }],
+  creator: 'Sariling Mundo',
   robots: 'noindex, nofollow',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Life OS',
+    title: 'Sariling Mundo',
   },
   icons: {
     icon: '/favicon.ico',

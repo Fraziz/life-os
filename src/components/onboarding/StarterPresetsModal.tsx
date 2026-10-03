@@ -232,7 +232,7 @@ export default function StarterPresetsModal({ isOpen, onClose }: StarterPresetsM
           <div>
             <h2 className={styles.title}>Choose a Starter Preset</h2>
             <p className={styles.subtitle}>
-              Pre-load your Life OS with goals, habits, and tasks tailored to your current focus.
+              Pre-load your Sariling Mundo with goals, habits, and tasks tailored to your current focus.
             </p>
           </div>
           <button type="button" className={styles.closeBtn} onClick={onClose}>

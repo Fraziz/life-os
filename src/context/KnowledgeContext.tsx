@@ -21,16 +21,16 @@ function defaultDocs(): KnowledgeDocument[] {
   return [
     {
       id: generateId(),
-      title: 'Life OS — Complete Operations Manual & Hierarchy Guide',
-      content: `# Life OS — Official System Manual & Hierarchy Guide
+      title: 'Sariling Mundo — Complete Operations Manual & Hierarchy Guide',
+      content: `# Sariling Mundo — Official System Manual & Hierarchy Guide
 
 ## 1. Executive Overview
-Life OS is an ADHD-friendly personal operating system designed to bridge the gap between long-term ambitions and daily execution. It eliminates overwhelm through structured hierarchy, visual chunking, and dopamine-positive feedback loops.
+Sariling Mundo is an ADHD-friendly personal operating system designed to bridge the gap between long-term ambitions and daily execution. It eliminates overwhelm through structured hierarchy, visual chunking, and dopamine-positive feedback loops.
 
 ---
 
 ## 2. Core Execution Hierarchy
-Every action in Life OS cascades downwards from long-term vision to daily execution:
+Every action in Sariling Mundo cascades downwards from long-term vision to daily execution:
 
 1. **DREAM** (The Big Vision / North Star)
    - Found under \`Direction → Dreams\`
@@ -87,7 +87,7 @@ Every action in Life OS cascades downwards from long-term vision to daily execut
       updatedAt: t,
       studyQuiz: [
         {
-          question: 'What is the core execution hierarchy in Life OS from top to bottom?',
+          question: 'What is the core execution hierarchy in Sariling Mundo from top to bottom?',
           answer: 'Dream → Goal → Milestone → Project → Task → Focus Session.',
           userMastered: true,
         },

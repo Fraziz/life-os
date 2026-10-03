@@ -170,7 +170,7 @@ export async function generateAIBreakdown(
   }
 
   try {
-    const systemPrompt = `You are a world-class strategic execution coach in Life OS.
+    const systemPrompt = `You are a world-class strategic execution coach in Sariling Mundo.
 Break down the given high-level goal into 3 to 5 realistic, high-impact, actionable tasks.
 Respond ONLY with a valid JSON object matching this schema:
 {
@@ -409,8 +409,8 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
 
   const startTime = Date.now();
   try {
-    const systemPrompt = 'You are a test ping responder for Life OS. Respond with a concise greeting of 5 words or fewer.';
-    const prompt = 'Ping! Respond with: "Life OS AI Connected!"';
+    const systemPrompt = 'You are a test ping responder for Sariling Mundo. Respond with a concise greeting of 5 words or fewer.';
+    const prompt = 'Ping! Respond with: "Sariling Mundo AI Connected!"';
     const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
     const latencyMs = Date.now() - startTime;
     return {
@@ -604,7 +604,7 @@ export async function executeOptionalAICall(
 
         if (isKeyInvalid || isQuotaOrLimit) {
           if (hasBackupKeys) {
-            console.warn(`[Life OS AI] Key #${keyIdx + 1} failed (${rawErrMsg}). Auto-switching to backup key in pool...`);
+            console.warn(`[Sariling Mundo AI] Key #${keyIdx + 1} failed (${rawErrMsg}). Auto-switching to backup key in pool...`);
             lastError = new Error(`Key #${keyIdx + 1} unavailable. Switched to backup key.`);
             break; // Break inner model loop to try NEXT KEY in candidateKeys
           }
@@ -779,7 +779,7 @@ export async function executeOptionalAICall(
 
     if (aiSettings.provider === 'openrouter') {
       headers['HTTP-Referer'] = 'https://lifeos.app';
-      headers['X-Title'] = 'Life OS';
+      headers['X-Title'] = 'Sariling Mundo';
     }
 
     for (const m of candidateModels) {
@@ -817,7 +817,7 @@ export async function executeOptionalAICall(
         }
 
         if ((response.status === 429 || response.status === 401) && hasBackupKey) {
-          console.warn(`[Life OS AI] Key #${keyIdx + 1} for ${aiSettings.provider} failed (${rawErrMsg}). Switching to next key in pool...`);
+          console.warn(`[Sariling Mundo AI] Key #${keyIdx + 1} for ${aiSettings.provider} failed (${rawErrMsg}). Switching to next key in pool...`);
           lastError = rawErrMsg;
           break; // try next key
         }
@@ -921,7 +921,7 @@ export async function processBrainDumpWithAI(
   }
 
   try {
-    const systemPrompt = `You are a Life OS productivity assistant. Classify each brain dump item.
+    const systemPrompt = `You are a Sariling Mundo productivity assistant. Classify each brain dump item.
 Respond ONLY with a valid JSON array. Each element: { "itemId": string, "suggestedType": "task"|"goal"|"project"|"dream"|"idea"|"note", "suggestedPriority": "urgent"|"high"|"medium"|"low", "suggestedTags": string[], "reasoning": string }
 Keep reasoning to 1 short sentence. No markdown fences.`;
     const prompt = `Classify these items:\n${items.map(i => `ID:${i.id} TEXT:"${i.text}"`).join('\n')}`;
@@ -1149,7 +1149,7 @@ export async function analyzeProblemWithAI(
   return local;
 }
 
-// ── Feature 5: AI Life OS Chat Assistant ─────────────────────────────────
+// ── Feature 5: AI Sariling Mundo Chat Assistant ─────────────────────────────
 
 export async function chatWithAssistant(
   userMessage: string,
@@ -1220,7 +1220,7 @@ export async function chatWithAssistant(
         : `You don't have any habits set up yet. Head to Habits to start building your streak! 🔥`;
     }
 
-    return `Hi ${userName}! I'm your Life OS assistant. I have live context on your tasks, goals, habits, and knowledge base notes. Try asking: "What should I focus on?", "Summarize my notes", or "What did I accomplish today?" 🤖\n\n*Tip: Add a Gemini or OpenAI API key in Settings → AI for real AI responses.*`;
+    return `Hi ${userName}! I'm your Sariling Mundo assistant. I have live context on your tasks, goals, habits, and knowledge base notes. Try asking: "What should I focus on?", "Summarize my notes", or "What did I accomplish today?" 🤖\n\n*Tip: Add a Gemini or OpenAI API key in Settings → AI for real AI responses.*`;
   }
 
   // Real AI chat with full user context
@@ -1263,7 +1263,7 @@ export async function chatWithAssistant(
       .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n\n');
 
-    const systemPrompt = `You are the executive AI Life OS Assistant for ${userName}.
+    const systemPrompt = `You are the executive AI Sariling Mundo Assistant for ${userName}.
 You have direct, real-time visibility into their tasks, goals, active projects, habits, deadlines, and knowledge base documents.
 
 Your Mission:
@@ -1275,7 +1275,7 @@ Your Mission:
 6. Keep tone supportive, sharp, focused, and free of fluff.
 7. Today's date is ${todayStr}.
 
-Current User Life OS Data:
+Current User Sariling Mundo Data:
 ${JSON.stringify(contextSummary, null, 2)}`;
 
     const prompt = historyMessages

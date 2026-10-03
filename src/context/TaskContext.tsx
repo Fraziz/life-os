@@ -9,8 +9,8 @@ const TASKS_STORAGE_KEY = 'life_os_tasks_v1';
 export const DEFAULT_TASKS: Task[] = [
   {
     id: 'task-ui-design',
-    title: 'Finish Life OS UI design (final layout)',
-    description: 'Finalize the three-column responsive Life OS layout matching the modern aesthetic.',
+    title: 'Finish Sariling Mundo UI design (final layout)',
+    description: 'Finalize the three-column responsive Sariling Mundo layout matching the modern aesthetic.',
     status: 'doing',
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],

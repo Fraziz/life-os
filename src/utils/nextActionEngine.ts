@@ -171,7 +171,7 @@ export async function getNextActionRecommendation(
         estMinutes: t.estimatedDuration || 25,
       }));
 
-    const systemPrompt = `You are an executive personal Life OS coach. Analyze the user's tasks and select the single highest-impact task to do right now. Format response strictly as JSON with: { "taskId": "string", "why": "1-2 sentence motivating reason why this matters now", "estimatedMinutes": number }`;
+    const systemPrompt = `You are an executive personal Sariling Mundo coach. Analyze the user's tasks and select the single highest-impact task to do right now. Format response strictly as JSON with: { "taskId": "string", "why": "1-2 sentence motivating reason why this matters now", "estimatedMinutes": number }`;
     const prompt = `Available tasks: ${JSON.stringify(candidateTasks)}. Choose the best ONE next action.`;
 
     const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);

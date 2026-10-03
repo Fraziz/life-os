@@ -1,7 +1,7 @@
 import type { NavSection } from '@/types';
 
 /**
- * Single source of truth for Life OS navigation.
+ * Single source of truth for Sariling Mundo navigation.
  * Matches all ADHD-focused categories and item names exactly.
  */
 export const NAV_SECTIONS: NavSection[] = [

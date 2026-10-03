@@ -111,7 +111,7 @@ export default function CommandPalette() {
     {
       id: 'act-simple-mode',
       category: 'Quick Actions',
-      title: settings.simpleMode ? 'Switch to Full Life OS' : 'Switch to Simple Mode',
+      title: settings.simpleMode ? 'Switch to Full Sariling Mundo' : 'Switch to Simple Mode',
       subtitle: settings.simpleMode ? 'Show all sections & advanced tools' : 'Show 4 core daily essentials only',
       keywords: ['mode', 'simple', 'full', 'toggle', 'beginner'],
       onSelect: () => {

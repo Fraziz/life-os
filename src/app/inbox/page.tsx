@@ -558,7 +558,7 @@ export default function InboxPage() {
                         type="button"
                         className={styles.groqKeyBadge}
                         onClick={() => handleActivateGroqKey(item.content)}
-                        title="Set this Groq API Key as the active key in your Life OS"
+                        title="Set this Groq API Key as the active key in your Sariling Mundo"
                       >
                         <Sparkles size={11} />
                         {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
@@ -628,7 +628,7 @@ export default function InboxPage() {
             </div>
 
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Choose which level of your Life OS this thought belongs to:
+              Choose which level of your Sariling Mundo this thought belongs to:
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>

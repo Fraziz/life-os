@@ -1,4 +1,4 @@
-// Core domain types for Life OS
+// Core domain types for Sariling Mundo
 // These are stubs that will be expanded in later phases.
 // Phase 2 adds User/auth types, Phase 3 adds database-backed shapes, etc.
 
@@ -108,7 +108,7 @@ export interface UserSettings {
   focusPreferences: FocusPreferences;
   notifications: NotificationPreferences;
   aiSettings?: AISettings;
-  simpleMode?: boolean;         // Simple Mode (beginner) vs Full Life OS (power user)
+  simpleMode?: boolean;         // Simple Mode (beginner) vs Full Sariling Mundo (power user)
   starterPreset?: string;       // Active or loaded starter preset
   theme: AppTheme;
   updatedAt: string;

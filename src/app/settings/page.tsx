@@ -350,7 +350,7 @@ export default function SettingsPage() {
               }}
             >
               <div className={styles.modeCardHeader}>
-                <span className={styles.modeCardTitle}>Full Life OS</span>
+                <span className={styles.modeCardTitle}>Full Sariling Mundo</span>
                 {!formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
               </div>
               <p className={styles.modeCardDesc}>
@@ -1861,7 +1861,7 @@ export default function SettingsPage() {
                       try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
                     }
                     localStorage.clear();
-                    alert('Life OS data has been erased.');
+                    alert('Sariling Mundo data has been erased.');
                     window.location.href = '/';
                   } else if (phrase !== null) {
                     alert('Confirmation phrase did not match. Action cancelled.');

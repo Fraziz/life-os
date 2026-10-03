@@ -32,7 +32,7 @@ export const DEFAULT_CALENDAR_EVENTS: CalendarEvent[] = [
     endTime: '11:00',
     allDay: false,
     color: '#a855f7',
-    notes: 'Review life os roadmap milestones.',
+    notes: 'Review Sariling Mundo roadmap milestones.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

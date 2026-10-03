@@ -95,7 +95,7 @@ export default function SearchModal() {
           {query.length < 2 ? (
             <div className={styles.emptyHint}>
               <Search size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
-              <p>Type at least 2 characters to search all of your Life OS.</p>
+              <p>Type at least 2 characters to search all of your Sariling Mundo.</p>
             </div>
           ) : results.length === 0 ? (
             <div className={styles.emptyHint}>
