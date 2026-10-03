@@ -23,6 +23,7 @@ import {
   Eye,
   FileText,
   Clock,
+  CloudSun,
   Sparkles,
   Target,
   FolderKanban,
@@ -2448,7 +2449,7 @@ export default function KnowledgePage() {
                 <div className={styles.linkedBadgesBar}>
                   {linkedDream && (
                     <span className={styles.linkedBadge}>
-                      <Sparkles size={11} /> Dream: {linkedDream.title}
+                      <CloudSun size={11} /> Dream: {linkedDream.title}
                     </span>
                   )}
                   {linkedGoal && (

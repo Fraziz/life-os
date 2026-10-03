@@ -306,7 +306,7 @@ export default function DreamsPage() {
                 <div className={styles.cardBody}>
                   <div className={styles.cardTopRow}>
                     <span className={`${styles.statusBadge} ${statusInfo.className}`}>
-                      <Sparkles size={12} /> {statusInfo.label}
+                      {statusInfo.label}
                     </span>
 
                     <div className={styles.cardActions}>
