@@ -8,6 +8,7 @@ import {
   Sun,
   LogOut,
   Settings,
+  ShieldAlert,
   Compass,
   Pin,
   PinOff,
@@ -80,7 +81,10 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { settings } = useSettings();
-  const { logout } = useAuth();
+  const { user, logout, logoutAllDevices } = useAuth();
+  const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
+  const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
+  const userInitials = (userDisplayName || 'U').slice(0, 2).toUpperCase();
 
   // Hover auto-open / auto-close state (Instagram PC style)
   const [isHovered, setIsHovered] = useState(false);
@@ -352,19 +356,23 @@ export default function Sidebar({
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             role="button"
             tabIndex={0}
-            title={!isExpanded ? settings?.profile?.displayName || 'Aaron Paul' : undefined}
+            title={!isExpanded ? userDisplayName : undefined}
           >
             <div className={styles.userAvatar}>
-              <Sun size={18} className={styles.sunIcon} />
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-accent)' }}>{userInitials}</span>
+              )}
             </div>
 
             {isExpanded && (
               <div className={styles.userInfo}>
                 <span className={styles.userName}>
-                  {settings?.profile?.displayName || 'Aaron Paul'}
+                  {userDisplayName}
                 </span>
                 <span className={styles.userRole}>
-                  {settings?.profile?.name || 'BSIT 3E · SSU'}
+                  {userSubtitle}
                 </span>
               </div>
             )}
@@ -398,7 +406,21 @@ export default function Sidebar({
                 }}
               >
                 <LogOut size={14} />
-                <span>Log out</span>
+                <span>Sign Out</span>
+              </button>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  if (window.confirm('Log out of all devices? This will invalidate all your sessions across all phones and computers.')) {
+                    void logoutAllDevices();
+                  }
+                }}
+              >
+                <ShieldAlert size={14} />
+                <span>Log out all devices</span>
               </button>
             </div>
           )}

@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStore';
 import { AttachmentProvider } from '@/context/AttachmentContext';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase';
 
 export default function AuthGate({
   children,
@@ -13,22 +15,46 @@ export default function AuthGate({
   children: React.ReactNode;
   shell: (content: React.ReactNode) => React.ReactNode;
 }) {
-  const { user, ready, cloudWarning } = useAuth();
+  const { user, ready, cloudWarning, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [hydrateError, setHydrateError] = useState<string | null>(null);
   const syncStarted = useRef(false);
+  const sessionMountedAt = useRef(Date.now());
+
+  const isAuthRoute = pathname === '/login' || pathname === '/register';
 
   // Redirect once auth state is known
   useEffect(() => {
     if (!ready) return;
-    if (!user && pathname !== '/login') {
+    if (!user && !isAuthRoute) {
       router.replace('/login');
     }
-    if (user && pathname === '/login') {
+    if (user && isAuthRoute) {
       router.replace('/');
     }
-  }, [ready, user, pathname, router]);
+  }, [ready, user, isAuthRoute, router]);
+
+  // Session revocation listener (for "Log out of all devices")
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const sessionDocRef = doc(getFirebaseDb(), 'users', user.uid, 'meta', 'session');
+      const unsub = onSnapshot(sessionDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const lastRevocation = Number(data?.lastRevocation) || 0;
+          if (lastRevocation > sessionMountedAt.current) {
+            console.warn('[LifeOS] Session was revoked from another device. Logging out...');
+            void logout();
+          }
+        }
+      });
+      return () => unsub();
+    } catch {
+      // offline/firestore failsafe
+    }
+  }, [user, logout]);
 
   // Cloud sync in background - NEVER blocks rendering
   useEffect(() => {
@@ -72,9 +98,9 @@ export default function AuthGate({
     return () => clearTimeout(timer);
   }, []);
 
-  // If not logged in: only render children on /login page where no dashboard providers are needed
+  // If not logged in: render children on auth pages (/login and /register)
   if (!user) {
-    if (pathname === '/login') {
+    if (isAuthRoute) {
       return <>{children}</>;
     }
     return (

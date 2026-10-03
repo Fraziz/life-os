@@ -4,10 +4,13 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
+  updateProfile,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -26,8 +29,10 @@ interface AuthContextType {
   error: string | null;
   cloudWarning: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  logoutAllDevices: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -138,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, name?: string) => {
     setError(null);
     try {
       const authPromise = createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
@@ -146,6 +151,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error('Connection timed out. Check your internet connection or Firebase setup.')), 10000)
       );
       const cred = await Promise.race([authPromise, timeoutPromise]);
+      if (name && name.trim()) {
+        try {
+          await updateProfile(cred.user, { displayName: name.trim() });
+        } catch {
+          // ignore profile update error
+        }
+      }
       setUser(cred.user);
       try {
         const record = await claimOrVerifyOwner(cred.user);
@@ -161,11 +173,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setError(null);
+    try {
+      const auth = getFirebaseAuth();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const cred = await signInWithPopup(auth, provider);
+      setUser(cred.user);
+      try {
+        const record = await claimOrVerifyOwner(cred.user);
+        setOwner(record);
+        setOwnerExists(true);
+      } catch (e) {
+        setCloudWarning(explainFirebaseError(e));
+      }
+    } catch (err: unknown) {
+      const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      const message = explainFirebaseError(err);
+      setError(message);
+      throw new Error(message);
+    }
+  };
+
+  const clearUserLocalStorage = () => {
+    if (typeof localStorage !== 'undefined') {
+      const toRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('life_os_') && k !== 'life_os_sidebar_collapsed') {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          // ignore
+        }
+      });
+      try {
+        localStorage.removeItem('life_os_active_uid');
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   const logout = async () => {
     setError(null);
-    await signOut(getFirebaseAuth());
-    setUser(null);
-    setOwner(null);
+    try {
+      await signOut(getFirebaseAuth());
+    } finally {
+      clearUserLocalStorage();
+      setUser(null);
+      setOwner(null);
+    }
+  };
+
+  const logoutAllDevices = async () => {
+    setError(null);
+    try {
+      const current = getFirebaseAuth().currentUser;
+      if (current) {
+        const now = Date.now();
+        try {
+          await setDoc(
+            doc(getFirebaseDb(), 'users', current.uid, 'meta', 'session'),
+            {
+              lastRevocation: now,
+              revokedAt: new Date().toISOString(),
+              revokedBy: 'user_action_settings',
+            },
+            { merge: true }
+          );
+        } catch {
+          // ignore firestore error
+        }
+      }
+    } finally {
+      await logout();
+    }
   };
 
   const value = useMemo(
@@ -178,7 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cloudWarning,
       login,
       signup,
+      signInWithGoogle,
       logout,
+      logoutAllDevices,
       clearError: () => setError(null),
     }),
     [user, owner, ready, ownerExists, error, cloudWarning]

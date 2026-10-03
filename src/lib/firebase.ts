@@ -79,8 +79,12 @@ export function explainFirebaseError(error: unknown): string {
   if (code === 'auth/invalid-email') return 'That email does not look valid.';
   if (code === 'auth/weak-password') return 'Use at least 6 characters for the password.';
   if (code === 'auth/email-already-in-use') return 'This email already has an account. Tap Log in.';
+  if (code === 'auth/popup-closed-by-user') return 'Sign in with Google was cancelled.';
+  if (code === 'auth/popup-blocked') return 'Popup was blocked by your browser. Please allow popups for this site.';
+  if (code === 'auth/unauthorized-domain') return 'This domain is not authorized in Firebase Console → Authentication → Settings.';
+  if (code === 'auth/account-exists-with-different-credential') return 'An account already exists with this email. Try logging in with your password.';
   if (code === 'auth/operation-not-allowed') {
-    return 'Turn on Email/Password in Firebase Console → Authentication → Sign-in method.';
+    return 'Turn on this sign-in method in Firebase Console → Authentication → Sign-in method.';
   }
   if (code === 'auth/too-many-requests') return 'Too many tries. Wait a minute, then try once.';
   if (code === 'permission-denied' || message.includes('permission')) {

@@ -23,6 +23,7 @@ import {
   AlertOctagon,
   LogOut,
   Lock,
+  ShieldAlert,
   Eye,
   EyeOff,
   X,
@@ -66,11 +67,35 @@ const WEEKDAYS = [
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
-  const { user, logout } = useAuth();
+  const { user, logout, logoutAllDevices } = useAuth();
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [presetsModalOpen, setPresetsModalOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    const confirmed = window.confirm(
+      'Log out of all devices?\n\nThis will invalidate your sessions on all phones, tablets, and computers. You will need to sign back in on each device.'
+    );
+    if (!confirmed) return;
+    setLoggingOutAll(true);
+    try {
+      await logoutAllDevices();
+    } finally {
+      setLoggingOutAll(false);
+    }
+  };
 
   // AI Connection Test state
   const [showApiKey, setShowApiKey] = useState(false);
@@ -291,23 +316,86 @@ export default function SettingsPage() {
             </div>
             <div className={styles.sectionHeaderContent}>
               <h2 className={styles.sectionTitle}>Account &amp; Session</h2>
-              <p className={styles.sectionDesc}>Authenticated access and multi-device synchronization status.</p>
+              <p className={styles.sectionDesc}>Authenticated access, security, and multi-device session management.</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <span style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', display: 'block' }}>Signed in account</span>
-              <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>{user?.email || 'Local User'}</strong>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Account Details Row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', background: 'var(--color-surface-2)', padding: '14px 16px', borderRadius: 'var(--radius-lg, 10px)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-accent-dim)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', border: '1px solid rgba(99, 102, 241, 0.25)', overflow: 'hidden', flexShrink: 0 }}>
+                  {user?.photoURL ? (
+                    <img src={user.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    (user?.displayName || user?.email || 'U').slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '0.94rem', color: 'var(--color-text)' }}>
+                      {user?.displayName || user?.email?.split('@')[0] || 'Personal User'}
+                    </strong>
+                    <span style={{ fontSize: '0.68rem', padding: '1px 7px', borderRadius: '99px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+                      {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google Account' : 'Email Account'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
+                    {user?.email || 'Signed in locally'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-faint)', fontFamily: 'monospace' }}>
+                  UID: {user?.uid ? `${user.uid.slice(0, 8)}...` : 'local'}
+                </span>
+              </div>
             </div>
-            <button
-              type="button"
-              className={styles.btnDanger}
-              onClick={() => void logout()}
-            >
-              <LogOut size={13} />
-              Sign Out
-            </button>
+
+            {/* Active Devices & Session Management */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                    Active Sessions &amp; Devices
+                  </span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                    Manage signed-in devices across your phones, tablets, and computers.
+                  </span>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: 'var(--color-success)', background: 'rgba(16, 185, 129, 0.08)', padding: '2px 8px', borderRadius: '99px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+                  This Device (Active now)
+                </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={handleLogout}
+                  disabled={loggingOut || loggingOutAll}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <LogOut size={13} />
+                  {loggingOut ? 'Signing out…' : 'Sign Out This Device'}
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.btnDanger}
+                  onClick={handleLogoutAllDevices}
+                  disabled={loggingOut || loggingOutAll}
+                  title="Revoke and log out of all active sessions on all phones, tablets, and PCs"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ShieldAlert size={14} />
+                  {loggingOutAll ? 'Logging out all devices…' : 'Log Out of All Devices'}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 

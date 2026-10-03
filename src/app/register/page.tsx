@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Logo from '@/components/ui/Logo';
-import styles from './page.module.css';
+import styles from '../login/page.module.css';
 
 function GoogleIcon() {
   return (
@@ -31,22 +31,38 @@ function GoogleIcon() {
   );
 }
 
-export default function LoginPage() {
-  const { login, signInWithGoogle, error, clearError } = useAuth();
+export default function RegisterPage() {
+  const { signup, signInWithGoogle, error, clearError } = useAuth();
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
-    setBusy(true);
+    setValidationError(null);
     clearError();
+
+    if (!email.trim() || !password) return;
+
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setValidationError('Passwords do not match. Please verify your password.');
+      return;
+    }
+
+    setBusy(true);
     try {
-      await login(email, password);
+      await signup(email, password, name.trim());
       router.replace('/');
     } catch {
       // Error is set in AuthContext
@@ -57,6 +73,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleBusy(true);
+    setValidationError(null);
     clearError();
     try {
       await signInWithGoogle();
@@ -77,11 +94,11 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.titleGroup}>
-          <h1 className={styles.title}>Welcome back</h1>
-          <p className={styles.subtitle}>Sign in to your private workspace</p>
+          <h1 className={styles.title}>Create your account</h1>
+          <p className={styles.subtitle}>Begin your private, isolated workspace</p>
         </div>
 
-        {/* Google Sign In */}
+        {/* Google Sign Up */}
         <button
           type="button"
           className={styles.googleBtn}
@@ -95,23 +112,40 @@ export default function LoginPage() {
 
         <div className={styles.divider}>
           <div className={styles.dividerLine} />
-          <span className={styles.dividerText}>or continue with email</span>
+          <span className={styles.dividerText}>or register with email</span>
           <div className={styles.dividerLine} />
         </div>
 
-        {error && (
+        {(validationError || error) && (
           <div className={styles.errorAlert} role="alert">
-            <span>{error}</span>
+            <span>{validationError || error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="login-email">
+            <label className={styles.label} htmlFor="register-name">
+              Your Name
+            </label>
+            <input
+              id="register-name"
+              className={styles.input}
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Aaron Paul"
+              disabled={busy || googleBusy}
+              autoFocus
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="register-email">
               Email Address
             </label>
             <input
-              id="login-email"
+              id="register-email"
               className={styles.input}
               type="email"
               autoComplete="email"
@@ -120,24 +154,24 @@ export default function LoginPage() {
               required
               placeholder="you@example.com"
               disabled={busy || googleBusy}
-              autoFocus
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="login-password">
+            <label className={styles.label} htmlFor="register-password">
               Password
             </label>
             <div className={styles.inputWrap}>
               <input
-                id="login-password"
+                id="register-password"
                 className={`${styles.input} ${styles.inputWithIcon}`}
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter your password"
+                minLength={6}
+                placeholder="At least 6 characters"
                 disabled={busy || googleBusy}
               />
               <button
@@ -152,20 +186,38 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="register-confirm-password">
+              Confirm Password
+            </label>
+            <input
+              id="register-confirm-password"
+              className={styles.input}
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+              placeholder="Repeat your password"
+              disabled={busy || googleBusy}
+            />
+          </div>
+
           <button
             type="submit"
             className={styles.submitBtn}
-            disabled={busy || googleBusy || !email || !password}
+            disabled={busy || googleBusy || !email || !password || !confirmPassword}
           >
-            <span>{busy ? 'Signing in…' : 'Sign In'}</span>
+            <span>{busy ? 'Creating account…' : 'Create Account'}</span>
             {!busy && <ArrowRight size={15} />}
           </button>
         </form>
 
         <div className={styles.switchPrompt}>
-          <span>Don&apos;t have an account?</span>
-          <Link href="/register" className={styles.switchLink}>
-            Create one
+          <span>Already have an account?</span>
+          <Link href="/login" className={styles.switchLink}>
+            Sign in
           </Link>
         </div>
       </div>
@@ -173,11 +225,11 @@ export default function LoginPage() {
       <div className={styles.footerTrust}>
         <span className={styles.trustItem}>
           <ShieldCheck size={13} />
-          End-to-end user isolation
+          Unique workspace per user
         </span>
         <span className={styles.trustItem}>
           <Lock size={12} />
-          Encrypted private storage
+          End-to-end encrypted storage
         </span>
       </div>
     </main>
