@@ -1,12 +1,15 @@
 /*  Sidebar Component Styles (Instagram PC Hover Style)
  *
- *  Smooth-hover rules:
- *  - Only `width` animates on the sidebar. Padding never changes between states.
- *  - Every row has a fixed height, and icons sit in fixed boxes, so nothing
- *    moves vertically or horizontally while the sidebar expands.
- *  - Labels stay mounted and simply fade/slide in (opacity + transform only).
- *  - No spring/overshoot easing and no hover transforms that move items
- *    out from under the cursor.
+ *  Smooth-hover & Centered-Rail rules:
+ *  - Symmetrical 14px padding on both sides (left & right).
+ *  - Collapsed rail width is 72px:
+ *    Available inner width = 72px - 14px - 14px = 44px.
+ *  - Every row (logo, next action, nav items, user card) is exactly 44px wide
+ *    when collapsed, centered at x = 36px (14px from left, 14px from right).
+ *  - Active item (.activeItem) highlight is a 44px × 44px rounded square (border-radius: 12px)
+ *    with the icon dead center in the middle of the box and middle of the rail.
+ *  - Only `width` animates when expanding to 248px.
+ *  - Labels fade/slide in smoothly.
  */
 
 .sidebar {
@@ -25,25 +28,18 @@
   flex-direction: column;
   z-index: 50;
   user-select: none;
-  /* Right padding is 4px smaller to account for the reserved scrollbar gutter */
-  padding: 14px 8px 14px 12px;
+  /* Symmetrical 14px left and right padding: 14px + 44px item + 14px = 72px exact center */
+  padding: 14px 14px;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  /* Always reserve scrollbar space so it never pushes content sideways */
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
   transition:
     width var(--sb-duration) var(--sb-ease),
     box-shadow var(--sb-duration) ease;
   will-change: width;
 }
 
-.sidebar:hover {
-  scrollbar-color: var(--color-border) transparent;
-}
-
+/* Subtle overlay scrollbar on hover */
 .sidebar::-webkit-scrollbar {
   width: 4px;
 }
@@ -165,10 +161,16 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 42px;
-  margin-bottom: 14px;
-  padding-left: 8px;
+  justify-content: center;
+  height: 44px;
+  margin-bottom: 12px;
+  width: 100%;
   flex-shrink: 0;
+}
+
+.sidebar.isExpanded .header {
+  justify-content: flex-start;
+  padding-left: 4px;
 }
 
 .brand {
@@ -209,11 +211,13 @@
   border-color: rgba(124, 106, 255, 0.3);
 }
 
-/*  Next Action Button (single element for both states)  */
+/*  Next Action Button  */
 
 .nextActionWrap {
   margin-bottom: 12px;
   width: 100%;
+  display: flex;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -222,10 +226,8 @@
   display: flex;
   align-items: center;
   width: 100%;
-  height: 40px;
-  padding: 0 8px 0 5px;
-  border-radius: 10px;
-  /* Collapsed: looks like a plain nav item (no box) */
+  height: 44px;
+  border-radius: 12px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--color-text-muted);
@@ -242,13 +244,27 @@
     color 0.15s ease;
 }
 
-/* Expanded: a quiet outlined row */
+.sidebar:not(.isExpanded) .nextActionBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.sidebar:not(.isExpanded) .nextActionBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
 .sidebar.isExpanded .nextActionBtn {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 0;
   border-color: var(--color-border);
   color: var(--color-text);
 }
 
-.nextActionBtn:hover,
 .sidebar.isExpanded .nextActionBtn:hover {
   background: var(--color-surface-2);
   border-color: var(--color-border);
@@ -266,9 +282,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
+}
+
+.sidebar.isExpanded .nextActionIconBox {
+  width: 40px;
+  height: 40px;
+  margin-left: 2px;
 }
 
 .nextActionIcon {
@@ -298,7 +320,7 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   width: 100%;
 }
@@ -315,7 +337,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 22px;
+  justify-content: center;
+  height: 18px;
   width: 100%;
 }
 
@@ -333,9 +356,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 22px;
+  transform: translate(-50%, -50%);
+  width: 24px;
   height: 1px;
-  margin-left: -11px;
   background: var(--color-border);
   opacity: 1;
   transition: opacity 0.16s ease;
@@ -350,7 +373,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 22px;
+  height: 18px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -379,37 +402,55 @@
 .sectionItemsList {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
 }
 
 .navItemWrapper {
   position: relative;
   display: flex;
+  justify-content: center;
   width: 100%;
 }
 
-/* Identical geometry in both states: icon never moves */
+/* Navigation Item:
+   In collapsed rail mode: exactly 44px × 44px with 12px border radius,
+   dead center in the 72px rail (14px padding on each side).
+   In expanded mode: expands to 100% width with icon anchored at the same 36px center.
+*/
 .navItem {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   width: 100%;
-  height: 40px;
-  padding: 0 10px 0 6px;
-  border-radius: 10px;
+  height: 44px;
+  border-radius: 12px;
   font-size: 0.86rem;
   font-weight: 500;
   color: var(--color-text-muted);
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
   box-sizing: border-box;
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
+}
+
+.sidebar:not(.isExpanded) .navItem {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.sidebar.isExpanded .navItem {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 0;
+  border-radius: 10px;
+  gap: 8px;
 }
 
 .navItem:hover {
@@ -421,8 +462,12 @@
   background-color: var(--color-surface-3, var(--color-surface-2));
 }
 
+/* Active / clicked nav item:
+   Collapsed: perfectly centered 44px × 44px box with icon in the dead middle.
+   Expanded: full row highlight.
+*/
 .activeItem {
-  background-color: var(--color-surface-3, rgba(99, 102, 241, 0.12));
+  background-color: var(--color-surface-3, rgba(99, 102, 241, 0.14));
   color: var(--color-accent, #818cf8);
   font-weight: 600;
 }
@@ -440,12 +485,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
 }
 
+.sidebar.isExpanded .navIconBox {
+  width: 40px;
+  height: 40px;
+  margin-left: 2px;
+}
+
 .navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   transition: color 0.15s ease;
 }
@@ -458,16 +512,44 @@
   letter-spacing: -0.01em;
 }
 
-/* Tooltip (only rendered in collapsed rail, e.g. keyboard focus) */
+/* Tooltip (only active in collapsed rail on desktop hover) */
 .navTooltip {
   display: none;
+}
+
+@media (min-width: 1025px) {
+  .sidebar:not(.isExpanded) .navTooltip {
+    display: block;
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: var(--color-surface-3, #1e1e24);
+    color: var(--color-text, #fff);
+    padding: 5px 11px;
+    border-radius: 7px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--color-border);
+    z-index: 100;
+  }
+
+  .sidebar:not(.isExpanded) .navItem:hover .navTooltip,
+  .sidebar:not(.isExpanded) .nextActionBtn:hover .navTooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 /*  Subtle, Formal Inspiration Quote  */
 
 .sidebarQuote {
-  /* Fixed width so text never re-wraps (and changes height) while width animates */
-  width: calc(var(--sidebar-width, 248px) - 25px);
+  width: calc(var(--sidebar-width, 248px) - 28px);
   flex-shrink: 0;
   margin: 14px 0 10px;
   padding: 8px 10px;
@@ -497,21 +579,36 @@
   padding-top: 10px;
   border-top: 1px solid var(--color-border-subtle);
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   flex-shrink: 0;
 }
 
 .userCard {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 44px;
-  padding: 0 8px 0 7px;
-  border-radius: 10px;
-  cursor: pointer;
   width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
   overflow: hidden;
   box-sizing: border-box;
   transition: background-color 0.15s ease;
+}
+
+.sidebar:not(.isExpanded) .userCard {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.sidebar.isExpanded .userCard {
+  width: 100%;
+  padding: 0 10px 0 4px;
+  gap: 10px;
 }
 
 .userCard:hover {
