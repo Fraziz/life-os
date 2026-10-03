@@ -225,31 +225,40 @@
   height: 40px;
   padding: 0 8px 0 5px;
   border-radius: 10px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 0.82rem;
-  font-weight: 600;
+  /* Collapsed: looks like a plain nav item (no box) */
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
   box-sizing: border-box;
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
+    border-color 0.2s ease,
     color 0.15s ease;
 }
 
-.nextActionBtn:hover {
+/* Expanded: a quiet outlined row */
+.sidebar.isExpanded .nextActionBtn {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.nextActionBtn:hover,
+.sidebar.isExpanded .nextActionBtn:hover {
   background: var(--color-surface-2);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .nextActionLeft {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -263,7 +272,7 @@
 }
 
 .nextActionIcon {
-  color: var(--color-accent);
+  color: currentColor;
   flex-shrink: 0;
 }
 
@@ -647,14 +656,17 @@
 }
 
 :global([data-theme='nature']) .nextActionBtn {
-  background: rgba(52, 211, 153, 0.14);
-  color: #6ee7b7;
+  color: #bbf7d0;
+}
+
+:global([data-theme='nature']) .sidebar.isExpanded .nextActionBtn {
   border-color: rgba(52, 211, 153, 0.28);
+  color: #d1fae5;
 }
 
 :global([data-theme='nature']) .nextActionBtn:hover {
-  background: rgba(52, 211, 153, 0.25);
-  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.35);
 }
 
 :global([data-theme='nature']) .sectionTitle {
