@@ -25,19 +25,44 @@
   flex-direction: column;
   z-index: 50;
   user-select: none;
-  padding: 14px 12px;
+  /* Right padding is 4px smaller to account for the reserved scrollbar gutter */
+  padding: 14px 8px 14px 12px;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  scrollbar-width: none;
+  /* Always reserve scrollbar space so it never pushes content sideways */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   transition:
     width var(--sb-duration) var(--sb-ease),
     box-shadow var(--sb-duration) ease;
   will-change: width;
 }
 
+.sidebar:hover {
+  scrollbar-color: var(--color-border) transparent;
+}
+
 .sidebar::-webkit-scrollbar {
-  width: 0;
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-faint);
 }
 
 /* Expanded state: pinned, hovered on desktop, or mobile drawer */
