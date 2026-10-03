@@ -7,7 +7,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
-import { extractTextFromFile } from '@/utils/fileImporter';
+import { extractTextFromFile, cleanAndFormatPastedText } from '@/utils/fileImporter';
 import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus, QuizQuestionItem } from '@/types';
 import {
   BookOpen,
@@ -43,6 +43,7 @@ import {
   Underline,
   Quote,
   Code,
+  ClipboardPaste,
   List,
   ListOrdered,
   Minus,
@@ -193,6 +194,7 @@ function MarkdownToolbar({
   onInsertTemplate,
   onAiFormat,
   isAiFormatting,
+  onCleanBookFormat,
 }: {
   onFormat: (cmd: string) => void;
   onHighlight: (colorName: string, forceApply?: boolean) => void;
@@ -202,6 +204,7 @@ function MarkdownToolbar({
   onInsertTemplate: () => void;
   onAiFormat: () => void;
   isAiFormatting: boolean;
+  onCleanBookFormat?: () => void;
 }) {
   const activeColorDef = HIGHLIGHT_COLORS.find((c) => c.name === activeColor) ?? HIGHLIGHT_COLORS[0];
 
@@ -462,6 +465,19 @@ function MarkdownToolbar({
           {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Sparkles size={11} />}
           <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
         </button>
+
+        {/* Clean Book Format Action in toolbar */}
+        {onCleanBookFormat && (
+          <button
+            type="button"
+            className={styles.toolbarBtn}
+            onClick={onCleanBookFormat}
+            title="Clean & Format as Book: automatically structures text, paragraphs, and headings into a publication-ready Book format"
+          >
+            <BookMarked size={11} style={{ marginRight: 3, color: 'var(--color-accent)' }} />
+            <span>Format as Book</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -522,6 +538,7 @@ export default function KnowledgePage() {
 
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book' | 'quiz'>('book');
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
@@ -561,6 +578,11 @@ export default function KnowledgePage() {
   const isInternalChange = useRef(false);
   const cachedSelectionRangeRef = useRef<Range | null>(null);
   const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Smart Paste as Book states
+  const [pasteModalOpen, setPasteModalOpen] = useState(false);
+  const [pasteModalText, setPasteModalText] = useState('');
+  const [pasteToast, setPasteToast] = useState<string | null>(null);
 
   // Floating highlight & format toolbar when selecting text (mouse drag, long-press, touch selection)
   useEffect(() => {
@@ -694,6 +716,169 @@ export default function KnowledgePage() {
     }
   };
 
+  // Helper to format raw text and create/display as Book
+  const applyPastedTextAsBook = (rawText: string) => {
+    if (!rawText.trim()) return;
+    const formatted = cleanAndFormatPastedText(rawText);
+    const newDoc = addDoc({
+      title: formatted.title,
+      content: formatted.markdown,
+      status: 'active',
+      tags: ['book', 'notes'],
+    });
+
+    setFTitle(formatted.title);
+    setFContent(formatted.markdown);
+    setSelectedId(newDoc.id);
+    setIsCreating(false);
+    setEditorMode('book');
+    setMobileTab('editor');
+    setPasteToast(`Formatted "${formatted.title}" into Book layout!`);
+    setTimeout(() => setPasteToast(null), 3500);
+  };
+
+  // Click "Paste to Book" from header or empty canvas
+  const handlePasteAsBookDoc = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const clipText = await navigator.clipboard.readText();
+        if (clipText && clipText.trim().length > 0) {
+          applyPastedTextAsBook(clipText);
+          return;
+        }
+      }
+    } catch {
+      // clipboard read permission denied or unavailable
+    }
+    setPasteModalText('');
+    setPasteModalOpen(true);
+  };
+
+  // Append or insert pasted text into the currently active Book
+  const handlePasteIntoCurrentBook = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const clipText = await navigator.clipboard.readText();
+        if (clipText && clipText.trim().length > 0) {
+          appendPastedTextToCurrentBook(clipText);
+          return;
+        }
+      }
+    } catch {
+      // clipboard read permission denied
+    }
+    setPasteModalText('');
+    setPasteModalOpen(true);
+  };
+
+  const appendPastedTextToCurrentBook = (rawText: string) => {
+    if (!rawText.trim()) return;
+    const formatted = cleanAndFormatPastedText(rawText, undefined, fTitle || selectedDoc?.title);
+    const existing = fContent || selectedDoc?.content || '';
+    const updatedContent = existing.trim()
+      ? `${existing.trim()}\n\n---\n\n${formatted.markdown.replace(/^#\s+.+\n+/, '')}`
+      : formatted.markdown;
+
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, {
+        content: updatedContent,
+        title: (!fTitle || fTitle === 'Untitled') ? formatted.title : fTitle,
+      });
+    }
+
+    setFContent(updatedContent);
+    if ((!fTitle || fTitle === 'Untitled') && formatted.title) {
+      setFTitle(formatted.title);
+    }
+    setEditorMode('book');
+    setPasteToast('Pasted & styled into clean Book layout!');
+    setTimeout(() => setPasteToast(null), 3500);
+  };
+
+  // Format existing text in active document into clean Book format
+  const handleFormatCurrentAsBook = () => {
+    const textToClean = fContent || editorRef.current?.innerText || '';
+    if (!textToClean.trim()) return;
+
+    const formatted = cleanAndFormatPastedText(textToClean, undefined, fTitle || selectedDoc?.title);
+    setFTitle(formatted.title);
+    setFContent(formatted.markdown);
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, {
+        title: formatted.title,
+        content: formatted.markdown,
+      });
+    }
+    setEditorMode('book');
+    setPasteToast('Re-formatted into clean Book layout!');
+    setTimeout(() => setPasteToast(null), 3500);
+  };
+
+  // Smart paste inside the contentEditable rich editor: intercepts raw paste,
+  // sanitizes and formats it into clean Book format, and inserts it cleanly
+  const handleSmartPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const plainText = e.clipboardData.getData('text/plain');
+    const htmlText = e.clipboardData.getData('text/html');
+
+    if (!plainText && !htmlText) return;
+
+    const formatted = cleanAndFormatPastedText(plainText, htmlText, fTitle);
+
+    if ((!fTitle || fTitle === 'Untitled' || fTitle.trim() === '') && formatted.title) {
+      setFTitle(formatted.title);
+    }
+
+    const cleanHtml = renderMarkdown(formatted.markdown);
+
+    // Insert clean HTML at current cursor selection
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const div = document.createElement('div');
+      div.innerHTML = cleanHtml;
+      const frag = document.createDocumentFragment();
+      let node: ChildNode | null;
+      let lastNode: ChildNode | null = null;
+      while ((node = div.firstChild)) {
+        lastNode = frag.appendChild(node);
+      }
+      range.insertNode(frag);
+      if (lastNode) {
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    } else if (editorRef.current) {
+      editorRef.current.innerHTML = cleanHtml;
+    }
+
+    if (editorRef.current) {
+      setFContent(editorRef.current.innerHTML);
+    }
+    setPasteToast('Pasted in clean Book format!');
+    setTimeout(() => setPasteToast(null), 3000);
+  };
+
+  // Listen for Ctrl+V while reading in Book Mode so user can directly paste into book
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && editorMode === 'book') {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.getAttribute('contenteditable') === 'true') {
+          return;
+        }
+        e.preventDefault();
+        handlePasteIntoCurrentBook();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editorMode, selectedDoc, fTitle, fContent]);
+
+
   // Select doc from URL param on initial mount, or fallback to first doc
   useEffect(() => {
     if (!isLoaded || docs.length === 0) return;
@@ -749,8 +934,6 @@ export default function KnowledgePage() {
       // ignore
     }
   };
-
-  const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
 
   // Helper to convert content into rich HTML for live editing and book reading
   const getRichHtml = (content: string) => {
@@ -1719,6 +1902,13 @@ export default function KnowledgePage() {
           />
           <button
             className={styles.btnSecondary}
+            onClick={handlePasteAsBookDoc}
+            title="Paste text from clipboard and auto-format into clean Book design"
+          >
+            <ClipboardPaste size={14} /> Paste Book
+          </button>
+          <button
+            className={styles.btnSecondary}
             onClick={() => importFileRef.current?.click()}
             disabled={isImporting}
             title="Import PDF or text document and extract text automatically"
@@ -1962,7 +2152,15 @@ export default function KnowledgePage() {
               <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                 Select a document, create a new entry, or import a PDF
               </p>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  className={styles.btnSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={handlePasteAsBookDoc}
+                  title="Paste text from clipboard and auto-format into clean Book design"
+                >
+                  <ClipboardPaste size={14} /> Paste Book Text
+                </button>
                 <button
                   className={styles.btnSecondary}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -2310,6 +2508,7 @@ export default function KnowledgePage() {
                   onInsertTemplate={handleInsertTemplate}
                   onAiFormat={handleAiFormat}
                   isAiFormatting={isAiFormatting}
+                  onCleanBookFormat={handleFormatCurrentAsBook}
                 />
               )}
 
@@ -2322,6 +2521,7 @@ export default function KnowledgePage() {
                   className={styles.richEditor}
                   data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
                   dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                  onPaste={handleSmartPaste}
                   onInput={() => {
                     if (editorRef.current && !isInternalChange.current) {
                       setFContent(editorRef.current.innerHTML);
@@ -2394,6 +2594,14 @@ export default function KnowledgePage() {
                         title="Remove highlight from selection"
                       >
                         <Eraser size={12} /> Clear
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.bookBtnSmall}
+                        onClick={handlePasteIntoCurrentBook}
+                        title="Paste clipboard text and auto-format into clean Book design"
+                      >
+                        <ClipboardPaste size={12} /> Paste into Book
                       </button>
                     </div>
                   </div>
@@ -2912,6 +3120,72 @@ export default function KnowledgePage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Smart Paste into Book Modal (fallback when clipboard API is restricted or for manual pasting) */}
+      {pasteModalOpen && (
+        <div className={styles.pasteModalOverlay} onClick={() => setPasteModalOpen(false)}>
+          <div className={styles.pasteModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.pasteModalHeader}>
+              <div className={styles.pasteModalTitle}>
+                <BookMarked size={20} style={{ color: 'var(--color-accent)' }} />
+                <span>Paste & Format as Book</span>
+              </div>
+              <button
+                type="button"
+                className={styles.docActionBtn}
+                onClick={() => setPasteModalOpen(false)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              Paste raw text from a website, PDF, or document. It will automatically clean line breaks, reconstruct headings, format lists, and apply the elegant Book design.
+            </p>
+            <textarea
+              className={styles.pasteModalTextarea}
+              placeholder="Paste your text here (Ctrl+V)..."
+              value={pasteModalText}
+              onChange={(e) => setPasteModalText(e.target.value)}
+              autoFocus
+            />
+            <div className={styles.pasteModalActions}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setPasteModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={!pasteModalText.trim()}
+                onClick={() => {
+                  const txt = pasteModalText;
+                  setPasteModalOpen(false);
+                  setPasteModalText('');
+                  if (editorMode === 'book' && selectedDoc) {
+                    appendPastedTextToCurrentBook(txt);
+                  } else {
+                    applyPastedTextAsBook(txt);
+                  }
+                }}
+              >
+                <BookMarked size={14} /> Format & Open as Book
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification for Smart Paste & Book Operations */}
+      {pasteToast && (
+        <div className={styles.pasteToast}>
+          <Check size={16} style={{ color: 'var(--color-accent)' }} />
+          <span>{pasteToast}</span>
         </div>
       )}
     </div>

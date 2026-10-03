@@ -578,3 +578,207 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     content: `# ${title}\n\n> 📁 **Attached Document:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)\n\n## Key Notes & Takeaways\n\n`,
   };
 }
+
+/**
+ * Transforms pasted text or HTML (from websites, PDFs, Word, emails, notes)
+ * into clean, publication-ready Book format markdown with structured headings,
+ * flowing paragraphs, and clean typography.
+ */
+export function cleanAndFormatPastedText(
+  plainText: string,
+  htmlText?: string,
+  fallbackTitle?: string
+): { title: string; markdown: string } {
+  let sourceText = plainText || '';
+
+  // 1. If HTML is available, attempt to extract clean structured markdown from it
+  if (htmlText && typeof DOMParser !== 'undefined') {
+    try {
+      const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+      doc.querySelectorAll('script, style, noscript, svg, nav, footer, iframe, link').forEach((el) => el.remove());
+
+      const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre, hr');
+      if (elements.length > 0) {
+        const parts: string[] = [];
+        elements.forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+          const t = el.textContent?.trim() || '';
+          if (!t && tag !== 'hr') return;
+
+          if (tag === 'h1') parts.push(`# ${t}`);
+          else if (tag === 'h2') parts.push(`## ${t}`);
+          else if (tag === 'h3') parts.push(`### ${t}`);
+          else if (tag === 'h4' || tag === 'h5' || tag === 'h6') parts.push(`#### ${t}`);
+          else if (tag === 'p') parts.push(t);
+          else if (tag === 'blockquote') parts.push(`> ${t}`);
+          else if (tag === 'pre') parts.push(`\`\`\`\n${t}\n\`\`\``);
+          else if (tag === 'hr') parts.push('---');
+          else if (tag === 'ul' || tag === 'ol') {
+            const listItems = Array.from(el.querySelectorAll('li')).map((li, idx) => {
+              const liText = li.textContent?.trim() || '';
+              return tag === 'ol' ? `${idx + 1}. ${liText}` : `- ${liText}`;
+            });
+            if (listItems.length > 0) parts.push(listItems.join('\n'));
+          }
+        });
+
+        if (parts.length > 0) {
+          sourceText = parts.join('\n\n');
+        }
+      }
+    } catch {
+      // fallback to plainText
+    }
+  }
+
+  if (!sourceText.trim()) {
+    return { title: fallbackTitle || 'Untitled Note', markdown: '' };
+  }
+
+  // 2. Un-break artificial line wraps from PDFs / copied text
+  // Fix hyphenated word breaks: "devel-\n opment" -> "development"
+  const clean = sourceText
+    .replace(/\r\n|\r/g, '\n')
+    .replace(/\f/g, '\n\n')
+    .replace(/(\b[A-Za-z]{2,})-\s*\n\s*([a-z]{2,}\b)/g, '$1$2')
+    .replace(/[^\S\n]{2,}/g, ' ')
+    .trim();
+
+  // Split into rough blocks
+  const rawBlocks = clean.split(/\n{2,}/);
+  const formattedBlocks: string[] = [];
+  let extractedTitle = '';
+
+  const titleCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((w) => (w.length > 2 || w === 'a' || w === 'an' || w === 'the' ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(' ');
+  };
+
+  for (let bIdx = 0; bIdx < rawBlocks.length; bIdx++) {
+    const block = rawBlocks[bIdx].trim();
+    if (!block) continue;
+
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) continue;
+
+    // If first block has a short line without period, treat as document title
+    if (bIdx === 0 && !extractedTitle) {
+      const firstLine = lines[0];
+      if (firstLine.startsWith('# ')) {
+        extractedTitle = firstLine.replace(/^#+\s*/, '').trim();
+      } else if (
+        firstLine.length >= 3 &&
+        firstLine.length < 80 &&
+        !firstLine.endsWith('.') &&
+        !firstLine.includes(':') &&
+        (firstLine === firstLine.toUpperCase() || lines.length === 1)
+      ) {
+        extractedTitle = titleCase(firstLine);
+        if (lines.length > 1) {
+          formattedBlocks.push(lines.slice(1).join(' '));
+        }
+        continue;
+      }
+    }
+
+    // Check if it's already markdown
+    const isMarkdown = /^#{1,4}\s+/.test(lines[0]);
+    if (isMarkdown) {
+      formattedBlocks.push(lines.join('\n'));
+      continue;
+    }
+
+    // Check if numbered heading like "1. Product Formulation", "Chapter 2 - Target Market"
+    const numHeadingMatch = lines[0].match(/^(\d+)[\.\)]\s+(.+)$/);
+    if (numHeadingMatch && lines[0].length < 90) {
+      const num = numHeadingMatch[1];
+      const heading = titleCase(numHeadingMatch[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
+      const rest = lines.slice(1).join(' ').trim();
+      formattedBlocks.push(`## ${num}. ${heading}`);
+      if (rest) formattedBlocks.push(rest);
+      continue;
+    }
+
+    // Check for short ALL-CAPS title (e.g. "TARGET CUSTOMERS", "FINANCIAL OVERVIEW")
+    if (
+      lines[0].length > 3 &&
+      lines[0].length < 75 &&
+      lines[0] === lines[0].toUpperCase() &&
+      /[A-Z]/.test(lines[0]) &&
+      !lines[0].includes(':')
+    ) {
+      const heading = titleCase(lines[0]);
+      const rest = lines.slice(1).join(' ').trim();
+      formattedBlocks.push(`## ${heading}`);
+      if (rest) formattedBlocks.push(rest);
+      continue;
+    }
+
+    // Check if lines are a bulleted list
+    const isBulletList = lines.every((l) => /^([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(l));
+    if (isBulletList) {
+      const bulletItems = lines.map((l) => {
+        const cleanItem = l.replace(/^([•\-*–—▪\u2022]|\d+[\.\)])\s+/, '').trim();
+        return `- ${cleanItem}`;
+      });
+      formattedBlocks.push(bulletItems.join('\n'));
+      continue;
+    }
+
+    // Check for definition terms: "COST: $15.50", "PACKAGING: Biodegradable pouch"
+    const isDefinitionBlock = lines.every((l) => /^([A-Z\s]{2,25}):\s+(.+)$/.test(l));
+    if (isDefinitionBlock) {
+      const defItems = lines.map((l) => {
+        const m = l.match(/^([A-Z\s]{2,25}):\s+(.+)$/);
+        return m ? `**${titleCase(m[1].trim())}:** ${m[2].trim()}` : l;
+      });
+      formattedBlocks.push(defItems.join('\n\n'));
+      continue;
+    }
+
+    // Standard paragraph: join hard-wrapped lines into a flowing, readable paragraph
+    let para = '';
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const defMatch = line.match(/^([A-Za-z\s]{2,25}):\s+(.+)$/);
+      if (defMatch && line.length < 90) {
+        if (para) {
+          formattedBlocks.push(para);
+          para = '';
+        }
+        formattedBlocks.push(`**${defMatch[1].trim()}:** ${defMatch[2].trim()}`);
+        continue;
+      }
+
+      if (!para) {
+        para = line;
+      } else {
+        if (para.endsWith('-')) {
+          para = para.slice(0, -1) + line;
+        } else {
+          para += ' ' + line;
+        }
+      }
+    }
+    if (para) {
+      formattedBlocks.push(para);
+    }
+  }
+
+  const finalTitle = extractedTitle || fallbackTitle || 'Untitled Note';
+  const body = formattedBlocks.join('\n\n').trim();
+
+  let finalMarkdown = body;
+  if (!finalMarkdown.startsWith('# ')) {
+    finalMarkdown = `# ${finalTitle}\n\n${finalMarkdown}`;
+  }
+
+  return {
+    title: finalTitle,
+    markdown: finalMarkdown,
+  };
+}
+
