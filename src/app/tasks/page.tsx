@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -282,7 +282,7 @@ export default function TasksPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Tasks & Actions</h1>
@@ -296,7 +296,7 @@ export default function TasksPage() {
         </button>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {/* â”€â”€ Quick Add Bar â”€â”€ */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Plus size={20} style={{ color: 'var(--color-accent)' }} />
@@ -309,7 +309,7 @@ export default function TasksPage() {
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            Quick Add â†µ
           </button>
         </div>
 
@@ -358,7 +358,7 @@ export default function TasksPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.searchWrap}>
@@ -418,7 +418,7 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* ── Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) ── */}
+      {/* â”€â”€ Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) â”€â”€ */}
       <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
         <button
           type="button"
@@ -457,7 +457,7 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* ── Kanban Grid: Backlog | To Do | Doing | Done ── */}
+      {/* â”€â”€ Kanban Grid: Backlog | To Do | Doing | Done â”€â”€ */}
       <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
@@ -558,7 +558,7 @@ export default function TasksPage() {
                                     title="Toggle subtask checklist"
                                   >
                                     <span>{completedSubs}/{task.subtasks.length} steps</span>
-                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? '▲' : '▼'}</span>
+                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? 'â–²' : 'â–¼'}</span>
                                   </button>
                                 )}
                               </div>
@@ -573,7 +573,7 @@ export default function TasksPage() {
                           </span>
                         </div>
 
-                        {/* ── Subtask Progress Mini-bar (Interactive Toggle) ── */}
+                        {/* â”€â”€ Subtask Progress Mini-bar (Interactive Toggle) â”€â”€ */}
                         {task.subtasks.length > 0 && (
                           <button
                             type="button"
@@ -587,7 +587,7 @@ export default function TasksPage() {
                                 <span>Steps Breakdown</span>
                               </span>
                               <span style={{ fontWeight: 600 }}>
-                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
+                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? 'â–²' : 'â–¼'}
                               </span>
                             </div>
                             <div className={styles.subtaskMiniBar}>
@@ -599,7 +599,7 @@ export default function TasksPage() {
                           </button>
                         )}
 
-                        {/* ── Subtasks Section (Collapsible) ── */}
+                        {/* â”€â”€ Subtasks Section (Collapsible) â”€â”€ */}
                         {task.subtasks.length > 0 && expandedTasksMap[task.id] && (
                           <div className={styles.subtasksBox}>
                             {task.subtasks.map((sub) => (
@@ -640,7 +640,7 @@ export default function TasksPage() {
                           </div>
                         )}
 
-                        {/* ── Inline Subtask & Breakdown Buttons ── */}
+                        {/* â”€â”€ Inline Subtask & Breakdown Buttons â”€â”€ */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           {activeSubtaskTaskId === task.id ? (
                             <form
@@ -699,7 +699,7 @@ export default function TasksPage() {
                           </button>
                         </div>
 
-                        {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
+                        {/* â”€â”€ Hierarchy Breadcrumb: Goal â€º Milestone â€º Project â”€â”€ */}
                         {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
                           <div className={styles.tagsRow}>
                             {/* Breadcrumb chain */}
@@ -711,7 +711,7 @@ export default function TasksPage() {
                                   </span>
                                 )}
                                 {parentGoal && parentMilestone && (
-                                  <span className={styles.breadcrumbArrow}>›</span>
+                                  <span className={styles.breadcrumbArrow}>â€º</span>
                                 )}
                                 {parentMilestone && (
                                   <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
@@ -719,7 +719,7 @@ export default function TasksPage() {
                                   </span>
                                 )}
                                 {(parentGoal || parentMilestone) && parentProject && (
-                                  <span className={styles.breadcrumbArrow}>›</span>
+                                  <span className={styles.breadcrumbArrow}>â€º</span>
                                 )}
                                 {parentProject && (
                                   <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
@@ -736,7 +736,7 @@ export default function TasksPage() {
                           </div>
                         )}
 
-                        {/* ── Card Footer ── */}
+                        {/* â”€â”€ Card Footer â”€â”€ */}
                         <div className={styles.taskFooter}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {task.dueDate ? (
@@ -748,7 +748,7 @@ export default function TasksPage() {
                                 type="button"
                                 style={{
                                   background: 'transparent',
-                                  border: '1px dashed var(--color-border)',
+                                  border: '1px solid var(--color-border)',
                                   borderRadius: 'var(--radius-sm)',
                                   padding: '2px 6px',
                                   color: 'var(--color-text-faint)',
@@ -788,7 +788,7 @@ export default function TasksPage() {
                                 }}
                                 title="Move left"
                               >
-                                ←
+                                â†
                               </button>
                             )}
 
@@ -806,7 +806,7 @@ export default function TasksPage() {
                                 }}
                                 title="Move right"
                               >
-                                →
+                                â†’
                               </button>
                             )}
 
@@ -844,7 +844,7 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* ── Modal Dialog for Full Edit / Create ── */}
+      {/* â”€â”€ Modal Dialog for Full Edit / Create â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -987,7 +987,7 @@ export default function TasksPage() {
                 />
               </div>
 
-              {/* ── Color Accent Picker ── */}
+              {/* â”€â”€ Color Accent Picker â”€â”€ */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Card Accent Color (Optional)</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
@@ -1050,7 +1050,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* ── Manual Task Breakdown Modal ── */}
+      {/* â”€â”€ Manual Task Breakdown Modal â”€â”€ */}
       {breakdownModalOpen && breakdownTargetTask && (
         <div className={styles.modalOverlay} onClick={() => setBreakdownModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>

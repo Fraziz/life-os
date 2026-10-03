@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type MuscleGroup =
   | 'Chest'
@@ -86,7 +86,7 @@ interface WorkoutSchedule {
   isRestDay: boolean;
 }
 
-// ── Preset Exercise Library ────────────────────────────────────────────────────
+// â”€â”€ Preset Exercise Library â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const EXERCISE_LIBRARY: { name: string; muscle: MuscleGroup; equipment: Equipment; defaultSets: number; defaultReps: number; defaultDuration?: number }[] = [
   // Chest
@@ -202,7 +202,7 @@ function muscleGroupIcon(mg: MuscleGroup) {
   }
 }
 
-// ── Main Workout Page ─────────────────────────────────────────────────────────
+// â”€â”€ Main Workout Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function WorkoutPage() {
   const { goals, addGoal, updateGoalProgress } = useGoals();
@@ -331,7 +331,7 @@ export default function WorkoutPage() {
     localStorage.setItem(SCHEDULE_KEY, JSON.stringify(data));
   }, []);
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
+  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const todayStr = getToday();
   const todayDow = getTodayDow();
@@ -350,7 +350,7 @@ export default function WorkoutPage() {
   // Total workouts ever
   const totalCompleted = sessions.filter((s) => s.completed).length;
 
-  // Total volume this week (sets × reps)
+  // Total volume this week (sets Ã— reps)
   const weeklyVolume = sessions
     .filter((s) => {
       const d = new Date(s.date);
@@ -362,7 +362,7 @@ export default function WorkoutPage() {
       }, 0);
     }, 0);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleCreateSession = () => {
     if (!newSessionName.trim()) return;
@@ -564,7 +564,7 @@ export default function WorkoutPage() {
     persistSchedule(updated);
   };
 
-  // ── Filtered library ─────────────────────────────────────────────────────────
+  // â”€â”€ Filtered library â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const filteredLibrary = EXERCISE_LIBRARY.filter((ex) => {
     if (libraryFilter !== 'All' && ex.muscle !== libraryFilter) return false;
@@ -579,7 +579,7 @@ export default function WorkoutPage() {
     return true;
   });
 
-  // ── Weekly Calendar ───────────────────────────────────────────────────────────
+  // â”€â”€ Weekly Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const getWeekDates = () => {
     const now = new Date();
@@ -595,7 +595,7 @@ export default function WorkoutPage() {
 
   const weekDates = getWeekDates();
 
-  // ── Session progress ──────────────────────────────────────────────────────────
+  // â”€â”€ Session progress â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const getSessionProgress = (session: WorkoutSession) => {
     const totalSets = session.exercises.reduce((a, ex) => a + ex.sets.length, 0);
@@ -603,7 +603,7 @@ export default function WorkoutPage() {
     return { totalSets, doneSets, pct: totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0 };
   };
 
-  // ── Render helpers ────────────────────────────────────────────────────────────
+  // â”€â”€ Render helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const renderExerciseCard = (session: WorkoutSession, ex: WorkoutExercise) => {
     const doneCount = ex.sets.filter((s) => s.completed).length;
@@ -668,7 +668,7 @@ export default function WorkoutPage() {
                 value={set.weight ?? ''}
                 min={0}
                 step={0.5}
-                placeholder="—"
+                placeholder="â€”"
                 onChange={(e) => handleUpdateSetWeight(session.id, ex.id, i, parseFloat(e.target.value) || 0)}
               />
               <button
@@ -748,7 +748,7 @@ export default function WorkoutPage() {
           <div className={styles.progressBarTrack}>
             <div className={styles.progressBarFill} style={{ width: `${pct}%` }} />
           </div>
-          <span className={styles.progressLabel}>{doneSets}/{totalSets} sets · {pct}%</span>
+          <span className={styles.progressLabel}>{doneSets}/{totalSets} sets Â· {pct}%</span>
         </div>
 
         {/* Exercises */}
@@ -775,7 +775,7 @@ export default function WorkoutPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Page Header ── */}
+      {/* â”€â”€ Page Header â”€â”€ */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleRow}>
           <Dumbbell size={22} strokeWidth={1.8} className={styles.pageIcon} />
@@ -793,7 +793,7 @@ export default function WorkoutPage() {
         </button>
       </div>
 
-      {/* ── Body Goal & Weight Target Progress ── */}
+      {/* â”€â”€ Body Goal & Weight Target Progress â”€â”€ */}
       <div style={{
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
@@ -887,7 +887,7 @@ export default function WorkoutPage() {
         {showGoalConfig && (
           <div style={{
             background: 'var(--color-surface-2)',
-            border: '1px dashed var(--color-accent)',
+            border: '1px solid var(--color-accent)',
             borderRadius: '10px',
             padding: '12px 14px',
             display: 'flex',
@@ -929,7 +929,7 @@ export default function WorkoutPage() {
                     maxWidth: '240px'
                   }}
                 >
-                  <option value="auto">⚡ Auto-detect Fitness Goal</option>
+                  <option value="auto">âš¡ Auto-detect Fitness Goal</option>
                   {goals.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.title}
@@ -956,7 +956,7 @@ export default function WorkoutPage() {
               </button>
             </div>
             <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0 }}>
-              💡 Whenever you change your Current Weight, your connected Goal automatically receives real-time progress percentage updates!
+              ðŸ’¡ Whenever you change your Current Weight, your connected Goal automatically receives real-time progress percentage updates!
             </p>
           </div>
         )}
@@ -983,7 +983,7 @@ export default function WorkoutPage() {
         </div>
       </div>
 
-      {/* ── Weekly Stats Bar ── */}
+      {/* â”€â”€ Weekly Stats Bar â”€â”€ */}
       <div className={styles.statsBar}>
         <div className={styles.statCard}>
           <Flame size={18} className={styles.statIcon} style={{ color: '#f97316' }} />
@@ -1009,7 +1009,7 @@ export default function WorkoutPage() {
         </div>
       </div>
 
-      {/* ── Weekly Calendar Strip ── */}
+      {/* â”€â”€ Weekly Calendar Strip â”€â”€ */}
       <div className={styles.weekStrip}>
         {weekDates.map(({ label, dayNum, isToday, hasSession, dateStr, dow }) => {
           const sched = schedule[dow];
@@ -1039,7 +1039,7 @@ export default function WorkoutPage() {
         })}
       </div>
 
-      {/* ── Tabs ── */}
+      {/* â”€â”€ Tabs â”€â”€ */}
       <div className={styles.tabs}>
         {(['today', 'log', 'schedule', 'library'] as const).map((tab) => (
           <button
@@ -1057,7 +1057,7 @@ export default function WorkoutPage() {
         ))}
       </div>
 
-      {/* ── Tab Content ── */}
+      {/* â”€â”€ Tab Content â”€â”€ */}
       <div className={styles.tabContent}>
 
         {/* TODAY TAB */}
@@ -1191,7 +1191,7 @@ export default function WorkoutPage() {
           <div className={styles.libraryTab}>
             <div className={styles.libraryHeader}>
               <h2 className={styles.sectionTitle}>Exercise Library</h2>
-              <p className={styles.scheduleSubtitle}>{EXERCISE_LIBRARY.length} exercises · home & gym</p>
+              <p className={styles.scheduleSubtitle}>{EXERCISE_LIBRARY.length} exercises Â· home & gym</p>
             </div>
             <div className={styles.libraryFilters}>
               <input
@@ -1226,7 +1226,7 @@ export default function WorkoutPage() {
                     <span className={styles.equipTag}>{ex.equipment}</span>
                   </div>
                   <div className={styles.libraryCardStats}>
-                    {ex.defaultSets}×{ex.defaultDuration ? `${ex.defaultDuration}s` : `${ex.defaultReps} reps`}
+                    {ex.defaultSets}Ã—{ex.defaultDuration ? `${ex.defaultDuration}s` : `${ex.defaultReps} reps`}
                   </div>
                 </div>
               ))}
@@ -1235,7 +1235,7 @@ export default function WorkoutPage() {
         )}
       </div>
 
-      {/* ── New Session Modal ── */}
+      {/* â”€â”€ New Session Modal â”€â”€ */}
       {showNewSessionModal && (
         <div className={styles.modalOverlay} onClick={() => setShowNewSessionModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -1290,7 +1290,7 @@ export default function WorkoutPage() {
         </div>
       )}
 
-      {/* ── Add Exercise Modal ── */}
+      {/* â”€â”€ Add Exercise Modal â”€â”€ */}
       {showAddExerciseModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddExerciseModal(false)}>
           <div className={`${styles.modal} ${styles.modalLg}`} onClick={(e) => e.stopPropagation()}>
@@ -1355,7 +1355,7 @@ export default function WorkoutPage() {
                           <span className={styles.muscleTag}>{ex.muscle}</span>
                           <span className={styles.equipTag}>{ex.equipment}</span>
                           <span className={styles.pickerSets}>
-                            {ex.defaultSets}×{ex.defaultDuration ? `${ex.defaultDuration}s` : `${ex.defaultReps}`}
+                            {ex.defaultSets}Ã—{ex.defaultDuration ? `${ex.defaultDuration}s` : `${ex.defaultReps}`}
                           </span>
                         </div>
                       </button>

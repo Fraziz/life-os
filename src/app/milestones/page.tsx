@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -27,7 +27,7 @@ import PageSkeleton from '@/components/ui/PageSkeleton';
 const STATUS_CONFIG: Record<MilestoneStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: styles.upcoming },
   'in-progress': { label: 'In Progress', className: styles.inProgress },
-  completed: { label: 'Completed ✓', className: styles.completed },
+  completed: { label: 'Completed âœ“', className: styles.completed },
   missed: { label: 'Missed', className: styles.upcoming },
   archived: { label: 'Archived', className: styles.upcoming },
 };
@@ -155,7 +155,7 @@ export default function MilestonesPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Milestones &amp; Checkpoints</h1>
@@ -169,7 +169,7 @@ export default function MilestonesPage() {
         </button>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {/* â”€â”€ Quick Add Bar â”€â”€ */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Flag size={20} style={{ color: 'var(--color-accent)' }} />
@@ -182,7 +182,7 @@ export default function MilestonesPage() {
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            Quick Add â†µ
           </button>
         </div>
 
@@ -218,7 +218,7 @@ export default function MilestonesPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.tabs}>
@@ -257,7 +257,7 @@ export default function MilestonesPage() {
         </div>
       </div>
 
-      {/* ── Milestones Grid ── */}
+      {/* â”€â”€ Milestones Grid â”€â”€ */}
       {filteredMilestones.length === 0 ? (
         <div
           style={{
@@ -265,7 +265,7 @@ export default function MilestonesPage() {
             padding: 'var(--space-12)',
             background: 'var(--color-surface)',
             borderRadius: 'var(--radius-xl)',
-            border: '1px dashed var(--color-border-subtle)',
+            border: '1px solid var(--color-border-subtle)',
           }}
         >
           <Flag size={40} style={{ color: 'var(--color-text-faint)', marginBottom: 'var(--space-2)' }} />
@@ -292,13 +292,13 @@ export default function MilestonesPage() {
                   borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
-                {/* ── Hierarchy Banner: Dream -> Goal ── */}
+                {/* â”€â”€ Hierarchy Banner: Dream -> Goal â”€â”€ */}
                 {parentGoal && (
                   <div className={styles.hierarchyBanner}>
                     {parentDream && (
                       <>
                         <span className={styles.hierarchyItem}>{parentDream.title}</span>
-                        <span className={styles.hierarchySep}>→</span>
+                        <span className={styles.hierarchySep}>â†’</span>
                       </>
                     )}
                     <span style={{ color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -354,7 +354,7 @@ export default function MilestonesPage() {
                   {milestone.description && <p className={styles.milestoneDesc}>{milestone.description}</p>}
                 </div>
 
-                {/* ── Progress Section ── */}
+                {/* â”€â”€ Progress Section â”€â”€ */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
                     <span style={{ color: 'var(--color-text-muted)' }}>Progress</span>
@@ -393,7 +393,7 @@ export default function MilestonesPage() {
                       onClick={() => openEditModal(milestone)}
                       style={{
                         background: 'transparent',
-                        border: '1px dashed var(--color-border)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: '6px',
                         padding: '2px 6px',
                         color: 'var(--color-text-faint)',
@@ -415,7 +415,7 @@ export default function MilestonesPage() {
         </div>
       )}
 
-      {/* ── Modal Dialog for Create / Edit ── */}
+      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -494,7 +494,7 @@ export default function MilestonesPage() {
                   >
                     <option value="upcoming">Upcoming</option>
                     <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed ✓</option>
+                    <option value="completed">Completed âœ“</option>
                     <option value="missed">Missed</option>
                     <option value="archived">Archived</option>
                   </select>

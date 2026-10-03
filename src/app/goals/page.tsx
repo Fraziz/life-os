@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -47,7 +47,7 @@ const HORIZON_LABELS: Record<GoalHorizon, string> = {
 const STATUS_LABELS: Record<GoalStatus, string> = {
   'not-started': 'Not Started',
   'in-progress': 'In Progress',
-  'completed': 'Completed ✓',
+  'completed': 'Completed âœ“',
   'paused': 'Paused',
   'archived': 'Archived',
 };
@@ -218,7 +218,7 @@ export default function GoalsPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Goals & Objectives</h1>
@@ -232,7 +232,7 @@ export default function GoalsPage() {
         </button>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {/* â”€â”€ Quick Add Bar â”€â”€ */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Target size={20} style={{ color: 'var(--color-accent)' }} />
@@ -245,7 +245,7 @@ export default function GoalsPage() {
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            Quick Add â†µ
           </button>
         </div>
 
@@ -294,7 +294,7 @@ export default function GoalsPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.searchWrap}>
@@ -366,7 +366,7 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      {/* ── Goals Grid ── */}
+      {/* â”€â”€ Goals Grid â”€â”€ */}
       {filteredGoals.length === 0 ? (
         <div
           style={{
@@ -374,7 +374,7 @@ export default function GoalsPage() {
             padding: 'var(--space-12)',
             background: 'var(--color-surface)',
             borderRadius: 'var(--radius-xl)',
-            border: '1px dashed var(--color-border-subtle)',
+            border: '1px solid var(--color-border-subtle)',
           }}
         >
           <Target size={40} style={{ color: 'var(--color-text-faint)', marginBottom: 'var(--space-2)' }} />
@@ -400,7 +400,7 @@ export default function GoalsPage() {
                   borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
-                {/* ── Hierarchy Banner (Dream -> Goal) ── */}
+                {/* â”€â”€ Hierarchy Banner (Dream -> Goal) â”€â”€ */}
                 {parentDream && (
                   <div className={styles.dreamConnector}>
                     <span className={styles.dreamConnectorLabel}>
@@ -460,7 +460,7 @@ export default function GoalsPage() {
                   <p className={styles.whyText}>&ldquo;{goal.why}&rdquo;</p>
                 </div>
 
-                {/* ── Progress Slider ── */}
+                {/* â”€â”€ Progress Slider â”€â”€ */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
                     <span className={styles.progressLabel}>Progress</span>
@@ -512,7 +512,7 @@ export default function GoalsPage() {
                       onClick={() => openEditModal(goal)}
                       style={{
                         background: 'transparent',
-                        border: '1px dashed var(--color-border)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: '6px',
                         padding: '2px 6px',
                         color: 'var(--color-text-faint)',
@@ -530,7 +530,7 @@ export default function GoalsPage() {
                 </div>
 
 
-                {/* ── AI Coach Panel ── */}
+                {/* â”€â”€ AI Coach Panel â”€â”€ */}
                 {coachState[goal.id]?.loading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', color: 'var(--color-accent)', fontSize: '12px' }}>
                     <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
@@ -552,7 +552,7 @@ export default function GoalsPage() {
                       <div style={{ marginBottom: '8px' }}>
                         <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>Next Steps</div>
                         {r.nextSteps.map((step, i) => (
-                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>• {step}</div>
+                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>â€¢ {step}</div>
                         ))}
                       </div>
                       <div style={{ fontStyle: 'italic', color: 'var(--color-accent)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
@@ -589,7 +589,7 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* ── Modal Dialog for Create / Edit ── */}
+      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -731,7 +731,7 @@ export default function GoalsPage() {
                   >
                     <option value="not-started">Not Started</option>
                     <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed ✓</option>
+                    <option value="completed">Completed âœ“</option>
                     <option value="paused">Paused</option>
                     <option value="archived">Archived</option>
                   </select>

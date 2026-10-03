@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useDreams } from '@/context/DreamContext';
@@ -144,7 +144,7 @@ export default function DreamsPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Dreams &amp; Vision Board</h1>
@@ -158,7 +158,7 @@ export default function DreamsPage() {
         </button>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {/* â”€â”€ Quick Add Bar â”€â”€ */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Plus size={18} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
@@ -171,7 +171,7 @@ export default function DreamsPage() {
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            Quick Add â†µ
           </button>
         </div>
 
@@ -209,7 +209,7 @@ export default function DreamsPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.searchWrap}>
           <Search size={14} className={styles.searchIcon} />
@@ -272,7 +272,7 @@ export default function DreamsPage() {
         </div>
       </div>
 
-      {/* ── Dreams Grid ── */}
+      {/* â”€â”€ Dreams Grid â”€â”€ */}
       {filteredDreams.length === 0 ? (
         <div
           style={{
@@ -280,7 +280,7 @@ export default function DreamsPage() {
             padding: 'var(--space-12)',
             background: 'var(--color-surface)',
             borderRadius: 'var(--radius-xl)',
-            border: '1px dashed var(--color-border-subtle)',
+            border: '1px solid var(--color-border-subtle)',
           }}
         >
           <CloudSun size={40} style={{ color: 'var(--color-text-faint)', marginBottom: 'var(--space-2)' }} />
@@ -383,7 +383,7 @@ export default function DreamsPage() {
         </div>
       )}
 
-      {/* ── Modal Dialog for Create / Edit ── */}
+      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -447,7 +447,7 @@ export default function DreamsPage() {
                     <option value="planning">Planning (Defining Path)</option>
                     <option value="active">Active (Currently Pursuing)</option>
                     <option value="paused">Paused (On Hold)</option>
-                    <option value="achieved">Achieved ✓ (Realized)</option>
+                    <option value="achieved">Achieved âœ“ (Realized)</option>
                     <option value="archived">Archived</option>
                   </select>
                 </div>

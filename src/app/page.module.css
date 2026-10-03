@@ -1,4 +1,4 @@
-/*  Today Dashboard Styles  */
+﻿/*  Today Dashboard Styles  */
 
 .dashboardContainer {
   display: flex;
@@ -252,7 +252,7 @@
   gap: 4px;
 }
 
-/* ── 3-Step Daily Flow Widget ── */
+/* â”€â”€ 3-Step Daily Flow Widget â”€â”€ */
 .dailyFlowCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -1147,7 +1147,7 @@
 .completedTasksWrap {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px dashed var(--color-border-subtle);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1207,7 +1207,7 @@
   font-weight: 600;
 }
 
-/* ── Moving Reminders Ticker (Right to Left Marquee) — Clean & ADHD Friendly ── */
+/* â”€â”€ Moving Reminders Ticker (Right to Left Marquee) â€” Clean & ADHD Friendly â”€â”€ */
 .reminderTickerContainer {
   display: flex;
   align-items: center;

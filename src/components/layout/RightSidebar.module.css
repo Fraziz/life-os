@@ -1,4 +1,4 @@
-/*  Right Sidebar Widget Column Styles  */
+﻿/*  Right Sidebar Widget Column Styles  */
 
 .rightSidebar {
   width: 320px;
@@ -348,7 +348,7 @@
 .selectedDayAgenda {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px dashed var(--color-border-subtle);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 8px;

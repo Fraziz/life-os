@@ -1,4 +1,4 @@
-.trigger {
+﻿.trigger {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -172,7 +172,7 @@
 }
 
 .drop {
-  border: 2px dashed var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: 16px;
   padding: 18px;
   text-align: center;

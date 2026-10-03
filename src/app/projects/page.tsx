@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -32,7 +32,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   active:    { label: 'Active',       color: '#3b82f6' },
   planning:  { label: 'Planning',     color: '#a594ff' },
   'on-hold': { label: 'On Hold',      color: '#f59e0b' },
-  completed: { label: 'Completed ✓',  color: '#10b981' },
+  completed: { label: 'Completed âœ“',  color: '#10b981' },
   cancelled: { label: 'Cancelled',    color: '#6b7280' },
 };
 
@@ -114,7 +114,7 @@ function ProjectRow({
 
         {parentGoalTitle && (
           <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', display: 'block', marginTop: '3px' }}>
-            ↳ {parentGoalTitle}
+            â†³ {parentGoalTitle}
           </span>
         )}
 
@@ -145,7 +145,7 @@ function ProjectRow({
               onClick={() => onEdit(project)}
               style={{
                 background: 'transparent',
-                border: '1px dashed var(--color-border)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '6px',
                 padding: '2px 6px',
                 color: 'var(--color-text-faint)',
@@ -184,7 +184,7 @@ const btnStyle: React.CSSProperties = {
   padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center',
 };
 
-/** ── List View ── */
+/** â”€â”€ List View â”€â”€ */
 function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
   projects: Project[];
   goals: { id: string; title: string }[];
@@ -211,7 +211,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
   );
 }
 
-/** ── Kanban View ── */
+/** â”€â”€ Kanban View â”€â”€ */
 function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
   projects: Project[];
   goals: { id: string; title: string }[];
@@ -267,7 +267,7 @@ function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highl
   );
 }
 
-/** ── Calendar View ── */
+/** â”€â”€ Calendar View â”€â”€ */
 function CalendarView({ projects, onEdit }: {
   projects: Project[];
   onEdit: (p: Project) => void;
@@ -312,7 +312,7 @@ function CalendarView({ projects, onEdit }: {
 
   const todayDay = today.getFullYear() === viewYear && today.getMonth() === viewMonth ? today.getDate() : null;
 
-  // Projects with no dates — shown in a sidebar
+  // Projects with no dates â€” shown in a sidebar
   const undatedProjects = projects.filter((p) => !p.dueDate && !p.startDate);
 
   return (
@@ -380,7 +380,7 @@ function CalendarView({ projects, onEdit }: {
                         marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}
                     >
-                      ▶ {p.title}
+                      â–¶ {p.title}
                     </button>
                   );
                 })}
@@ -401,7 +401,7 @@ function CalendarView({ projects, onEdit }: {
                         fontWeight: 700,
                       }}
                     >
-                      ◆ {p.title}
+                      â—† {p.title}
                     </button>
                   );
                 })}
@@ -411,8 +411,8 @@ function CalendarView({ projects, onEdit }: {
         </div>
 
         <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '11px', color: 'var(--color-text-faint)' }}>
-          <span>▶ Start date</span>
-          <span>◆ Due date</span>
+          <span>â–¶ Start date</span>
+          <span>â—† Due date</span>
         </div>
       </div>
 
@@ -458,14 +458,14 @@ const calNavBtn: React.CSSProperties = {
 
 function EmptyState() {
   return (
-    <div style={{ textAlign: 'center', padding: '48px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px dashed var(--color-border-subtle)' }}>
+    <div style={{ textAlign: 'center', padding: '48px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-subtle)' }}>
       <FolderKanban size={40} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
       <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>No projects match. Click &quot;New Project&quot; to add one.</p>
     </div>
   );
 }
 
-// ── Color swatches ──
+// â”€â”€ Color swatches â”€â”€
 const PROJECT_COLORS = ['#7c6fff', '#38bdf8', '#22d3a5', '#f59e0b', '#ef4444', '#ec4899', '#a855f7', '#84cc16', '#fb923c'];
 
 export default function ProjectsPage() {
@@ -602,7 +602,7 @@ export default function ProjectsPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Projects &amp; Execution</h1>
@@ -615,7 +615,7 @@ export default function ProjectsPage() {
         </button>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {/* â”€â”€ Quick Add Bar â”€â”€ */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <FolderKanban size={20} style={{ color: 'var(--color-accent)' }} />
@@ -628,7 +628,7 @@ export default function ProjectsPage() {
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+            Quick Add â†µ
           </button>
         </div>
 
@@ -677,7 +677,7 @@ export default function ProjectsPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           {/* Status Tabs */}
@@ -741,7 +741,7 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* ── View Body ── */}
+      {/* â”€â”€ View Body â”€â”€ */}
       {viewMode === 'list' && (
         <ListView
           projects={filteredProjects}
@@ -771,7 +771,7 @@ export default function ProjectsPage() {
         />
       )}
 
-      {/* ── Modal ── */}
+      {/* â”€â”€ Modal â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -819,7 +819,7 @@ export default function ProjectsPage() {
                     <option value="active">Active</option>
                     <option value="planning">Planning</option>
                     <option value="on-hold">On Hold</option>
-                    <option value="completed">Completed ✓</option>
+                    <option value="completed">Completed âœ“</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>

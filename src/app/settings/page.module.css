@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    SETTINGS  FORMAL, MINIMALIST & EXECUTIVE DESIGN SYSTEM
    ============================================================ */
 
@@ -13,7 +13,7 @@
   animation: fadeIn 0.25s ease forwards;
 }
 
-/* ── Header ── */
+/* â”€â”€ Header â”€â”€ */
 .header {
   display: flex;
   flex-direction: column;
@@ -37,7 +37,7 @@
   margin: 0;
 }
 
-/* ── Notification Banner ── */
+/* â”€â”€ Notification Banner â”€â”€ */
 .saveBanner {
   display: flex;
   align-items: center;
@@ -53,7 +53,7 @@
   animation: fadeIn 0.2s ease forwards;
 }
 
-/* ── Formal Section Cards ── */
+/* â”€â”€ Formal Section Cards â”€â”€ */
 .sectionCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -108,7 +108,7 @@
   line-height: 1.4;
 }
 
-/* ── Mode Selection Grid ── */
+/* â”€â”€ Mode Selection Grid â”€â”€ */
 .modeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -174,7 +174,7 @@
   gap: 10px;
 }
 
-/* ── Theme Buttons Grid ── */
+/* â”€â”€ Theme Buttons Grid â”€â”€ */
 .themeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -208,7 +208,7 @@
   box-shadow: 0 0 0 1px var(--color-accent), var(--shadow-sm);
 }
 
-/* ── Form Inputs & Layout ── */
+/* â”€â”€ Form Inputs & Layout â”€â”€ */
 .gridTwo {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -255,7 +255,7 @@
   line-height: 1.35;
 }
 
-/* ── Checkboxes & Toggles ── */
+/* â”€â”€ Checkboxes & Toggles â”€â”€ */
 .toggleRow {
   display: flex;
   align-items: center;
@@ -293,7 +293,7 @@
   cursor: pointer;
 }
 
-/* ── Workdays Picker ── */
+/* â”€â”€ Workdays Picker â”€â”€ */
 .daysGrid {
   display: flex;
   gap: 6px;
@@ -323,7 +323,7 @@
   color: var(--color-text-inverse, #ffffff);
 }
 
-/* ── AI Assistant & API Setup ── */
+/* â”€â”€ AI Assistant & API Setup â”€â”€ */
 .aiStatusBadge {
   display: inline-flex;
   align-items: center;
@@ -625,7 +625,7 @@
   padding: 10px 12px;
   background: var(--color-surface-2);
   border-radius: var(--radius-md);
-  border: 1px dashed var(--color-border);
+  border: 1px solid var(--color-border);
   margin-top: 4px;
 }
 
@@ -700,7 +700,7 @@
   font-weight: 500;
 }
 
-/* ── Data Backup & Account Zone ── */
+/* â”€â”€ Data Backup & Account Zone â”€â”€ */
 .backupCard {
   display: flex;
   align-items: center;
@@ -723,7 +723,7 @@
   gap: 8px;
 }
 
-/* ── Privacy Note ── */
+/* â”€â”€ Privacy Note â”€â”€ */
 .privacyNotice {
   display: flex;
   align-items: flex-start;
@@ -754,7 +754,7 @@
   margin: 0;
 }
 
-/* ── Action Buttons ── */
+/* â”€â”€ Action Buttons â”€â”€ */
 .actions {
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -475,7 +475,7 @@ export default function FocusPage() {
 
   return (
     <div className={`${styles.page} ${isZenMode ? styles.zenMode : ''}`}>
-      {/* ── Zen Mode Top Exit Bar ── */}
+      {/* â”€â”€ Zen Mode Top Exit Bar â”€â”€ */}
       {isZenMode && (
         <div className={styles.zenTopBar}>
           <button
@@ -484,12 +484,12 @@ export default function FocusPage() {
             onClick={toggleZenMode}
             title="Exit Zen Mode (or press Esc)"
           >
-            ← Exit Zen Mode <span className={styles.escBadge}>Esc</span>
+            â† Exit Zen Mode <span className={styles.escBadge}>Esc</span>
           </button>
         </div>
       )}
 
-      {/* ── Top Header ── */}
+      {/* â”€â”€ Top Header â”€â”€ */}
       {!isZenMode && (
         <header className={styles.header}>
           <div className={styles.titleArea}>
@@ -654,7 +654,7 @@ export default function FocusPage() {
                 />
 
                 <div className={styles.bookFooter}>
-                  <span>Reading Target in Focus Mode · Sariling Mundo</span>
+                  <span>Reading Target in Focus Mode Â· Sariling Mundo</span>
                   <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
                 </div>
               </div>
@@ -701,7 +701,7 @@ export default function FocusPage() {
                   <span className={styles.timerModeLabel}>
                     {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
                   </span>
-                  <span className={styles.timerStatusDot}>•</span>
+                  <span className={styles.timerStatusDot}>â€¢</span>
                   <span className={styles.timerStatusText}>
                     {isRunning ? 'ACTIVE' : 'READY'}
                   </span>
@@ -721,7 +721,7 @@ export default function FocusPage() {
                   )}
                   {liveActiveTask?.estimatedDuration && (
                     <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-                      Est: {liveActiveTask.estimatedDuration}m • Act: {Math.round((liveActiveTask.actualDuration || 0) + secondsElapsed / 60)}m
+                      Est: {liveActiveTask.estimatedDuration}m â€¢ Act: {Math.round((liveActiveTask.actualDuration || 0) + secondsElapsed / 60)}m
                     </span>
                   )}
                 </div>
@@ -826,7 +826,7 @@ export default function FocusPage() {
         {/* Right Sidebar: Controls, Parking Lot, Ambient Soundscapes & History */}
         {!isZenMode && !(activeDoc && focusViewMode === 'book') && (
           <aside className={styles.sideSection}>
-            {/* ── 1. Focus Controls (Right Side) ── */}
+            {/* â”€â”€ 1. Focus Controls (Right Side) â”€â”€ */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
@@ -868,7 +868,7 @@ export default function FocusPage() {
               </div>
             </div>
 
-            {/* ── 2. Distraction Parking Lot (Right Side) ── */}
+            {/* â”€â”€ 2. Distraction Parking Lot (Right Side) â”€â”€ */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
@@ -885,7 +885,7 @@ export default function FocusPage() {
                   className={styles.sideParkingLotInput}
                 />
                 <button type="submit" className={styles.sideBtnParkSubmit}>
-                  Park ↵
+                  Park â†µ
                 </button>
               </form>
 
@@ -896,7 +896,7 @@ export default function FocusPage() {
               )}
             </div>
 
-            {/* ── 3. Ambient Soundscapes ── */}
+            {/* â”€â”€ 3. Ambient Soundscapes â”€â”€ */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
                 <span className={styles.sideCardTitle}>
@@ -922,19 +922,19 @@ export default function FocusPage() {
 
               <div className={styles.ambientBtnGrid}>
                 {[
-                  { id: 'gamma40', label: '40Hz Gamma (Hyperfocus)', icon: '🧠' },
-                  { id: 'alpha10', label: '10Hz Alpha (Flow State)', icon: '🧘' },
-                  { id: 'pink',    label: 'Pink Noise (ADHD Block)', icon: '🛡️' },
-                  { id: 'brown',   label: 'Deep Brown Noise', icon: '🎧' },
-                  { id: 'rain',    label: 'Gentle Rain', icon: '🌧️' },
-                  { id: 'thunder', label: 'Distant Thunder', icon: '⛈️' },
-                  { id: 'waves',   label: 'Ocean Waves', icon: '🌊' },
-                  { id: 'stream',  label: 'River Stream', icon: '💧' },
-                  { id: 'forest',  label: 'Forest Birds', icon: '🌲' },
-                  { id: 'fire',    label: 'Campfire', icon: '🔥' },
-                  { id: 'wind',    label: 'Mountain Wind', icon: '🍃' },
-                  { id: 'cafe',    label: 'Cozy Cafe', icon: '☕' },
-                  { id: 'drone',   label: 'Space Drone', icon: '🌌' },
+                  { id: 'gamma40', label: '40Hz Gamma (Hyperfocus)', icon: 'ðŸ§ ' },
+                  { id: 'alpha10', label: '10Hz Alpha (Flow State)', icon: 'ðŸ§˜' },
+                  { id: 'pink',    label: 'Pink Noise (ADHD Block)', icon: 'ðŸ›¡ï¸' },
+                  { id: 'brown',   label: 'Deep Brown Noise', icon: 'ðŸŽ§' },
+                  { id: 'rain',    label: 'Gentle Rain', icon: 'ðŸŒ§ï¸' },
+                  { id: 'thunder', label: 'Distant Thunder', icon: 'â›ˆï¸' },
+                  { id: 'waves',   label: 'Ocean Waves', icon: 'ðŸŒŠ' },
+                  { id: 'stream',  label: 'River Stream', icon: 'ðŸ’§' },
+                  { id: 'forest',  label: 'Forest Birds', icon: 'ðŸŒ²' },
+                  { id: 'fire',    label: 'Campfire', icon: 'ðŸ”¥' },
+                  { id: 'wind',    label: 'Mountain Wind', icon: 'ðŸƒ' },
+                  { id: 'cafe',    label: 'Cozy Cafe', icon: 'â˜•' },
+                  { id: 'drone',   label: 'Space Drone', icon: 'ðŸŒŒ' },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -966,7 +966,7 @@ export default function FocusPage() {
         )}
       </div>
 
-      {/* ── Modal: Target Picker (Tasks & Knowledge Books) ── */}
+      {/* â”€â”€ Modal: Target Picker (Tasks & Knowledge Books) â”€â”€ */}
       {taskPickerOpen && (
         <div className={styles.modalOverlay} onClick={() => setTaskPickerOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -1037,7 +1037,7 @@ export default function FocusPage() {
                         </span>
                         {task.estimatedDuration && (
                           <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginLeft: '6px' }}>
-                            • {task.estimatedDuration}m
+                            â€¢ {task.estimatedDuration}m
                           </span>
                         )}
                       </div>
@@ -1056,10 +1056,10 @@ export default function FocusPage() {
                   <button
                     type="button"
                     className={styles.btnSecondary}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px', fontSize: '12px', padding: '8px', background: 'rgba(124, 106, 255, 0.1)', border: '1px dashed var(--color-accent)' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px', fontSize: '12px', padding: '8px', background: 'rgba(124, 106, 255, 0.1)', border: '1px solid var(--color-accent)' }}
                     onClick={() => {
                       const newDoc = addDoc({
-                        title: 'Focus Note — ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                        title: 'Focus Note â€” ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                         content: '# Focus Note\n\nStart typing your focus notes and thoughts here...',
                         status: 'active',
                         category: 'learning',
@@ -1118,7 +1118,7 @@ export default function FocusPage() {
         </div>
       )}
 
-      {/* ── Modal: Finish Session ── */}
+      {/* â”€â”€ Modal: Finish Session â”€â”€ */}
       {finishModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setFinishModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>

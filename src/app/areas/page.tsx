@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useLifeAreas } from '@/context/LifeAreaContext';
@@ -138,7 +138,7 @@ export default function LifeAreasPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Life Areas</h1>
@@ -152,7 +152,7 @@ export default function LifeAreasPage() {
         </button>
       </header>
 
-      {/* ── Controls Bar ── */}
+      {/* â”€â”€ Controls Bar â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.tabs}>
           <button
@@ -170,7 +170,7 @@ export default function LifeAreasPage() {
         </div>
       </div>
 
-      {/* ── Areas Grid ── */}
+      {/* â”€â”€ Areas Grid â”€â”€ */}
       {currentList.length === 0 ? (
         <div
           style={{
@@ -178,7 +178,7 @@ export default function LifeAreasPage() {
             padding: 'var(--space-12)',
             background: 'var(--color-surface)',
             borderRadius: 'var(--radius-xl)',
-            border: '1px dashed var(--color-border-subtle)',
+            border: '1px solid var(--color-border-subtle)',
           }}
         >
           <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
@@ -283,7 +283,7 @@ export default function LifeAreasPage() {
         </div>
       )}
 
-      {/* ── Modal Dialog for Create / Edit ── */}
+      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>

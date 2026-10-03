@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef } from 'react';
 import {
@@ -131,7 +131,7 @@ export default function InboxPage() {
     });
 
     playSuccessChime();
-    showToast(`✓ Groq API Key Activated! Model: openai/gpt-oss-120b`);
+    showToast(`âœ“ Groq API Key Activated! Model: openai/gpt-oss-120b`);
   };
 
   const handleAiBreakdown = async (item: InboxItem) => {
@@ -158,7 +158,7 @@ export default function InboxPage() {
         });
       });
       convertToTask(item.id);
-      showToast(`✓ Created ${result.steps.length} tasks from Thought!`);
+      showToast(`âœ“ Created ${result.steps.length} tasks from Thought!`);
     } else {
       addTask({
         title: result.title || item.content,
@@ -174,7 +174,7 @@ export default function InboxPage() {
         })),
       });
       convertToTask(item.id);
-      showToast(`✓ Converted Thought to Task with actionable checklist!`);
+      showToast(`âœ“ Converted Thought to Task with actionable checklist!`);
     }
     setAiBreakdownModal(null);
     playSuccessChime();
@@ -282,7 +282,7 @@ export default function InboxPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Idea Parking & Inbox</h1>
@@ -292,7 +292,7 @@ export default function InboxPage() {
         </div>
       </header>
 
-      {/* ── Fast Idea Parking Capture Bar ── */}
+      {/* â”€â”€ Fast Idea Parking Capture Bar â”€â”€ */}
       <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
         <div className={styles.quickAddRow}>
           <div className={styles.typeToggle}>
@@ -362,7 +362,7 @@ export default function InboxPage() {
             </button>
           )}
           <button type="submit" className={styles.quickAddBtn}>
-            {dumpType === 'reminder' ? 'Add Reminder ↵' : 'Quick Add ↵'}
+            {dumpType === 'reminder' ? 'Add Reminder â†µ' : 'Quick Add â†µ'}
           </button>
         </div>
 
@@ -405,7 +405,7 @@ export default function InboxPage() {
         )}
       </form>
 
-      {/* ── Controls Bar & Filter Tabs ── */}
+      {/* â”€â”€ Controls Bar & Filter Tabs â”€â”€ */}
       <div className={styles.controlsBar}>
         <div className={styles.tabs}>
           <button
@@ -469,10 +469,10 @@ export default function InboxPage() {
         )}
       </div>
 
-      {/* ── Stream List of Inbox Items ── */}
+      {/* â”€â”€ Stream List of Inbox Items â”€â”€ */}
       <div className={styles.inboxList}>
         {currentList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px dashed var(--color-border-subtle)' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)' }}>
             <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
               {filterTab === 'inbox'
@@ -541,9 +541,9 @@ export default function InboxPage() {
                   </p>
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    {item.isApplied && ' • Applied / Done'}
-                    {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}`}
-                    {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today Ticker'}
+                    {item.isApplied && ' â€¢ Applied / Done'}
+                    {item.convertedTo && ` â€¢ Converted to ${item.convertedTo.toUpperCase()}`}
+                    {item.isReminder && !item.isApplied && item.status === 'inbox' && ' â€¢ Active on Today Ticker'}
                   </span>
                 </div>
               </div>
@@ -562,8 +562,8 @@ export default function InboxPage() {
                       >
                         <Sparkles size={11} />
                         {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
-                          ? '✓ Active Groq Key'
-                          : '⚡ Set as Groq Key'}
+                          ? 'âœ“ Active Groq Key'
+                          : 'âš¡ Set as Groq Key'}
                       </button>
                     )}
 
@@ -588,7 +588,7 @@ export default function InboxPage() {
                       onClick={() => setConvertModalItem(item)}
                       title="More conversion options"
                     >
-                      More ▾
+                      More â–¾
                     </button>
                   </>
                 ) : (
@@ -614,7 +614,7 @@ export default function InboxPage() {
         )}
       </div>
 
-      {/* ── Conversion Modal ── */}
+      {/* â”€â”€ Conversion Modal â”€â”€ */}
       {convertModalItem && (
         <div className={styles.modalOverlay} onClick={() => setConvertModalItem(null)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -713,7 +713,7 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* ── AI Brain Dump Results Overlay ── */}
+      {/* â”€â”€ AI Brain Dump Results Overlay â”€â”€ */}
       {aiResults && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '20px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }}>
@@ -763,14 +763,14 @@ export default function InboxPage() {
                 onClick={() => { setAiResults(null); setAiApplied(true); }}
                 style={{ padding: '8px 18px', borderRadius: '10px', border: 'none', background: 'var(--color-accent)', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <CheckCircle2 size={14} /> Got it — I'll convert manually
+                <CheckCircle2 size={14} /> Got it â€” I'll convert manually
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── AI Thought Breakdown Modal (Groq Powered) ── */}
+      {/* â”€â”€ AI Thought Breakdown Modal (Groq Powered) â”€â”€ */}
       {aiBreakdownModal && (
         <div
           className={styles.modalOverlay}
@@ -880,7 +880,7 @@ export default function InboxPage() {
                     style={{ flex: 1, minWidth: '200px', background: 'var(--color-accent)', color: '#ffffff', fontWeight: 700, padding: '10px 14px' }}
                     onClick={() => handleApplyBreakdownAsTasks(aiBreakdownModal.item, aiBreakdownModal.result!, false)}
                   >
-                    ✓ Create Task with Checklist
+                    âœ“ Create Task with Checklist
                   </button>
 
                   <button
@@ -898,7 +898,7 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* ── Toast Notification ── */}
+      {/* â”€â”€ Toast Notification â”€â”€ */}
       {toastMessage && (
         <div className={styles.toastBanner}>
           <CheckCircle2 size={16} />
