@@ -2210,13 +2210,6 @@ export default function KnowledgePage() {
                     >
                       <BookMarked size={12} /> Book
                     </button>
-                    <button
-                      className={`${styles.segmentBtn} ${editorMode === 'quiz' ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('quiz')}
-                      title="Active recall study quiz & flashcards"
-                    >
-                      <Brain size={12} /> Study Quiz {selectedDoc?.studyQuiz?.length ? `(${selectedDoc.studyQuiz.length})` : ''}
-                    </button>
                   </div>
 
                   <button
@@ -2235,26 +2228,15 @@ export default function KnowledgePage() {
                     </span>
                   )}
 
-                  {/* AI Knowledge Tools Suite (Works in all modes: Book, Edit, Preview) */}
+                  {/* AI Knowledge Tools Suite (Contains Auto-Format, Summary, Study Quiz, Ask AI) */}
                   <button
                     type="button"
                     className={`${styles.headerBtn} ${styles.headerAiBtn}`}
                     onClick={() => setAiModalOpen(true)}
-                    title="AI Note Tools: Auto-Format, Executive Summary, Study Quiz"
+                    title="AI Note Tools: Auto-Format, Executive Summary, Study Quiz, Ask AI"
                   >
                     <Sparkles size={13} className={styles.aiSparkleIcon} />
                     <span>AI Tools</span>
-                  </button>
-
-                  {/* Direct Ask AI Assistant button */}
-                  <button
-                    type="button"
-                    className={styles.headerBtn}
-                    onClick={handleOpenAiChatForDoc}
-                    title="Ask AI Assistant about this document"
-                  >
-                    <Bot size={13} />
-                    <span>Ask AI</span>
                   </button>
 
                   {/* Export PDF Button */}
