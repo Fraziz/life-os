@@ -1,4 +1,4 @@
-﻿/*  Today Dashboard Styles  */
+/*  Today Dashboard Styles  */
 
 .dashboardContainer {
   display: flex;
@@ -12,10 +12,8 @@
 }
 
 .mainColumn {
-  flex: 1;
+  flex: 1 1 0%;
   min-width: 0;
-  width: 100%;
-  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -2347,10 +2345,10 @@
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 768px) {
   .dashboardContainer {
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
   }
 
   .mainColumn {

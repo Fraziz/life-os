@@ -1,4 +1,4 @@
-﻿/*  Right Sidebar Widget Column Styles  */
+/*  Right Sidebar Widget Column Styles  */
 
 .rightSidebar {
   width: 320px;
@@ -835,13 +835,7 @@
   gap: 8px;
 }
 
-/*  Responsive Polish  */
 
-@media (max-width: 1200px) {
-  .rightSidebar {
-    width: 100%;
-  }
-}
 
 /* Nature Theme Overrides - Floating Glass Widget Cards */
 :global([data-theme='nature']) .rightSidebar {
@@ -907,16 +901,16 @@
 }
 
 /*  Mobile & Tablet Responsiveness  */
-@media (max-width: 1200px) {
+@media (max-width: 1120px) {
   .rightSidebar {
-    width: 100%;
-    margin-top: 12px;
+    width: 290px;
   }
 }
 
 @media (max-width: 768px) {
   .rightSidebar {
     width: 100%;
+    margin-top: 12px;
     gap: 12px;
   }
 
