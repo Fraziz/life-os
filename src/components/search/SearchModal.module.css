@@ -53,6 +53,7 @@
 
 .input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;
@@ -296,7 +297,12 @@
     display: none;
   }
 
-  .filterBtn {
+  .input {
+    font-size: 14px;
+    min-width: 0;
+  }
+
+  .filterChip {
     flex-shrink: 0;
     white-space: nowrap;
     padding: 4px 10px;

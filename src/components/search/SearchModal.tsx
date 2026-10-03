@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearch, SearchResultType } from '@/context/SearchContext';
 import {
-  Search, X, Sparkles, Target, FolderKanban,
+  Search, X, Target, FolderKanban,
   CheckSquare, Repeat, Inbox, CloudSun, BookOpen,
 } from 'lucide-react';
 import styles from './SearchModal.module.css';

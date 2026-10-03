@@ -6,7 +6,6 @@ import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Dream, DreamStatus } from '@/types';
 import { AreaIcon } from '@/app/areas/page';
 import {
-  Sparkles,
   Plus,
   Edit2,
   Trash2,
@@ -162,13 +161,13 @@ export default function DreamsPage() {
       {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+          <Plus size={18} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Type a dream and press Enter to add instantly (e.g. Build financial independence)..."
+            placeholder="Add a new dream or vision (press Enter to save)..."
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>

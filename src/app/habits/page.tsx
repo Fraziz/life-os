@@ -9,7 +9,6 @@ import {
   RotateCcw,
   Target,
   Clock,
-  Sparkles,
   Layers,
   Trash2,
   X,
@@ -145,13 +144,13 @@ export default function HabitsPage() {
       {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+          <Plus size={18} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Type a habit and press Enter to add instantly (e.g. 20min Morning Workout)..."
+            placeholder="Add a new habit (press Enter to save)..."
             autoFocus
           />
           <button type="submit" className={styles.quickAddBtn}>
@@ -201,7 +200,6 @@ export default function HabitsPage() {
       {/* ── Philosophy Banner ── */}
       <section className={styles.philosophyBanner}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Sparkles size={22} style={{ color: 'var(--color-accent)' }} />
           <p className={styles.bannerText}>
             <strong>Guilt-Free Rhythm:</strong> Habits are votes for who you want to become. Showing up <span className={styles.bannerHighlight}>3 or 4 days a week</span> consistently produces massive mastery over time.
           </p>

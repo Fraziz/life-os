@@ -149,6 +149,10 @@
   border-radius: var(--radius-lg);
   padding: var(--space-2) var(--space-3);
   position: relative;
+  flex: 1 1 200px;
+  max-width: 320px;
+  min-width: 160px;
+  box-sizing: border-box;
 }
 
 .searchIcon {
@@ -162,12 +166,9 @@
   outline: none;
   font-size: var(--text-xs);
   color: var(--color-text);
-  width: 140px;
-  transition: width var(--transition-fast);
-}
-
-.searchInput:focus {
-  width: 190px;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .clearSearchBtn {
@@ -994,10 +995,48 @@
     gap: 10px;
   }
 
-  .quickAddBtn {
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filtersGroup {
     width: 100%;
-    justify-content: center;
-    padding: 9px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .searchWrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .searchInput {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .selectFilter {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .taskTabsSwitcher {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .taskTabBtn {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .gridTwo {

@@ -156,8 +156,12 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md, 6px);
-  padding: 4px 8px;
+  padding: 5px 10px;
   position: relative;
+  flex: 1 1 200px;
+  max-width: 320px;
+  min-width: 160px;
+  box-sizing: border-box;
 }
 
 .searchIcon {
@@ -171,12 +175,9 @@
   outline: none;
   font-size: var(--text-xs);
   color: var(--color-text);
-  width: 130px;
-  transition: width var(--transition-fast);
-}
-
-.searchInput:focus {
-  width: 170px;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .clearSearchBtn {
@@ -211,6 +212,7 @@
   border: none;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all var(--transition-fast);
 }
 
@@ -688,14 +690,35 @@
 
   .filtersGroup {
     width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    padding-bottom: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
-  .filtersGroup::-webkit-scrollbar {
-    display: none;
+  .searchWrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .searchInput {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .selectFilter {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .btnCreate {

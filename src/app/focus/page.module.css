@@ -1550,5 +1550,26 @@
   }
 }
 
+.targetSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.targetSearchInput:focus {
+  border-color: var(--color-accent);
+}
+
+.targetSearchInput::placeholder {
+  color: var(--color-text-faint);
+}
+
 
 
