@@ -430,14 +430,38 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
 }
 
 /**
+ * Language rule appended to every AI system prompt so answers, summaries,
+ * quizzes, and chat replies are written in simple, basic English.
+ */
+export const PLAIN_ENGLISH_RULE = `
+
+LANGUAGE RULE (this overrides any style instructions above):
+- Write in simple, basic English that anyone can understand (about a grade 6-8 reading level).
+- Use short sentences and common, everyday words.
+- Do not use jargon, buzzwords, or fancy words (for example: say "use" not "leverage", "goal" not "objective", "plan" not "strategic framework").
+- If you must use a technical word, explain it in a few plain words right after.
+- Keep the meaning correct and complete. Simple does not mean less accurate.
+- If a JSON or HTML format is required, still follow that format exactly. Only the words inside should be simple.`;
+
+export interface AICallOptions {
+  /** Append the basic-English rule (default: true). Turn off for tasks that must keep the user's own wording. */
+  plainLanguage?: boolean;
+}
+
+/**
  * Optional Cloud AI Call with strictly controlled token limits, cost tracking, and error handling.
  * Supports Google Gemini, OpenAI, Anthropic, and Custom OpenAI-compatible endpoints (Groq, OpenRouter, Ollama).
  */
 export async function executeOptionalAICall(
   prompt: string,
   systemPrompt: string,
-  aiSettings: AISettings
+  aiSettings: AISettings,
+  options: AICallOptions = {}
 ): Promise<{ text: string; tokensUsed: number; costUSD: number; modelUsed?: string }> {
+  if (options.plainLanguage !== false) {
+    systemPrompt = `${systemPrompt}${PLAIN_ENGLISH_RULE}`;
+  }
+
   if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
     throw new Error('API key is missing. Please configure your API key in Settings.');
   }

@@ -234,7 +234,8 @@ Formatting Rules:
 12. NEVER include emojis, icons, or social hashtags (#tag) anywhere in the output. Remove duplicate paragraphs and repetitive lines so the text is pristine.`;
 
       const prompt = `Document Title: "${docTitle}"\n\nRaw Notes to Format:\n${rawContent}`;
-      const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
+      // Formatting must keep the user's own words, so skip the basic-English rewrite rule
+      const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings, { plainLanguage: false });
 
       let cleanHtml = result.text.trim();
       cleanHtml = cleanHtml.replace(/^```html\s*/i, '').replace(/```\s*$/i, '').trim();
