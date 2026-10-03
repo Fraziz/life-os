@@ -573,7 +573,6 @@ export default function InboxPage() {
                       onClick={() => handleAiBreakdown(item)}
                       title="Break down this thought into action steps with Groq AI"
                     >
-                      <Sparkles size={11} />
                       AI Breakdown
                     </button>
 
