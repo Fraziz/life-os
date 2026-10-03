@@ -1466,6 +1466,22 @@
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
 }
 
+:global([data-theme='nature']) .bookPage {
+  background: rgba(14, 28, 19, 0.48);
+  border-color: rgba(134, 239, 172, 0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+
+:global([data-theme='nature']) .bookHighlighterBar {
+  background: rgba(14, 28, 19, 0.58);
+  border-color: rgba(134, 239, 172, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+
 .bookTitle {
   font-size: 2rem;
   font-weight: 800;
