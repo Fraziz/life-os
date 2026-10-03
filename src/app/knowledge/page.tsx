@@ -24,7 +24,6 @@ import {
   FileText,
   Clock,
   CloudSun,
-  Sparkles,
   Target,
   FolderKanban,
   CheckSquare,
@@ -49,7 +48,6 @@ import {
   ListOrdered,
   Minus,
   AlertCircle,
-  Wand2,
   Lightbulb,
   AlignLeft,
   AlignCenter,
@@ -69,8 +67,6 @@ import {
   HelpCircle,
   ExternalLink,
   ChevronLeft,
-  Bot,
-  Brain,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -463,7 +459,7 @@ function MarkdownToolbar({
           disabled={isAiFormatting}
           title="AI Auto-Format and Structure Note"
         >
-          {isAiFormatting ? <Loader2 size={11} className={styles.spin} /> : <Sparkles size={11} />}
+          {isAiFormatting && <Loader2 size={11} className={styles.spin} />}
           <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
         </button>
 
@@ -2236,7 +2232,6 @@ export default function KnowledgePage() {
                     onClick={() => setAiModalOpen(true)}
                     title="AI Note Tools: Auto-Format, Executive Summary, Study Quiz, Ask AI"
                   >
-                    <Sparkles size={13} className={styles.aiSparkleIcon} />
                     <span>AI Tools</span>
                   </button>
 
@@ -2616,9 +2611,6 @@ export default function KnowledgePage() {
                 <div className={styles.quizStudyCanvas}>
                   <div className={styles.quizStudyHeader}>
                     <div className={styles.quizStudyTitleRow}>
-                      <div className={styles.quizStudyIcon}>
-                        <Brain size={22} />
-                      </div>
                       <div>
                         <h2 className={styles.quizStudyTitle}>Study &amp; Review Quiz</h2>
                         <p className={styles.quizStudySubtitle}>
@@ -2635,7 +2627,7 @@ export default function KnowledgePage() {
                         disabled={isGeneratingQuiz}
                         title="Regenerate questions using AI"
                       >
-                        <Sparkles size={13} className={isGeneratingQuiz ? styles.spin : ''} />
+                        {isGeneratingQuiz && <Loader2 size={13} className={styles.spin} />}
                         <span>{isGeneratingQuiz ? 'Generating...' : 'Regenerate Questions'}</span>
                       </button>
 
@@ -2738,7 +2730,6 @@ export default function KnowledgePage() {
                     </div>
                   ) : (
                     <div className={styles.aiEmptyState} style={{ padding: '48px 20px', textAlign: 'center' }}>
-                      <Brain size={38} style={{ color: 'var(--color-accent)', opacity: 0.85, margin: '0 auto 12px' }} />
                       <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--color-text)' }}>
                         No Study Questions Generated Yet
                       </h3>
@@ -2750,7 +2741,7 @@ export default function KnowledgePage() {
                         className={styles.btnPrimaryGradient}
                         onClick={() => handleGenerateQuiz()}
                       >
-                        <Sparkles size={14} /> Auto-Create Study Quiz
+                        Auto-Create Study Quiz
                       </button>
                     </div>
                   )}
@@ -2832,14 +2823,13 @@ export default function KnowledgePage() {
       )}
 
       {/* ── AI Knowledge Suite Modal ── */}
+      {/* AI Knowledge Tools Suite Modal */}
       {aiModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setAiModalOpen(false)}>
           <div className={styles.aiModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.aiModalHeader}>
               <div className={styles.aiModalTitleGroup}>
-                <span className={styles.aiModalBadge}>
-                  <Sparkles size={13} /> AI Knowledge Suite
-                </span>
+                <span className={styles.aiModalBadge}>AI Knowledge Suite</span>
                 <h2 className={styles.aiModalTitle}>{fTitle || 'Untitled Document'}</h2>
               </div>
               <button
@@ -2858,7 +2848,6 @@ export default function KnowledgePage() {
                 className={`${styles.aiModalTab} ${aiModalTab === 'format' ? styles.aiModalTabActive : ''}`}
                 onClick={() => setAiModalTab('format')}
               >
-                <Wand2 size={13} />
                 <span>Auto-Format</span>
               </button>
               <button
@@ -2871,7 +2860,6 @@ export default function KnowledgePage() {
                   }
                 }}
               >
-                <FileText size={13} />
                 <span>Summary</span>
               </button>
               <button
@@ -2884,7 +2872,6 @@ export default function KnowledgePage() {
                   }
                 }}
               >
-                <Brain size={13} />
                 <span>Study Quiz</span>
               </button>
               <button
@@ -2892,7 +2879,6 @@ export default function KnowledgePage() {
                 className={`${styles.aiModalTab} ${aiModalTab === 'ask' ? styles.aiModalTabActive : ''}`}
                 onClick={() => setAiModalTab('ask')}
               >
-                <Bot size={13} />
                 <span>Ask AI</span>
               </button>
             </div>
@@ -2902,7 +2888,6 @@ export default function KnowledgePage() {
               {aiModalTab === 'format' && (
                 <div className={styles.aiToolCard}>
                   <div className={styles.aiToolHeader}>
-                    <Wand2 size={20} className={styles.aiToolIcon} />
                     <div>
                       <h3 className={styles.aiToolHeading}>Intelligent Note Formatting</h3>
                       <p className={styles.aiToolDesc}>
@@ -2920,7 +2905,7 @@ export default function KnowledgePage() {
                       }}
                       disabled={isAiFormatting}
                     >
-                      {isAiFormatting ? <Loader2 size={14} className={styles.spin} /> : <Sparkles size={14} />}
+                      {isAiFormatting && <Loader2 size={14} className={styles.spin} />}
                       <span>{isAiFormatting ? 'Formatting Document...' : 'Run Auto-Format'}</span>
                     </button>
                   </div>
@@ -2968,36 +2953,33 @@ export default function KnowledgePage() {
                           className={styles.btnPrimaryGradient}
                           onClick={handleInsertSummaryIntoDoc}
                         >
-                          {insertedSummarySuccess ? <Check size={14} /> : <Plus size={14} />}
-                          <span>{insertedSummarySuccess ? 'Inserted at Top!' : 'Insert into Document'}</span>
+                          <span>{insertedSummarySuccess ? 'Inserted at Top' : 'Insert into Document'}</span>
                         </button>
                         <button
                           type="button"
                           className={styles.btnSecondary}
                           onClick={handleCopySummary}
                         >
-                          {copiedSummary ? <Check size={14} /> : <Copy size={14} />}
-                          <span>{copiedSummary ? 'Copied!' : 'Copy Summary'}</span>
+                          <span>{copiedSummary ? 'Copied' : 'Copy Summary'}</span>
                         </button>
                         <button
                           type="button"
                           className={styles.btnSecondary}
                           onClick={handleGenerateSummary}
                         >
-                          <RotateCcw size={14} />
                           <span>Regenerate</span>
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className={styles.aiEmptyState}>
-                      <p className={styles.aiToolDesc}>Generate an executive TL;DR, core insights, and next actions for this note.</p>
+                      <p className={styles.aiToolDesc}>Generate an executive summary, core insights, and next actions for this note.</p>
                       <button
                         type="button"
                         className={styles.btnPrimaryGradient}
                         onClick={handleGenerateSummary}
                       >
-                        <Sparkles size={14} /> Generate Executive Summary
+                        Generate Executive Summary
                       </button>
                     </div>
                   )}
@@ -3015,7 +2997,7 @@ export default function KnowledgePage() {
                   ) : aiQuizResult ? (
                     <div className={styles.aiQuizList}>
                       <p className={styles.aiToolDesc}>
-                        Active recall strengthens memory retention. Tap any question to reveal its answer!
+                        Active recall strengthens memory retention. Tap any question to reveal its answer.
                       </p>
                       {aiQuizResult.questions.map((q, idx) => {
                         const isRevealed = revealedQuizAnswers[idx];
@@ -3044,7 +3026,7 @@ export default function KnowledgePage() {
                               </div>
                             ) : (
                               <div className={styles.quizTapPrompt}>
-                                <span>Tap card to reveal answer ▾</span>
+                                <span>Tap card to reveal answer</span>
                               </div>
                             )}
                           </div>
@@ -3056,7 +3038,7 @@ export default function KnowledgePage() {
                           className={styles.btnSecondary}
                           onClick={() => handleGenerateQuiz()}
                         >
-                          <RotateCcw size={13} /> Regenerate Questions
+                          <span>Regenerate Questions</span>
                         </button>
                       </div>
                     </div>
@@ -3068,7 +3050,7 @@ export default function KnowledgePage() {
                         className={styles.btnPrimaryGradient}
                         onClick={() => handleGenerateQuiz()}
                       >
-                        <Brain size={14} /> Generate Study Questions
+                        Generate Study Questions
                       </button>
                     </div>
                   )}
@@ -3079,11 +3061,10 @@ export default function KnowledgePage() {
               {aiModalTab === 'ask' && (
                 <div className={styles.aiToolCard}>
                   <div className={styles.aiToolHeader}>
-                    <Bot size={22} className={styles.aiToolIcon} />
                     <div>
                       <h3 className={styles.aiToolHeading}>Discuss with AI Assistant</h3>
                       <p className={styles.aiToolDesc}>
-                        Opens the floating chat assistant with <strong>&ldquo;{fTitle || 'this document'}&rdquo;</strong> pre-loaded into live context. Ask questions, clarify difficult concepts, or generate action plans connected to your goals.
+                        Opens the assistant chat with <strong>&ldquo;{fTitle || 'this document'}&rdquo;</strong> pre-loaded into live context. Ask questions, clarify difficult concepts, or generate action plans connected to your goals.
                       </p>
                     </div>
                   </div>
@@ -3096,7 +3077,7 @@ export default function KnowledgePage() {
                         handleOpenAiChatForDoc();
                       }}
                     >
-                      <Bot size={14} /> Open AI Assistant Chat
+                      Open AI Assistant Chat
                     </button>
                   </div>
                 </div>

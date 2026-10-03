@@ -649,25 +649,17 @@
 }
 
 .headerAiBtn {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12)) !important;
-  border-color: rgba(139, 92, 246, 0.35) !important;
-  color: var(--color-accent) !important;
-  font-weight: 600 !important;
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
 }
 
 .headerAiBtn:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.22)) !important;
-  border-color: rgba(139, 92, 246, 0.6) !important;
-}
-
-.aiSparkleIcon {
-  color: #a855f7;
-  animation: pulseSparkle 2s ease infinite;
-}
-
-@keyframes pulseSparkle {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.15); }
+  background: var(--color-surface-hover) !important;
+  border-color: var(--color-text-muted) !important;
+  color: var(--color-text) !important;
 }
 
 .lastSavedText {
@@ -2019,55 +2011,51 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 16px 22px;
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface-2);
 }
 
-.aiModalTitle {
+.aiModalTitleGroup {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
 }
 
-.aiModalTitle h3 {
+.aiModalBadge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.aiModalTitle {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-text);
   letter-spacing: -0.01em;
   white-space: nowrap;
-}
-
-.aiDocBadge {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  padding: 2px 8px;
-  border-radius: 9999px;
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.closeBtn {
+.aiModalCloseBtn {
   background: transparent;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 5px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: var(--radius-md, 6px);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
 }
 
-.closeBtn:hover {
+.aiModalCloseBtn:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
 }
@@ -2075,8 +2063,8 @@
 .aiModalTabs {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 8px 18px;
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
   overflow-x: auto;
@@ -2090,14 +2078,15 @@
 .aiModalTab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 8px;
+  justify-content: center;
+  padding: 7px 14px;
+  border-radius: var(--radius-md, 6px);
   background: transparent;
   border: 1px solid transparent;
   color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--transition-fast);
@@ -2105,13 +2094,14 @@
 
 .aiModalTab:hover {
   color: var(--color-text);
-  background: var(--color-surface-2);
+  background: var(--color-surface-hover);
 }
 
 .aiModalTabActive {
   background: var(--color-surface-2);
-  color: var(--color-accent);
-  border-color: rgba(99, 102, 241, 0.25);
+  color: var(--color-text);
+  border-color: var(--color-border);
+  font-weight: 600;
 }
 
 .aiModalBody {
@@ -2126,42 +2116,32 @@
 .aiToolCard {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--radius-lg, 10px);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .aiToolHeader {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.aiToolIcon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
-  color: var(--color-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.aiToolTitle {
-  font-size: 13px;
+.aiToolHeading {
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 2px;
+  letter-spacing: -0.01em;
 }
 
 .aiToolDesc {
-  font-size: 11px;
+  margin: 0;
+  font-size: 12.5px;
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .aiFormatActions {
@@ -2175,26 +2155,27 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 16px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--color-accent, #6366f1), #a855f7);
+  padding: 9px 18px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-primary, #2563eb);
   color: #ffffff;
-  border: none;
-  font-size: 12px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
-  min-height: 38px;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  min-height: 36px;
 }
 
 .btnPrimaryGradient:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  opacity: 0.92;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .btnPrimaryGradient:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
