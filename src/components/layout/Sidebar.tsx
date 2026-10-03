@@ -117,10 +117,10 @@ export default function Sidebar({
 
   const handleMouseLeave = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    // Smooth 90ms debounce so rapid mouse movements don't flicker
+    // Smooth 220ms debounce so rapid mouse movements and edge crossings don't flicker or shake
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 90);
+    }, 220);
   };
 
   const handlePinClick = () => {
