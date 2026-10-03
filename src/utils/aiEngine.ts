@@ -716,24 +716,12 @@ export async function executeOptionalAICall(
   let endpoint = 'https://api.openai.com/v1/chat/completions';
   let defaultModel = 'gpt-4o-mini';
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
   const envGroqKey1 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '') : '';
   const envGroqKey2 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_2 || '') : '';
-
-  if (aiSettings.apiKey?.trim()) {
-    headers['Authorization'] = `Bearer ${aiSettings.apiKey.trim()}`;
-  } else if (aiSettings.provider === 'groq' && envGroqKey1) {
-    headers['Authorization'] = `Bearer ${envGroqKey1}`;
-  }
 
   if (aiSettings.provider === 'openrouter') {
     endpoint = 'https://openrouter.ai/api/v1/chat/completions';
     defaultModel = 'google/gemini-2.0-flash-exp:free';
-    headers['HTTP-Referer'] = 'https://lifeos.app';
-    headers['X-Title'] = 'Life OS';
   } else if (aiSettings.provider === 'groq') {
     endpoint = 'https://api.groq.com/openai/v1/chat/completions';
     defaultModel = 'openai/gpt-oss-120b';
@@ -751,71 +739,107 @@ export async function executeOptionalAICall(
     defaultModel = 'llama3';
   }
 
-  if (aiSettings.apiEndpoint?.trim()) {
+  // ONLY custom provider should ever override the API endpoint with apiEndpoint
+  if (aiSettings.provider === 'custom' && aiSettings.apiEndpoint?.trim()) {
     endpoint = aiSettings.apiEndpoint.trim();
   }
 
-  const modelName = aiSettings.model?.trim() || defaultModel;
+  const requestedModel = aiSettings.model?.trim() || defaultModel;
 
-  let response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt },
-      ],
-      temperature: aiSettings.temperature ?? 0.7,
-      max_tokens: 2048,
-    }),
-  });
-
-  // Automatic Failover for Groq: if rate-limited (429) or unauthorized (401), try backup key
-  if (!response.ok && aiSettings.provider === 'groq' && (response.status === 429 || response.status === 401)) {
-    const backupKey = aiSettings.savedKeys?.find((k) => k.apiKey && k.apiKey !== aiSettings.apiKey)?.apiKey || envGroqKey2;
-    if (backupKey) {
-      const retryHeaders = {
-        ...headers,
-        Authorization: `Bearer ${backupKey}`,
-      };
-      const retryResp = await fetch(endpoint, {
-        method: 'POST',
-        headers: retryHeaders,
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-        temperature: aiSettings.temperature ?? 0.7,
-        max_tokens: 2048,
-      }),
-    });
-    if (retryResp.ok) {
-      response = retryResp;
+  const candidateKeys: string[] = [];
+  if (aiSettings.apiKey?.trim()) candidateKeys.push(aiSettings.apiKey.trim());
+  if (Array.isArray(aiSettings.savedKeys)) {
+    for (const k of aiSettings.savedKeys) {
+      const c = k.apiKey?.trim();
+      if (c && !candidateKeys.includes(c)) candidateKeys.push(c);
     }
   }
-}
-
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    const rawErrMsg = errJson.error?.message || errJson.message || `API error (${response.status})`;
-    if (response.status === 401) {
-      throw new Error(`Invalid API key for ${aiSettings.provider.toUpperCase()}. Please verify your key.`);
-    }
-    if (response.status === 429) {
-      throw new Error(`Rate limit or quota reached for ${aiSettings.provider.toUpperCase()}. Please wait or check your balance.`);
-    }
-    throw new Error(rawErrMsg);
+  if (aiSettings.provider === 'groq') {
+    if (envGroqKey1 && !candidateKeys.includes(envGroqKey1)) candidateKeys.push(envGroqKey1);
+    if (envGroqKey2 && !candidateKeys.includes(envGroqKey2)) candidateKeys.push(envGroqKey2);
+  }
+  if (candidateKeys.length === 0) {
+    candidateKeys.push(aiSettings.apiKey || '');
   }
 
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content || '';
-  const totalTokens = data.usage?.total_tokens || 450;
-  const costUSD = (totalTokens / 1_000_000) * 0.15;
+  const candidateModels = aiSettings.provider === 'groq'
+    ? Array.from(new Set([requestedModel, 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'])).filter(Boolean)
+    : [requestedModel];
 
-  return { text, tokensUsed: totalTokens, costUSD };
+  let lastError = `Failed to connect to ${aiSettings.provider.toUpperCase()}`;
+
+  for (let keyIdx = 0; keyIdx < candidateKeys.length; keyIdx++) {
+    const currentKey = candidateKeys[keyIdx];
+    const hasBackupKey = keyIdx < candidateKeys.length - 1;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentKey}`,
+    };
+
+    if (aiSettings.provider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://lifeos.app';
+      headers['X-Title'] = 'Life OS';
+    }
+
+    for (const m of candidateModels) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          signal: AbortSignal.timeout(20000),
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: prompt },
+            ],
+            temperature: aiSettings.temperature ?? 0.7,
+            max_tokens: 2048,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || '';
+          const totalTokens = data.usage?.total_tokens || 450;
+          const costUSD = (totalTokens / 1_000_000) * 0.15;
+
+          return { text, tokensUsed: totalTokens, costUSD, modelUsed: m };
+        }
+
+        const errJson = await response.json().catch(() => ({}));
+        const rawErrMsg = errJson.error?.message || errJson.message || `API error (${response.status})`;
+
+        if (response.status === 404 || (rawErrMsg.toLowerCase().includes('model') && rawErrMsg.toLowerCase().includes('not exist'))) {
+          lastError = rawErrMsg;
+          continue; // try next candidate model
+        }
+
+        if ((response.status === 429 || response.status === 401) && hasBackupKey) {
+          console.warn(`[Life OS AI] Key #${keyIdx + 1} for ${aiSettings.provider} failed (${rawErrMsg}). Switching to next key in pool...`);
+          lastError = rawErrMsg;
+          break; // try next key
+        }
+
+        if (response.status === 401) {
+          throw new Error(`Invalid API key for ${aiSettings.provider.toUpperCase()}. Please verify your key.`);
+        }
+        if (response.status === 429) {
+          throw new Error(`Rate limit or quota reached for ${aiSettings.provider.toUpperCase()}. Please wait or check your balance.`);
+        }
+
+        throw new Error(rawErrMsg);
+      } catch (err: any) {
+        if (err?.message?.includes('Invalid API key') || err?.message?.includes('Rate limit')) {
+          throw err;
+        }
+        lastError = err?.message || lastError;
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 // ── Types for new AI features ─────────────────────────────────────────────

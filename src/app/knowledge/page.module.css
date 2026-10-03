@@ -196,6 +196,8 @@
   }
 
   .canvasHeader {
+    position: static;
+    top: auto;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
@@ -266,6 +268,8 @@
   }
 
   .bookHighlighterBar {
+    position: static;
+    top: auto;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
@@ -497,7 +501,8 @@
   padding-left: var(--space-6);
   padding-top: var(--space-2);
   flex: 1;
-  overflow: hidden;
+  min-width: 0;
+  overflow: visible;
 }
 
 @media (max-width: 768px) {
@@ -520,19 +525,29 @@
 .editorWrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  width: 100%;
+  overflow: visible;
 }
 
 .canvasHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
   margin-bottom: var(--space-4);
-  flex-wrap: wrap;
   gap: var(--space-2);
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
+  flex-wrap: wrap;
+  transition: all var(--transition-fast);
 }
 
 .canvasHeaderLeft {
@@ -547,6 +562,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /*  Mode Toggle Segmented Control  */
@@ -1338,18 +1354,18 @@
 /*  Book Mode  */
 .bookWrapper {
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-4) var(--space-2) var(--space-8);
-  background: var(--color-bg);
+  padding: var(--space-2) var(--space-2) var(--space-8);
+  background: transparent;
   gap: var(--space-4);
+  width: 100%;
 }
 
 .bookHighlighterBar {
   position: sticky;
-  top: 0;
+  top: 60px;
   z-index: 20;
   display: flex;
   align-items: center;
@@ -1359,11 +1375,13 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   max-width: 680px;
   width: 100%;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   flex-wrap: wrap;
+  transition: top var(--transition-fast);
 }
 
 .bookHighlighterGroup {
@@ -1438,6 +1456,8 @@
   padding: 48px 52px;
   box-shadow: var(--shadow-lg);
   min-height: 500px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 [data-theme='light'] .bookPage {

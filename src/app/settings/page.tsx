@@ -108,14 +108,24 @@ export default function SettingsPage() {
     if (!formData.aiSettings) return;
     const curActiveId = formData.aiSettings.activeKeyId;
     let updatedSavedKeys = [...(formData.aiSettings.savedKeys || [])];
+    const cleanVal = val.trim();
 
     if (curActiveId) {
-      updatedSavedKeys = updatedSavedKeys.map((k) => (k.id === curActiveId ? { ...k, apiKey: val } : k));
+      updatedSavedKeys = updatedSavedKeys.map((k) => {
+        if (k.id === curActiveId) {
+          const isAutoNamed = k.name.includes('Key (') || k.name.startsWith('Key Profile ');
+          const newName = isAutoNamed && cleanVal.length > 8
+            ? `${formData.aiSettings?.provider === 'groq' ? 'Groq' : 'AI'} Key (${cleanVal.slice(0, 8)}...)`
+            : k.name;
+          return { ...k, apiKey: cleanVal, name: newName };
+        }
+        return k;
+      });
     }
 
     const updatedAI: AISettings = {
       ...formData.aiSettings,
-      apiKey: val,
+      apiKey: cleanVal,
       savedKeys: updatedSavedKeys,
     };
     triggerAutoSaveAI(updatedAI);
@@ -125,7 +135,8 @@ export default function SettingsPage() {
     if (!formData.aiSettings?.apiKey?.trim()) return;
     const existing = formData.aiSettings.savedKeys || [];
     const count = existing.length + 1;
-    const keyName = newKeyNameInput.trim() || `Key Profile ${count} (${formData.aiSettings.model || 'Flash'})`;
+    const keyPrefix = formData.aiSettings.apiKey.trim().slice(0, 8);
+    const keyName = newKeyNameInput.trim() || `${formData.aiSettings.provider === 'groq' ? 'Groq' : 'AI'} Key (${keyPrefix}...)`;
     const newSavedKey: SavedApiKey = {
       id: `key-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       name: keyName,
@@ -164,13 +175,15 @@ export default function SettingsPage() {
 
   const handleSwitchActiveKey = (k: SavedApiKey) => {
     if (!formData.aiSettings) return;
+    const targetProvider = k.provider || formData.aiSettings.provider;
     const updatedAI: AISettings = {
       ...formData.aiSettings,
       apiKey: k.apiKey,
       model: k.model || formData.aiSettings.model,
-      provider: k.provider || formData.aiSettings.provider,
+      provider: targetProvider,
       activeKeyId: k.id,
       enabled: true,
+      apiEndpoint: targetProvider === 'custom' ? formData.aiSettings.apiEndpoint : undefined,
     };
     setAiTestResult(null);
     triggerAutoSaveAI(updatedAI);
@@ -1035,7 +1048,8 @@ export default function SettingsPage() {
                       const updatedAI = {
                         ...formData.aiSettings!,
                         provider: 'groq' as const,
-                        model: 'llama-3.3-70b-versatile',
+                        model: 'openai/gpt-oss-120b',
+                        apiEndpoint: undefined,
                       };
                       const updated = { ...formData, aiSettings: updatedAI };
                       setFormData(updated);
@@ -1236,26 +1250,22 @@ export default function SettingsPage() {
                   {formData.aiSettings?.provider === 'groq' && (
                     <>
                       {[
-                        'openai/gpt-oss-120b',
-                        'openai/gpt-oss-20b',
-                        'qwen/qwen3.8-27b',
-                        'llama-3.3-70b-versatile',
-                        'llama-3.1-8b-instant',
-                        'deepseek-r1-distill-llama-70b',
-                        'gemma2-9b-it',
-                        'mixtral-8x7b-32768',
+                        { id: 'openai/gpt-oss-120b', label: 'openai/gpt-oss-120b (Flagship Reasoning)' },
+                        { id: 'openai/gpt-oss-20b', label: 'openai/gpt-oss-20b (Ultra-Fast)' },
+                        { id: 'qwen/qwen3.8-27b', label: 'qwen/qwen3.8-27b (27B Balanced)' },
+                        { id: 'allam-2-7b', label: 'allam-2-7b' },
                       ].map((m) => (
                         <button
-                          key={m}
+                          key={m.id}
                           type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
+                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m.id ? styles.activeModelChip : ''}`}
                           onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
+                            const updatedAI = { ...formData.aiSettings!, model: m.id };
                             setFormData({ ...formData, aiSettings: updatedAI });
                             updateSettings({ aiSettings: updatedAI });
                           }}
                         >
-                          {m}
+                          {m.label}
                         </button>
                       ))}
                     </>
@@ -1730,7 +1740,7 @@ export default function SettingsPage() {
                     <div className={styles.failoverLabel}>
                       <span style={{ fontWeight: 600 }}>Auto-Switch on Rate Limit / Quota Exhaustion</span>
                       <span style={{ fontSize: '0.70rem', color: 'var(--color-text-muted)' }}>
-                        Automatically failover to the next saved key in your pool if Gemini returns 429 or quota limit.
+                        Automatically failover to the next saved key in your pool if {formData.aiSettings?.provider === 'groq' ? 'Groq' : formData.aiSettings?.provider === 'gemini' ? 'Gemini' : 'the active provider'} returns 429 or quota limit.
                       </span>
                     </div>
                     <label className={styles.switch}>
@@ -1756,7 +1766,7 @@ export default function SettingsPage() {
                     {isTestingAI ? 'Testing...' : 'Test Connection'}
                   </button>
                   <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                    Verifies connection against the {formData.aiSettings?.provider} endpoint.
+                    Verifies connection against the {formData.aiSettings?.provider?.toUpperCase()} endpoint.
                   </span>
                 </div>
 
@@ -1764,11 +1774,11 @@ export default function SettingsPage() {
                   <>
                     {aiTestResult.success ? (
                       <div className={styles.testSuccessBox} role="status">
-                        Connected successfully. Latency: {aiTestResult.latencyMs}ms.
+                        ✓ Connected successfully to {(formData.aiSettings?.provider || 'AI').toUpperCase()} · Model: {aiTestResult.modelUsed || formData.aiSettings?.model} · Latency: {aiTestResult.latencyMs}ms
                       </div>
                     ) : (
                       <div className={styles.testErrorBox} role="alert">
-                        Connection failed: {aiTestResult.message}
+                        Connection failed: {aiTestResult.message === 'fetch failed' ? 'Network request failed. Please check internet connection and ensure API key is active.' : aiTestResult.message}
                       </div>
                     )}
                   </>

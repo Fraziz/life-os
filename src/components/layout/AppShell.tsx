@@ -54,8 +54,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isOpen, openSearch } = useSearch();
 
-  // Desktop: collapsed state — persisted across sessions
-  const [collapsed, setCollapsed] = useState(false);
+  // Desktop: pinned state — when true, sidebar is locked open at 248px.
+  // When false (default), sidebar is in Instagram PC hover rail mode (72px).
+  const [isPinned, setIsPinned] = useState(false);
 
   // Mobile: drawer open state — reset on navigation
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -70,9 +71,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   // Restore persisted sidebar preference on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('life_os_sidebar_collapsed');
+      const saved = localStorage.getItem('life_os_sidebar_pinned');
       if (saved !== null) {
-        setCollapsed(saved === 'true');
+        setIsPinned(saved === 'true');
       }
     } catch {
       // localStorage unavailable (SSR/private mode)
@@ -90,9 +91,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     const handleOpenAiChat = () => setAiChatOpen(true);
     const handleOpenReminders = () => setRemindersOpen(true);
     const handleToggleSidebar = () => {
-      setCollapsed(prev => {
+      setIsPinned(prev => {
         const next = !prev;
-        try { localStorage.setItem('life_os_sidebar_collapsed', String(next)); } catch {}
+        try { localStorage.setItem('life_os_sidebar_pinned', String(next)); } catch {}
         return next;
       });
     };
@@ -113,10 +114,10 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Persist when changed
-  const handleCollapse = (value: boolean) => {
-    setCollapsed(value);
+  const handlePinToggle = (value: boolean) => {
+    setIsPinned(value);
     try {
-      localStorage.setItem('life_os_sidebar_collapsed', String(value));
+      localStorage.setItem('life_os_sidebar_pinned', String(value));
     } catch {
       // ignore
     }
@@ -133,12 +134,12 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       if (e.key === 'Escape' && mobileOpen) {
         setMobileOpen(false);
       }
-      // Ctrl+B or Cmd+B → Toggle Sidebar / Hide Navigation
+      // Ctrl+B or Cmd+B → Toggle Sidebar Pinning
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setCollapsed(prev => {
+        setIsPinned(prev => {
           const next = !prev;
-          try { localStorage.setItem('life_os_sidebar_collapsed', String(next)); } catch {}
+          try { localStorage.setItem('life_os_sidebar_pinned', String(next)); } catch {}
           return next;
         });
       }
@@ -178,12 +179,19 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
-          const maxX = Math.max(10, window.innerWidth - 60);
-          const maxY = Math.max(10, window.innerHeight - 60);
-          setBubblePos({
-            x: Math.min(Math.max(10, parsed.x), maxX),
-            y: Math.min(Math.max(10, parsed.y), maxY),
-          });
+          // If previous position was stuck in the middle of reading text, reset to safe edge
+          const isMiddleOfScreen = parsed.x > 80 && parsed.x < (window.innerWidth - 80);
+          if (isMiddleOfScreen) {
+            setBubblePos(null);
+            localStorage.removeItem('life_os_ai_bubble_pos');
+          } else {
+            const maxX = Math.max(10, window.innerWidth - 60);
+            const maxY = Math.max(10, window.innerHeight - 60);
+            setBubblePos({
+              x: Math.min(Math.max(10, parsed.x), maxX),
+              y: Math.min(Math.max(10, parsed.y), maxY),
+            });
+          }
         }
       }
     } catch {}
@@ -209,7 +217,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
-    if (Math.hypot(dx, dy) > 3) {
+    if (Math.hypot(dx, dy) > 8) {
       dragRef.current.moved = true;
       setIsDraggingBubble(true);
       const newX = Math.min(Math.max(10, dragRef.current.initX + dx), window.innerWidth - 54);
@@ -221,6 +229,10 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const handleBubblePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (!dragRef.current) return;
     const wasMoved = dragRef.current.moved;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    const initX = dragRef.current.initX;
+    const initY = dragRef.current.initY;
     dragRef.current = null;
     setIsDraggingBubble(false);
     try {
@@ -229,36 +241,31 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
     if (!wasMoved) {
       setAiChatOpen(prev => !prev);
-    } else if (bubblePos) {
+    } else {
+      // Snap automatically to the nearest screen edge so it never hovers over reading content
+      const currentX = initX + dx;
+      const snapX = currentX > window.innerWidth / 2 ? window.innerWidth - 64 : 16;
+      const snapY = Math.min(Math.max(16, initY + dy), window.innerHeight - 74);
+      const snapped = { x: snapX, y: snapY };
+      setBubblePos(snapped);
       try {
-        localStorage.setItem('life_os_ai_bubble_pos', JSON.stringify(bubblePos));
+        localStorage.setItem('life_os_ai_bubble_pos', JSON.stringify(snapped));
       } catch {}
     }
   };
 
   const mainClass = [
     styles.main,
-    collapsed ? styles.sidebarCollapsed : '',
+    isPinned ? styles.sidebarPinned : '',
   ].filter(Boolean).join(' ');
 
   return (
     <>
       <div className={styles.shell}>
-        {collapsed && (
-          <button
-            type="button"
-            onClick={() => handleCollapse(false)}
-            className={styles.expandSidebarBtn}
-            title="Show navigation (Ctrl+B)"
-            aria-label="Show navigation"
-          >
-            <PanelLeft size={16} />
-          </button>
-        )}
         <Sidebar
-          collapsed={collapsed}
+          pinned={isPinned}
           mobileOpen={mobileOpen}
-          onCollapse={handleCollapse}
+          onPinToggle={handlePinToggle}
           onMobileClose={() => setMobileOpen(false)}
           onOpenReminders={() => setRemindersOpen(true)}
           onOpenAssistant={() => setAssistantOpen(true)}
@@ -317,6 +324,16 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         onPointerMove={handleBubblePointerMove}
         onPointerUp={handleBubblePointerUp}
         onPointerCancel={handleBubblePointerUp}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          setBubblePos(null);
+          try { localStorage.removeItem('life_os_ai_bubble_pos'); } catch {}
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setBubblePos(null);
+          try { localStorage.removeItem('life_os_ai_bubble_pos'); } catch {}
+        }}
         className={`${styles.aiChatBtn} ${isDraggingBubble ? styles.aiChatBtnDragging : ''}`}
         style={
           bubblePos
@@ -329,7 +346,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
             : undefined
         }
         aria-label="Open AI assistant (Ctrl+L)"
-        title="AI Assistant (Click to open, Drag to move)"
+        title="AI Assistant (Click to open, Drag to dock, Double-click to reset)"
         id="ai-chat-float-btn"
       >
         <Bot size={20} strokeWidth={2} />

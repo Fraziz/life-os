@@ -104,6 +104,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (parsed.aiSettings?.model === 'gemini-2.5-pro' || parsed.aiSettings?.model === 'models/gemini-2.5-pro') {
           parsed.aiSettings.model = 'gemini-3.1-pro-preview';
         }
+        // Clean up any stale apiEndpoint if provider is not custom so it cannot hijack cloud endpoints
+        if (parsed.aiSettings && parsed.aiSettings.provider !== 'custom' && parsed.aiSettings.apiEndpoint) {
+          delete parsed.aiSettings.apiEndpoint;
+        }
+        // If provider is groq and model is unavailable llama-3.3-70b-versatile, auto-migrate to openai/gpt-oss-120b
+        if (parsed.aiSettings?.provider === 'groq' && (parsed.aiSettings?.model === 'llama-3.3-70b-versatile' || !parsed.aiSettings?.model)) {
+          parsed.aiSettings.model = 'openai/gpt-oss-120b';
+        }
         // If no API key configured or using old default, ensure Groq is available with the keys
         if (!parsed.aiSettings?.apiKey || parsed.aiSettings.apiKey.trim() === '') {
           parsed.aiSettings = {

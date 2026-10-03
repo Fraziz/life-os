@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock,
   Flag,
   Plus,
@@ -80,6 +81,35 @@ export default function CalendarPage() {
   const [dlEntityId, setDlEntityId] = useState('');
   const [dlNewTaskTitle, setDlNewTaskTitle] = useState('');
   const [dlDate, setDlDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Unified Add Menu dropdown states & refs
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [sideAddMenuOpen, setSideAddMenuOpen] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const sideAddMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false);
+      }
+      if (sideAddMenuRef.current && !sideAddMenuRef.current.contains(e.target as Node)) {
+        setSideAddMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAddMenuOpen(false);
+        setSideAddMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Helper date formatters & quick-add launchers
   const formatFullFriendlyDate = (dateStr: string) => {
@@ -253,16 +283,76 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className={styles.actionButtons}>
-          <button className={styles.btnSecondary} onClick={() => openAddDeadline()} style={{ border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444' }}>
-            <Flag size={13} /> + Add Deadline
-          </button>
-          <button className={styles.btnSecondary} onClick={() => openAddEvent()}>
-            <Plus size={13} /> Add Event
-          </button>
-          <button className={styles.btnSchedule} onClick={() => openScheduleBlock()}>
-            <Clock size={13} /> Schedule Work Block
-          </button>
+        <div className={styles.actionButtons} ref={addMenuRef}>
+          <div className={styles.newEntryDropdownWrap}>
+            <button
+              type="button"
+              className={styles.btnNewEntry}
+              onClick={() => setAddMenuOpen((prev) => !prev)}
+              aria-expanded={addMenuOpen}
+              aria-haspopup="true"
+              title="Add a new event, focus block, or deadline"
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              <span>New Entry</span>
+              <ChevronDown size={13} className={`${styles.chevron} ${addMenuOpen ? styles.chevronOpen : ''}`} />
+            </button>
+
+            {addMenuOpen && (
+              <div className={styles.newEntryDropdownMenu}>
+                <button
+                  type="button"
+                  className={styles.dropdownMenuItem}
+                  onClick={() => {
+                    setAddMenuOpen(false);
+                    openAddEvent();
+                  }}
+                >
+                  <div className={`${styles.menuItemIcon} ${styles.iconEvent}`}>
+                    <CalendarIcon size={14} />
+                  </div>
+                  <div className={styles.menuItemText}>
+                    <span className={styles.menuItemTitle}>Event</span>
+                    <span className={styles.menuItemDesc}>Meeting, appointment, or personal event</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.dropdownMenuItem}
+                  onClick={() => {
+                    setAddMenuOpen(false);
+                    openScheduleBlock();
+                  }}
+                >
+                  <div className={`${styles.menuItemIcon} ${styles.iconBlock}`}>
+                    <Clock size={14} />
+                  </div>
+                  <div className={styles.menuItemText}>
+                    <span className={styles.menuItemTitle}>Focus Block</span>
+                    <span className={styles.menuItemDesc}>Schedule dedicated focus time for a task</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.dropdownMenuItem}
+                  onClick={() => {
+                    setAddMenuOpen(false);
+                    openAddDeadline();
+                  }}
+                >
+                  <div className={`${styles.menuItemIcon} ${styles.iconDeadline}`}>
+                    <Flag size={14} />
+                  </div>
+                  <div className={styles.menuItemText}>
+                    <span className={styles.menuItemTitle}>Deadline</span>
+                    <span className={styles.menuItemDesc}>Hard target due date for task, project, or goal</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -626,32 +716,76 @@ export default function CalendarPage() {
                 )}
               </div>
 
-              <div className={styles.sideQuickActionRow}>
-                <button
-                  type="button"
-                  className={styles.sideQuickActionBtn}
-                  onClick={() => openAddEvent(selectedDate)}
-                  title="Add an event for this date"
-                >
-                  <Plus size={12} /> Add Event
-                </button>
-                <button
-                  type="button"
-                  className={styles.sideQuickActionBtn}
-                  onClick={() => openScheduleBlock(selectedDate)}
-                  title="Schedule a focus block for this date"
-                >
-                  <Clock size={12} /> Focus Block
-                </button>
-                <button
-                  type="button"
-                  className={styles.sideQuickActionBtn}
-                  onClick={() => openAddDeadline(selectedDate)}
-                  title="Add a deadline for this date"
-                  style={{ color: '#ef4444' }}
-                >
-                  <Flag size={12} /> Add Deadline
-                </button>
+              <div className={styles.sideQuickActionRow} ref={sideAddMenuRef}>
+                <div className={styles.sideAddDropdownWrap}>
+                  <button
+                    type="button"
+                    className={styles.sideAddEntryBtn}
+                    onClick={() => setSideAddMenuOpen((prev) => !prev)}
+                    aria-expanded={sideAddMenuOpen}
+                    aria-haspopup="true"
+                    title="Add event, focus block, or deadline for this date"
+                  >
+                    <Plus size={13} strokeWidth={2.5} />
+                    <span>Add to this day</span>
+                    <ChevronDown size={12} className={`${styles.chevron} ${sideAddMenuOpen ? styles.chevronOpen : ''}`} />
+                  </button>
+
+                  {sideAddMenuOpen && (
+                    <div className={styles.sideAddDropdownMenu}>
+                      <button
+                        type="button"
+                        className={styles.dropdownMenuItem}
+                        onClick={() => {
+                          setSideAddMenuOpen(false);
+                          openAddEvent(selectedDate);
+                        }}
+                      >
+                        <div className={`${styles.menuItemIcon} ${styles.iconEvent}`}>
+                          <CalendarIcon size={13} />
+                        </div>
+                        <div className={styles.menuItemText}>
+                          <span className={styles.menuItemTitle}>Event</span>
+                          <span className={styles.menuItemDesc}>Appointment or meeting</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={styles.dropdownMenuItem}
+                        onClick={() => {
+                          setSideAddMenuOpen(false);
+                          openScheduleBlock(selectedDate);
+                        }}
+                      >
+                        <div className={`${styles.menuItemIcon} ${styles.iconBlock}`}>
+                          <Clock size={13} />
+                        </div>
+                        <div className={styles.menuItemText}>
+                          <span className={styles.menuItemTitle}>Focus Block</span>
+                          <span className={styles.menuItemDesc}>Scheduled task focus</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={styles.dropdownMenuItem}
+                        onClick={() => {
+                          setSideAddMenuOpen(false);
+                          openAddDeadline(selectedDate);
+                        }}
+                      >
+                        <div className={`${styles.menuItemIcon} ${styles.iconDeadline}`}>
+                          <Flag size={13} />
+                        </div>
+                        <div className={styles.menuItemText}>
+                          <span className={styles.menuItemTitle}>Deadline</span>
+                          <span className={styles.menuItemDesc}>Target due date</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className={styles.sideSectionsList}>
@@ -662,17 +796,11 @@ export default function CalendarPage() {
                     <div className={styles.emptyDayActions}>
                       <button
                         type="button"
-                        onClick={() => openAddEvent(selectedDate)}
+                        onClick={() => setSideAddMenuOpen(true)}
                         className={styles.emptyAddBtn}
                       >
-                        <Plus size={11} /> Add Event
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openScheduleBlock(selectedDate)}
-                        className={styles.emptyAddBtn}
-                      >
-                        <Clock size={11} /> Schedule Focus
+                        <Plus size={12} strokeWidth={2.5} />
+                        <span>Add Entry for this day</span>
                       </button>
                     </div>
                   </div>
