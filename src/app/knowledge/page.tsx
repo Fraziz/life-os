@@ -665,13 +665,18 @@ export default function KnowledgePage() {
       const isPdf = file.name.toLowerCase().endsWith('.pdf');
       const tags = isPdf ? ['pdf', 'imported'] : ['imported', 'notes'];
       
+      const docTitle = result.title || file.name;
+      const docContent = result.content || '';
+
       const newDoc = addDoc({
-        title: result.title || file.name,
-        content: result.content || '',
+        title: docTitle,
+        content: docContent,
         status: 'active',
         tags,
       });
 
+      setFTitle(docTitle);
+      setFContent(docContent);
       setSelectedId(newDoc.id);
       setIsCreating(false);
       setEditorMode('book');
