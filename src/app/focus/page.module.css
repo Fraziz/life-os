@@ -476,64 +476,416 @@
   gap: var(--space-3);
 }
 
-/* Side Focus Timer Card for Book View */
-.modeTabsSide {
-  display: flex;
+.headerCompact {
+  padding-bottom: var(--space-3);
+  margin-bottom: -12px;
   align-items: center;
-  gap: 4px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  padding: 3px;
-  border-radius: var(--radius-full);
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
-.modeTabSide {
-  background: transparent;
-  border: none;
+/* ── Unified Minimalist Focus Companion (Calendar-style Today Box) ── */
+.bookSidePanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  position: -webkit-sticky;
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
+
+.bookSideHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 10px;
+}
+
+.bookSideTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bookSideTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.bookSideBadgeActive {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background-color: rgba(99, 102, 241, 0.15);
+  color: var(--color-primary, #6366f1);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bookSideBadgeReady {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background-color: var(--color-surface-2);
   color: var(--color-text-muted);
-  padding: 4px 9px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bookSideStatusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary, #6366f1);
+  box-shadow: 0 0 6px var(--color-primary, #6366f1);
+}
+
+.bookSideZenBtn {
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
   cursor: pointer;
+  padding: 2px 6px;
+  font-weight: 600;
+  border-radius: 4px;
   transition: all var(--transition-fast);
 }
 
-.modeTabSide:hover {
+.bookSideZenBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+/* Single-row Segmented Tabs: 4 segments, no wrap */
+.bookSegmentedTabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 3px;
+  gap: 2px;
+}
+
+.bookSegmentTab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 6px 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.bookSegmentTab:hover {
   color: var(--color-text);
 }
 
-.modeTabSide.activeMode {
-  background: var(--color-accent);
-  color: #fff;
-  font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-sm);
+.bookSegmentTabActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.sideTimerDisplayCard {
+/* Minimalist Formal Timer Card */
+.bookTimerCard {
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-xl);
-  padding: var(--space-4) var(--space-3);
+  padding: 14px 12px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15);
+  gap: 4px;
+  text-align: center;
 }
 
-.sideTimerNumber {
+.bookTimerDigits {
   font-family: var(--font-mono, monospace);
-  font-size: 2.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.bookTimerMetaRow {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.bookTimerProgressTrack {
+  width: 100%;
+  height: 3px;
+  background: var(--color-border-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.bookTimerProgressFill {
+  height: 100%;
+  background: var(--color-primary, #6366f1);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* Actions Group */
+.bookActionCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bookBtnStart {
+  width: 100%;
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+  border: none;
+  padding: 9px var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.bookBtnStart:hover {
+  background: #5558e6;
+  transform: translateY(-1px);
+}
+
+.bookBtnPause {
+  width: 100%;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  padding: 9px var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all var(--transition-fast);
+}
+
+.bookBtnPause:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.bookUtilityRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.bookUtilityBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 6px 4px;
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.bookUtilityBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.bookUtilityFinish {
+  color: var(--color-success);
+}
+
+.bookUtilityFinish:hover {
+  background: rgba(34, 211, 165, 0.12);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+/* Hairline Divider */
+.bookPanelDivider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 2px 0;
+}
+
+/* Minimalist Inline Distraction Parking */
+.bookSectionTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.bookInlineParkForm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.bookInlineParkInput {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.bookInlineParkInput:focus {
+  border-color: var(--color-primary, #6366f1);
+}
+
+.bookInlineParkInput::placeholder {
+  color: var(--color-text-faint);
+}
+
+.bookInlineParkBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.bookInlineParkBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.bookParkSuccessText {
+  font-size: 0.7rem;
+  color: var(--color-success);
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+/* Ambient Sound Section (Minimalist) */
+.bookAmbientHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bookAmbientMute {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+}
+
+.bookAmbientMute:hover {
+  color: var(--color-danger, #ef4444);
+}
+
+.bookAmbientControlRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.bookAmbientSelect {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.bookAmbientSelect:focus {
+  border-color: var(--color-primary, #6366f1);
+}
+
+.bookAmbientVolWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.bookAmbientVolIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.bookAmbientSlider {
+  flex: 1;
+  accent-color: var(--color-primary, #6366f1);
+  height: 4px;
+  cursor: pointer;
+}
+
+.bookAmbientVolText {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  width: 28px;
+  text-align: right;
 }
 
 .sideCardHeader {

@@ -542,7 +542,7 @@ export default function FocusPage() {
 
       {/* ── Top Header ── */}
       {!isZenMode && (
-        <header className={styles.header}>
+        <header className={`${styles.header} ${activeDoc && focusViewMode === 'book' ? styles.headerCompact : ''}`}>
           <div className={styles.titleArea}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h1 className={styles.title}>Focus Space</h1>
@@ -552,9 +552,11 @@ export default function FocusPage() {
                 </span>
               )}
             </div>
-            <p className={styles.subtitle}>
-              Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.
-            </p>
+            {!(activeDoc && focusViewMode === 'book') && (
+              <p className={styles.subtitle}>
+                Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.
+              </p>
+            )}
           </div>
 
           <div className={styles.headerActions}>
@@ -894,62 +896,217 @@ export default function FocusPage() {
 
         {/* Right Sidebar: Sticky Focus Timer, Controls, Parking Lot & Ambient Soundscapes */}
         {!isZenMode && (
-          <aside className={styles.sideSection}>
-            {/* ── 0. Digital Focus Timer Card (shown in Book View) ── */}
-            {activeDoc && focusViewMode === 'book' && (
+          activeDoc && focusViewMode === 'book' ? (
+            /* ── Unified Minimalist Focus Companion (Calendar-style Today Box) ── */
+            <aside className={styles.bookSidePanel} aria-label="Reading focus companion">
+              {/* Header: Title & Status */}
+              <div className={styles.bookSideHeader}>
+                <div className={styles.bookSideTitleRow}>
+                  <span className={styles.bookSideTitle}>Focus Session</span>
+                  <span className={isRunning ? styles.bookSideBadgeActive : styles.bookSideBadgeReady}>
+                    {isRunning && <span className={styles.bookSideStatusDot} />}
+                    {isRunning ? 'Active' : 'Ready'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.bookSideZenBtn}
+                  onClick={toggleZenMode}
+                  title="Toggle Zen Mode (Distraction-Free)"
+                >
+                  Zen
+                </button>
+              </div>
+
+              {/* Single-row Mode Segmented Control: 4 segments, no wrap */}
+              <div className={styles.bookSegmentedTabs}>
+                <button
+                  type="button"
+                  className={`${styles.bookSegmentTab} ${mode === 'pomodoro' ? styles.bookSegmentTabActive : ''}`}
+                  onClick={() => setTimerMode('pomodoro')}
+                >
+                  Pomodoro
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.bookSegmentTab} ${mode === 'short_break' ? styles.bookSegmentTabActive : ''}`}
+                  onClick={() => setTimerMode('short_break')}
+                >
+                  Short
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.bookSegmentTab} ${mode === 'long_break' ? styles.bookSegmentTabActive : ''}`}
+                  onClick={() => setTimerMode('long_break')}
+                >
+                  Long
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.bookSegmentTab} ${mode === 'flow' ? styles.bookSegmentTabActive : ''}`}
+                  onClick={() => setTimerMode('flow')}
+                >
+                  Flow
+                </button>
+              </div>
+
+              {/* Minimalist Formal Timer Card */}
+              <div className={styles.bookTimerCard}>
+                <div className={styles.bookTimerDigits}>
+                  {mode === 'flow'
+                    ? formatTimer(secondsElapsed)
+                    : formatTimer(secondsRemaining)}
+                </div>
+                <div className={styles.bookTimerMetaRow}>
+                  <span>{mode === 'flow' ? 'Flow Session' : `${mode === 'pomodoro' ? '25 Min Focus' : 'Break Time'}`}</span>
+                  <span>•</span>
+                  <span>{formatTimer(secondsElapsed)} spent</span>
+                </div>
+                <div className={styles.bookTimerProgressTrack}>
+                  <div
+                    className={styles.bookTimerProgressFill}
+                    style={{
+                      width: mode === 'flow'
+                        ? `${Math.min(100, (secondsElapsed / 1500) * 100)}%`
+                        : `${timerDurationSeconds > 0 ? Math.min(100, Math.max(0, ((timerDurationSeconds - secondsRemaining) / timerDurationSeconds) * 100)) : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Session Controls: Primary Start/Pause + Sleek 3-button utility row */}
+              <div className={styles.bookActionCol}>
+                {isRunning ? (
+                  <button className={styles.bookBtnPause} onClick={pauseTimer}>
+                    <Pause size={13} fill="currentColor" />
+                    <span>Pause Session</span>
+                  </button>
+                ) : (
+                  <button className={styles.bookBtnStart} onClick={startTimer}>
+                    <Play size={13} fill="currentColor" />
+                    <span>{secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}</span>
+                  </button>
+                )}
+
+                <div className={styles.bookUtilityRow}>
+                  <button
+                    type="button"
+                    className={styles.bookUtilityBtn}
+                    onClick={resetTimer}
+                    title="Reset timer"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Reset</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.bookUtilityBtn}
+                    onClick={() => setTaskPickerOpen(true)}
+                    title="Switch focus target"
+                  >
+                    <Target size={12} />
+                    <span>Target</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.bookUtilityBtn} ${styles.bookUtilityFinish}`}
+                    onClick={() => setFinishModalOpen(true)}
+                    title="Finish session and log actual time"
+                  >
+                    <CheckCircle2 size={12} />
+                    <span>Finish</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.bookPanelDivider} />
+
+              {/* ADHD Distraction Quick-Park (Inline, minimal) */}
+              <div>
+                <div className={styles.bookSectionTitle}>Distraction Parking</div>
+                <form onSubmit={handleParkDistraction} className={styles.bookInlineParkForm}>
+                  <input
+                    type="text"
+                    value={parkingLotInput}
+                    onChange={(e) => setParkingLotInput(e.target.value)}
+                    placeholder="Park a quick thought... ↵"
+                    className={styles.bookInlineParkInput}
+                  />
+                  <button type="submit" className={styles.bookInlineParkBtn} title="Save to parking lot">
+                    Park
+                  </button>
+                </form>
+                {parkedNotice && (
+                  <p className={styles.bookParkSuccessText}>
+                    Saved to Brain Dump!
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.bookPanelDivider} />
+
+              {/* Ambient Soundscapes (Compact Selector) */}
+              <div>
+                <div className={styles.bookAmbientHeader}>
+                  <span className={styles.bookSectionTitle}>Ambient Sound</span>
+                  {ambientSound !== 'off' && (
+                    <button
+                      type="button"
+                      className={styles.bookAmbientMute}
+                      onClick={() => handleAmbientToggle('off')}
+                      title="Stop soundscape"
+                    >
+                      <VolumeX size={11} />
+                      <span>Mute</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.bookAmbientControlRow}>
+                  <select
+                    value={ambientSound}
+                    onChange={(e) => handleAmbientToggle(e.target.value as any)}
+                    className={styles.bookAmbientSelect}
+                    aria-label="Ambient sound"
+                  >
+                    <option value="off">Off (Silent Focus)</option>
+                    {SOUNDSCAPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.icon} {s.title} ({s.subtitle})
+                      </option>
+                    ))}
+                  </select>
+
+                  {ambientSound !== 'off' && (
+                    <div className={styles.bookAmbientVolWrap}>
+                      <Volume2 size={12} className={styles.bookAmbientVolIcon} />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={ambientVol}
+                        onChange={handleVolumeChange}
+                        className={styles.bookAmbientSlider}
+                        title={`Volume: ${Math.round(ambientVol * 100)}%`}
+                      />
+                      <span className={styles.bookAmbientVolText}>{Math.round(ambientVol * 100)}%</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
+          ) : (
+            /* ── Standard Timer View Right Sidebar ── */
+            <aside className={styles.sideSection}>
               <div className={styles.sideCard}>
-                {/* Mode Switcher Tabs */}
-                <div className={styles.modeTabsSide}>
-                  <button
-                    type="button"
-                    className={`${styles.modeTabSide} ${mode === 'pomodoro' ? styles.activeMode : ''}`}
-                    onClick={() => setTimerMode('pomodoro')}
-                  >
-                    Pomodoro
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.modeTabSide} ${mode === 'short_break' ? styles.activeMode : ''}`}
-                    onClick={() => setTimerMode('short_break')}
-                  >
-                    Short Break
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.modeTabSide} ${mode === 'long_break' ? styles.activeMode : ''}`}
-                    onClick={() => setTimerMode('long_break')}
-                  >
-                    Long Break
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.modeTabSide} ${mode === 'flow' ? styles.activeMode : ''}`}
-                    onClick={() => setTimerMode('flow')}
-                  >
-                    Flow Mode
-                  </button>
+                <div className={styles.sideCardHeader}>
+                  <span className={styles.sideCardTitle}>
+                    Session Controls
+                  </span>
                 </div>
 
-                {/* Formal Digital Timer Display Card */}
-                <div className={styles.sideTimerDisplayCard}>
-                  <div className={styles.sideTimerNumber}>
-                    {mode === 'flow'
-                      ? formatTimer(secondsElapsed)
-                      : formatTimer(secondsRemaining)}
-                  </div>
-                  <div className={styles.timerMetaRow}>
-                    <span className={styles.timerModeLabel}>
-                      {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
-                    </span>
-                    <span className={styles.timerStatusDot}>•</span>
-                    <span className={styles.timerStatusText}>
-                      {isRunning ? 'ACTIVE' : 'READY'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Session Actions for Book View */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {isRunning ? (
                     <button className={styles.sideBtnPause} onClick={pauseTimer}>
                       Pause Session
@@ -978,157 +1135,113 @@ export default function FocusPage() {
                     onClick={() => setFinishModalOpen(true)}
                     title="Finish session and log actual time"
                   >
-                    Finish Session
+                    Finish & Log Session
                   </button>
                 </div>
               </div>
-            )}
 
-            {/* ── 1. Focus Controls (shown in standard Timer View) ── */}
-            {!(activeDoc && focusViewMode === 'book') && (
+              {/* Distraction Parking Lot */}
               <div className={styles.sideCard}>
                 <div className={styles.sideCardHeader}>
                   <span className={styles.sideCardTitle}>
-                    Session Controls
+                    Distraction Parking Lot
                   </span>
                 </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {isRunning ? (
-                  <button className={styles.sideBtnPause} onClick={pauseTimer}>
-                    Pause Session
+                <form onSubmit={handleParkDistraction} className={styles.sideParkingLotForm}>
+                  <input
+                    type="text"
+                    value={parkingLotInput}
+                    onChange={(e) => setParkingLotInput(e.target.value)}
+                    placeholder="Random thought? Park it here..."
+                    className={styles.sideParkingLotInput}
+                  />
+                  <button type="submit" className={styles.sideBtnParkSubmit}>
+                    Park ↵
                   </button>
-                ) : (
-                  <button className={styles.sideBtnStart} onClick={startTimer}>
-                    {secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}
-                  </button>
+                </form>
+
+                {parkedNotice && (
+                  <p style={{ fontSize: '11px', color: 'var(--color-success)', margin: '6px 0 0 0', fontWeight: 600 }}>
+                    Saved to Brain Dump! Back to focusing!
+                  </p>
                 )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                  <button className={styles.sideActionBtn} onClick={resetTimer} title="Reset timer">
-                    Reset
-                  </button>
-                  <button
-                    className={styles.sideActionBtn}
-                    onClick={() => setTaskPickerOpen(true)}
-                    title="Switch focus target"
-                  >
-                    Switch Target
-                  </button>
-                </div>
-
-                <button
-                  className={styles.sideBtnFinish}
-                  onClick={() => setFinishModalOpen(true)}
-                  title="Finish session and log actual time"
-                >
-                  Finish & Log Session
-                </button>
-              </div>
-            </div>
-          )}
-
-            {/* ── 2. Distraction Parking Lot (Right Side) ── */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  Distraction Parking Lot
-                </span>
               </div>
 
-              <form onSubmit={handleParkDistraction} className={styles.sideParkingLotForm}>
-                <input
-                  type="text"
-                  value={parkingLotInput}
-                  onChange={(e) => setParkingLotInput(e.target.value)}
-                  placeholder="Random thought? Park it here..."
-                  className={styles.sideParkingLotInput}
-                />
-                <button type="submit" className={styles.sideBtnParkSubmit}>
-                  Park ↵
-                </button>
-              </form>
-
-              {parkedNotice && (
-                <p style={{ fontSize: '11px', color: 'var(--color-success)', margin: '6px 0 0 0', fontWeight: 600 }}>
-                  Saved to Brain Dump! Back to focusing!
-                </p>
-              )}
-            </div>
-
-            {/* ── 3. Ambient Soundscapes ── */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <div className={styles.sideCardTitleGroup}>
-                  <span className={styles.sideCardTitle}>
-                    Ambient Soundscapes
-                  </span>
-                  {ambientSound !== 'off' && (
-                    <span className={styles.ambientActiveBadge}>
-                      <span className={styles.audioWaveDot} />
-                      Playing
+              {/* Ambient Soundscapes */}
+              <div className={styles.sideCard}>
+                <div className={styles.sideCardHeader}>
+                  <div className={styles.sideCardTitleGroup}>
+                    <span className={styles.sideCardTitle}>
+                      Ambient Soundscapes
                     </span>
+                    {ambientSound !== 'off' && (
+                      <span className={styles.ambientActiveBadge}>
+                        <span className={styles.audioWaveDot} />
+                        Playing
+                      </span>
+                    )}
+                  </div>
+                  {ambientSound !== 'off' && (
+                    <button
+                      type="button"
+                      className={styles.ambientMuteBtn}
+                      onClick={() => handleAmbientToggle('off')}
+                      title="Stop ambient audio"
+                    >
+                      <VolumeX size={12} />
+                      <span>Stop</span>
+                    </button>
                   )}
                 </div>
+
+                <div className={styles.ambientBtnGrid}>
+                  {SOUNDSCAPES.map((s) => {
+                    const isActive = ambientSound === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`${styles.ambientPill} ${isActive ? styles.activeAmbient : ''}`}
+                        onClick={() => handleAmbientToggle(s.id)}
+                        title={`${s.title} (${s.subtitle})`}
+                      >
+                        <span className={styles.ambientIcon}>{s.icon}</span>
+                        <div className={styles.ambientTextCol}>
+                          <span className={styles.ambientTitle}>{s.title}</span>
+                          <span className={styles.ambientSubtitle}>{s.subtitle}</span>
+                        </div>
+                        {isActive && (
+                          <span className={styles.ambientEqualizer}>
+                            <span className={styles.eqBar} style={{ animationDelay: '0ms' }} />
+                            <span className={styles.eqBar} style={{ animationDelay: '180ms' }} />
+                            <span className={styles.eqBar} style={{ animationDelay: '360ms' }} />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {ambientSound !== 'off' && (
-                  <button
-                    type="button"
-                    className={styles.ambientMuteBtn}
-                    onClick={() => handleAmbientToggle('off')}
-                    title="Stop ambient audio"
-                  >
-                    <VolumeX size={12} />
-                    <span>Stop</span>
-                  </button>
+                  <div className={styles.ambientVolBar}>
+                    <Volume2 size={13} className={styles.ambientVolIcon} />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={ambientVol}
+                      onChange={handleVolumeChange}
+                      className={styles.ambientSlider}
+                      title="Ambient Sound Volume"
+                    />
+                    <span className={styles.ambientVolLabel}>{Math.round(ambientVol * 100)}%</span>
+                  </div>
                 )}
               </div>
-
-              <div className={styles.ambientBtnGrid}>
-                {SOUNDSCAPES.map((s) => {
-                  const isActive = ambientSound === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`${styles.ambientPill} ${isActive ? styles.activeAmbient : ''}`}
-                      onClick={() => handleAmbientToggle(s.id)}
-                      title={`${s.title} (${s.subtitle})`}
-                    >
-                      <span className={styles.ambientIcon}>{s.icon}</span>
-                      <div className={styles.ambientTextCol}>
-                        <span className={styles.ambientTitle}>{s.title}</span>
-                        <span className={styles.ambientSubtitle}>{s.subtitle}</span>
-                      </div>
-                      {isActive && (
-                        <span className={styles.ambientEqualizer}>
-                          <span className={styles.eqBar} style={{ animationDelay: '0ms' }} />
-                          <span className={styles.eqBar} style={{ animationDelay: '180ms' }} />
-                          <span className={styles.eqBar} style={{ animationDelay: '360ms' }} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {ambientSound !== 'off' && (
-                <div className={styles.ambientVolBar}>
-                  <Volume2 size={13} className={styles.ambientVolIcon} />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={ambientVol}
-                    onChange={handleVolumeChange}
-                    className={styles.ambientSlider}
-                    title="Ambient Sound Volume"
-                  />
-                  <span className={styles.ambientVolLabel}>{Math.round(ambientVol * 100)}%</span>
-                </div>
-              )}
-            </div>
-          </aside>
+            </aside>
+          )
         )}
       </div>
 
