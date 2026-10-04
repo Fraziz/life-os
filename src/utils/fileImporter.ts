@@ -712,26 +712,37 @@ export function cleanAndFormatPastedText(
   sourceText = removeHashtags(sourceText);
   sourceText = removeEmojisAndIcons(sourceText);
 
-  // 3. Un-break artificial line wraps from PDFs / copied text
-  // Fix hyphenated word breaks: "devel-\n opment" -> "development"
-  const clean = sourceText
+  // 3. Normalization of whitespace, word spacing, and punctuation
+  let clean = sourceText
     .replace(/\r\n|\r/g, '\n')
     .replace(/\f/g, '\n\n')
-    .replace(/(\b[A-Za-z]{2,})-\s*\n\s*([a-z]{2,}\b)/g, '$1$2')
+    .replace(/\u00A0/g, ' ') // convert non-breaking spaces
+    // Rejoin hyphenated word breaks from PDF wraps: "devel-\n opment" -> "development"
+    .replace(/(\b[A-Za-z]{2,})-\s*\n\s*([A-Za-z]{2,}\b)/g, '$1$2')
+    // Rejoin mid-sentence lines where a line ends in a lowercase word/comma and next line begins with lowercase
+    .replace(/([a-z0-9,;])\n([a-z])/g, '$1 $2')
+    // Remove space before punctuation: "word , " -> "word, "
+    .replace(/[^\S\n]+([,.:;?!])/g, '$1')
+    // Ensure space after punctuation when followed immediately by a letter (avoiding URLs like https://)
+    .replace(/([,;?!])([A-Za-z])/g, '$1 $2')
+    .replace(/(\.)([A-Z])/g, '$1 $2')
+    // Collapse multiple horizontal spaces to single space
     .replace(/[^\S\n]{2,}/g, ' ')
-    .replace(/^(#{1,6}\s+[^\n]+)\n+(?=[-*\d•])/gm, '$1\n\n')
+    // Normalize newlines to max 2
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  // Split into rough blocks
+  // Split into paragraphs / blocks
   const rawBlocks = clean.split(/\n{2,}/);
   const formattedBlocks: string[] = [];
   let extractedTitle = '';
 
   const titleCase = (str: string): string => {
+    const minor = new Set(['and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'as']);
     return str
       .toLowerCase()
       .split(' ')
-      .map((w) => (w.length > 2 || w === 'a' || w === 'an' || w === 'the' ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .map((w, idx) => (idx === 0 || !minor.has(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w))
       .join(' ');
   };
 
@@ -742,14 +753,18 @@ export function cleanAndFormatPastedText(
     const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
     if (lines.length === 0) continue;
 
-    // If first block has a short line without period, treat as document title
+    // If first block has a clear single-line title candidate, extract it
     if (bIdx === 0 && !extractedTitle) {
       const firstLine = lines[0];
       if (firstLine.startsWith('# ')) {
         extractedTitle = firstLine.replace(/^#+\s*/, '').trim();
+        if (lines.length > 1) {
+          formattedBlocks.push(lines.slice(1).join(' '));
+        }
+        continue;
       } else if (
         firstLine.length >= 3 &&
-        firstLine.length < 80 &&
+        firstLine.length < 75 &&
         !firstLine.endsWith('.') &&
         !firstLine.includes(':') &&
         (firstLine === firstLine.toUpperCase() || lines.length === 1)
@@ -762,31 +777,32 @@ export function cleanAndFormatPastedText(
       }
     }
 
-    // Check if it's already markdown
-    const isMarkdown = /^#{1,4}\s+/.test(lines[0]);
-    if (isMarkdown) {
+    // Check if it's already markdown heading
+    const isMarkdownHeading = /^#{1,4}\s+/.test(lines[0]);
+    if (isMarkdownHeading) {
       formattedBlocks.push(lines.join('\n'));
       continue;
     }
 
-    // Check if numbered heading like "1. Product Formulation", "Chapter 2 - Target Market"
-    const numHeadingMatch = lines[0].match(/^(\d+)[\.\)]\s+(.+)$/);
-    if (numHeadingMatch && lines[0].length < 90) {
-      const num = numHeadingMatch[1];
-      const heading = titleCase(numHeadingMatch[2].replace(/[—–-]\s*(OPTIONAL)/i, '($1)'));
+    // Only convert to formal section heading (##) if it's an explicit chapter/section label
+    // Avoid turning regular numbered list items (e.g. "1. First step") into huge headings!
+    const isExplicitSectionHeading = /^(Chapter|Section|Part|Module|Unit|Lesson)\s+\d+[:\-—–.]?\s*(.*)$/i.exec(lines[0]);
+    if (isExplicitSectionHeading && lines[0].length < 80) {
+      const label = titleCase(lines[0].replace(/[.:;]$/, ''));
       const rest = lines.slice(1).join(' ').trim();
-      formattedBlocks.push(`## ${num}. ${heading}`);
+      formattedBlocks.push(`## ${label}`);
       if (rest) formattedBlocks.push(rest);
       continue;
     }
 
-    // Check for short ALL-CAPS title (e.g. "TARGET CUSTOMERS", "FINANCIAL OVERVIEW")
+    // Check for short ALL-CAPS section banner (e.g. "OVERVIEW", "KEY PRINCIPLES")
     if (
       lines[0].length > 3 &&
-      lines[0].length < 75 &&
+      lines[0].length < 50 &&
       lines[0] === lines[0].toUpperCase() &&
-      /[A-Z]/.test(lines[0]) &&
-      !lines[0].includes(':')
+      /^[A-Z\s&,—–-]+$/.test(lines[0]) &&
+      !lines[0].includes(':') &&
+      !lines[0].includes('.')
     ) {
       const heading = titleCase(lines[0]);
       const rest = lines.slice(1).join(' ').trim();
@@ -795,39 +811,40 @@ export function cleanAndFormatPastedText(
       continue;
     }
 
-    // Check if lines are a bulleted list
-    const isBulletList = lines.every((l) => /^([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(l));
-    if (isBulletList) {
-      const bulletItems = lines.map((l) => {
-        const cleanItem = l.replace(/^([•\-*–—▪\u2022]|\d+[\.\)])\s+/, '').trim();
-        return `- ${cleanItem}`;
+    // Check if lines are a bulleted or numbered list
+    const isListBlock = lines.every((l) => /^([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(l));
+    if (isListBlock) {
+      const isNumbered = /^\d+[\.\)]\s+/.test(lines[0]);
+      const listItems = lines.map((l, i) => {
+        const text = l.replace(/^([•\-*–—▪\u2022]|\d+[\.\)])\s+/, '').trim();
+        return isNumbered ? `${i + 1}. ${text}` : `- ${text}`;
       });
-      formattedBlocks.push(bulletItems.join('\n'));
+      formattedBlocks.push(listItems.join('\n'));
       continue;
     }
 
-    // Check for definition terms: "COST: $15.50", "PACKAGING: Biodegradable pouch"
-    const isDefinitionBlock = lines.every((l) => /^([A-Z\s]{2,25}):\s+(.+)$/.test(l));
+    // Check for definition terms: "Cost: $15.50", "Packaging: Biodegradable pouch"
+    const isDefinitionBlock = lines.every((l) => /^([A-Za-z\s]{2,25}):\s+(.+)$/.test(l));
     if (isDefinitionBlock) {
       const defItems = lines.map((l) => {
-        const m = l.match(/^([A-Z\s]{2,25}):\s+(.+)$/);
+        const m = l.match(/^([A-Za-z\s]{2,25}):\s+(.+)$/);
         return m ? `**${titleCase(m[1].trim())}:** ${m[2].trim()}` : l;
       });
       formattedBlocks.push(defItems.join('\n\n'));
       continue;
     }
 
-    // Standard paragraph: join hard-wrapped lines into a flowing, readable paragraph
+    // Standard formal paragraph: join hard-wrapped lines into a flowing, readable paragraph
     let para = '';
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const defMatch = line.match(/^([A-Za-z\s]{2,25}):\s+(.+)$/);
-      if (defMatch && line.length < 90) {
+      if (defMatch && line.length < 80 && lines.length > 1) {
         if (para) {
           formattedBlocks.push(para);
           para = '';
         }
-        formattedBlocks.push(`**${defMatch[1].trim()}:** ${defMatch[2].trim()}`);
+        formattedBlocks.push(`**${titleCase(defMatch[1].trim())}:** ${defMatch[2].trim()}`);
         continue;
       }
 

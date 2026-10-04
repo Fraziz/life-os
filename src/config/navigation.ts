@@ -7,7 +7,7 @@ import type { NavSection } from '@/types';
 export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'daily',
-    label: 'DAILY ACTION',
+    label: 'Daily',
     items: [
       {
         id: 'today',
@@ -48,7 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'planning',
-    label: 'GOALS & PLANS',
+    label: 'Planning',
     items: [
       {
         id: 'roadmap',
@@ -82,7 +82,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'growth',
-    label: 'KNOWLEDGE & HEALTH',
+    label: 'Growth',
     items: [
       {
         id: 'knowledge',
@@ -123,7 +123,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'more',
-    label: 'REVIEW',
+    label: 'Review',
     items: [
       {
         id: 'review',

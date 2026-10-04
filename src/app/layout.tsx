@@ -9,7 +9,6 @@ import './globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  charset: 'utf-8',
   title: {
     default: 'Sariling Mundo — Turn Dreams Into Action',
     template: '%s | Sariling Mundo',

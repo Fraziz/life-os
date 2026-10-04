@@ -1,4 +1,4 @@
-﻿.page {
+.page {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
@@ -38,92 +38,127 @@
   line-height: 1.5;
 }
 
-/*  Quick Add Bar  */
+/* ── Minimalist Quick Add Bar ── */
 .quickAddCard {
   background: var(--color-surface);
-  border: 1px solid var(--color-accent);
-  box-shadow: 0 0 0 1px rgba(124, 106, 255, 0.2), var(--shadow-sm);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 10px);
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.quickAddCard:focus-within {
+  border-color: var(--color-border-hover, var(--color-accent-light, #818cf8));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.15);
 }
 
 .quickAddRow {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
+}
+
+.quickAddIcon {
+  color: var(--color-text-faint);
+  flex-shrink: 0;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.quickAddCard:focus-within .quickAddIcon {
+  color: var(--color-accent);
 }
 
 .quickAddInput {
   flex: 1;
   background: transparent;
   border: none;
-  font-size: var(--text-base);
+  font-size: 0.88rem;
   color: var(--color-text);
   outline: none;
-  font-weight: var(--weight-medium);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .quickAddInput::placeholder {
   color: var(--color-text-faint);
+  font-weight: 400;
 }
 
 .quickAddBtn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  gap: 4px;
+  padding: 3px 9px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  transition: all var(--transition-fast, 0.15s ease);
 }
 
-.quickAddBtn:hover {
-  opacity: 0.92;
-  transform: translateY(-1px);
+.quickAddBtn:hover:not(:disabled),
+.quickAddCard:focus-within .quickAddBtn:not(:disabled) {
+  background: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+}
+
+.quickAddBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quickAddKbd {
+  font-size: 10px;
+  opacity: 0.65;
+  font-family: inherit;
+  font-weight: 400;
 }
 
 .quickAddMetaRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: 8px;
   flex-wrap: wrap;
-  padding-top: var(--space-2);
+  padding-top: 5px;
   border-top: 1px solid var(--color-border-subtle);
 }
 
 .quickAddPills {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .pillSelect {
-  background: var(--color-surface-2);
+  background: transparent;
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
-  padding: 3px var(--space-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 11px;
   outline: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all var(--transition-fast, 0.15s ease);
 }
 
 .pillSelect:hover,
 .pillSelect:focus {
-  border-color: var(--color-accent);
+  border-color: var(--color-border);
   color: var(--color-text);
+  background: var(--color-surface-2);
 }
 
 /*  Controls Bar  */

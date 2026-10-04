@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useDreams } from '@/context/DreamContext';
@@ -144,7 +144,7 @@ export default function DreamsPage() {
 
   return (
     <div className={styles.page}>
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Dreams &amp; Vision Board</h1>
@@ -158,26 +158,26 @@ export default function DreamsPage() {
         </button>
       </header>
 
-      {/* â”€â”€ Quick Add Bar â”€â”€ */}
+      {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Plus size={18} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+          <Plus size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Add a new dream or vision (press Enter to save)..."
+            placeholder="Add a new dream or vision..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn}>
-            Quick Add â†µ
+          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
+            <span>Add</span>
+            <kbd className={styles.quickAddKbd}>↵</kbd>
           </button>
         </div>
 
         <div className={styles.quickAddMetaRow}>
           <div className={styles.quickAddPills}>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
             <select
               className={styles.pillSelect}
               value={quickStatus}
@@ -194,22 +194,18 @@ export default function DreamsPage() {
               value={quickAreaId}
               onChange={(e) => setQuickAreaId(e.target.value)}
             >
-              <option value="">Default Life Area</option>
+              <option value="">Default Area</option>
               {activeAreas.map((a) => (
                 <option key={a.id} value={a.id}>
-                  Area: {a.name}
+                  {a.name}
                 </option>
               ))}
             </select>
           </div>
-
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
-          </span>
         </div>
       </form>
 
-      {/* â”€â”€ Controls Bar â”€â”€ */}
+      {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.searchWrap}>
           <Search size={14} className={styles.searchIcon} />
@@ -272,7 +268,7 @@ export default function DreamsPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Dreams Grid â”€â”€ */}
+      {/* ── Dreams Grid ── */}
       {filteredDreams.length === 0 ? (
         <div
           style={{
@@ -383,7 +379,7 @@ export default function DreamsPage() {
         </div>
       )}
 
-      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
+      {/* ── Modal Dialog for Create / Edit ── */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -447,7 +443,7 @@ export default function DreamsPage() {
                     <option value="planning">Planning (Defining Path)</option>
                     <option value="active">Active (Currently Pursuing)</option>
                     <option value="paused">Paused (On Hold)</option>
-                    <option value="achieved">Achieved âœ“ (Realized)</option>
+                    <option value="achieved">Achieved ✓ (Realized)</option>
                     <option value="archived">Archived</option>
                   </select>
                 </div>

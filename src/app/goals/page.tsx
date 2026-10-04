@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -47,7 +47,7 @@ const HORIZON_LABELS: Record<GoalHorizon, string> = {
 const STATUS_LABELS: Record<GoalStatus, string> = {
   'not-started': 'Not Started',
   'in-progress': 'In Progress',
-  'completed': 'Completed âœ“',
+  'completed': 'Completed ✓',
   'paused': 'Paused',
   'archived': 'Archived',
 };
@@ -218,7 +218,7 @@ export default function GoalsPage() {
 
   return (
     <div className={styles.page}>
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Goals & Objectives</h1>
@@ -232,35 +232,35 @@ export default function GoalsPage() {
         </button>
       </header>
 
-      {/* â”€â”€ Quick Add Bar â”€â”€ */}
+      {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Target size={20} style={{ color: 'var(--color-accent)' }} />
+          <Target size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Type a goal and press Enter to add instantly (e.g. Launch v1 SaaS Platform)..."
+            placeholder="Add a new goal..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn}>
-            Quick Add â†µ
+          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
+            <span>Add</span>
+            <kbd className={styles.quickAddKbd}>↵</kbd>
           </button>
         </div>
 
         <div className={styles.quickAddMetaRow}>
           <div className={styles.quickAddPills}>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
             <select
               className={styles.pillSelect}
               value={quickHorizon}
               onChange={(e) => setQuickHorizon(e.target.value as GoalHorizon)}
             >
-              <option value="90-day">Horizon: 90-Day</option>
-              <option value="yearly">Horizon: Yearly</option>
-              <option value="monthly">Horizon: Monthly</option>
-              <option value="long-term">Horizon: Long-term</option>
+              <option value="90-day">90-Day</option>
+              <option value="yearly">Yearly</option>
+              <option value="monthly">Monthly</option>
+              <option value="long-term">Long-term</option>
             </select>
 
             <select
@@ -268,10 +268,10 @@ export default function GoalsPage() {
               value={quickPriority}
               onChange={(e) => setQuickPriority(e.target.value as GoalPriority)}
             >
-              <option value="high">Priority: High</option>
-              <option value="urgent">Priority: Urgent</option>
-              <option value="medium">Priority: Medium</option>
-              <option value="low">Priority: Low</option>
+              <option value="high">High Priority</option>
+              <option value="urgent">Urgent</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
             </select>
 
             <select
@@ -279,22 +279,18 @@ export default function GoalsPage() {
               value={quickDreamId}
               onChange={(e) => setQuickDreamId(e.target.value)}
             >
-              <option value="">No Parent Dream (Standalone)</option>
+              <option value="">No Parent Dream</option>
               {dreams.map((d) => (
                 <option key={d.id} value={d.id}>
-                  Dream: {d.title}
+                  {d.title}
                 </option>
               ))}
             </select>
           </div>
-
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
-          </span>
         </div>
       </form>
 
-      {/* â”€â”€ Controls Bar â”€â”€ */}
+      {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.searchWrap}>
@@ -366,7 +362,7 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Goals Grid â”€â”€ */}
+      {/* ── Goals Grid ── */}
       {filteredGoals.length === 0 ? (
         <div
           style={{
@@ -400,7 +396,7 @@ export default function GoalsPage() {
                   borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
-                {/* â”€â”€ Hierarchy Banner (Dream -> Goal) â”€â”€ */}
+                {/* ── Hierarchy Banner (Dream -> Goal) ── */}
                 {parentDream && (
                   <div className={styles.dreamConnector}>
                     <span className={styles.dreamConnectorLabel}>
@@ -460,7 +456,7 @@ export default function GoalsPage() {
                   <p className={styles.whyText}>&ldquo;{goal.why}&rdquo;</p>
                 </div>
 
-                {/* â”€â”€ Progress Slider â”€â”€ */}
+                {/* ── Progress Slider ── */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
                     <span className={styles.progressLabel}>Progress</span>
@@ -530,7 +526,7 @@ export default function GoalsPage() {
                 </div>
 
 
-                {/* â”€â”€ AI Coach Panel â”€â”€ */}
+                {/* ── AI Coach Panel ── */}
                 {coachState[goal.id]?.loading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', color: 'var(--color-accent)', fontSize: '12px' }}>
                     <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
@@ -552,7 +548,7 @@ export default function GoalsPage() {
                       <div style={{ marginBottom: '8px' }}>
                         <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>Next Steps</div>
                         {r.nextSteps.map((step, i) => (
-                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>â€¢ {step}</div>
+                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>• {step}</div>
                         ))}
                       </div>
                       <div style={{ fontStyle: 'italic', color: 'var(--color-accent)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
@@ -589,7 +585,7 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
+      {/* ── Modal Dialog for Create / Edit ── */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -731,7 +727,7 @@ export default function GoalsPage() {
                   >
                     <option value="not-started">Not Started</option>
                     <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed âœ“</option>
+                    <option value="completed">Completed ✓</option>
                     <option value="paused">Paused</option>
                     <option value="archived">Archived</option>
                   </select>

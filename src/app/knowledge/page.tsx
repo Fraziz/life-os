@@ -36,6 +36,7 @@ import {
   FileUp,
   Loader2,
   BookMarked,
+  Sparkles,
   Undo2,
   Redo2,
   Bold,
@@ -64,6 +65,8 @@ import {
   Eraser,
   Lock,
   Pin,
+  PinOff,
+  Star,
   HelpCircle,
   ExternalLink,
   ChevronLeft,
@@ -105,12 +108,9 @@ function renderMarkdown(md: string): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
-  // ── ADHD Special Markers ──
-  // Key Ideas: >>>text<<< — bright teal callout card
-  html = html.replace(/>>>(.+?)<<</g, '<span class="key-idea"><span class="key-idea-icon">💡</span>$1</span>');
-
-  // Important: !!text!! — vivid warning highlight
-  html = html.replace(/!!(.+?)!!/g, '<span class="important-mark">⚡ $1</span>');
+  // ── Key Ideas & Important Notes (Clean, quiet callouts without emojis) ──
+  html = html.replace(/>>>(.+?)<<</g, '<blockquote class="callout">$1</blockquote>');
+  html = html.replace(/!!(.+?)!!/g, '<strong style="color:var(--color-accent-light)">$1</strong>');
 
   // Colored highlights: =={colorname}text== (must come before generic ==text==)
   html = html.replace(/==\{([a-z]+)\}(.+?)==/g, (_, colorName, content) => {
@@ -136,9 +136,12 @@ function renderMarkdown(md: string): string {
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/_(.+?)_/g, '<em>$1</em>');
 
+  // Inline arrows
+  html = html.replace(/\s*->\s*/g, ' &rarr; ');
+
   // Checkboxes (before list items)
-  html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">✅ $1</div>');
-  html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">⬜ $1</div>');
+  html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">&#10003; $1</div>');
+  html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">&#9633; $1</div>');
 
   // Numbered list items (supports 1. and 1) formats)
   html = html.replace(/^(\d+)[\.\)]\s+(.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
@@ -148,7 +151,7 @@ function renderMarkdown(md: string): string {
   html = html.replace(/^([•\*\-])\s+(.+)$/gm, '<li>$2</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
-  // Blockquotes → key callout style
+  // Blockquotes → clean editorial quote style
   html = html.replace(/^> (.+)$/gm, '<blockquote class="callout">$1</blockquote>');
 
   // Horizontal rule
@@ -157,25 +160,10 @@ function renderMarkdown(md: string): string {
   // Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
     const trimmed = block.trim();
+    if (!trimmed) return '';
     if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote)/.test(trimmed)) return trimmed;
-
-    // Process arrow flow (A -> B -> C or A → B → C)
-    if ((trimmed.includes('→') || trimmed.includes('->')) && trimmed.length < 350) {
-      const steps = trimmed.split(/→|->/).map((s) => s.trim().replace(/\.$/, '')).filter(Boolean);
-      if (steps.length >= 2) {
-        const stepHtml = steps.map((st) => `<span class="flow-step">${st}</span>`).join(' <span class="flow-arrow">&rarr;</span> ');
-        return `<div class="process-flow">${stepHtml}</div>`;
-      }
-    }
-
-    // Formula line
-    if ((trimmed.includes('+') && trimmed.includes('=')) || /^Formula:\s*/i.test(trimmed)) {
-      const clean = trimmed.replace(/^Formula:\s*/i, '');
-      return `<div class="formula-box"><strong>Formula:</strong> <code>${clean}</code></div>`;
-    }
-
-    return trimmed ? `<p>${trimmed}</p>` : '';
-  }).join('\n');
+    return `<p>${trimmed}</p>`;
+  }).filter(Boolean).join('\n');
 
   return html;
 }
@@ -533,6 +521,20 @@ export default function KnowledgePage() {
     }
   };
 
+  const handleToggleFeaturedOnDashboard = (docId: string) => {
+    if (featuredBookId === docId) {
+      setFeaturedBookId(null);
+      try {
+        localStorage.removeItem('life_os_featured_book_id');
+        window.dispatchEvent(new CustomEvent('life_os_featured_book_changed', { detail: '' }));
+      } catch {
+        // ignore
+      }
+    } else {
+      handleSetFeaturedOnDashboard(docId);
+    }
+  };
+
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
@@ -580,6 +582,29 @@ export default function KnowledgePage() {
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [pasteModalText, setPasteModalText] = useState('');
   const [pasteToast, setPasteToast] = useState<string | null>(null);
+
+  // Reading mode typography settings (font family & font size)
+  const [readingFont, setReadingFont] = useState<'sans' | 'serif'>('sans');
+  const [readingFontSize, setReadingFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+
+  const changeReadingFont = (font: 'sans' | 'serif') => {
+    setReadingFont(font);
+    if (typeof window !== 'undefined') localStorage.setItem('lifeos_reading_font', font);
+  };
+
+  const changeReadingFontSize = (size: 'sm' | 'md' | 'lg') => {
+    setReadingFontSize(size);
+    if (typeof window !== 'undefined') localStorage.setItem('lifeos_reading_font_size', size);
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedF = localStorage.getItem('lifeos_reading_font');
+      if (savedF === 'serif' || savedF === 'sans') setReadingFont(savedF);
+      const savedS = localStorage.getItem('lifeos_reading_font_size');
+      if (savedS === 'sm' || savedS === 'md' || savedS === 'lg') setReadingFontSize(savedS);
+    }
+  }, []);
 
   // Floating highlight & format toolbar when selecting text (mouse drag, long-press, touch selection)
   useEffect(() => {
@@ -703,6 +728,8 @@ export default function KnowledgePage() {
       setAiSummaryResult(null);
       setAiQuizResult(null);
       setImportStatus(null);
+      setPasteToast(`Imported "${docTitle}" successfully into Book mode!`);
+      setTimeout(() => setPasteToast(null), 3500);
     } catch (err) {
       console.error('Import failed:', err);
       alert('Could not extract text from this file. Please make sure the file contains readable text.');
@@ -798,8 +825,13 @@ export default function KnowledgePage() {
     if (!textToClean.trim()) return;
 
     const formatted = cleanAndFormatPastedText(textToClean, undefined, fTitle || selectedDoc?.title);
+    const cleanHtml = renderMarkdown(formatted.markdown);
+
     setFTitle(formatted.title);
     setFContent(formatted.markdown);
+    if (editorRef.current) editorRef.current.innerHTML = cleanHtml;
+    if (bookEditorRef.current) bookEditorRef.current.innerHTML = cleanHtml;
+
     if (selectedDoc) {
       updateDoc(selectedDoc.id, {
         title: formatted.title,
@@ -807,7 +839,7 @@ export default function KnowledgePage() {
       });
     }
     setEditorMode('book');
-    setPasteToast('Re-formatted into clean Book layout!');
+    setPasteToast('Formatted into formal, clean publication layout!');
     setTimeout(() => setPasteToast(null), 3500);
   };
 
@@ -1882,11 +1914,9 @@ export default function KnowledgePage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Personal Knowledge Base</h1>
+          <h1 className={styles.title}>Knowledge Base</h1>
           <p className={styles.subtitle}>
-            <em style={{ fontStyle: 'italic', color: 'var(--color-text-muted)', fontSize: '12px' }}>
-              &ldquo;If you write down a problem clearly and specifically, you have already solved half of it.&rdquo;
-            </em>
+            {filteredDocs.length} {filteredDocs.length === 1 ? 'document' : 'documents'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1899,21 +1929,21 @@ export default function KnowledgePage() {
           />
           <button
             className={styles.btnSecondary}
-            onClick={handlePasteAsBookDoc}
-            title="Paste text from clipboard and auto-format into clean Book design"
+            onClick={() => importFileRef.current?.click()}
+            disabled={isImporting}
+            title="Import PDF, Word (.docx), Markdown, or Text files"
           >
-            <ClipboardPaste size={14} /> Paste Book
+            <FileUp size={14} /> {isImporting ? (importStatus || 'Importing...') : 'Import File'}
           </button>
           <button
             className={styles.btnSecondary}
-            onClick={() => importFileRef.current?.click()}
-            disabled={isImporting}
-            title="Import PDF or text document and extract text automatically"
+            onClick={handlePasteAsBookDoc}
+            title="Paste copied text and format as Book note"
           >
-            {isImporting ? (importStatus || 'Importing...') : 'Import File'}
+            <ClipboardPaste size={14} /> Paste Text
           </button>
           <button className={styles.btnCreate} onClick={handleNewDoc}>
-            + New Document
+            <Plus size={14} /> New Document
           </button>
         </div>
       </header>
@@ -1994,7 +2024,8 @@ export default function KnowledgePage() {
             ) : (
               filteredDocs.map((doc) => {
                 const isActive = doc.id === selectedId;
-                const statusColor = doc.status === 'active' ? '#22d3a5' : doc.status === 'draft' ? '#7c6fff' : '#64748b';
+                const isFeatured = featuredBookId === doc.id;
+                const statusDotColor = doc.status === 'active' ? '#10b981' : doc.status === 'draft' ? '#818cf8' : '#94a3b8';
 
                 return (
                   <div
@@ -2004,131 +2035,87 @@ export default function KnowledgePage() {
                   >
                     <div className={styles.docRowContent}>
                       <div className={styles.docRowTitleRow}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-                          {doc.isPinned && <Pin size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />}
+                        <div className={styles.docRowTitleWrap}>
+                          {doc.isPinned && <Pin size={11} className={styles.pinnedIcon} />}
                           <span className={styles.docRowTitle}>{doc.title}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
                           <button
-                            className={styles.deleteBtn}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetFeaturedOnDashboard(doc.id);
-                            }}
-                            title={featuredBookId === doc.id ? "Currently featured on Today Dashboard" : "Set as Today's Reading Book"}
-                            style={{ color: featuredBookId === doc.id ? '#38bdf8' : 'var(--color-text-faint)' }}
+                            type="button"
+                            className={`${styles.rowActionBtn} ${isFeatured ? styles.rowActionBtnActive : ''}`}
+                            onClick={() => handleToggleFeaturedOnDashboard(doc.id)}
+                            title={isFeatured ? "Remove from Today's Reading" : "Feature on Today Dashboard"}
                           >
-                            <BookOpen size={12} />
+                            <Star size={11} fill={isFeatured ? "currentColor" : "none"} />
                           </button>
                           <button
-                            className={styles.deleteBtn}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePinDoc(doc.id);
-                            }}
+                            type="button"
+                            className={`${styles.rowActionBtn} ${doc.isPinned ? styles.rowActionBtnActive : ''}`}
+                            onClick={() => togglePinDoc(doc.id)}
                             title={doc.isPinned ? "Unpin document" : "Pin document to top"}
-                            style={{ color: doc.isPinned ? '#f59e0b' : 'var(--color-text-faint)' }}
                           >
-                            <Pin size={12} />
+                            <Pin size={11} />
                           </button>
                           <button
-                            className={styles.deleteBtn}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(doc.id, doc.title);
-                            }}
+                            type="button"
+                            className={`${styles.rowActionBtn} ${styles.rowActionBtnDelete}`}
+                            onClick={() => handleDelete(doc.id, doc.title)}
                             title="Delete Document"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={11} />
                           </button>
                         </div>
                       </div>
 
                       <div className={styles.docRowMeta}>
-                        <span className={styles.statusIndicator} style={{ color: statusColor }}>
-                          {doc.status}
+                        <span className={styles.statusBadge}>
+                          <span className={styles.statusDot} style={{ background: statusDotColor }} />
+                          <span className={styles.statusText}>{doc.status}</span>
                         </span>
                         {doc.readStatus === 'completed' ? (
-                          <span className={styles.tagPill} style={{ background: 'rgba(34, 211, 165, 0.15)', color: '#22d3a5' }}>
-                            ✅ Done
-                          </span>
+                          <span className={styles.metaPillDone}>Done</span>
                         ) : (doc.readProgress != null && doc.readProgress > 0) ? (
-                          <span className={styles.tagPill} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-                            📖 {doc.readProgress}%
-                          </span>
+                          <span className={styles.metaPillProgress}>{doc.readProgress}%</span>
                         ) : null}
                         {doc.category && (
-                          <span className={styles.tagPill} style={{ background: 'rgba(124, 106, 255, 0.15)', color: 'var(--color-accent-light)' }}>
-                            {doc.category}
-                          </span>
+                          <span className={styles.tagPill}>{doc.category}</span>
                         )}
                         {doc.tags.slice(0, 1).map((t) => (
                           <span key={t} className={styles.tagPill}>{t}</span>
                         ))}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-                          {featuredBookId === doc.id ? (
+                        <div className={styles.metaRightActions}>
+                          {isFeatured && (
                             <span
-                              style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: '#38bdf8',
-                                background: 'rgba(56, 189, 248, 0.16)',
-                                border: '1px solid rgba(56, 189, 248, 0.4)',
-                                borderRadius: '4px',
-                                padding: '1px 5px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
+                              className={styles.todayPill}
+                              title="Featured on Today Dashboard"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFeaturedOnDashboard(doc.id);
                               }}
                             >
                               ★ Today
                             </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetFeaturedOnDashboard(doc.id);
-                              }}
-                              style={{
-                                fontSize: '10px',
-                                fontWeight: 600,
-                                color: 'var(--color-text-muted)',
-                                background: 'var(--color-surface-2)',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: '4px',
-                                padding: '1px 5px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                              }}
-                              title="Feature this book on your Today's Dashboard card"
-                            >
-                              + Today
-                            </button>
                           )}
                           <Link
                             href={`/focus?docId=${doc.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            style={{ fontSize: '10px', color: 'var(--color-accent-light)', display: 'inline-flex', alignItems: 'center', gap: '2px', fontWeight: 600 }}
+                            className={styles.studyLink}
                             title="Study in Focus Mode"
                           >
-                            <BookOpen size={10} /> Study
+                            <span>Study</span>
+                            <ExternalLink size={9} />
                           </Link>
                         </div>
                       </div>
 
                       {/* Mini Progress Bar */}
                       {doc.readProgress != null && doc.readProgress > 0 && (
-                        <div style={{ width: '100%', height: '3px', background: 'var(--color-surface-2)', borderRadius: '99px', overflow: 'hidden', marginTop: '6px' }}>
+                        <div className={styles.progressBarTrack}>
                           <div
+                            className={styles.progressBarFill}
                             style={{
                               width: `${Math.min(100, Math.max(0, doc.readProgress))}%`,
-                              height: '100%',
-                              background: doc.readProgress === 100
-                                ? '#22d3a5'
-                                : 'linear-gradient(90deg, var(--color-accent) 0%, #38bdf8 100%)',
-                              borderRadius: '99px'
+                              background: doc.readProgress === 100 ? '#10b981' : 'var(--color-accent)',
                             }}
                           />
                         </div>
@@ -2173,7 +2160,7 @@ export default function KnowledgePage() {
             </div>
           ) : (
             <div className={styles.editorWrapper}>
-              {/* Document Action Header */}
+              {/* Document Action Header (Clean Minimalist Topbar) */}
               <div className={styles.canvasHeader}>
                 <div className={styles.canvasHeaderLeft}>
                   {/* Mobile Back Button to Notes List */}
@@ -2191,14 +2178,9 @@ export default function KnowledgePage() {
                     <button
                       className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
                       onClick={() => setEditorMode('edit')}
+                      title="Edit note"
                     >
                       <Edit2 size={12} /> Edit
-                    </button>
-                    <button
-                      className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('preview')}
-                    >
-                      <Eye size={12} /> Preview
                     </button>
                     <button
                       className={`${styles.segmentBtn} ${editorMode === 'book' ? styles.segmentBtnActive : ''}`}
@@ -2207,67 +2189,77 @@ export default function KnowledgePage() {
                     >
                       <BookMarked size={12} /> Book
                     </button>
+                    <button
+                      className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('preview')}
+                      title="Preview rendered markdown"
+                    >
+                      <Eye size={12} /> Preview
+                    </button>
                   </div>
 
                   <button
                     className={`${styles.propertiesToggleBtn} ${showMetaSettings ? styles.propertiesToggleBtnActive : ''}`}
                     onClick={() => setShowMetaSettings(!showMetaSettings)}
+                    title="Toggle document properties"
                   >
-                    <Link2 size={12} /> Properties {showMetaSettings ? '▴' : '▾'}
+                    <Tag size={12} /> Properties {showMetaSettings ? '▴' : '▾'}
                   </button>
                 </div>
 
                 <div className={styles.canvasActionsRight}>
                   {selectedDoc && (
                     <span className={styles.lastSavedText}>
-                      <Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                       Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
 
-                  {/* AI Knowledge Tools Suite (Contains Auto-Format, Summary, Study Quiz, Ask AI) */}
+                  {/* AI Knowledge Tools */}
                   <button
                     type="button"
-                    className={`${styles.headerBtn} ${styles.headerAiBtn}`}
+                    className={styles.headerGhostBtn}
                     onClick={() => setAiModalOpen(true)}
-                    title="AI Note Tools: Auto-Format, Executive Summary, Study Quiz, Ask AI"
+                    title="AI Tools: Auto-Format, Summary, Study Quiz, Ask AI"
                   >
-                    <span>AI Tools</span>
+                    <Sparkles size={13} style={{ color: 'var(--color-accent-light)' }} />
+                    <span>AI</span>
                   </button>
 
                   {/* Export PDF Button */}
                   <button
                     type="button"
-                    className={styles.headerBtn}
+                    className={styles.headerGhostBtn}
                     onClick={handleExportPdf}
-                    title="Export as Formal PDF Document"
+                    title="Export as PDF"
                   >
-                    <Printer size={12} /> PDF
+                    <Printer size={13} />
                   </button>
 
                   {/* Copy Text Button */}
                   <button
                     type="button"
-                    className={styles.headerBtn}
+                    className={styles.headerGhostBtn}
                     onClick={handleCopyText}
                     title="Copy Document Text"
                   >
-                    {copied ? <Check size={12} style={{ color: 'var(--color-success)' }} /> : <Copy size={12} />}
-                    {copied ? 'Copied' : 'Copy'}
+                    {copied ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
                   </button>
 
                   {selectedDoc && (
                     <EntityFiles
                       variant="button"
-                      className={styles.headerBtn}
+                      className={styles.headerGhostBtn}
                       entityType="knowledge"
                       entityId={selectedDoc.id}
                       title={selectedDoc.title}
                     />
                   )}
-                  <button className={styles.btnSave} onClick={handleSave}>
-                    <Save size={13} /> Save
-                  </button>
+
+                  {editorMode === 'edit' && (
+                    <button className={styles.btnSave} onClick={handleSave} title="Save changes">
+                      <Save size={13} /> Save
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2521,19 +2513,72 @@ export default function KnowledgePage() {
                   }}
                 />
               ) : editorMode === 'book' ? (
-                /* ── Book Mode with Live Highlighter (Locked / Read-Only) ── */
+                /* ── Book Mode with Clean Minimalist Reading Bar ── */
                 <div className={styles.bookWrapper}>
-                  {/* Sticky Book Highlighter Bar */}
+                  {/* Clean Minimalist Floating Reading Bar */}
                   <div className={styles.bookHighlighterBar}>
                     <div className={styles.bookHighlighterGroup}>
-                      <span className={styles.bookLockBadge} title="Book Mode is locked for reading. Edits are disabled, highlighting is enabled.">
-                        <Lock size={12} /> Locked · Read Only
+                      <span className={styles.bookLockBadge} title="Read Mode is active">
+                        <BookOpen size={12} /> Read Mode
                       </span>
+
                       <div className={styles.bookHighlighterDivider} />
-                      <span className={styles.bookHighlighterLabel}>
-                        <Highlighter size={12} style={{ color: 'var(--color-accent)' }} /> Highlighter
-                      </span>
-                      <div className={styles.bookSwatches}>
+
+                      {/* Font family: Sans vs Serif */}
+                      <div className={styles.readerFontGroup} title="Reading typography font">
+                        <button
+                          type="button"
+                          className={`${styles.readerPillBtn} ${readingFont === 'sans' ? styles.readerPillBtnActive : ''}`}
+                          onClick={() => changeReadingFont('sans')}
+                          title="Modern clean Sans-Serif font"
+                        >
+                          Sans
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.readerPillBtn} ${readingFont === 'serif' ? styles.readerPillBtnActive : ''}`}
+                          onClick={() => changeReadingFont('serif')}
+                          style={{ fontFamily: 'Georgia, serif' }}
+                          title="Editorial classic Serif Book font"
+                        >
+                          Serif
+                        </button>
+                      </div>
+
+                      <div className={styles.bookHighlighterDivider} />
+
+                      {/* Font size: A- / A / A+ */}
+                      <div className={styles.readerSizeGroup} title="Reading text size">
+                        <button
+                          type="button"
+                          className={`${styles.readerSizeBtn} ${readingFontSize === 'sm' ? styles.readerPillBtnActive : ''}`}
+                          onClick={() => changeReadingFontSize('sm')}
+                          title="Compact text (15px)"
+                        >
+                          A-
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.readerSizeBtn} ${readingFontSize === 'md' ? styles.readerPillBtnActive : ''}`}
+                          onClick={() => changeReadingFontSize('md')}
+                          title="Standard comfortable text (17px)"
+                        >
+                          A
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.readerSizeBtn} ${readingFontSize === 'lg' ? styles.readerPillBtnActive : ''}`}
+                          onClick={() => changeReadingFontSize('lg')}
+                          title="Large spacious text (19px)"
+                        >
+                          A+
+                        </button>
+                      </div>
+
+                      <div className={styles.bookHighlighterDivider} />
+
+                      {/* Highlighter Swatches */}
+                      <div className={styles.bookSwatches} title="Click a color to highlight selected text">
                         {HIGHLIGHT_COLORS.slice(0, 5).map((c) => (
                           <button
                             key={c.name}
@@ -2546,45 +2591,39 @@ export default function KnowledgePage() {
                             } as React.CSSProperties}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleHighlight(c.name, false)}
-                            title={`Highlight selected text: ${c.label}`}
+                            title={`Highlight: ${c.label}`}
                             aria-label={`Highlight ${c.label}`}
                           />
                         ))}
                       </div>
-                    </div>
 
-                    <div className={styles.bookHighlighterGroup}>
                       <button
                         type="button"
-                        className={styles.bookBtnSmall}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleHighlight(activeHighlightColor, false)}
-                        title="Highlight selected text"
-                      >
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR_MAP[activeHighlightColor]?.border || '#fbbf24', display: 'inline-block' }} />
-                        Highlight Selection
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.bookBtnSmall}
+                        className={styles.bookEraserBtn}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={handleRemoveHighlight}
-                        title="Remove highlight from selection"
+                        title="Clear highlight from selected text"
+                        aria-label="Clear highlight"
                       >
-                        <Eraser size={12} /> Clear
+                        <Eraser size={13} />
                       </button>
+
+                      <div className={styles.bookHighlighterDivider} />
+
+                      {/* Instant Auto-Format Button */}
                       <button
                         type="button"
-                        className={styles.bookBtnSmall}
-                        onClick={handlePasteIntoCurrentBook}
-                        title="Paste clipboard text and auto-format into clean Book design"
+                        className={styles.readerFormatBtn}
+                        onClick={handleFormatCurrentAsBook}
+                        title="Auto-Format: Clean spacing, unbreak words, format lists, and normalize font sizes into formal layout"
                       >
-                        <ClipboardPaste size={12} /> Paste into Book
+                        <Sparkles size={12} style={{ color: 'var(--color-accent-light)' }} />
+                        <span>Auto-Format</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className={styles.bookPage}>
+                  <div className={`${styles.bookPage} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}>
                     <div className={styles.bookTitle}>{fTitle || 'Untitled'}</div>
                     {fTags && (
                       <div className={styles.bookMeta}>

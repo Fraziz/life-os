@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -282,7 +282,7 @@ export default function TasksPage() {
 
   return (
     <div className={styles.page}>
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Tasks & Actions</h1>
@@ -296,35 +296,35 @@ export default function TasksPage() {
         </button>
       </header>
 
-      {/* â”€â”€ Quick Add Bar â”€â”€ */}
+      {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Plus size={20} style={{ color: 'var(--color-accent)' }} />
+          <Plus size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Type a task and press Enter to add instantly (e.g. Refactor movement jump curve)..."
+            placeholder="Add a new task..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn}>
-            Quick Add â†µ
+          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
+            <span>Add</span>
+            <kbd className={styles.quickAddKbd}>↵</kbd>
           </button>
         </div>
 
         <div className={styles.quickAddMetaRow}>
           <div className={styles.quickAddPills}>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
             <select
               className={styles.pillSelect}
               value={quickStatus}
               onChange={(e) => setQuickStatus(e.target.value as TaskStatus)}
             >
-              <option value="todo">Stage: To Do</option>
-              <option value="doing">Stage: Doing</option>
-              <option value="backlog">Stage: Backlog</option>
-              <option value="done">Stage: Done</option>
+              <option value="todo">To Do</option>
+              <option value="doing">Doing</option>
+              <option value="backlog">Backlog</option>
+              <option value="done">Done</option>
             </select>
 
             <select
@@ -332,10 +332,10 @@ export default function TasksPage() {
               value={quickPriority}
               onChange={(e) => setQuickPriority(e.target.value as TaskPriority)}
             >
-              <option value="medium">Priority: Medium</option>
-              <option value="high">Priority: High</option>
-              <option value="urgent">Priority: Urgent</option>
-              <option value="low">Priority: Low</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high">High Priority</option>
+              <option value="urgent">Urgent</option>
+              <option value="low">Low Priority</option>
             </select>
 
             <select
@@ -343,22 +343,18 @@ export default function TasksPage() {
               value={quickProjectId}
               onChange={(e) => setQuickProjectId(e.target.value)}
             >
-              <option value="">No Project (General)</option>
+              <option value="">No Project</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
-                  Project: {p.title}
+                  {p.title}
                 </option>
               ))}
             </select>
           </div>
-
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
-          </span>
         </div>
       </form>
 
-      {/* â”€â”€ Controls Bar â”€â”€ */}
+      {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.searchWrap}>
@@ -418,7 +414,7 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) â”€â”€ */}
+      {/* ── Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) ── */}
       <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
         <button
           type="button"
@@ -457,7 +453,7 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* â”€â”€ Kanban Grid: Backlog | To Do | Doing | Done â”€â”€ */}
+      {/* ── Kanban Grid: Backlog | To Do | Doing | Done ── */}
       <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
@@ -558,7 +554,7 @@ export default function TasksPage() {
                                     title="Toggle subtask checklist"
                                   >
                                     <span>{completedSubs}/{task.subtasks.length} steps</span>
-                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? 'â–²' : 'â–¼'}</span>
+                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? '▲' : '▼'}</span>
                                   </button>
                                 )}
                               </div>
@@ -573,7 +569,7 @@ export default function TasksPage() {
                           </span>
                         </div>
 
-                        {/* â”€â”€ Subtask Progress Mini-bar (Interactive Toggle) â”€â”€ */}
+                        {/* ── Subtask Progress Mini-bar (Interactive Toggle) ── */}
                         {task.subtasks.length > 0 && (
                           <button
                             type="button"
@@ -587,7 +583,7 @@ export default function TasksPage() {
                                 <span>Steps Breakdown</span>
                               </span>
                               <span style={{ fontWeight: 600 }}>
-                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? 'â–²' : 'â–¼'}
+                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
                               </span>
                             </div>
                             <div className={styles.subtaskMiniBar}>
@@ -599,7 +595,7 @@ export default function TasksPage() {
                           </button>
                         )}
 
-                        {/* â”€â”€ Subtasks Section (Collapsible) â”€â”€ */}
+                        {/* ── Subtasks Section (Collapsible) ── */}
                         {task.subtasks.length > 0 && expandedTasksMap[task.id] && (
                           <div className={styles.subtasksBox}>
                             {task.subtasks.map((sub) => (
@@ -640,7 +636,7 @@ export default function TasksPage() {
                           </div>
                         )}
 
-                        {/* â”€â”€ Inline Subtask & Breakdown Buttons â”€â”€ */}
+                        {/* ── Inline Subtask & Breakdown Buttons ── */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           {activeSubtaskTaskId === task.id ? (
                             <form
@@ -699,7 +695,7 @@ export default function TasksPage() {
                           </button>
                         </div>
 
-                        {/* â”€â”€ Hierarchy Breadcrumb: Goal â€º Milestone â€º Project â”€â”€ */}
+                        {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
                         {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
                           <div className={styles.tagsRow}>
                             {/* Breadcrumb chain */}
@@ -711,7 +707,7 @@ export default function TasksPage() {
                                   </span>
                                 )}
                                 {parentGoal && parentMilestone && (
-                                  <span className={styles.breadcrumbArrow}>â€º</span>
+                                  <span className={styles.breadcrumbArrow}>›</span>
                                 )}
                                 {parentMilestone && (
                                   <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
@@ -719,7 +715,7 @@ export default function TasksPage() {
                                   </span>
                                 )}
                                 {(parentGoal || parentMilestone) && parentProject && (
-                                  <span className={styles.breadcrumbArrow}>â€º</span>
+                                  <span className={styles.breadcrumbArrow}>›</span>
                                 )}
                                 {parentProject && (
                                   <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
@@ -736,7 +732,7 @@ export default function TasksPage() {
                           </div>
                         )}
 
-                        {/* â”€â”€ Card Footer â”€â”€ */}
+                        {/* ── Card Footer ── */}
                         <div className={styles.taskFooter}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {task.dueDate ? (
@@ -788,7 +784,7 @@ export default function TasksPage() {
                                 }}
                                 title="Move left"
                               >
-                                â†
+                                ←
                               </button>
                             )}
 
@@ -806,7 +802,7 @@ export default function TasksPage() {
                                 }}
                                 title="Move right"
                               >
-                                â†’
+                                →
                               </button>
                             )}
 
@@ -844,7 +840,7 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* â”€â”€ Modal Dialog for Full Edit / Create â”€â”€ */}
+      {/* ── Modal Dialog for Full Edit / Create ── */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -987,7 +983,7 @@ export default function TasksPage() {
                 />
               </div>
 
-              {/* â”€â”€ Color Accent Picker â”€â”€ */}
+              {/* ── Color Accent Picker ── */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Card Accent Color (Optional)</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
@@ -1050,7 +1046,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* â”€â”€ Manual Task Breakdown Modal â”€â”€ */}
+      {/* ── Manual Task Breakdown Modal ── */}
       {breakdownModalOpen && breakdownTargetTask && (
         <div className={styles.modalOverlay} onClick={() => setBreakdownModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -27,7 +27,7 @@ import PageSkeleton from '@/components/ui/PageSkeleton';
 const STATUS_CONFIG: Record<MilestoneStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: styles.upcoming },
   'in-progress': { label: 'In Progress', className: styles.inProgress },
-  completed: { label: 'Completed âœ“', className: styles.completed },
+  completed: { label: 'Completed ✓', className: styles.completed },
   missed: { label: 'Missed', className: styles.upcoming },
   archived: { label: 'Archived', className: styles.upcoming },
 };
@@ -155,7 +155,7 @@ export default function MilestonesPage() {
 
   return (
     <div className={styles.page}>
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Milestones &amp; Checkpoints</h1>
@@ -169,26 +169,25 @@ export default function MilestonesPage() {
         </button>
       </header>
 
-      {/* â”€â”€ Quick Add Bar â”€â”€ */}
+      {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Flag size={20} style={{ color: 'var(--color-accent)' }} />
+          <Flag size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Type a milestone checkpoint and press Enter to add instantly (e.g. Beta release)..."
+            placeholder="Add a new milestone checkpoint..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn}>
-            Quick Add â†µ
+          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
+            <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
           </button>
         </div>
 
         <div className={styles.quickAddMetaRow}>
           <div className={styles.quickAddPills}>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
             <select
               className={styles.pillSelect}
               value={quickStatus}
@@ -211,14 +210,10 @@ export default function MilestonesPage() {
               ))}
             </select>
           </div>
-
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
-          </span>
         </div>
       </form>
 
-      {/* â”€â”€ Controls Bar â”€â”€ */}
+      {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
           <div className={styles.tabs}>
@@ -257,7 +252,7 @@ export default function MilestonesPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Milestones Grid â”€â”€ */}
+      {/* ── Milestones Grid ── */}
       {filteredMilestones.length === 0 ? (
         <div
           style={{
@@ -292,13 +287,13 @@ export default function MilestonesPage() {
                   borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
-                {/* â”€â”€ Hierarchy Banner: Dream -> Goal â”€â”€ */}
+                {/* ── Hierarchy Banner: Dream -> Goal ── */}
                 {parentGoal && (
                   <div className={styles.hierarchyBanner}>
                     {parentDream && (
                       <>
                         <span className={styles.hierarchyItem}>{parentDream.title}</span>
-                        <span className={styles.hierarchySep}>â†’</span>
+                        <span className={styles.hierarchySep}>→</span>
                       </>
                     )}
                     <span style={{ color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -354,7 +349,7 @@ export default function MilestonesPage() {
                   {milestone.description && <p className={styles.milestoneDesc}>{milestone.description}</p>}
                 </div>
 
-                {/* â”€â”€ Progress Section â”€â”€ */}
+                {/* ── Progress Section ── */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
                     <span style={{ color: 'var(--color-text-muted)' }}>Progress</span>
@@ -415,7 +410,7 @@ export default function MilestonesPage() {
         </div>
       )}
 
-      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
+      {/* ── Modal Dialog for Create / Edit ── */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
@@ -494,7 +489,7 @@ export default function MilestonesPage() {
                   >
                     <option value="upcoming">Upcoming</option>
                     <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed âœ“</option>
+                    <option value="completed">Completed ✓</option>
                     <option value="missed">Missed</option>
                     <option value="archived">Archived</option>
                   </select>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo, useState } from 'react';
 import { Paperclip } from 'lucide-react';
@@ -47,7 +47,7 @@ export default function FilesPage() {
       <header>
         <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, margin: 0 }}>All files</h1>
         <p style={{ color: 'var(--color-text-muted)', marginTop: 8, lineHeight: 1.5 }}>
-          Every photo, video, document, and folder you attached â€” on this phone or any other device.
+          Every photo, video, document, and folder you attached — on this phone or any other device.
         </p>
       </header>
 
@@ -92,7 +92,7 @@ export default function FilesPage() {
               <span style={{ flex: 1, minWidth: 0 }}>
                 <strong style={{ display: 'block' }}>{group.title}</strong>
                 <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-                  {LABELS[group.entityType]} Â· {group.count} {group.count === 1 ? 'file' : 'files'}
+                  {LABELS[group.entityType]} · {group.count} {group.count === 1 ? 'file' : 'files'}
                 </span>
               </span>
             </button>

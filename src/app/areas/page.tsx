@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useLifeAreas } from '@/context/LifeAreaContext';
@@ -138,7 +138,7 @@ export default function LifeAreasPage() {
 
   return (
     <div className={styles.page}>
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Life Areas</h1>
@@ -152,7 +152,7 @@ export default function LifeAreasPage() {
         </button>
       </header>
 
-      {/* â”€â”€ Controls Bar â”€â”€ */}
+      {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.tabs}>
           <button
@@ -170,7 +170,7 @@ export default function LifeAreasPage() {
         </div>
       </div>
 
-      {/* â”€â”€ Areas Grid â”€â”€ */}
+      {/* ── Areas Grid ── */}
       {currentList.length === 0 ? (
         <div
           style={{
@@ -283,7 +283,7 @@ export default function LifeAreasPage() {
         </div>
       )}
 
-      {/* â”€â”€ Modal Dialog for Create / Edit â”€â”€ */}
+      {/* ── Modal Dialog for Create / Edit ── */}
       {modalOpen && (
         <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>

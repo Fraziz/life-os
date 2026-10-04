@@ -144,23 +144,22 @@ export default function HabitsPage() {
       {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <Plus size={18} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+          <Plus size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
-            placeholder="Add a new habit (press Enter to save)..."
+            placeholder="Add a new habit..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn}>
-            Quick Add ↵
+          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
+            <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
           </button>
         </div>
 
         <div className={styles.quickAddMetaRow}>
           <div className={styles.quickAddPills}>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Optional:</span>
             <select
               className={styles.pillSelect}
               value={quickTargetDays}
@@ -190,10 +189,6 @@ export default function HabitsPage() {
               ))}
             </select>
           </div>
-
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Tip: Press <kbd style={{ background: 'var(--color-surface-2)', padding: '2px 4px', borderRadius: '4px' }}>Enter</kbd> to save
-          </span>
         </div>
       </form>
 
