@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useDreams } from '@/context/DreamContext';
+import { useGoals } from '@/context/GoalContext';
+import { useTasks } from '@/context/TaskContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Dream, DreamStatus } from '@/types';
 import { AreaIcon } from '@/app/areas/page';
@@ -16,10 +18,17 @@ import {
   X,
   RotateCcw,
   CloudSun,
+  Target,
+  CheckSquare,
+  Sparkles,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 
 const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> = {
   dream: { label: 'Dream', className: styles.dream },
@@ -32,12 +41,70 @@ const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> =
 
 export default function DreamsPage() {
   const { dreams, addDream, updateDream, updateDreamStatus, deleteDream, resetToDefaultDreams, isLoaded } = useDreams();
+  const { addGoal } = useGoals();
+  const { addTask } = useTasks();
   const { activeAreas } = useLifeAreas();
 
   const [activeFilter, setActiveFilter] = useState<'all' | DreamStatus>('all');
   const [dreamSearch, setDreamSearch] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
+
+  // ADHD Guidance & 1-Click Bridges
+  const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
+  const [quickBridge, setQuickBridge] = useState<{
+    type: 'goal' | 'task';
+    dream: Dream;
+  } | null>(null);
+  const [bridgeTitle, setBridgeTitle] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const openBridge = (type: 'goal' | 'task', dream: Dream) => {
+    setQuickBridge({ type, dream });
+    if (type === 'goal') {
+      setBridgeTitle(`90-Day Quest: ${dream.title}`);
+    } else {
+      setBridgeTitle(`Start 15 mins: Research ${dream.title}`);
+    }
+  };
+
+  const handleBridgeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickBridge || !bridgeTitle.trim()) return;
+
+    if (quickBridge.type === 'goal') {
+      addGoal({
+        title: bridgeTitle.trim(),
+        why: quickBridge.dream.whyItMatters || 'Aligned with parent dream',
+        parentDreamId: quickBridge.dream.id,
+        lifeAreaId: quickBridge.dream.lifeAreaId,
+        horizon: '90-day',
+        priority: 'high',
+        status: 'in-progress',
+        progress: 0,
+      });
+      playSuccessChime();
+      showToast(`Goal created & linked to "${quickBridge.dream.title}"!`);
+    } else {
+      addTask({
+        title: bridgeTitle.trim(),
+        description: `15-minute starter step for dream: ${quickBridge.dream.title}`,
+        status: 'todo',
+        priority: 'medium',
+        estimatedDuration: 25,
+        tags: ['dream-action'],
+        subtasks: [],
+      });
+      playSuccessChime();
+      showToast(`Task added to your Tasks To Do!`);
+    }
+    setQuickBridge(null);
+  };
 
   // Form state
   const [title, setTitle] = useState('');
@@ -153,9 +220,19 @@ export default function DreamsPage() {
           </p>
         </div>
 
-        <button className={styles.btnCreate} onClick={openCreateModal}>
-          <Plus size={18} /> New Dream
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.btnAdhdGuide}
+            onClick={() => setAdhdGuideOpen(true)}
+            title="ADHD 4-Level Guide: How Dreams, Goals, Projects, and Tasks work together"
+          >
+            4-Level Guide
+          </button>
+          <button className={styles.btnCreate} onClick={openCreateModal}>
+            <Plus size={18} /> New Dream
+          </button>
+        </div>
       </header>
 
       {/* ── Quick Add Bar ── */}
@@ -372,6 +449,29 @@ export default function DreamsPage() {
                       </span>
                     )}
                   </div>
+
+                  {/* ── 1-Click ADHD Bridge (Dream ➔ Goal or Task) ── */}
+                  <div className={styles.bridgeGroup}>
+                    <span className={styles.bridgeLabel}>
+                      Next step
+                    </span>
+                    <button
+                      type="button"
+                      className={`${styles.bridgeBtn} ${styles.bridgeBtnGoal}`}
+                      onClick={() => openBridge('goal', d)}
+                      title="Create a 90-day Goal directly from this Dream"
+                    >
+                      + Goal
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.bridgeBtn} ${styles.bridgeBtnTask}`}
+                      onClick={() => openBridge('task', d)}
+                      title="Create a 15-minute starter action task for this Dream"
+                    >
+                      + Task
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -514,6 +614,122 @@ export default function DreamsPage() {
           </div>
         </div>
       )}
+
+      {/* ── 1-Click ADHD Quick Bridge Modal ── */}
+      {quickBridge && (
+        <div className={styles.modalOverlay} onClick={() => setQuickBridge(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    background: quickBridge.type === 'goal' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: quickBridge.type === 'goal' ? '#fbbf24' : '#34d399',
+                    border: `1px solid ${quickBridge.type === 'goal' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                  }}
+                >
+                  {quickBridge.type === 'goal' ? 'Dream → Goal' : 'Dream → Task'}
+                </span>
+              </div>
+              <button className={styles.closeBtn} onClick={() => setQuickBridge(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Connected to Dream: <strong style={{ color: 'var(--color-text)' }}>{quickBridge.dream.title}</strong>
+            </div>
+
+            <form onSubmit={handleBridgeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  {quickBridge.type === 'goal' ? 'Goal Quest Name (1–3 Months)' : '15-Minute Action Task'}
+                </label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={bridgeTitle}
+                  onChange={(e) => setBridgeTitle(e.target.value)}
+                  placeholder={quickBridge.type === 'goal' ? 'e.g. Finish prototype v1' : 'e.g. Spend 15 mins drafting notes'}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--color-surface-2)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  fontSize: '11.5px',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>
+                  {quickBridge.type === 'goal'
+                    ? 'Pre-configured as an in-progress 90-day goal linked to this dream.'
+                    : 'Pre-configured as a 25-minute task added straight to your Tasks To Do.'}
+                </span>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setQuickBridge(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnCreate}
+                  style={{
+                    background: quickBridge.type === 'goal' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)',
+                  }}
+                >
+                  {quickBridge.type === 'goal' ? 'Create Goal' : 'Add Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast Notification ── */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-accent)',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            color: 'var(--color-text)',
+            fontSize: '13px',
+            fontWeight: 600,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'fadeInFast 0.2s ease forwards',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* ── ADHD 4-Level Guide Modal ── */}
+      <AdhdHierarchyModal
+        isOpen={adhdGuideOpen}
+        onClose={() => setAdhdGuideOpen(false)}
+      />
     </div>
   );
 }

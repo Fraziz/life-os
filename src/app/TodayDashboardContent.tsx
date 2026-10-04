@@ -37,7 +37,7 @@ import { useCalendar } from '@/context/CalendarContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import RightSidebar from '@/components/layout/RightSidebar';
-import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
+
 import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
@@ -112,7 +112,6 @@ export default function TodayDashboardContent() {
     !bookSearchQuery.trim() || d.title.toLowerCase().includes(bookSearchQuery.toLowerCase())
   );
 
-  const [presetsModalOpen, setPresetsModalOpen] = useState(false);
   const [briefingModalOpen, setBriefingModalOpen] = useState(false);
   const [optimizeModalOpen, setOptimizeModalOpen] = useState(false);
   const [briefingInitialMode, setBriefingInitialMode] = useState<'morning' | 'evening'>('morning');
@@ -784,7 +783,6 @@ export default function TodayDashboardContent() {
                 tabIndex={0}
               >
                 <span className={styles.completedTasksTitle}>
-                  <Check size={14} strokeWidth={2.5} />
                   Completed Today ({completedTasks.length})
                 </span>
                 <span className={styles.completedBadge}>
@@ -1103,8 +1101,7 @@ export default function TodayDashboardContent() {
         </div>
       )}
 
-      {/* Starter Presets Modal */}
-      <StarterPresetsModal isOpen={presetsModalOpen} onClose={() => setPresetsModalOpen(false)} />
+
 
       {/* Daily Briefing & Reflection Modal */}
       <DailyBriefingModal

@@ -406,7 +406,16 @@ export default function RoadmapContent() {
     });
 
     const maxY = nodes.reduce((m, n) => Math.max(m, n.y + NODE_H + CANVAS_PAD), 500);
-    return { nodes, connections, canvasHeight: maxY };
+
+    // Deduplicate nodes — the same dream can be referenced by multiple goals/clusters.
+    const seenIds = new Set<string>();
+    const uniqueNodes = nodes.filter(n => {
+      if (seenIds.has(n.id)) return false;
+      seenIds.add(n.id);
+      return true;
+    });
+
+    return { nodes: uniqueNodes, connections, canvasHeight: maxY };
   }, [filteredTasks, filteredProjects, filteredGoals, filteredDreams, dreamProgress]);
 
   const canvasWidth = COL_STARTS[3] + NODE_W + CANVAS_PAD;

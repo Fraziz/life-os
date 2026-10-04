@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
+import { useProjects } from '@/context/ProjectContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useTasks } from '@/context/TaskContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -29,10 +30,15 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
+  FolderKanban,
+  CheckSquare,
+  Zap,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 import { coachGoalWithAI } from '@/utils/aiEngine';
 import type { GoalCoachResult } from '@/utils/aiEngine';
 
@@ -55,9 +61,65 @@ const STATUS_LABELS: Record<GoalStatus, string> = {
 export default function GoalsPage() {
   const { goals, addGoal, updateGoal, updateGoalProgress, deleteGoal, resetToDefaultGoals, isLoaded } = useGoals();
   const { dreams } = useDreams();
+  const { addProject } = useProjects();
   const { activeAreas } = useLifeAreas();
-  const { tasks } = useTasks();
+  const { tasks, addTask } = useTasks();
   const { settings } = useSettings();
+
+  // ADHD Guidance & 1-Click Bridges
+  const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
+  const [quickBridge, setQuickBridge] = useState<{
+    type: 'project' | 'task';
+    goal: Goal;
+  } | null>(null);
+  const [bridgeTitle, setBridgeTitle] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const openBridge = (type: 'project' | 'task', goal: Goal) => {
+    setQuickBridge({ type, goal });
+    if (type === 'project') {
+      setBridgeTitle(`Project: ${goal.title}`);
+    } else {
+      setBridgeTitle(`15m step: ${goal.title}`);
+    }
+  };
+
+  const handleBridgeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickBridge || !bridgeTitle.trim()) return;
+
+    if (quickBridge.type === 'project') {
+      addProject({
+        title: bridgeTitle.trim(),
+        description: `Project executing goal: ${quickBridge.goal.title}`,
+        status: 'active',
+        priority: 'high',
+        progress: 0,
+        goalId: quickBridge.goal.id,
+      });
+      playSuccessChime();
+      showToast(`Project created & linked to "${quickBridge.goal.title}"!`);
+    } else {
+      addTask({
+        title: bridgeTitle.trim(),
+        description: `15-minute action step for goal: ${quickBridge.goal.title}`,
+        status: 'todo',
+        priority: 'high',
+        estimatedDuration: 25,
+        goalId: quickBridge.goal.id,
+        tags: ['goal-action'],
+        subtasks: [],
+      });
+      playSuccessChime();
+      showToast(`Task added to your Tasks To Do!`);
+    }
+    setQuickBridge(null);
+  };
 
   // AI Coach state: { [goalId]: { loading, result, open } }
   const [coachState, setCoachState] = useState<Record<string, { loading: boolean; result: GoalCoachResult | null; open: boolean }>>({});
@@ -227,9 +289,19 @@ export default function GoalsPage() {
           </p>
         </div>
 
-        <button className={styles.btnCreate} onClick={openCreateModal}>
-          <Plus size={18} /> New Goal
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.btnAdhdGuide}
+            onClick={() => setAdhdGuideOpen(true)}
+            title="ADHD 4-Level Guide: How Dreams, Goals, Projects, and Tasks work together"
+          >
+            4-Level Guide
+          </button>
+          <button className={styles.btnCreate} onClick={openCreateModal}>
+            <Plus size={18} /> New Goal
+          </button>
+        </div>
       </header>
 
       {/* ── Quick Add Bar ── */}
@@ -579,6 +651,29 @@ export default function GoalsPage() {
                     </button>
                   )}
                 </div>
+
+                {/* ── 1-Click ADHD Bridge (Goal ➔ Project or Task) ── */}
+                <div className={styles.bridgeGroup}>
+                  <span className={styles.bridgeLabel}>
+                    Next step
+                  </span>
+                  <button
+                    type="button"
+                    className={`${styles.bridgeBtn} ${styles.bridgeBtnProject}`}
+                    onClick={() => openBridge('project', goal)}
+                    title="Create a Project folder for this Goal"
+                  >
+                    + Project
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.bridgeBtn} ${styles.bridgeBtnTask}`}
+                    onClick={() => openBridge('task', goal)}
+                    title="Create a 15-minute action step for this Goal"
+                  >
+                    + Task
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -759,6 +854,122 @@ export default function GoalsPage() {
           </div>
         </div>
       )}
+
+      {/* ── 1-Click ADHD Quick Bridge Modal ── */}
+      {quickBridge && (
+        <div className={styles.modalOverlay} onClick={() => setQuickBridge(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    background: quickBridge.type === 'project' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: quickBridge.type === 'project' ? '#38bdf8' : '#34d399',
+                    border: `1px solid ${quickBridge.type === 'project' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                  }}
+                >
+                  {quickBridge.type === 'project' ? 'Goal → Project' : 'Goal → Task'}
+                </span>
+              </div>
+              <button className={styles.closeBtn} onClick={() => setQuickBridge(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Connected to Goal: <strong style={{ color: 'var(--color-text)' }}>{quickBridge.goal.title}</strong>
+            </div>
+
+            <form onSubmit={handleBridgeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  {quickBridge.type === 'project' ? 'Project Name (Folder of Steps)' : '15-Minute Action Task'}
+                </label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={bridgeTitle}
+                  onChange={(e) => setBridgeTitle(e.target.value)}
+                  placeholder={quickBridge.type === 'project' ? 'e.g. Website rebuild sprint 1' : 'e.g. Spend 15 mins drafting outline'}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--color-surface-2)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  fontSize: '11.5px',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>
+                  {quickBridge.type === 'project'
+                    ? 'Creates an active project folder linked to this goal.'
+                    : 'Creates an immediate 25-minute task linked to this goal.'}
+                </span>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setQuickBridge(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnCreate}
+                  style={{
+                    background: quickBridge.type === 'project' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'linear-gradient(135deg, #10b981, #059669)',
+                  }}
+                >
+                  {quickBridge.type === 'project' ? 'Create Project' : 'Add Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast Notification ── */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-accent)',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            color: 'var(--color-text)',
+            fontSize: '13px',
+            fontWeight: 600,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'fadeInFast 0.2s ease forwards',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* ── ADHD 4-Level Guide Modal ── */}
+      <AdhdHierarchyModal
+        isOpen={adhdGuideOpen}
+        onClose={() => setAdhdGuideOpen(false)}
+      />
     </div>
   );
 }

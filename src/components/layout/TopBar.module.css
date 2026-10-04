@@ -100,9 +100,9 @@
   height: 15px;
   padding: 0 3px;
   border-radius: 99px;
-  background: var(--color-surface-3);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  background: #ef4444;
+  color: #ffffff;
+  border: 1.5px solid var(--color-surface);
   font-size: 9px;
   font-weight: 600;
   display: flex;

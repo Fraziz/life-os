@@ -673,7 +673,7 @@ export default function InboxPage() {
             </div>
 
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Choose which level of your Sariling Mundo this thought belongs to:
+              Not sure? Pick Task — you can always move it later.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
@@ -685,7 +685,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                 }}
               >
-                <CheckSquare size={16} style={{ color: 'var(--color-accent)' }} /> Convert to Task
+                <CheckSquare size={16} style={{ color: 'var(--color-accent)' }} /> Convert to Task <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>15-min action</span>
               </button>
 
               <button
@@ -696,7 +696,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                 }}
               >
-                <FolderKanban size={16} style={{ color: '#38bdf8' }} /> Convert to Project
+                <FolderKanban size={16} style={{ color: '#38bdf8' }} /> Convert to Project <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Folder of steps</span>
               </button>
 
               <button
@@ -707,7 +707,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                 }}
               >
-                <Target size={16} style={{ color: '#f59e0b' }} /> Convert to Goal
+                <Target size={16} style={{ color: '#f59e0b' }} /> Convert to Goal <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>1–3 month quest</span>
               </button>
 
               <button
@@ -718,7 +718,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                 }}
               >
-                <CloudSun size={16} style={{ color: '#ec4899' }} /> Convert to Dream
+                <CloudSun size={16} style={{ color: '#ec4899' }} /> Convert to Dream <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Big life wish</span>
               </button>
 
               <button

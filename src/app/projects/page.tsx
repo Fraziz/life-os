@@ -6,6 +6,7 @@ import { useProjects } from '@/context/ProjectContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
+import { useTasks } from '@/context/TaskContext';
 import type { Project, ProjectStatus, ProjectPriority } from '@/types';
 import {
   FolderKanban,
@@ -23,10 +24,14 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Zap,
+  CheckSquare,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   active:    { label: 'Active',       color: '#3b82f6' },
@@ -57,6 +62,7 @@ function ProjectRow({
   parentGoalTitle,
   compact,
   highlightId,
+  onAddBridgeTask,
 }: {
   project: Project;
   onEdit: (p: Project) => void;
@@ -65,6 +71,7 @@ function ProjectRow({
   parentGoalTitle?: string;
   compact?: boolean;
   highlightId?: string | null;
+  onAddBridgeTask?: (p: Project) => void;
 }) {
   const cfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.active;
   const accent = project.color || cfg.color;
@@ -167,6 +174,28 @@ function ProjectRow({
       {/* Actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', justifyContent: 'flex-start' }}>
         <EntityFiles variant="icon" entityType="project" entityId={project.id} title={project.title} />
+        {onAddBridgeTask && (
+          <button
+            type="button"
+            onClick={() => onAddBridgeTask(project)}
+            title="1-Click: Create a 15-minute action task in this Project"
+            style={{
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '6px',
+              padding: '3px 6px',
+              color: '#34d399',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+            }}
+          >
+            + Task
+          </button>
+        )}
         <button onClick={() => onEdit(project)} title="Edit" style={btnStyle}>
           <Edit2 size={13} />
         </button>
@@ -185,13 +214,14 @@ const btnStyle: React.CSSProperties = {
 };
 
 /** ── List View ── */
-function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
+function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
   onDelete: (id: string) => void;
   onProgressChange: (id: string, v: number) => void;
   highlightId?: string | null;
+  onAddBridgeTask?: (p: Project) => void;
 }) {
   if (projects.length === 0) return <EmptyState />;
   return (
@@ -205,6 +235,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
           onProgressChange={onProgressChange}
           parentGoalTitle={goals.find((g) => g.id === p.goalId)?.title}
           highlightId={highlightId}
+          onAddBridgeTask={onAddBridgeTask}
         />
       ))}
     </div>
@@ -212,13 +243,14 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
 }
 
 /** ── Kanban View ── */
-function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId }: {
+function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
   onDelete: (id: string) => void;
   onProgressChange: (id: string, v: number) => void;
   highlightId?: string | null;
+  onAddBridgeTask?: (p: Project) => void;
 }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', overflowX: 'auto' }}>
@@ -257,6 +289,7 @@ function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highl
                   parentGoalTitle={goals.find((g) => g.id === p.goalId)?.title}
                   compact
                   highlightId={highlightId}
+                  onAddBridgeTask={onAddBridgeTask}
                 />
               ))
             )}
@@ -481,6 +514,42 @@ export default function ProjectsPage() {
   const { milestones } = useMilestones();
   const { goals } = useGoals();
   const { dreams } = useDreams();
+  const { addTask } = useTasks();
+
+  // ADHD Guidance & 1-Click Bridges
+  const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
+  const [quickBridgeTask, setQuickBridgeTask] = useState<Project | null>(null);
+  const [bridgeTaskTitle, setBridgeTaskTitle] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const openBridgeTask = (project: Project) => {
+    setQuickBridgeTask(project);
+    setBridgeTaskTitle(`15m step: ${project.title}`);
+  };
+
+  const handleBridgeTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickBridgeTask || !bridgeTaskTitle.trim()) return;
+    addTask({
+      title: bridgeTaskTitle.trim(),
+      description: `Task inside project: ${quickBridgeTask.title}`,
+      status: 'todo',
+      priority: 'high',
+      estimatedDuration: 25,
+      projectId: quickBridgeTask.id,
+      goalId: quickBridgeTask.goalId,
+      tags: ['project-action'],
+      subtasks: [],
+    });
+    playSuccessChime();
+    showToast(`Task added to "${quickBridgeTask.title}"!`);
+    setQuickBridgeTask(null);
+  };
 
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
@@ -610,9 +679,19 @@ export default function ProjectsPage() {
             Real creative, technical, and life endeavors you are actively building.
           </p>
         </div>
-        <button className={styles.btnCreate} onClick={openCreateModal}>
-          <Plus size={18} /> New Project
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.btnAdhdGuide}
+            onClick={() => setAdhdGuideOpen(true)}
+            title="ADHD 4-Level Guide: How Dreams, Goals, Projects, and Tasks work together"
+          >
+            4-Level Guide
+          </button>
+          <button className={styles.btnCreate} onClick={openCreateModal}>
+            <Plus size={18} /> New Project
+          </button>
+        </div>
       </header>
 
       {/* ── Quick Add Bar ── */}
@@ -745,6 +824,7 @@ export default function ProjectsPage() {
           onDelete={deleteProject}
           onProgressChange={updateProjectProgress}
           highlightId={highlightId}
+          onAddBridgeTask={openBridgeTask}
         />
       )}
 
@@ -756,6 +836,7 @@ export default function ProjectsPage() {
           onDelete={deleteProject}
           onProgressChange={updateProjectProgress}
           highlightId={highlightId}
+          onAddBridgeTask={openBridgeTask}
         />
       )}
 
@@ -889,6 +970,118 @@ export default function ProjectsPage() {
           </div>
         </div>
       )}
+
+      {/* ── 1-Click ADHD Quick Bridge Task Modal ── */}
+      {quickBridgeTask && (
+        <div className={styles.modalOverlay} onClick={() => setQuickBridgeTask(null)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#34d399',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                  }}
+                >
+                  Project → Task
+                </span>
+              </div>
+              <button className={styles.closeBtn} onClick={() => setQuickBridgeTask(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Project: <strong style={{ color: 'var(--color-text)' }}>{quickBridgeTask.title}</strong>
+            </div>
+
+            <form onSubmit={handleBridgeTaskSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>15-Minute Action Task</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={bridgeTaskTitle}
+                  onChange={(e) => setBridgeTaskTitle(e.target.value)}
+                  placeholder="e.g. Spend 15 mins drafting notes"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--color-surface-2)',
+                  border: '1px solid var(--color-border-subtle)',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  fontSize: '11.5px',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>
+                  Instantly creates a 25-minute action task linked to this project and adds it to your Tasks To Do.
+                </span>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setQuickBridgeTask(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnCreate}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                  }}
+                >
+                  Add Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast Notification ── */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-accent)',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            color: 'var(--color-text)',
+            fontSize: '13px',
+            fontWeight: 600,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'fadeInFast 0.2s ease forwards',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* ── ADHD 4-Level Guide Modal ── */}
+      <AdhdHierarchyModal
+        isOpen={adhdGuideOpen}
+        onClose={() => setAdhdGuideOpen(false)}
+      />
     </div>
   );
 }

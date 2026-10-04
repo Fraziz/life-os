@@ -35,7 +35,7 @@ import {
   Zap,
   Check,
 } from 'lucide-react';
-import StarterPresetsModal from '@/components/onboarding/StarterPresetsModal';
+
 import ActiveDevices from '@/components/settings/ActiveDevices';
 import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
-  const [presetsModalOpen, setPresetsModalOpen] = useState(false);
+
   const [loggingOut, setLoggingOut] = useState(false);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
 
@@ -444,22 +444,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className={styles.starterPresetRow}>
-            <div>
-              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)' }}>Workspace Templates</span>
-              <p style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                Populate initial blueprints for Fitness, Deep Work Student, or Creative Projects.
-              </p>
-            </div>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={() => setPresetsModalOpen(true)}
-            >
-              <Sparkles size={12} style={{ marginRight: 6 }} />
-              Browse Presets
-            </button>
-          </div>
+
         </section>
 
         {/* ── 2. Appearance & Color Theme ── */}
@@ -1992,8 +1977,7 @@ export default function SettingsPage() {
         </div>
       </form>
 
-      {/* Starter Presets Modal */}
-      <StarterPresetsModal isOpen={presetsModalOpen} onClose={() => setPresetsModalOpen(false)} />
+
     </div>
   );
 }

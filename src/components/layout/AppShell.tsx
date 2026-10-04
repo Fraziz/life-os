@@ -31,6 +31,7 @@ import AIAssistantPanel from '@/components/assistant/AIAssistantPanel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import CommandPalette from '@/components/command/CommandPalette';
+import GrammarAssist from '@/components/ui/GrammarAssist';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
@@ -351,6 +352,8 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       >
         <Bot size={20} strokeWidth={2} />
       </button>
+
+      <GrammarAssist />
     </>
   );
 }

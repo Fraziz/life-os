@@ -37,6 +37,7 @@ import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 
 const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'backlog', label: 'Backlog' },
@@ -84,6 +85,7 @@ export default function TasksPage() {
   const [quickPriority, setQuickPriority] = useState<TaskPriority>('medium');
   const [quickStatus, setQuickStatus] = useState<TaskStatus>('todo');
   const [quickProjectId, setQuickProjectId] = useState<string>('');
+  const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
 
   // Filters & Views
   const [projectFilter, setProjectFilter] = useState<string>('all');
@@ -748,9 +750,19 @@ export default function TasksPage() {
           </p>
         </div>
 
-        <button className={styles.quickAddBtn} onClick={openCreateModal}>
-          <Plus size={16} /> Detailed Task
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.btnAdhdGuide}
+            onClick={() => setAdhdGuideOpen(true)}
+            title="ADHD 4-Level Guide: How Dreams, Goals, Projects, and Tasks work together"
+          >
+            4-Level Guide
+          </button>
+          <button className={styles.quickAddBtn} onClick={openCreateModal}>
+            <Plus size={16} /> Detailed Task
+          </button>
+        </div>
       </header>
 
       {/* ── Quick Add Bar ── */}
@@ -1115,7 +1127,7 @@ export default function TasksPage() {
                           {todayDoneTasks.length > 0 && (
                             <>
                               <div className={styles.doneGroupHeader}>
-                                <span>✨ Completed Today ({todayDoneTasks.length})</span>
+                                <span>Completed Today ({todayDoneTasks.length})</span>
                               </div>
                               {todayDoneTasks.map((task) => renderTaskCard(task, col))}
                             </>
@@ -1462,6 +1474,12 @@ export default function TasksPage() {
           </div>
         </div>
       )}
+
+      {/* ── ADHD 4-Level Guide Modal ── */}
+      <AdhdHierarchyModal
+        isOpen={adhdGuideOpen}
+        onClose={() => setAdhdGuideOpen(false)}
+      />
     </div>
   );
 }
