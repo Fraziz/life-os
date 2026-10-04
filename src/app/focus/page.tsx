@@ -596,67 +596,23 @@ export default function FocusPage() {
           {/* If a Knowledge document is active AND we are in Book View */}
           {activeDoc && focusViewMode === 'book' ? (
             <div className={styles.focusBookWrapper}>
-              {/* Sticky Minimalist Reading HUD (Focus Countdown Timer & Tools) */}
+              {/* Sticky Minimalist Reading HUD (Focus Countdown Timer on Right) */}
               <div className={styles.focusBookHeaderBar}>
-                {/* 1. Left: Focus Countdown Timer (25m / remaining time) */}
-                <div className={styles.focusTimerSection}>
-                  <button
-                    type="button"
-                    className={`${styles.timerPlayBtn} ${isRunning ? styles.timerRunning : ''}`}
-                    onClick={isRunning ? pauseTimer : startTimer}
-                    title={isRunning ? 'Pause Focus Session' : 'Start Focus Session'}
+                {/* ── Left: Reading Context & Highlighter Tools ── */}
+                <div className={styles.focusBookHeaderLeft}>
+                  <div
+                    className={styles.readingInfoSection}
+                    title={`Document has ~${readingStats.words} words (~${readingStats.minutes} min read)`}
                   >
-                    {isRunning ? <Pause size={12} /> : <Play size={12} fill="currentColor" />}
-                  </button>
-
-                  <div className={styles.timerDisplayWrap} title="Focus time remaining">
-                    <span className={styles.timerDisplayDigits}>
-                      {formatTimer(secondsRemaining)}
-                    </span>
+                    <BookOpen size={12} className={styles.readingBookIcon} />
+                    <span>~{readingStats.minutes}m read</span>
+                    {readingScrollPercent > 0 && (
+                      <span className={styles.readingScrollBadge}>{readingScrollPercent}%</span>
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    className={styles.timerSmallBtn}
-                    onClick={resetTimer}
-                    title="Reset Focus Timer"
-                  >
-                    <RotateCcw size={11} />
-                  </button>
+                  <div className={styles.barDivider} />
 
-                  <select
-                    className={styles.timerDurationSelect}
-                    value={Math.round(timerDurationSeconds / 60)}
-                    onChange={(e) => setTimerMode(mode, Number(e.target.value))}
-                    title="Focus session duration"
-                  >
-                    <option value={15}>15m</option>
-                    <option value={20}>20m</option>
-                    <option value={25}>25m</option>
-                    <option value={30}>30m</option>
-                    <option value={45}>45m</option>
-                    <option value={60}>60m</option>
-                  </select>
-                </div>
-
-                <div className={styles.barDivider} />
-
-                {/* 2. Center: Minimalist Reading Stats */}
-                <div
-                  className={styles.readingInfoSection}
-                  title={`~${readingStats.words} words (~${readingStats.minutes} min read)`}
-                >
-                  <BookOpen size={12} className={styles.readingBookIcon} />
-                  <span>~{readingStats.minutes}m read</span>
-                  {readingScrollPercent > 0 && (
-                    <span className={styles.readingScrollBadge}>{readingScrollPercent}%</span>
-                  )}
-                </div>
-
-                <div className={styles.barDivider} />
-
-                {/* 3. Right: Sleek Highlighter & Reading Tools */}
-                <div className={styles.readingToolsSection}>
                   <div className={styles.swatchMiniRow}>
                     {HIGHLIGHT_COLORS.map((c) => (
                       <button
@@ -705,9 +661,10 @@ export default function FocusPage() {
                     {showSaveToast ? <Check size={12} /> : <Save size={12} />}
                     <span className={styles.toolLabel}>{showSaveToast ? 'Saved' : 'Save'}</span>
                   </button>
+                </div>
 
-                  <div className={styles.barDivider} />
-
+                {/* ── Right: Focus Countdown Timer & View Actions ── */}
+                <div className={styles.focusBookHeaderRight}>
                   <button
                     type="button"
                     className={styles.toolIconBtn}
@@ -733,6 +690,49 @@ export default function FocusPage() {
                   >
                     <ExternalLink size={12} />
                   </Link>
+
+                  <div className={styles.barDivider} />
+
+                  {/* The Focus Countdown Timer on the Right Side */}
+                  <div className={styles.focusTimerSection}>
+                    <button
+                      type="button"
+                      className={`${styles.timerPlayBtn} ${isRunning ? styles.timerRunning : ''}`}
+                      onClick={isRunning ? pauseTimer : startTimer}
+                      title={isRunning ? 'Pause Focus Session' : 'Start Focus Session'}
+                    >
+                      {isRunning ? <Pause size={12} /> : <Play size={12} fill="currentColor" />}
+                    </button>
+
+                    <div className={styles.timerDisplayWrap} title="Focus time remaining">
+                      <span className={styles.timerDisplayDigits}>
+                        {formatTimer(secondsRemaining)}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.timerSmallBtn}
+                      onClick={resetTimer}
+                      title="Reset Focus Timer"
+                    >
+                      <RotateCcw size={11} />
+                    </button>
+
+                    <select
+                      className={styles.timerDurationSelect}
+                      value={Math.round(timerDurationSeconds / 60)}
+                      onChange={(e) => setTimerMode(mode, Number(e.target.value))}
+                      title="Focus session duration"
+                    >
+                      <option value={15}>15m</option>
+                      <option value={20}>20m</option>
+                      <option value={25}>25m</option>
+                      <option value={30}>30m</option>
+                      <option value={45}>45m</option>
+                      <option value={60}>60m</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Hairline Reading Scroll Progress Bar */}

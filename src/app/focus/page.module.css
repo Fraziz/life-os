@@ -1171,7 +1171,7 @@
 .focusBookHeaderBar {
   position: -webkit-sticky;
   position: sticky;
-  top: 12px;
+  top: 14px;
   z-index: 50;
   background: var(--color-surface);
   backdrop-filter: blur(20px);
@@ -1189,19 +1189,46 @@
   transition: all var(--transition-fast, 0.15s ease);
 }
 
-/* 1. Focus Timer Section */
-.focusTimerSection {
+/* Left: Reading Info & Highlighter Tools */
+.focusBookHeaderLeft {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.timerPlayBtn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+/* Right: Actions & Focus Countdown Timer */
+.focusBookHeaderRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* The Focus Timer Capsule on the Right Side */
+.focusTimerSection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
   background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  padding: 3px 6px 3px 4px;
+  border-radius: var(--radius-full, 9999px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-fast);
+}
+
+.focusTimerSection:hover {
+  border-color: var(--color-border);
+}
+
+.timerPlayBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text);
   display: inline-flex;
