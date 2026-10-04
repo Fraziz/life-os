@@ -598,113 +598,6 @@ export default function FocusPage() {
           {/* If a Knowledge document is active AND we are in Book View */}
           {activeDoc && focusViewMode === 'book' ? (
             <div className={styles.focusBookWrapper}>
-              {/* Sticky Minimalist Reading HUD (Focus Countdown Timer on Right) */}
-              <div className={styles.focusBookHeaderBar}>
-                {/* ── Left: Reading Context & Highlighter Tools ── */}
-                <div className={styles.focusBookHeaderLeft}>
-                  <div
-                    className={styles.readingInfoSection}
-                    title={`Document has ~${readingStats.words} words (~${readingStats.minutes} min read)`}
-                  >
-                    <BookOpen size={12} className={styles.readingBookIcon} />
-                    <span>~{readingStats.minutes}m read</span>
-                    {readingScrollPercent > 0 && (
-                      <span className={styles.readingScrollBadge}>{readingScrollPercent}%</span>
-                    )}
-                  </div>
-
-                  <div className={styles.barDivider} />
-
-                  <div className={styles.swatchMiniRow}>
-                    {HIGHLIGHT_COLORS.map((c) => (
-                      <button
-                        key={c.name}
-                        type="button"
-                        className={`${styles.swatchMini} ${activeHighlightColor === c.name ? styles.swatchMiniActive : ''}`}
-                        style={{
-                          background: c.bg,
-                          borderColor: c.border,
-                          '--swatch-border': c.border,
-                        } as React.CSSProperties}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleHighlightInFocus(c.name)}
-                        title={`Select ${c.label} highlighter`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.toolIconBtn}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleHighlightInFocus(activeHighlightColor)}
-                    title="Highlight selected text"
-                  >
-                    <Highlighter size={12} />
-                    <span className={styles.toolLabel}>Highlight</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.toolIconBtn}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleRemoveHighlightInFocus()}
-                    title="Clear highlight"
-                  >
-                    <Eraser size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${styles.toolIconBtn} ${showSaveToast ? styles.toolSaveSuccess : ''}`}
-                    onClick={handleManualSave}
-                    title="Save highlights to Knowledge Base"
-                  >
-                    {showSaveToast ? <Check size={12} /> : <Save size={12} />}
-                    <span className={styles.toolLabel}>{showSaveToast ? 'Saved' : 'Save'}</span>
-                  </button>
-                </div>
-
-                {/* ── Right: View Actions ── */}
-                <div className={styles.focusBookHeaderRight}>
-                  <button
-                    type="button"
-                    className={styles.toolIconBtn}
-                    onClick={toggleZenMode}
-                    title="Toggle Zen Mode (Hide sidebars)"
-                  >
-                    <Eye size={12} />
-                    <span className={styles.toolLabel}>Zen</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.toolIconBtn}
-                    onClick={() => setTaskPickerOpen(true)}
-                    title="Switch focus target"
-                  >
-                    <Target size={12} />
-                    <span className={styles.toolLabel}>Switch</span>
-                  </button>
-
-                  <Link
-                    href={`/knowledge`}
-                    className={styles.toolIconBtn}
-                    title="Open in Knowledge Base"
-                  >
-                    <ExternalLink size={12} />
-                  </Link>
-                </div>
-
-                {/* Hairline Reading Scroll Progress Bar */}
-                <div className={styles.readingProgressBarTrack} title={`Reading progress: ${readingScrollPercent}%`}>
-                  <div
-                    className={styles.readingProgressBarFill}
-                    style={{ width: `${readingScrollPercent}%` }}
-                  />
-                </div>
-              </div>
-
               {/* Book Page Card */}
               <div className={styles.focusBookPageCard}>
                 <div className={styles.focusBookTitle}>{activeDoc.title}</div>
@@ -1015,6 +908,74 @@ export default function FocusPage() {
                   >
                     <CheckCircle2 size={12} />
                     <span>Finish</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.bookPanelDivider} />
+
+              {/* ── Reading & Annotation Tools (Knowledge Focus Only) ── */}
+              <div>
+                <div className={styles.bookReadingHeader}>
+                  <div className={styles.bookReadingMeta}>
+                    <BookOpen size={12} className={styles.readingIcon} />
+                    <span>~{readingStats.minutes}m read</span>
+                    <span className={styles.bookReadingPercent}>{readingScrollPercent}%</span>
+                  </div>
+                  <div className={styles.bookReadingToolsRight}>
+                    <button
+                      type="button"
+                      className={`${styles.bookSaveBtn} ${showSaveToast ? styles.bookSaveBtnSuccess : ''}`}
+                      onClick={handleManualSave}
+                      title="Save highlights to Knowledge Base"
+                    >
+                      {showSaveToast ? <Check size={11} /> : <Save size={11} />}
+                      <span>{showSaveToast ? 'Saved' : 'Save'}</span>
+                    </button>
+                    <Link
+                      href="/knowledge"
+                      className={styles.bookExtLink}
+                      title="Open in Knowledge Base"
+                    >
+                      <ExternalLink size={11} />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Thin Reading Progress Track */}
+                <div className={styles.bookReadingTrack} title={`Reading progress: ${readingScrollPercent}%`}>
+                  <div
+                    className={styles.bookReadingFill}
+                    style={{ width: `${readingScrollPercent}%` }}
+                  />
+                </div>
+
+                {/* Highlighter Color Palette & Quick Eraser */}
+                <div className={styles.bookHighlighterRow}>
+                  <span className={styles.bookHighlighterLabel}>Highlight</span>
+                  <div className={styles.bookSwatchGroup}>
+                    {HIGHLIGHT_COLORS.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        className={`${styles.bookSwatchDot} ${activeHighlightColor === c.name ? styles.bookSwatchDotActive : ''}`}
+                        style={{
+                          backgroundColor: c.border,
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleHighlightInFocus(c.name)}
+                        title={`Select ${c.label} highlighter`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.bookEraserBtn}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleRemoveHighlightInFocus()}
+                    title="Clear highlight from selected text"
+                  >
+                    <Eraser size={12} />
                   </button>
                 </div>
               </div>

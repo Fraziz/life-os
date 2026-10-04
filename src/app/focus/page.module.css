@@ -750,6 +750,169 @@
   margin: 2px 0;
 }
 
+/* Reading & Annotation Tools (Knowledge Focus Only) */
+.bookReadingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.bookReadingMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.readingIcon {
+  color: var(--color-primary, #6366f1);
+  flex-shrink: 0;
+}
+
+.bookReadingPercent {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--color-primary, #6366f1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bookReadingToolsRight {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bookSaveBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.bookSaveBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.bookSaveBtnSuccess {
+  background: rgba(34, 211, 165, 0.12);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.bookExtLink {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.bookExtLink:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+.bookReadingTrack {
+  width: 100%;
+  height: 3px;
+  background: var(--color-border-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 5px 0 7px;
+}
+
+.bookReadingFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary, #6366f1), #22d3ee);
+  border-radius: 99px;
+  transition: width 0.2s ease;
+}
+
+.bookHighlighterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.bookHighlighterLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.bookSwatchGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bookSwatchDot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.bookSwatchDot:hover {
+  transform: scale(1.2);
+}
+
+.bookSwatchDotActive {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 6px currentColor;
+  transform: scale(1.15);
+}
+
+.bookEraserBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.bookEraserBtn:hover {
+  color: var(--color-danger, #ef4444);
+  border-color: var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.1);
+}
+
 /* Minimalist Inline Distraction Parking */
 .bookSectionTitle {
   font-size: 0.7rem;
