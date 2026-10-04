@@ -121,6 +121,7 @@ interface TaskContextType {
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   deleteTask: (id: string) => void;
+  clearDoneTasks: () => void;
   resetToDefaultTasks: () => void;
   isLoaded: boolean;
 }
@@ -343,6 +344,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     saveTasks(updated);
   };
 
+  const clearDoneTasks = () => {
+    const updated = tasks.filter((t) => t.status !== 'done');
+    saveTasks(updated);
+  };
+
   const resetToDefaultTasks = () => {
     saveTasks(DEFAULT_TASKS);
   };
@@ -367,6 +373,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         toggleSubtask,
         deleteSubtask,
         deleteTask,
+        clearDoneTasks,
         resetToDefaultTasks,
         isLoaded,
       }}

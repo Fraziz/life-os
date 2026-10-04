@@ -462,6 +462,8 @@
 
   .taskList {
     gap: 8px !important;
+    max-height: none !important;
+    overflow-y: visible !important;
   }
 }
 
@@ -506,6 +508,245 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+
+.taskList::-webkit-scrollbar {
+  width: 5px;
+}
+
+.taskList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.taskList::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+/*  Done Column & Large Completed Lists Optimization  */
+.doneHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--color-surface-2);
+  padding: 2px 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.doneHeaderBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all var(--transition-fast);
+}
+
+.doneHeaderBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.08));
+}
+
+.doneHeaderBtnActive {
+  background: rgba(34, 211, 165, 0.15) !important;
+  color: #22d3a5 !important;
+}
+
+.doneClearBtn:hover {
+  color: var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.doneGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(34, 211, 165, 0.06);
+  border: 1px solid rgba(34, 211, 165, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 700;
+  color: #22d3a5;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.doneGroupHeaderSubtle {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-muted);
+}
+
+.olderDoneSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border-subtle);
+}
+
+.olderDoneToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.olderDoneToggleBtn:hover {
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.08));
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.olderDoneHint {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  font-weight: 400;
+}
+
+.olderDoneList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  animation: fadeInFast 0.2s ease forwards;
+}
+
+.donePaginationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.loadMoreBtn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.loadMoreBtn:hover {
+  background: rgba(34, 211, 165, 0.15);
+  border-color: #22d3a5;
+  color: #22d3a5;
+}
+
+.compactDoneRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.compactDoneRow:hover {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+.compactDoneInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.compactDoneTitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compactProjectChip {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compactDoneTime {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compactDoneActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.compactDoneRow:hover .compactDoneActions {
+  opacity: 1;
+}
+
+.compactActionBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.compactActionBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.1));
 }
 
 /*  Formal Task Card  */

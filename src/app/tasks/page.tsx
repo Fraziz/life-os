@@ -29,6 +29,9 @@ import {
   ExternalLink,
   GitFork,
   Wand2,
+  Layers,
+  LayoutList,
+  Archive,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
@@ -56,6 +59,7 @@ export default function TasksPage() {
     toggleSubtask,
     deleteSubtask,
     deleteTask,
+    clearDoneTasks,
     resetToDefaultTasks,
     isLoaded,
   } = useTasks();
@@ -86,6 +90,12 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [taskSearch, setTaskSearch] = useState<string>('');
   const [hideDone, setHideDone] = useState<boolean>(false);
+  const [doneTimeframe, setDoneTimeframe] = useState<'all' | 'today' | 'week' | 'month'>('all');
+
+  // Done column optimization states (for managing 100+ completed tasks)
+  const [doneViewMode, setDoneViewMode] = useState<'grouped' | 'compact' | 'all'>('grouped');
+  const [doneDisplayLimit, setDoneDisplayLimit] = useState<number>(10);
+  const [isOlderDoneExpanded, setIsOlderDoneExpanded] = useState<boolean>(false);
 
   // Mobile View Switcher & Column Collapse (for managing large task lists)
   const [mobileColFilter, setMobileColFilter] = useState<'all' | TaskStatus>('all');
@@ -266,8 +276,44 @@ export default function TasksPage() {
     setActiveSubtaskTaskId(null);
   };
 
+  const isDateToday = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+
+  const isDateThisWeek = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - d.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  };
+
+  const isDateThisMonth = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth()
+    );
+  };
+
   const filteredTasks = tasks.filter((t) => {
     if (hideDone && t.status === 'done') return false;
+    if (t.status === 'done' && doneTimeframe !== 'all') {
+      const taskDate = t.completedAt || t.updatedAt || t.createdAt;
+      if (doneTimeframe === 'today' && !isDateToday(taskDate)) return false;
+      if (doneTimeframe === 'week' && !isDateThisWeek(taskDate)) return false;
+      if (doneTimeframe === 'month' && !isDateThisMonth(taskDate)) return false;
+    }
     if (projectFilter !== 'all' && t.projectId !== projectFilter) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
     if (taskSearch.trim()) {
@@ -279,6 +325,417 @@ export default function TasksPage() {
     }
     return true;
   });
+
+  const renderCompactDoneRow = (task: Task) => {
+    const parentProject = projects.find((p) => p.id === task.projectId);
+    const doneDate = task.completedAt || task.updatedAt;
+    const timeFormatted = doneDate
+      ? new Date(doneDate).toLocaleDateString([], {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '';
+    const isHighlighted = highlightId === task.id;
+
+    return (
+      <div
+        key={task.id}
+        id={`task-card-${task.id}`}
+        className={styles.compactDoneRow}
+        style={{
+          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+        }}
+      >
+        <button
+          className={`${styles.checkboxBtn} ${styles.checked}`}
+          onClick={(e) => handleTaskToggle(e, task.id)}
+          title="Mark uncompleted"
+        >
+          <CheckSquare size={16} />
+        </button>
+        <div className={styles.compactDoneInfo}>
+          <span className={styles.compactDoneTitle} title={task.title}>
+            {task.title}
+          </span>
+          {parentProject && (
+            <span className={styles.compactProjectChip} title={`Project: ${parentProject.title}`}>
+              {parentProject.title}
+            </span>
+          )}
+        </div>
+        <span className={styles.compactDoneTime}>{timeFormatted}</span>
+        <div className={styles.compactDoneActions}>
+          <button
+            className={styles.compactActionBtn}
+            onClick={() => updateTaskStatus(task.id, 'doing')}
+            title="Move back to Doing"
+          >
+            <RotateCcw size={12} />
+          </button>
+          <button
+            className={styles.compactActionBtn}
+            onClick={() => openEditModal(task)}
+            title="Edit Task"
+          >
+            <Edit2 size={12} />
+          </button>
+          <button
+            className={`${styles.compactActionBtn} ${styles.deleteBtn}`}
+            onClick={() => {
+              if (confirm(`Delete "${task.title}"?`)) deleteTask(task.id);
+            }}
+            title="Delete task"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTaskCard = (task: Task, col: typeof STATUS_COLUMNS[0]) => {
+    const parentProject = projects.find((p) => p.id === task.projectId);
+
+    // Resolve Goal: task's direct goalId OR from parent project
+    const goalId = task.goalId || parentProject?.goalId;
+    const parentGoal = goalId ? goals.find((g) => g.id === goalId) : null;
+
+    // Resolve Milestone: task's direct milestoneId OR from parent project
+    const milestoneId = task.milestoneId || parentProject?.milestoneId;
+    const parentMilestone = milestoneId ? milestones.find((m) => m.id === milestoneId) : null;
+
+    const isDone = task.status === 'done';
+    const isCompound = task.isCompound || task.subtasks.length > 0;
+    const completedSubs = task.subtasks.filter((s) => s.completed).length;
+    const subPercent = task.subtasks.length > 0 ? Math.round((completedSubs / task.subtasks.length) * 100) : 0;
+
+    const accentColor = task.color || null;
+    const cardBg = accentColor && !isDone
+      ? `linear-gradient(135deg, var(--color-surface) 0%, ${accentColor}18 100%)`
+      : undefined;
+
+    const isHighlighted = highlightId === task.id;
+
+    return (
+      <article
+        key={task.id}
+        id={`task-card-${task.id}`}
+        className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
+        style={{
+          background: cardBg,
+          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+        }}
+      >
+        <div className={styles.taskTopRow}>
+          <div className={styles.checkTitleRow}>
+            <button
+              className={`${styles.checkboxBtn} ${isDone ? styles.checked : ''}`}
+              onClick={(e) => handleTaskToggle(e, task.id)}
+              title={isDone ? 'Mark uncompleted' : 'Mark done'}
+            >
+              {isDone ? <CheckSquare size={18} /> : <Square size={18} />}
+            </button>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                <h3 className={`${styles.taskTitle} ${isDone ? styles.strikethrough : ''}`}>
+                  {task.title}
+                </h3>
+                {isCompound && (
+                  <span className={styles.compoundBadge}>
+                    <ListTree size={10} /> Compound
+                  </span>
+                )}
+                {task.subtasks.length > 0 && (
+                  <button
+                    type="button"
+                    className={styles.subtaskBadgeBtn}
+                    onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
+                    title="Toggle subtask checklist"
+                  >
+                    <span>{completedSubs}/{task.subtasks.length} steps</span>
+                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? '▲' : '▼'}</span>
+                  </button>
+                )}
+              </div>
+              {task.description && (
+                <p className={styles.taskDesc}>{task.description}</p>
+              )}
+            </div>
+          </div>
+
+          <span className={`${styles.priorityBadge} ${styles[task.priority]}`}>
+            {task.priority}
+          </span>
+        </div>
+
+        {/* ── Subtask Progress Mini-bar (Interactive Toggle) ── */}
+        {task.subtasks.length > 0 && (
+          <button
+            type="button"
+            className={styles.subtaskCollapseTrigger}
+            onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
+            title={expandedTasksMap[task.id] ? 'Collapse subtasks' : 'Expand subtasks'}
+          >
+            <div className={styles.subtaskProgressHeader}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <ListTree size={11} style={{ color: 'var(--color-accent)' }} />
+                <span>Steps Breakdown</span>
+              </span>
+              <span style={{ fontWeight: 600 }}>
+                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
+              </span>
+            </div>
+            <div className={styles.subtaskMiniBar}>
+              <div
+                className={styles.subtaskMiniFill}
+                style={{ width: `${subPercent}%` }}
+              />
+            </div>
+          </button>
+        )}
+
+        {/* ── Subtasks Section (Collapsible) ── */}
+        {task.subtasks.length > 0 && expandedTasksMap[task.id] && (
+          <div className={styles.subtasksBox}>
+            {task.subtasks.map((sub) => (
+              <div
+                key={sub.id}
+                className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
+              >
+                <button
+                  className={styles.checkboxBtn}
+                  onClick={(e) => handleSubtaskToggleDopamine(e, task.id, sub.id)}
+                >
+                  {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                </button>
+                <span style={{ flex: 1 }}>{sub.title}</span>
+
+                {/* Promote subtask to standalone task */}
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => {
+                    if (confirm(`Promote "${sub.title}" to a standalone task?`)) {
+                      promoteSubtaskToTask(task.id, sub.id);
+                    }
+                  }}
+                  title="Promote to standalone task"
+                >
+                  <ExternalLink size={12} />
+                </button>
+
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => deleteSubtask(task.id, sub.id)}
+                  title="Remove subtask"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Inline Subtask & Breakdown Buttons ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {activeSubtaskTaskId === task.id ? (
+            <form
+              onSubmit={(e) => handleAddSubtaskSubmit(task.id, e)}
+              className={styles.subtaskAddForm}
+              style={{ flex: 1 }}
+            >
+              <input
+                type="text"
+                className={styles.subtaskAddInput}
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                placeholder="New subtask..."
+                autoFocus
+              />
+              <button type="submit" className={styles.actionBtn} title="Save subtask">
+                <Check size={13} />
+              </button>
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => setActiveSubtaskTaskId(null)}
+              >
+                <X size={13} />
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--color-text-faint)',
+                fontSize: '11px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              onClick={() => {
+                setActiveSubtaskTaskId(task.id);
+                setNewSubtaskTitle('');
+              }}
+            >
+              <Plus size={12} /> Add Step
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={styles.btnBreakdown}
+            onClick={() => openBreakdownModal(task)}
+            title="Quick multi-line task breakdown"
+          >
+            <GitFork size={12} /> Breakdown
+          </button>
+        </div>
+
+        {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
+        {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
+          <div className={styles.tagsRow}>
+            {/* Breadcrumb chain */}
+            {(parentGoal || parentMilestone || parentProject) && (
+              <span className={styles.breadcrumbChain}>
+                {parentGoal && (
+                  <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
+                    {parentGoal.title}
+                  </span>
+                )}
+                {parentGoal && parentMilestone && (
+                  <span className={styles.breadcrumbArrow}>›</span>
+                )}
+                {parentMilestone && (
+                  <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
+                    {parentMilestone.title}
+                  </span>
+                )}
+                {(parentGoal || parentMilestone) && parentProject && (
+                  <span className={styles.breadcrumbArrow}>›</span>
+                )}
+                {parentProject && (
+                  <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
+                    {parentProject.title}
+                  </span>
+                )}
+              </span>
+            )}
+            {task.tags.map((tg) => (
+              <span key={tg} className={styles.tagChip}>
+                #{tg}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* ── Card Footer ── */}
+        <div className={styles.taskFooter}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {task.dueDate ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <Calendar size={12} /> {task.dueDate}
+              </span>
+            ) : (
+              <button
+                type="button"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '2px 6px',
+                  color: 'var(--color-text-faint)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onClick={() => openEditModal(task)}
+                title="Add to Calendar"
+                aria-label="Add to Calendar"
+              >
+                <Calendar size={12} />
+              </button>
+            )}
+
+            {task.estimatedDuration && (
+              <span className={styles.durationBadge} title="Estimated vs Actual Duration">
+                <Clock size={12} /> {task.actualDuration || 0}/{task.estimatedDuration}m
+              </span>
+            )}
+          </div>
+
+          <div className={styles.cardActions}>
+            {/* Quick Status Shift */}
+            {col.id !== 'backlog' && (
+              <button
+                className={styles.actionBtn}
+                onClick={() => {
+                  const prev: Record<TaskStatus, TaskStatus> = {
+                    done: 'doing',
+                    doing: 'todo',
+                    todo: 'backlog',
+                    backlog: 'backlog',
+                  };
+                  updateTaskStatus(task.id, prev[task.status]);
+                }}
+                title="Move left"
+              >
+                ←
+              </button>
+            )}
+
+            {col.id !== 'done' && (
+              <button
+                className={styles.actionBtn}
+                onClick={() => {
+                  const next: Record<TaskStatus, TaskStatus> = {
+                    backlog: 'todo',
+                    todo: 'doing',
+                    doing: 'done',
+                    done: 'done',
+                  };
+                  updateTaskStatus(task.id, next[task.status]);
+                }}
+                title="Move right"
+              >
+                →
+              </button>
+            )}
+
+            <EntityFiles variant="icon" entityType="task" entityId={task.id} title={task.title} />
+
+            <button
+              className={styles.actionBtn}
+              onClick={() => openEditModal(task)}
+              title="Edit Task"
+            >
+              <Edit2 size={14} />
+            </button>
+
+            <button
+              className={`${styles.actionBtn} ${styles.deleteBtn}`}
+              onClick={() => {
+                if (confirm(`Delete Task "${task.title}"?`)) {
+                  deleteTask(task.id);
+                }
+              }}
+              title="Delete Task"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  };
 
   return (
     <div className={styles.page}>
@@ -403,6 +860,20 @@ export default function TasksPage() {
             <option value="low">Low</option>
           </select>
 
+          {!hideDone && (
+            <select
+              className={styles.selectFilter}
+              value={doneTimeframe}
+              onChange={(e) => setDoneTimeframe(e.target.value as any)}
+              title="Filter completed tasks by completion date"
+            >
+              <option value="all">Done: All Time</option>
+              <option value="today">Done: Today only</option>
+              <option value="week">Done: This Week</option>
+              <option value="month">Done: This Month</option>
+            </select>
+          )}
+
           <button
             type="button"
             className={`${styles.tab} ${hideDone ? styles.activeTab : ''}`}
@@ -482,358 +953,255 @@ export default function TasksPage() {
                     {col.label}
                   </span>
                 </div>
-                <span className={styles.columnCount}>{colTasks.length}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
+                  {col.id === 'done' && colTasks.length > 0 && (
+                    <div className={styles.doneHeaderActions}>
+                      <button
+                        type="button"
+                        className={`${styles.doneHeaderBtn} ${doneViewMode === 'grouped' ? styles.doneHeaderBtnActive : ''}`}
+                        onClick={() => setDoneViewMode('grouped')}
+                        title="Group completed tasks by Date (Today, This Week, Older)"
+                      >
+                        <Layers size={11} /> Grouped
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.doneHeaderBtn} ${doneViewMode === 'compact' ? styles.doneHeaderBtnActive : ''}`}
+                        onClick={() => setDoneViewMode('compact')}
+                        title="Compact View (Dense rows, minimal scrolling)"
+                      >
+                        <LayoutList size={11} /> Compact
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.doneHeaderBtn} ${doneViewMode === 'all' ? styles.doneHeaderBtnActive : ''}`}
+                        onClick={() => setDoneViewMode('all')}
+                        title="Show Flat stream"
+                      >
+                        Flat
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.doneHeaderBtn} ${styles.doneClearBtn}`}
+                        onClick={() => {
+                          if (confirm(`Clear all ${colTasks.length} completed tasks from this board?`)) {
+                            colTasks.forEach((t) => deleteTask(t.id));
+                          }
+                        }}
+                        title="Clear completed tasks"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  )}
+                  <span className={styles.columnCount}>{colTasks.length}</span>
+                </div>
               </div>
 
               {!isCollapsed && (
                 <div className={styles.taskList}>
-                {colTasks.length === 0 ? (
-                  <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
-                    No {col.label.toLowerCase()} tasks
-                  </p>
-                ) : (
-                  colTasks.map((task) => {
-                    const parentProject = projects.find((p) => p.id === task.projectId);
+                  {colTasks.length === 0 ? (
+                    <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                      No {col.label.toLowerCase()} tasks
+                    </p>
+                  ) : col.id !== 'done' ? (
+                    colTasks.map((task) => renderTaskCard(task, col))
+                  ) : (
+                    /* ── Done Column Optimization (handles 100+ tasks effortlessly) ── */
+                    (() => {
+                      const sortedDoneTasks = [...colTasks].sort((a, b) => {
+                        const timeA = new Date(a.completedAt || a.updatedAt || a.createdAt).getTime();
+                        const timeB = new Date(b.completedAt || b.updatedAt || b.createdAt).getTime();
+                        return timeB - timeA;
+                      });
 
-                    // Resolve Goal: task's direct goalId OR from parent project
-                    const goalId = task.goalId || parentProject?.goalId;
-                    const parentGoal = goalId ? goals.find((g) => g.id === goalId) : null;
+                      const todayDoneTasks = sortedDoneTasks.filter((t) =>
+                        isDateToday(t.completedAt || t.updatedAt || t.createdAt)
+                      );
+                      const weekDoneTasks = sortedDoneTasks.filter(
+                        (t) =>
+                          !isDateToday(t.completedAt || t.updatedAt || t.createdAt) &&
+                          isDateThisWeek(t.completedAt || t.updatedAt || t.createdAt)
+                      );
+                      const olderDoneTasks = sortedDoneTasks.filter(
+                        (t) => !isDateThisWeek(t.completedAt || t.updatedAt || t.createdAt)
+                      );
 
-                    // Resolve Milestone: task's direct milestoneId OR from parent project
-                    const milestoneId = task.milestoneId || parentProject?.milestoneId;
-                    const parentMilestone = milestoneId ? milestones.find((m) => m.id === milestoneId) : null;
-
-                    const isDone = task.status === 'done';
-                    const isCompound = task.isCompound || task.subtasks.length > 0;
-                    const completedSubs = task.subtasks.filter((s) => s.completed).length;
-                    const subPercent = task.subtasks.length > 0 ? Math.round((completedSubs / task.subtasks.length) * 100) : 0;
-
-                    const accentColor = task.color || null;
-                    const cardBg = accentColor && !isDone
-                      ? `linear-gradient(135deg, var(--color-surface) 0%, ${accentColor}18 100%)`
-                      : undefined;
-
-                    const isHighlighted = highlightId === task.id;
-
-                    return (
-                      <article
-                        key={task.id}
-                        id={`task-card-${task.id}`}
-                        className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
-                        style={{
-                          background: cardBg,
-                          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-                          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
-                        }}
-                      >
-                        <div className={styles.taskTopRow}>
-                          <div className={styles.checkTitleRow}>
-                            <button
-                              className={`${styles.checkboxBtn} ${isDone ? styles.checked : ''}`}
-                              onClick={(e) => handleTaskToggle(e, task.id)}
-                              title={isDone ? 'Mark uncompleted' : 'Mark done'}
-                            >
-                              {isDone ? <CheckSquare size={18} /> : <Square size={18} />}
-                            </button>
-
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                                <h3 className={`${styles.taskTitle} ${isDone ? styles.strikethrough : ''}`}>
-                                  {task.title}
-                                </h3>
-                                {isCompound && (
-                                  <span className={styles.compoundBadge}>
-                                    <ListTree size={10} /> Compound
-                                  </span>
-                                )}
-                                {task.subtasks.length > 0 && (
+                      if (doneViewMode === 'compact') {
+                        return (
+                          <>
+                            {sortedDoneTasks.slice(0, doneDisplayLimit).map((task) => renderCompactDoneRow(task))}
+                            {sortedDoneTasks.length > doneDisplayLimit && (
+                              <div className={styles.donePaginationRow}>
+                                <span>Showing {doneDisplayLimit} of {sortedDoneTasks.length} completed</span>
+                                <div style={{ display: 'flex', gap: '6px' }}>
                                   <button
                                     type="button"
-                                    className={styles.subtaskBadgeBtn}
-                                    onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
-                                    title="Toggle subtask checklist"
+                                    className={styles.loadMoreBtn}
+                                    onClick={() => setDoneDisplayLimit((prev) => prev + 20)}
                                   >
-                                    <span>{completedSubs}/{task.subtasks.length} steps</span>
-                                    <span style={{ fontSize: '9px' }}>{expandedTasksMap[task.id] ? '▲' : '▼'}</span>
+                                    + Show 20 More
                                   </button>
-                                )}
+                                  <button
+                                    type="button"
+                                    className={styles.loadMoreBtn}
+                                    onClick={() => setDoneDisplayLimit(sortedDoneTasks.length)}
+                                  >
+                                    Show All ({sortedDoneTasks.length})
+                                  </button>
+                                </div>
                               </div>
-                              {task.description && (
-                                <p className={styles.taskDesc}>{task.description}</p>
-                              )}
-                            </div>
-                          </div>
-
-                          <span className={`${styles.priorityBadge} ${styles[task.priority]}`}>
-                            {task.priority}
-                          </span>
-                        </div>
-
-                        {/* ── Subtask Progress Mini-bar (Interactive Toggle) ── */}
-                        {task.subtasks.length > 0 && (
-                          <button
-                            type="button"
-                            className={styles.subtaskCollapseTrigger}
-                            onClick={(e) => toggleTaskSubtasksExpand(task.id, e)}
-                            title={expandedTasksMap[task.id] ? 'Collapse subtasks' : 'Expand subtasks'}
-                          >
-                            <div className={styles.subtaskProgressHeader}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <ListTree size={11} style={{ color: 'var(--color-accent)' }} />
-                                <span>Steps Breakdown</span>
-                              </span>
-                              <span style={{ fontWeight: 600 }}>
-                                {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
-                              </span>
-                            </div>
-                            <div className={styles.subtaskMiniBar}>
-                              <div
-                                className={styles.subtaskMiniFill}
-                                style={{ width: `${subPercent}%` }}
-                              />
-                            </div>
-                          </button>
-                        )}
-
-                        {/* ── Subtasks Section (Collapsible) ── */}
-                        {task.subtasks.length > 0 && expandedTasksMap[task.id] && (
-                          <div className={styles.subtasksBox}>
-                            {task.subtasks.map((sub) => (
-                              <div
-                                key={sub.id}
-                                className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
-                              >
+                            )}
+                            {sortedDoneTasks.length <= doneDisplayLimit && sortedDoneTasks.length > 10 && (
+                              <div style={{ textAlign: 'center', marginTop: '6px' }}>
                                 <button
-                                  className={styles.checkboxBtn}
-                                  onClick={(e) => handleSubtaskToggleDopamine(e, task.id, sub.id)}
+                                  type="button"
+                                  className={styles.loadMoreBtn}
+                                  onClick={() => setDoneDisplayLimit(10)}
+                                  style={{ fontSize: '10px' }}
                                 >
-                                  {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
-                                </button>
-                                <span style={{ flex: 1 }}>{sub.title}</span>
-                                
-                                {/* Promote subtask to standalone task */}
-                                <button
-                                  className={styles.actionBtn}
-                                  onClick={() => {
-                                    if (confirm(`Promote "${sub.title}" to a standalone task?`)) {
-                                      promoteSubtaskToTask(task.id, sub.id);
-                                    }
-                                  }}
-                                  title="Promote to standalone task"
-                                >
-                                  <ExternalLink size={12} />
-                                </button>
-
-                                <button
-                                  className={styles.actionBtn}
-                                  onClick={() => deleteSubtask(task.id, sub.id)}
-                                  title="Remove subtask"
-                                >
-                                  <X size={12} />
+                                  Collapse to Recent 10
                                 </button>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            )}
+                          </>
+                        );
+                      }
 
-                        {/* ── Inline Subtask & Breakdown Buttons ── */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          {activeSubtaskTaskId === task.id ? (
-                            <form
-                              onSubmit={(e) => handleAddSubtaskSubmit(task.id, e)}
-                              className={styles.subtaskAddForm}
-                              style={{ flex: 1 }}
-                            >
-                              <input
-                                type="text"
-                                className={styles.subtaskAddInput}
-                                value={newSubtaskTitle}
-                                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                placeholder="New subtask..."
-                                autoFocus
-                              />
-                              <button type="submit" className={styles.actionBtn} title="Save subtask">
-                                <Check size={13} />
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.actionBtn}
-                                onClick={() => setActiveSubtaskTaskId(null)}
-                              >
-                                <X size={13} />
-                              </button>
-                            </form>
-                          ) : (
-                            <button
-                              type="button"
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-text-faint)',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                              onClick={() => {
-                                setActiveSubtaskTaskId(task.id);
-                                setNewSubtaskTitle('');
-                              }}
-                            >
-                              <Plus size={12} /> Add Step
-                            </button>
+                      if (doneViewMode === 'all') {
+                        return (
+                          <>
+                            {sortedDoneTasks.slice(0, doneDisplayLimit).map((task) => renderTaskCard(task, col))}
+                            {sortedDoneTasks.length > doneDisplayLimit && (
+                              <div className={styles.donePaginationRow}>
+                                <span>Showing {doneDisplayLimit} of {sortedDoneTasks.length} completed</span>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    className={styles.loadMoreBtn}
+                                    onClick={() => setDoneDisplayLimit((prev) => prev + 15)}
+                                  >
+                                    + Show 15 More
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={styles.loadMoreBtn}
+                                    onClick={() => setDoneDisplayLimit(sortedDoneTasks.length)}
+                                  >
+                                    Show All ({sortedDoneTasks.length})
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {sortedDoneTasks.length <= doneDisplayLimit && sortedDoneTasks.length > 10 && (
+                              <div style={{ textAlign: 'center', marginTop: '6px' }}>
+                                <button
+                                  type="button"
+                                  className={styles.loadMoreBtn}
+                                  onClick={() => setDoneDisplayLimit(10)}
+                                  style={{ fontSize: '10px' }}
+                                >
+                                  Collapse to Recent 10
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
+
+                      // Default 'grouped' mode: Today + This Week + Collapsible Older Archive
+                      return (
+                        <>
+                          {todayDoneTasks.length > 0 && (
+                            <>
+                              <div className={styles.doneGroupHeader}>
+                                <span>✨ Completed Today ({todayDoneTasks.length})</span>
+                              </div>
+                              {todayDoneTasks.map((task) => renderTaskCard(task, col))}
+                            </>
                           )}
 
-                          <button
-                            type="button"
-                            className={styles.btnBreakdown}
-                            onClick={() => openBreakdownModal(task)}
-                            title="Quick multi-line task breakdown"
-                          >
-                            <GitFork size={12} /> Breakdown
-                          </button>
-                        </div>
+                          {weekDoneTasks.length > 0 && (
+                            <>
+                              <div className={`${styles.doneGroupHeader} ${styles.doneGroupHeaderSubtle}`}>
+                                <span>📅 Earlier This Week ({weekDoneTasks.length})</span>
+                              </div>
+                              {weekDoneTasks.map((task) => renderTaskCard(task, col))}
+                            </>
+                          )}
 
-                        {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
-                        {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
-                          <div className={styles.tagsRow}>
-                            {/* Breadcrumb chain */}
-                            {(parentGoal || parentMilestone || parentProject) && (
-                              <span className={styles.breadcrumbChain}>
-                                {parentGoal && (
-                                  <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
-                                    {parentGoal.title}
-                                  </span>
-                                )}
-                                {parentGoal && parentMilestone && (
-                                  <span className={styles.breadcrumbArrow}>›</span>
-                                )}
-                                {parentMilestone && (
-                                  <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
-                                    {parentMilestone.title}
-                                  </span>
-                                )}
-                                {(parentGoal || parentMilestone) && parentProject && (
-                                  <span className={styles.breadcrumbArrow}>›</span>
-                                )}
-                                {parentProject && (
-                                  <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
-                                    {parentProject.title}
-                                  </span>
-                                )}
-                              </span>
-                            )}
-                            {task.tags.map((tg) => (
-                              <span key={tg} className={styles.tagChip}>
-                                #{tg}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* ── Card Footer ── */}
-                        <div className={styles.taskFooter}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {task.dueDate ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                <Calendar size={12} /> {task.dueDate}
-                              </span>
-                            ) : (
+                          {olderDoneTasks.length > 0 && (
+                            <div className={styles.olderDoneSection}>
                               <button
                                 type="button"
-                                style={{
-                                  background: 'transparent',
-                                  border: '1px solid var(--color-border)',
-                                  borderRadius: 'var(--radius-sm)',
-                                  padding: '2px 6px',
-                                  color: 'var(--color-text-faint)',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                                onClick={() => openEditModal(task)}
-                                title="Add to Calendar"
-                                aria-label="Add to Calendar"
-                              >
-                                <Calendar size={12} />
-                              </button>
-                            )}
-
-                            {task.estimatedDuration && (
-                              <span className={styles.durationBadge} title="Estimated vs Actual Duration">
-                                <Clock size={12} /> {task.actualDuration || 0}/{task.estimatedDuration}m
-                              </span>
-                            )}
-                          </div>
-
-                          <div className={styles.cardActions}>
-                            {/* Quick Status Shift */}
-                            {col.id !== 'backlog' && (
-                              <button
-                                className={styles.actionBtn}
-                                onClick={() => {
-                                  const prev: Record<TaskStatus, TaskStatus> = {
-                                    done: 'doing',
-                                    doing: 'todo',
-                                    todo: 'backlog',
-                                    backlog: 'backlog',
-                                  };
-                                  updateTaskStatus(task.id, prev[task.status]);
-                                }}
-                                title="Move left"
-                              >
-                                ←
-                              </button>
-                            )}
-
-                            {col.id !== 'done' && (
-                              <button
-                                className={styles.actionBtn}
-                                onClick={() => {
-                                  const next: Record<TaskStatus, TaskStatus> = {
-                                    backlog: 'todo',
-                                    todo: 'doing',
-                                    doing: 'done',
-                                    done: 'done',
-                                  };
-                                  updateTaskStatus(task.id, next[task.status]);
-                                }}
-                                title="Move right"
-                              >
-                                →
-                              </button>
-                            )}
-
-                            <EntityFiles variant="icon" entityType="task" entityId={task.id} title={task.title} />
-
-                            <button
-                              className={styles.actionBtn}
-                              onClick={() => openEditModal(task)}
-                              title="Edit Task"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-
-                            <button
-                              className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                              onClick={() => {
-                                if (confirm(`Delete Task "${task.title}"?`)) {
-                                  deleteTask(task.id);
+                                className={styles.olderDoneToggleBtn}
+                                onClick={() => setIsOlderDoneExpanded(!isOlderDoneExpanded)}
+                                title={
+                                  isOlderDoneExpanded
+                                    ? 'Click to collapse older completed tasks'
+                                    : 'Click to expand older completed tasks'
                                 }
-                              }}
-                              title="Delete Task"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {isOlderDoneExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                  <span>Earlier Completed ({olderDoneTasks.length})</span>
+                                </div>
+                                <span className={styles.olderDoneHint}>
+                                  {isOlderDoneExpanded ? '▲ Collapse' : '▼ Click to Expand'}
+                                </span>
+                              </button>
+
+                              {isOlderDoneExpanded && (
+                                <div className={styles.olderDoneList}>
+                                  {olderDoneTasks.slice(0, doneDisplayLimit).map((task) => renderTaskCard(task, col))}
+                                  {olderDoneTasks.length > doneDisplayLimit && (
+                                    <div className={styles.donePaginationRow}>
+                                      <span>Showing {doneDisplayLimit} of {olderDoneTasks.length} older tasks</span>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button
+                                          type="button"
+                                          className={styles.loadMoreBtn}
+                                          onClick={() => setDoneDisplayLimit((prev) => prev + 15)}
+                                        >
+                                          + Show 15 More
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={styles.loadMoreBtn}
+                                          onClick={() => setDoneDisplayLimit(olderDoneTasks.length)}
+                                        >
+                                          Show All ({olderDoneTasks.length})
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {olderDoneTasks.length <= doneDisplayLimit && olderDoneTasks.length > 10 && (
+                                    <div style={{ textAlign: 'center', marginTop: '6px' }}>
+                                      <button
+                                        type="button"
+                                        className={styles.loadMoreBtn}
+                                        onClick={() => setDoneDisplayLimit(10)}
+                                        style={{ fontSize: '10px' }}
+                                      >
+                                        Collapse to Recent 10
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {todayDoneTasks.length === 0 && weekDoneTasks.length === 0 && olderDoneTasks.length === 0 && (
+                            <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                              No completed tasks matching filters
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
               )}
             </div>
           );
