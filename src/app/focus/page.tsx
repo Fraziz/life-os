@@ -38,6 +38,7 @@ import {
   ExternalLink,
   FileText,
   Pin,
+  Eye,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
 import { useTasks } from '@/context/TaskContext';
@@ -133,6 +134,57 @@ export default function FocusPage() {
   const [ambientVol, setAmbientVol] = useState(0.35);
   const [parkingLotInput, setParkingLotInput] = useState('');
   const [parkedNotice, setParkedNotice] = useState(false);
+
+  // Live real-world clock time (updating every second)
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [currentDateStr, setCurrentDateStr] = useState<string>('');
+
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      );
+      setCurrentDateStr(
+        now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+      );
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Reading scroll progress tracker
+  const [readingScrollPercent, setReadingScrollPercent] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeDoc || focusViewMode !== 'book') return;
+
+    const handleScroll = () => {
+      const el = bookContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const totalHeight = el.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const scrolled = Math.max(0, -rect.top + windowHeight * 0.3);
+      const denominator = Math.max(1, totalHeight - windowHeight * 0.4);
+      const progress = Math.min(100, Math.max(0, Math.round((scrolled / denominator) * 100)));
+      setReadingScrollPercent(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeDoc, focusViewMode]);
+
+  // Word count & estimated reading time
+  const readingStats = React.useMemo(() => {
+    if (!activeDoc || !activeDoc.content) return { words: 0, minutes: 1 };
+    const raw = activeDoc.content.replace(/<[^>]*>/g, ' ').trim();
+    const words = raw.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.ceil(words / 200));
+    return { words, minutes };
+  }, [activeDoc]);
 
   // Cleanup ambient sound on unmount
   useEffect(() => {
@@ -545,21 +597,76 @@ export default function FocusPage() {
           {/* If a Knowledge document is active AND we are in Book View */}
           {activeDoc && focusViewMode === 'book' ? (
             <div className={styles.focusBookWrapper}>
-              {/* Sticky Reading & Control Bar */}
+              {/* Sticky Reading & Control Bar with Live Time & Reading HUD */}
               <div className={styles.focusBookHeaderBar}>
-                <div className={styles.focusBookHighlighterGroup}>
-                  <span className={styles.focusBookTimerPill}>
-                    {formatTimer(secondsRemaining)}
+                {/* Left: Time & Reading Session HUD */}
+                <div className={styles.focusTimeHUD}>
+                  {/* Real-World Live Clock */}
+                  <div
+                    className={styles.focusLiveClock}
+                    title={`Current Time: ${currentDateStr} at ${currentTime}`}
+                  >
+                    <Clock size={12} className={styles.liveClockIcon} />
+                    <span className={styles.liveClockTime}>{currentTime || '--:--'}</span>
+                  </div>
+
+                  <div className={styles.hudDivider} />
+
+                  {/* Reading Focus Timer */}
+                  <div className={styles.focusTimerBlock}>
                     <button
                       type="button"
-                      style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}
+                      className={`${styles.timerActionBtn} ${isRunning ? styles.timerRunning : ''}`}
                       onClick={isRunning ? pauseTimer : startTimer}
-                      title={isRunning ? 'Pause Timer' : 'Start Timer'}
+                      title={isRunning ? 'Pause Reading Timer' : 'Start Reading Timer'}
                     >
-                      {isRunning ? 'Pause' : 'Start'}
+                      {isRunning ? <Pause size={11} /> : <Play size={11} fill="currentColor" />}
+                      <span>{isRunning ? 'Pause' : 'Start'}</span>
                     </button>
-                  </span>
 
+                    <span className={styles.timerDigits} title="Timer countdown">
+                      {formatTimer(secondsRemaining)}
+                    </span>
+
+                    <button
+                      type="button"
+                      className={styles.timerResetBtn}
+                      onClick={resetTimer}
+                      title="Reset Timer"
+                    >
+                      <RotateCcw size={10} />
+                    </button>
+
+                    <select
+                      className={styles.timerQuickSelect}
+                      value={Math.round(timerDurationSeconds / 60)}
+                      onChange={(e) => setTimerMode(mode, Number(e.target.value))}
+                      title="Choose reading timer duration"
+                    >
+                      <option value={15}>15m</option>
+                      <option value={20}>20m</option>
+                      <option value={25}>25m</option>
+                      <option value={30}>30m</option>
+                      <option value={45}>45m</option>
+                      <option value={60}>60m</option>
+                    </select>
+                  </div>
+
+                  {/* Estimated Read Time & Scroll Progress */}
+                  <div
+                    className={styles.readingStatsPill}
+                    title={`Document has ~${readingStats.words} words (~${readingStats.minutes} min read)`}
+                  >
+                    <BookOpen size={11} />
+                    <span>~{readingStats.minutes}m read</span>
+                    {readingScrollPercent > 0 && (
+                      <span className={styles.readingPercentBadge}>{readingScrollPercent}%</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Highlighter Tools & Navigation Actions */}
+                <div className={styles.focusBookToolsGroup}>
                   <div className={styles.focusBookSwatches}>
                     {HIGHLIGHT_COLORS.map((c) => (
                       <button
@@ -585,7 +692,8 @@ export default function FocusPage() {
                     onClick={() => handleHighlightInFocus(activeHighlightColor)}
                     title="Highlight selection"
                   >
-                    Highlight
+                    <Highlighter size={12} />
+                    <span>Highlight</span>
                   </button>
 
                   <button
@@ -595,8 +703,8 @@ export default function FocusPage() {
                     onClick={() => handleRemoveHighlightInFocus()}
                     title="Clear highlight from selection or current word"
                   >
-                    <Eraser size={13} style={{ marginRight: '4px' }} />
-                    Clear
+                    <Eraser size={12} />
+                    <span>Clear</span>
                   </button>
 
                   <button
@@ -605,32 +713,47 @@ export default function FocusPage() {
                     onClick={handleManualSave}
                     title="Save highlights to Knowledge Base"
                   >
-                    Save Highlights
+                    {showSaveToast ? <Check size={12} /> : null}
+                    <span>{showSaveToast ? 'Saved!' : 'Save Highlights'}</span>
                   </button>
 
-                  {showSaveToast && (
-                    <span className={styles.toastSaved}>
-                      Saved!
-                    </span>
-                  )}
-                </div>
+                  <div className={styles.hudDivider} />
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={styles.focusBookBtn}
+                    onClick={toggleZenMode}
+                    title="Toggle distraction-free Zen mode"
+                  >
+                    <Eye size={12} />
+                    <span>Zen</span>
+                  </button>
+
                   <button
                     type="button"
                     className={styles.focusBookBtn}
                     onClick={() => setTaskPickerOpen(true)}
                     title="Switch focus target"
                   >
-                    Switch Target
+                    <span>Switch Target</span>
                   </button>
+
                   <Link
                     href={`/knowledge`}
                     className={styles.focusBookBtn}
                     title="Open in Knowledge base"
                   >
-                    Knowledge
+                    <span>Knowledge</span>
+                    <ExternalLink size={10} />
                   </Link>
+                </div>
+
+                {/* Hairline Reading Scroll Progress Bar */}
+                <div className={styles.readingProgressBarTrack} title={`Reading progress: ${readingScrollPercent}%`}>
+                  <div
+                    className={styles.readingProgressBarFill}
+                    style={{ width: `${readingScrollPercent}%` }}
+                  />
                 </div>
               </div>
 
