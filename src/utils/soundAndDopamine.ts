@@ -126,6 +126,7 @@ export type AmbientSoundType =
   | 'alpha10'
   | 'pink'
   | 'brown'
+  | 'white'
   | 'rain'
   | 'thunder'
   | 'waves'
@@ -377,6 +378,26 @@ export function startAmbientSound(type: AmbientSoundType, volume = currentAmbien
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.9, ctx.currentTime);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    noise.start();
+    sources.push(noise, filter, gain);
+
+  } else if (type === 'white') {
+    // 📻 White Noise (Full Spectrum Static - Sound Masking)
+    const noise = ctx.createBufferSource();
+    noise.buffer = createNoiseBuffer(ctx, 'white');
+    noise.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3200, ctx.currentTime);
+    filter.Q.setValueAtTime(0.5, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
 
     noise.connect(filter);
     filter.connect(gain);

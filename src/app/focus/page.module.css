@@ -873,7 +873,63 @@
   color: var(--color-text);
 }
 
-/* Ambient Sound Grid */
+/* Ambient Soundscapes Card & Controls */
+.sideCardTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ambientActiveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(34, 211, 165, 0.12);
+  border: 1px solid rgba(34, 211, 165, 0.28);
+  color: var(--color-success);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.audioWaveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.ambientMuteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ambientMuteBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
 .ambientBtnGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -881,31 +937,150 @@
 }
 
 .ambientPill {
+  position: relative;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-muted);
-  padding: 6px 8px;
   border-radius: var(--radius-lg);
-  font-size: 11px;
-  font-weight: 500;
+  padding: 7px 9px;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  transition: all var(--transition-fast);
+  gap: 8px;
+  text-align: left;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 48px;
+  user-select: none;
+  overflow: hidden;
 }
 
 .ambientPill:hover {
-  border-color: var(--color-accent);
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.04));
+  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.15));
+  transform: translateY(-1px);
+}
+
+.ambientIcon {
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ambientTextCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.15;
+}
+
+.ambientTitle {
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.ambientSubtitle {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ambientPill.activeAmbient {
-  background: rgba(34, 211, 165, 0.15);
-  border-color: var(--color-success);
+  background: rgba(34, 211, 165, 0.12);
+  border-color: rgba(34, 211, 165, 0.45);
+  box-shadow: 0 0 12px rgba(34, 211, 165, 0.12), inset 0 0 0 1px rgba(34, 211, 165, 0.2);
+}
+
+.ambientPill.activeAmbient .ambientTitle {
   color: var(--color-success);
+}
+
+.ambientPill.activeAmbient .ambientSubtitle {
+  color: rgba(34, 211, 165, 0.85);
+}
+
+/* Equalizer Bars */
+.ambientEqualizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.eqBar {
+  width: 2.5px;
+  height: 100%;
+  background: var(--color-success);
+  border-radius: 1px;
+  animation: bounceEq 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes bounceEq {
+  0% { height: 20%; opacity: 0.5; }
+  50% { height: 90%; opacity: 1; }
+  100% { height: 40%; opacity: 0.7; }
+}
+
+/* Volume Slider */
+.ambientVolBar {
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.ambientVolIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.ambientSlider {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  background: var(--color-border-subtle);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--color-success);
+}
+
+.ambientSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-success);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(34, 211, 165, 0.4);
+}
+
+.ambientVolLabel {
+  font-size: 11px;
   font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /*  Target Picker Modal Tabs & Knowledge Items  */

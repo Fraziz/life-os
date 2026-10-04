@@ -82,6 +82,23 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = 
   orange: HIGHLIGHT_COLORS[5],
 };
 
+const SOUNDSCAPES: { id: AmbientSoundType; title: string; subtitle: string; icon: string }[] = [
+  { id: 'gamma40', title: '40Hz Gamma', subtitle: 'Hyperfocus', icon: '\u{1F9E0}' },
+  { id: 'alpha10', title: '10Hz Alpha', subtitle: 'Flow State', icon: '\u{1F9D8}' },
+  { id: 'pink',    title: 'Pink Noise', subtitle: 'ADHD Shield', icon: '\u{1F6E1}' },
+  { id: 'brown',   title: 'Deep Brown', subtitle: 'Heavy Focus', icon: '\u{1F3A7}' },
+  { id: 'white',   title: 'White Noise', subtitle: 'Sound Mask', icon: '\u{1F4FB}' },
+  { id: 'rain',    title: 'Gentle Rain', subtitle: 'Calm Rainfall', icon: '\u{1F327}' },
+  { id: 'thunder', title: 'Distant Thunder', subtitle: 'Rolling Storm', icon: '\u{26C8}' },
+  { id: 'waves',   title: 'Ocean Waves', subtitle: 'Rhythmic Tide', icon: '\u{1F30A}' },
+  { id: 'stream',  title: 'River Stream', subtitle: 'Flowing Water', icon: '\u{1F4A7}' },
+  { id: 'forest',  title: 'Forest Birds', subtitle: 'Nature Chirp', icon: '\u{1F332}' },
+  { id: 'fire',    title: 'Campfire', subtitle: 'Warm Crackle', icon: '\u{1F525}' },
+  { id: 'wind',    title: 'Mountain Wind', subtitle: 'Alpine Breeze', icon: '\u{1F4A8}' },
+  { id: 'cafe',    title: 'Cozy Cafe', subtitle: 'Quiet Chatter', icon: '\u{2615}' },
+  { id: 'drone',   title: 'Space Drone', subtitle: 'Deep Ambience', icon: '\u{1F30C}' },
+];
+
 export default function FocusPage() {
   const {
     activeTask,
@@ -1022,57 +1039,61 @@ export default function FocusPage() {
             {/* ── 3. Ambient Soundscapes ── */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  Ambient Soundscapes
-                </span>
+                <div className={styles.sideCardTitleGroup}>
+                  <span className={styles.sideCardTitle}>
+                    Ambient Soundscapes
+                  </span>
+                  {ambientSound !== 'off' && (
+                    <span className={styles.ambientActiveBadge}>
+                      <span className={styles.audioWaveDot} />
+                      Playing
+                    </span>
+                  )}
+                </div>
                 {ambientSound !== 'off' && (
                   <button
                     type="button"
+                    className={styles.ambientMuteBtn}
                     onClick={() => handleAmbientToggle('off')}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--color-text-faint)',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    title="Stop ambient audio"
                   >
-                    Mute
+                    <VolumeX size={12} />
+                    <span>Stop</span>
                   </button>
                 )}
               </div>
 
               <div className={styles.ambientBtnGrid}>
-                {[
-                  { id: 'gamma40', label: '40Hz Gamma (Hyperfocus)', icon: '🧠' },
-                  { id: 'alpha10', label: '10Hz Alpha (Flow State)', icon: '🧘' },
-                  { id: 'pink',    label: 'Pink Noise (ADHD Block)', icon: '🛡️ï¸' },
-                  { id: 'brown',   label: 'Deep Brown Noise', icon: '🎧' },
-                  { id: 'rain',    label: 'Gentle Rain', icon: '🌧️ï¸' },
-                  { id: 'thunder', label: 'Distant Thunder', icon: '⛈️ï¸' },
-                  { id: 'waves',   label: 'Ocean Waves', icon: '🌊' },
-                  { id: 'stream',  label: 'River Stream', icon: '💧' },
-                  { id: 'forest',  label: 'Forest Birds', icon: '🌲' },
-                  { id: 'fire',    label: 'Campfire', icon: '🔥' },
-                  { id: 'wind',    label: 'Mountain Wind', icon: '💨' },
-                  { id: 'cafe',    label: 'Cozy Cafe', icon: '☕' },
-                  { id: 'drone',   label: 'Space Drone', icon: '🌌' },
-                ].map((s) => (
-                  <button
-                    key={s.id}
-                    className={`${styles.ambientPill} ${ambientSound === s.id ? styles.activeAmbient : ''}`}
-                    onClick={() => handleAmbientToggle(s.id as AmbientSoundType)}
-                  >
-                    <span>{s.icon}</span>
-                    <span>{s.label}</span>
-                  </button>
-                ))}
+                {SOUNDSCAPES.map((s) => {
+                  const isActive = ambientSound === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${styles.ambientPill} ${isActive ? styles.activeAmbient : ''}`}
+                      onClick={() => handleAmbientToggle(s.id)}
+                      title={`${s.title} (${s.subtitle})`}
+                    >
+                      <span className={styles.ambientIcon}>{s.icon}</span>
+                      <div className={styles.ambientTextCol}>
+                        <span className={styles.ambientTitle}>{s.title}</span>
+                        <span className={styles.ambientSubtitle}>{s.subtitle}</span>
+                      </div>
+                      {isActive && (
+                        <span className={styles.ambientEqualizer}>
+                          <span className={styles.eqBar} style={{ animationDelay: '0ms' }} />
+                          <span className={styles.eqBar} style={{ animationDelay: '180ms' }} />
+                          <span className={styles.eqBar} style={{ animationDelay: '360ms' }} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {ambientSound !== 'off' && (
-                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--color-text-faint)', textTransform: 'uppercase' }}>Vol</span>
+                <div className={styles.ambientVolBar}>
+                  <Volume2 size={13} className={styles.ambientVolIcon} />
                   <input
                     type="range"
                     min="0"
@@ -1080,8 +1101,10 @@ export default function FocusPage() {
                     step="0.05"
                     value={ambientVol}
                     onChange={handleVolumeChange}
-                    style={{ flex: 1, accentColor: 'var(--color-accent)' }}
+                    className={styles.ambientSlider}
+                    title="Ambient Sound Volume"
                   />
+                  <span className={styles.ambientVolLabel}>{Math.round(ambientVol * 100)}%</span>
                 </div>
               )}
             </div>
