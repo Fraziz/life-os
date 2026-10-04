@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Link from 'next/link';
 import {
   Inbox,
   Send,
   Trash2,
   CheckSquare,
   Square,
+  Check,
   FolderKanban,
   Target,
   CloudSun,
@@ -45,6 +47,7 @@ export default function InboxPage() {
   const {
     items,
     activeItems,
+    doneItems,
     activeReminders,
     convertedItems,
     somedayItems,
@@ -87,6 +90,25 @@ export default function InboxPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleToggleItemApplied = (item: InboxItem) => {
+    toggleItemApplied(item.id);
+    if (!item.isApplied) {
+      playSuccessChime();
+      showToast('✓ Marked idea as done! Click "+ Task" to send to Completed Tasks in Tasks.');
+    }
+  };
+
+  const handleConvertToTask = (item: InboxItem) => {
+    const isDone = item.isApplied;
+    convertToTask(item.id);
+    if (isDone) {
+      playSuccessChime();
+      showToast('✓ Placed in Already Done tab & added to Completed Tasks in Tasks!');
+    } else {
+      showToast('✓ Converted to Task!');
+    }
   };
 
   const handleActivateGroqKey = (text: string) => {
@@ -225,7 +247,7 @@ export default function InboxPage() {
   };
 
   // Active filter tab
-  const [filterTab, setFilterTab] = useState<'inbox' | 'reminders' | 'converted' | 'someday'>('inbox');
+  const [filterTab, setFilterTab] = useState<'inbox' | 'reminders' | 'done' | 'converted' | 'someday'>('inbox');
 
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
@@ -276,6 +298,8 @@ export default function InboxPage() {
       ? activeItems
       : filterTab === 'reminders'
       ? activeReminders
+      : filterTab === 'done'
+      ? doneItems
       : filterTab === 'converted'
       ? convertedItems
       : somedayItems;
@@ -416,6 +440,12 @@ export default function InboxPage() {
             Reminders ({activeReminders.length})
           </button>
           <button
+            className={`${styles.tab} ${filterTab === 'done' ? styles.activeTab : ''}`}
+            onClick={() => setFilterTab('done')}
+          >
+            Already Done ({doneItems.length})
+          </button>
+          <button
             className={`${styles.tab} ${filterTab === 'converted' ? styles.activeTab : ''}`}
             onClick={() => setFilterTab('converted')}
           >
@@ -472,6 +502,12 @@ export default function InboxPage() {
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
               {filterTab === 'inbox'
                 ? 'Your head is completely clear! Nothing in the inbox.'
+                : filterTab === 'done'
+                ? 'No already done ideas yet. Check any idea to mark it applied/done.'
+                : filterTab === 'reminders'
+                ? 'No active reminders.'
+                : filterTab === 'converted'
+                ? 'No converted ideas yet.'
                 : 'No items in this category.'}
             </p>
           </div>
@@ -481,7 +517,7 @@ export default function InboxPage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
                 <button
                   type="button"
-                  onClick={() => toggleItemApplied(item.id)}
+                  onClick={() => handleToggleItemApplied(item)}
                   style={{
                     background: 'transparent',
                     border: 'none',
@@ -537,7 +573,7 @@ export default function InboxPage() {
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {item.isApplied && ' • Applied / Done'}
-                    {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}`}
+                    {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}${item.isApplied ? ' (Done in Tasks)' : ''}`}
                     {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today Ticker'}
                   </span>
                 </div>
@@ -572,11 +608,11 @@ export default function InboxPage() {
                     </button>
 
                     <button
-                      className={styles.btnConvert}
-                      onClick={() => convertToTask(item.id)}
-                      title="Convert to actionable Task"
+                      className={`${styles.btnConvert} ${item.isApplied ? styles.btnConvertDone : ''}`}
+                      onClick={() => handleConvertToTask(item)}
+                      title={item.isApplied ? 'Convert to Completed Task in Tasks (moves to Already Done tab)' : 'Convert to actionable Task'}
                     >
-                      + Task
+                      {item.isApplied ? <Check size={12} /> : null} + Task
                     </button>
                     <button
                       className={styles.btnConvert}
@@ -587,13 +623,27 @@ export default function InboxPage() {
                     </button>
                   </>
                 ) : (
-                  <button
-                    className={styles.btnConvert}
-                    onClick={() => restoreToInbox(item.id)}
-                    title="Restore item back to Inbox"
-                  >
-                    Restore to Inbox
-                  </button>
+                  <>
+                    {item.convertedTo === 'task' && (
+                      <Link
+                        href={item.convertedEntityId ? `/tasks?highlight=${item.convertedEntityId}` : '/tasks'}
+                        className={`${styles.btnConvert} ${styles.btnConvertDone}`}
+                        title="View completed task in Tasks"
+                      >
+                        <Check size={12} /> View in Tasks
+                      </Link>
+                    )}
+                    <button
+                      className={styles.btnConvert}
+                      onClick={() => {
+                        restoreToInbox(item.id);
+                        showToast('✓ Restored idea back to Inbox');
+                      }}
+                      title="Restore item back to Inbox"
+                    >
+                      Restore to Inbox
+                    </button>
+                  </>
                 )}
 
                 <button
@@ -631,7 +681,7 @@ export default function InboxPage() {
                 className={styles.dumpBtn}
                 style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
                 onClick={() => {
-                  convertToTask(convertModalItem.id);
+                  handleConvertToTask(convertModalItem);
                   setConvertModalItem(null);
                 }}
               >

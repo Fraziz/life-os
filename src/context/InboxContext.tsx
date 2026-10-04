@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { InboxItem, InboxConvertedType } from '@/types';
+import type { InboxItem, InboxConvertedType, TaskStatus } from '@/types';
 import { useTasks } from './TaskContext';
 import { useProjects } from './ProjectContext';
 import { useGoals } from './GoalContext';
@@ -67,6 +67,7 @@ export const DEFAULT_INBOX_ITEMS: InboxItem[] = [
 interface InboxContextType {
   items: InboxItem[];
   activeItems: InboxItem[];
+  doneItems: InboxItem[];
   activeReminders: InboxItem[];
   convertedItems: InboxItem[];
   somedayItems: InboxItem[];
@@ -76,7 +77,7 @@ interface InboxContextType {
   toggleItemApplied: (id: string) => void;
   toggleItemReminder: (id: string) => void;
   setReminderTime: (id: string, reminderTime?: string) => void;
-  convertToTask: (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string }) => void;
+  convertToTask: (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string; status?: TaskStatus }) => void;
   convertToProject: (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => void;
   convertToGoal: (id: string, overrides?: { horizon?: 'yearly' | '90-day' | 'monthly'; dreamId?: string }) => void;
   convertToDream: (id: string, overrides?: { lifeAreaId?: string; whyItMatters?: string }) => void;
@@ -222,20 +223,24 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     saveItems(updated);
   };
 
-  const convertToTask = (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string }) => {
+  const convertToTask = (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string; status?: TaskStatus }) => {
     const item = items.find((i) => i.id === id);
     if (!item) return;
 
-    addTask({
+    const isAlreadyDone = !!item.isApplied;
+    const taskStatus: TaskStatus = overrides?.status || (isAlreadyDone ? 'done' : 'todo');
+
+    const createdTask = addTask({
       title: item.content,
-      status: 'todo',
+      status: taskStatus,
+      completedAt: taskStatus === 'done' ? new Date().toISOString() : undefined,
       priority: overrides?.priority || 'medium',
       projectId: overrides?.projectId,
-      tags: ['from-inbox'],
+      tags: ['from-inbox', ...(isAlreadyDone ? ['completed-idea'] : [])],
       subtasks: [],
     });
 
-    updateItemStatus(id, 'converted', 'task');
+    updateItemStatus(id, 'converted', 'task', createdTask?.id);
   };
 
   const convertToProject = (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => {
@@ -322,7 +327,19 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const restoreToInbox = (id: string) => {
-    updateItemStatus(id, 'inbox');
+    const updated = items.map((item) => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        status: 'inbox' as const,
+        convertedTo: undefined,
+        convertedEntityId: undefined,
+        isApplied: false,
+        appliedAt: undefined,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveItems(updated);
   };
 
   const clearInbox = () => {
@@ -334,8 +351,9 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activeItems = items.filter((i) => i.status === 'inbox');
+  const doneItems = items.filter((i) => i.isApplied || i.status === 'archived');
   const activeReminders = items.filter((i) => i.status === 'inbox' && i.isReminder && !i.isApplied);
-  const convertedItems = items.filter((i) => i.status === 'converted');
+  const convertedItems = items.filter((i) => i.status === 'converted' && !i.isApplied);
   const somedayItems = items.filter((i) => i.status === 'someday');
 
   return (
@@ -343,6 +361,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         activeItems,
+        doneItems,
         activeReminders,
         convertedItems,
         somedayItems,

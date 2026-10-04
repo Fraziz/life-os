@@ -111,7 +111,7 @@ interface TaskContextType {
   backlogTasks: Task[];
   doneTasks: Task[];
   quickAddTask: (title: string, overrides?: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => void;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task;
   updateTask: (id: string, partial: Partial<Task>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   toggleTaskDone: (id: string) => void;
@@ -187,6 +187,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     const newTask: Task = {
       ...data,
       id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      completedAt: data.status === 'done' ? (data.completedAt || new Date().toISOString()) : undefined,
       tags: data.tags || [],
       subtasks: data.subtasks || [],
       isCompound: (data.subtasks && data.subtasks.length > 0) || data.isCompound,
@@ -194,6 +195,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     saveTasks([newTask, ...tasks]);
+    return newTask;
   };
 
   const updateTask = (id: string, partial: Partial<Task>) => {
