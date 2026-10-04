@@ -663,15 +663,16 @@ export default function FocusPage() {
                   </button>
                 </div>
 
-                {/* ── Right: Focus Countdown Timer & View Actions ── */}
+                {/* ── Right: View Actions ── */}
                 <div className={styles.focusBookHeaderRight}>
                   <button
                     type="button"
                     className={styles.toolIconBtn}
                     onClick={toggleZenMode}
-                    title="Toggle Zen Mode"
+                    title="Toggle Zen Mode (Hide sidebars)"
                   >
                     <Eye size={12} />
+                    <span className={styles.toolLabel}>Zen</span>
                   </button>
 
                   <button
@@ -681,6 +682,7 @@ export default function FocusPage() {
                     title="Switch focus target"
                   >
                     <Target size={12} />
+                    <span className={styles.toolLabel}>Switch</span>
                   </button>
 
                   <Link
@@ -690,49 +692,6 @@ export default function FocusPage() {
                   >
                     <ExternalLink size={12} />
                   </Link>
-
-                  <div className={styles.barDivider} />
-
-                  {/* The Focus Countdown Timer on the Right Side */}
-                  <div className={styles.focusTimerSection}>
-                    <button
-                      type="button"
-                      className={`${styles.timerPlayBtn} ${isRunning ? styles.timerRunning : ''}`}
-                      onClick={isRunning ? pauseTimer : startTimer}
-                      title={isRunning ? 'Pause Focus Session' : 'Start Focus Session'}
-                    >
-                      {isRunning ? <Pause size={12} /> : <Play size={12} fill="currentColor" />}
-                    </button>
-
-                    <div className={styles.timerDisplayWrap} title="Focus time remaining">
-                      <span className={styles.timerDisplayDigits}>
-                        {formatTimer(secondsRemaining)}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.timerSmallBtn}
-                      onClick={resetTimer}
-                      title="Reset Focus Timer"
-                    >
-                      <RotateCcw size={11} />
-                    </button>
-
-                    <select
-                      className={styles.timerDurationSelect}
-                      value={Math.round(timerDurationSeconds / 60)}
-                      onChange={(e) => setTimerMode(mode, Number(e.target.value))}
-                      title="Focus session duration"
-                    >
-                      <option value={15}>15m</option>
-                      <option value={20}>20m</option>
-                      <option value={25}>25m</option>
-                      <option value={30}>30m</option>
-                      <option value={45}>45m</option>
-                      <option value={60}>60m</option>
-                    </select>
-                  </div>
                 </div>
 
                 {/* Hairline Reading Scroll Progress Bar */}
@@ -933,16 +892,106 @@ export default function FocusPage() {
           )}
         </section>
 
-        {/* Right Sidebar: Controls, Parking Lot, Ambient Soundscapes & History */}
-        {!isZenMode && !(activeDoc && focusViewMode === 'book') && (
+        {/* Right Sidebar: Sticky Focus Timer, Controls, Parking Lot & Ambient Soundscapes */}
+        {!isZenMode && (
           <aside className={styles.sideSection}>
-            {/* ── 1. Focus Controls (Right Side) ── */}
-            <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}>
-                <span className={styles.sideCardTitle}>
-                  Session Controls
-                </span>
+            {/* ── 0. Digital Focus Timer Card (shown in Book View) ── */}
+            {activeDoc && focusViewMode === 'book' && (
+              <div className={styles.sideCard}>
+                {/* Mode Switcher Tabs */}
+                <div className={styles.modeTabsSide}>
+                  <button
+                    type="button"
+                    className={`${styles.modeTabSide} ${mode === 'pomodoro' ? styles.activeMode : ''}`}
+                    onClick={() => setTimerMode('pomodoro')}
+                  >
+                    Pomodoro
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modeTabSide} ${mode === 'short_break' ? styles.activeMode : ''}`}
+                    onClick={() => setTimerMode('short_break')}
+                  >
+                    Short Break
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modeTabSide} ${mode === 'long_break' ? styles.activeMode : ''}`}
+                    onClick={() => setTimerMode('long_break')}
+                  >
+                    Long Break
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modeTabSide} ${mode === 'flow' ? styles.activeMode : ''}`}
+                    onClick={() => setTimerMode('flow')}
+                  >
+                    Flow Mode
+                  </button>
+                </div>
+
+                {/* Formal Digital Timer Display Card */}
+                <div className={styles.sideTimerDisplayCard}>
+                  <div className={styles.sideTimerNumber}>
+                    {mode === 'flow'
+                      ? formatTimer(secondsElapsed)
+                      : formatTimer(secondsRemaining)}
+                  </div>
+                  <div className={styles.timerMetaRow}>
+                    <span className={styles.timerModeLabel}>
+                      {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
+                    </span>
+                    <span className={styles.timerStatusDot}>•</span>
+                    <span className={styles.timerStatusText}>
+                      {isRunning ? 'ACTIVE' : 'READY'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Session Actions for Book View */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  {isRunning ? (
+                    <button className={styles.sideBtnPause} onClick={pauseTimer}>
+                      Pause Session
+                    </button>
+                  ) : (
+                    <button className={styles.sideBtnStart} onClick={startTimer}>
+                      {secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}
+                    </button>
+                  )}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <button className={styles.sideActionBtn} onClick={resetTimer} title="Reset timer">
+                      Reset
+                    </button>
+                    <button
+                      className={styles.sideActionBtn}
+                      onClick={() => setTaskPickerOpen(true)}
+                      title="Switch focus target"
+                    >
+                      Switch Target
+                    </button>
+                  </div>
+
+                  <button
+                    className={styles.sideBtnFinish}
+                    onClick={() => setFinishModalOpen(true)}
+                    title="Finish session and log actual time"
+                  >
+                    Finish Session
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* ── 1. Focus Controls (shown in standard Timer View) ── */}
+            {!(activeDoc && focusViewMode === 'book') && (
+              <div className={styles.sideCard}>
+                <div className={styles.sideCardHeader}>
+                  <span className={styles.sideCardTitle}>
+                    Session Controls
+                  </span>
+                </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {isRunning ? (
@@ -977,6 +1026,7 @@ export default function FocusPage() {
                 </button>
               </div>
             </div>
+          )}
 
             {/* ── 2. Distraction Parking Lot (Right Side) ── */}
             <div className={styles.sideCard}>
