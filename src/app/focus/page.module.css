@@ -1169,251 +1169,245 @@
 }
 
 .focusBookHeaderBar {
+  position: -webkit-sticky;
   position: sticky;
   top: 12px;
-  z-index: 40;
+  z-index: 50;
   background: var(--color-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl, 14px);
-  padding: 8px 14px 10px 14px;
+  border-radius: var(--radius-full, 9999px);
+  padding: 6px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
+  flex-wrap: nowrap;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: visible;
   transition: all var(--transition-fast, 0.15s ease);
 }
 
-/* Left Group: Time & Reading Session HUD */
-.focusTimeHUD {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-
-.focusLiveClock {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  padding: 4px 9px;
-  border-radius: var(--radius-full, 9999px);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--color-text);
-  letter-spacing: -0.01em;
-}
-
-.liveClockIcon {
-  color: var(--color-accent);
-  flex-shrink: 0;
-}
-
-.liveClockTime {
-  font-family: var(--font-mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-
-.hudDivider {
-  width: 1px;
-  height: 16px;
-  background: var(--color-border-subtle);
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-
-.focusTimerBlock {
+/* 1. Focus Timer Section */
+.focusTimerSection {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.timerPlayBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  padding: 3px 6px 3px 4px;
-  border-radius: var(--radius-full, 9999px);
-}
-
-.timerDigits {
-  font-family: var(--font-mono, monospace);
-  font-size: 12.5px;
-  font-weight: 700;
   color: var(--color-text);
-  letter-spacing: 0.03em;
-  font-variant-numeric: tabular-nums;
-  padding: 0 2px;
-}
-
-.timerActionBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-full, 9999px);
-  font-size: 10.5px;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--color-accent);
-  color: #ffffff;
-  border: none;
-  transition: all var(--transition-fast, 0.15s ease);
-}
-
-.timerActionBtn:hover {
-  opacity: 0.92;
-  transform: translateY(-0.5px);
-}
-
-.timerRunning {
-  background: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-}
-
-.timerResetBtn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-faint);
-  padding: 3px;
-  cursor: pointer;
-  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition-fast, 0.15s ease);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
 }
 
-.timerResetBtn:hover {
+.timerPlayBtn:hover {
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.08));
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: scale(1.06);
+}
+
+.timerPlayBtn.timerRunning {
+  background: rgba(34, 211, 165, 0.15);
+  border-color: var(--color-success);
+  color: var(--color-success);
+  box-shadow: 0 0 10px rgba(34, 211, 165, 0.35);
+  animation: pulseGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { box-shadow: 0 0 4px rgba(34, 211, 165, 0.2); }
+  50% { box-shadow: 0 0 12px rgba(34, 211, 165, 0.5); }
+}
+
+.timerDisplayWrap {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+}
+
+.timerDisplayDigits {
+  font-family: var(--font-mono, monospace);
+  font-size: 13.5px;
+  font-weight: 700;
   color: var(--color-text);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
-.timerQuickSelect {
+.timerSmallBtn {
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
-  font-size: 10.5px;
-  font-weight: 600;
+  color: var(--color-text-faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
   cursor: pointer;
-  outline: none;
-  padding: 0 2px;
+  padding: 0;
+  transition: all var(--transition-fast);
 }
 
-.timerQuickSelect:hover {
+.timerSmallBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.timerDurationSelect {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.timerDurationSelect:hover {
+  border-color: var(--color-accent);
   color: var(--color-text);
 }
 
-.readingStatsPill {
+/* Dividers */
+.barDivider {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+/* 2. Reading Info Section */
+.readingInfoSection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.readingBookIcon {
+  color: var(--color-accent);
+  opacity: 0.85;
+}
+
+.readingScrollBadge {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-accent);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3. Reading Tools Section */
+.readingToolsSection {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 8px;
-  border-radius: var(--radius-full, 9999px);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
 }
 
-.readingPercentBadge {
-  background: var(--color-accent);
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 9999px;
-  line-height: 1.2;
-}
-
-/* Right Group: Highlighter Tools & Actions */
-.focusBookToolsGroup {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.focusBookSwatches {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.focusBookSwatch {
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform var(--transition-fast, 0.15s ease);
-  padding: 0;
-  display: block;
-}
-
-.focusBookSwatch:hover {
-  transform: scale(1.2);
-}
-
-.focusBookSwatchActive {
-  transform: scale(1.25);
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--swatch-border);
-}
-
-.focusBookBtn {
+/* Swatches Mini */
+.swatchMiniRow {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding-right: 4px;
+}
+
+.swatchMini {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.swatchMini:hover {
+  transform: scale(1.25);
+}
+
+.swatchMiniActive {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--swatch-border, var(--color-accent));
+}
+
+.toolIconBtn {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  color: var(--color-text);
-  padding: 3px 9px;
-  border-radius: var(--radius-full, 9999px);
+  color: var(--color-text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
   text-decoration: none;
-  white-space: nowrap;
-  transition: all var(--transition-fast, 0.15s ease);
 }
 
-.focusBookBtn:hover {
-  background: var(--color-surface-hover, var(--color-surface-3));
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-
-.focusBookSaveBtn {
-  background: var(--color-accent);
-  color: #ffffff;
+.toolIconBtn:hover {
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.08));
   border-color: var(--color-accent);
-  font-weight: 600;
+  color: var(--color-text);
+  transform: translateY(-1px);
 }
 
-.focusBookSaveBtn:hover {
-  opacity: 0.92;
-  transform: translateY(-0.5px);
+.toolLabel {
+  font-size: 10.5px;
 }
 
-/* Hairline Reading Scroll Progress Bar */
+.toolSaveSuccess {
+  background: rgba(34, 211, 165, 0.15) !important;
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
+}
+
+/* Hairline Scroll Progress Bar */
 .readingProgressBarTrack {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2.5px;
-  background: var(--color-border-subtle);
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 1px;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .readingProgressBarFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-accent), #38bdf8);
-  border-radius: 9999px;
-  transition: width 0.15s ease-out;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-success));
+  border-radius: 1px;
+  transition: width 0.12s ease-out;
 }
 
 .focusBookPageCard {
@@ -1855,21 +1849,20 @@
   }
 
   .focusBookHeaderBar {
-    padding: 8px 10px 10px 10px;
+    padding: 6px 10px;
     gap: 8px;
     top: 6px;
-  }
-
-  .focusTimeHUD {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .focusBookToolsGroup {
-    width: 100%;
-    justify-content: flex-start;
     overflow-x: auto;
-    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .focusBookHeaderBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolLabel {
+    display: none;
   }
 }
 

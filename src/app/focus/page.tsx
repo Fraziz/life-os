@@ -39,6 +39,7 @@ import {
   FileText,
   Pin,
   Eye,
+  Save,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
 import { useTasks } from '@/context/TaskContext';
@@ -151,25 +152,6 @@ export default function FocusPage() {
   const [ambientVol, setAmbientVol] = useState(0.35);
   const [parkingLotInput, setParkingLotInput] = useState('');
   const [parkedNotice, setParkedNotice] = useState(false);
-
-  // Live real-world clock time (updating every second)
-  const [currentTime, setCurrentTime] = useState<string>('');
-  const [currentDateStr, setCurrentDateStr] = useState<string>('');
-
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-      );
-      setCurrentDateStr(
-        now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-      );
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Reading scroll progress tracker
   const [readingScrollPercent, setReadingScrollPercent] = useState<number>(0);
@@ -614,82 +596,73 @@ export default function FocusPage() {
           {/* If a Knowledge document is active AND we are in Book View */}
           {activeDoc && focusViewMode === 'book' ? (
             <div className={styles.focusBookWrapper}>
-              {/* Sticky Reading & Control Bar with Live Time & Reading HUD */}
+              {/* Sticky Minimalist Reading HUD (Focus Countdown Timer & Tools) */}
               <div className={styles.focusBookHeaderBar}>
-                {/* Left: Time & Reading Session HUD */}
-                <div className={styles.focusTimeHUD}>
-                  {/* Real-World Live Clock */}
-                  <div
-                    className={styles.focusLiveClock}
-                    title={`Current Time: ${currentDateStr} at ${currentTime}`}
+                {/* 1. Left: Focus Countdown Timer (25m / remaining time) */}
+                <div className={styles.focusTimerSection}>
+                  <button
+                    type="button"
+                    className={`${styles.timerPlayBtn} ${isRunning ? styles.timerRunning : ''}`}
+                    onClick={isRunning ? pauseTimer : startTimer}
+                    title={isRunning ? 'Pause Focus Session' : 'Start Focus Session'}
                   >
-                    <Clock size={12} className={styles.liveClockIcon} />
-                    <span className={styles.liveClockTime}>{currentTime || '--:--'}</span>
-                  </div>
+                    {isRunning ? <Pause size={12} /> : <Play size={12} fill="currentColor" />}
+                  </button>
 
-                  <div className={styles.hudDivider} />
-
-                  {/* Reading Focus Timer */}
-                  <div className={styles.focusTimerBlock}>
-                    <button
-                      type="button"
-                      className={`${styles.timerActionBtn} ${isRunning ? styles.timerRunning : ''}`}
-                      onClick={isRunning ? pauseTimer : startTimer}
-                      title={isRunning ? 'Pause Reading Timer' : 'Start Reading Timer'}
-                    >
-                      {isRunning ? <Pause size={11} /> : <Play size={11} fill="currentColor" />}
-                      <span>{isRunning ? 'Pause' : 'Start'}</span>
-                    </button>
-
-                    <span className={styles.timerDigits} title="Timer countdown">
+                  <div className={styles.timerDisplayWrap} title="Focus time remaining">
+                    <span className={styles.timerDisplayDigits}>
                       {formatTimer(secondsRemaining)}
                     </span>
-
-                    <button
-                      type="button"
-                      className={styles.timerResetBtn}
-                      onClick={resetTimer}
-                      title="Reset Timer"
-                    >
-                      <RotateCcw size={10} />
-                    </button>
-
-                    <select
-                      className={styles.timerQuickSelect}
-                      value={Math.round(timerDurationSeconds / 60)}
-                      onChange={(e) => setTimerMode(mode, Number(e.target.value))}
-                      title="Choose reading timer duration"
-                    >
-                      <option value={15}>15m</option>
-                      <option value={20}>20m</option>
-                      <option value={25}>25m</option>
-                      <option value={30}>30m</option>
-                      <option value={45}>45m</option>
-                      <option value={60}>60m</option>
-                    </select>
                   </div>
 
-                  {/* Estimated Read Time & Scroll Progress */}
-                  <div
-                    className={styles.readingStatsPill}
-                    title={`Document has ~${readingStats.words} words (~${readingStats.minutes} min read)`}
+                  <button
+                    type="button"
+                    className={styles.timerSmallBtn}
+                    onClick={resetTimer}
+                    title="Reset Focus Timer"
                   >
-                    <BookOpen size={11} />
-                    <span>~{readingStats.minutes}m read</span>
-                    {readingScrollPercent > 0 && (
-                      <span className={styles.readingPercentBadge}>{readingScrollPercent}%</span>
-                    )}
-                  </div>
+                    <RotateCcw size={11} />
+                  </button>
+
+                  <select
+                    className={styles.timerDurationSelect}
+                    value={Math.round(timerDurationSeconds / 60)}
+                    onChange={(e) => setTimerMode(mode, Number(e.target.value))}
+                    title="Focus session duration"
+                  >
+                    <option value={15}>15m</option>
+                    <option value={20}>20m</option>
+                    <option value={25}>25m</option>
+                    <option value={30}>30m</option>
+                    <option value={45}>45m</option>
+                    <option value={60}>60m</option>
+                  </select>
                 </div>
 
-                {/* Right: Highlighter Tools & Navigation Actions */}
-                <div className={styles.focusBookToolsGroup}>
-                  <div className={styles.focusBookSwatches}>
+                <div className={styles.barDivider} />
+
+                {/* 2. Center: Minimalist Reading Stats */}
+                <div
+                  className={styles.readingInfoSection}
+                  title={`~${readingStats.words} words (~${readingStats.minutes} min read)`}
+                >
+                  <BookOpen size={12} className={styles.readingBookIcon} />
+                  <span>~{readingStats.minutes}m read</span>
+                  {readingScrollPercent > 0 && (
+                    <span className={styles.readingScrollBadge}>{readingScrollPercent}%</span>
+                  )}
+                </div>
+
+                <div className={styles.barDivider} />
+
+                {/* 3. Right: Sleek Highlighter & Reading Tools */}
+                <div className={styles.readingToolsSection}>
+                  <div className={styles.swatchMiniRow}>
                     {HIGHLIGHT_COLORS.map((c) => (
                       <button
                         key={c.name}
                         type="button"
-                        className={`${styles.focusBookSwatch} ${activeHighlightColor === c.name ? styles.focusBookSwatchActive : ''}`}
+                        className={`${styles.swatchMini} ${activeHighlightColor === c.name ? styles.swatchMiniActive : ''}`}
                         style={{
                           background: c.bg,
                           borderColor: c.border,
@@ -697,71 +670,68 @@ export default function FocusPage() {
                         } as React.CSSProperties}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleHighlightInFocus(c.name)}
-                        title={`Highlight selected text in ${c.label}`}
+                        title={`Select ${c.label} highlighter`}
                       />
                     ))}
                   </div>
 
                   <button
                     type="button"
-                    className={styles.focusBookBtn}
+                    className={styles.toolIconBtn}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleHighlightInFocus(activeHighlightColor)}
-                    title="Highlight selection"
+                    title="Highlight selected text"
                   >
                     <Highlighter size={12} />
-                    <span>Highlight</span>
+                    <span className={styles.toolLabel}>Highlight</span>
                   </button>
 
                   <button
                     type="button"
-                    className={styles.focusBookBtn}
+                    className={styles.toolIconBtn}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleRemoveHighlightInFocus()}
-                    title="Clear highlight from selection or current word"
+                    title="Clear highlight"
                   >
                     <Eraser size={12} />
-                    <span>Clear</span>
                   </button>
 
                   <button
                     type="button"
-                    className={`${styles.focusBookBtn} ${styles.focusBookSaveBtn}`}
+                    className={`${styles.toolIconBtn} ${showSaveToast ? styles.toolSaveSuccess : ''}`}
                     onClick={handleManualSave}
                     title="Save highlights to Knowledge Base"
                   >
-                    {showSaveToast ? <Check size={12} /> : null}
-                    <span>{showSaveToast ? 'Saved!' : 'Save Highlights'}</span>
+                    {showSaveToast ? <Check size={12} /> : <Save size={12} />}
+                    <span className={styles.toolLabel}>{showSaveToast ? 'Saved' : 'Save'}</span>
                   </button>
 
-                  <div className={styles.hudDivider} />
+                  <div className={styles.barDivider} />
 
                   <button
                     type="button"
-                    className={styles.focusBookBtn}
+                    className={styles.toolIconBtn}
                     onClick={toggleZenMode}
-                    title="Toggle distraction-free Zen mode"
+                    title="Toggle Zen Mode"
                   >
                     <Eye size={12} />
-                    <span>Zen</span>
                   </button>
 
                   <button
                     type="button"
-                    className={styles.focusBookBtn}
+                    className={styles.toolIconBtn}
                     onClick={() => setTaskPickerOpen(true)}
                     title="Switch focus target"
                   >
-                    <span>Switch Target</span>
+                    <Target size={12} />
                   </button>
 
                   <Link
                     href={`/knowledge`}
-                    className={styles.focusBookBtn}
-                    title="Open in Knowledge base"
+                    className={styles.toolIconBtn}
+                    title="Open in Knowledge Base"
                   >
-                    <span>Knowledge</span>
-                    <ExternalLink size={10} />
+                    <ExternalLink size={12} />
                   </Link>
                 </div>
 
