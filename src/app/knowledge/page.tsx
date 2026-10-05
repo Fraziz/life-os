@@ -2457,6 +2457,42 @@ export default function KnowledgePage() {
                 </div>
               )}
 
+              {/* Reading Progress Strip — shown after Finish in Focus Space */}
+              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && !showMetaSettings && (
+                <div className={styles.docReadProgressStrip}>
+                  <div className={styles.docReadProgressLeft}>
+                    {selectedDoc.readStatus === 'completed' ? (
+                      <span className={styles.docReadStatusBadge} style={{ color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        Finished
+                      </span>
+                    ) : (
+                      <span className={styles.docReadStatusBadge}>
+                        Reading
+                      </span>
+                    )}
+                    <span className={styles.docReadProgressPct}>
+                      {selectedDoc.readProgress}% read
+                    </span>
+                    {selectedDoc.lastReviewedAt && (
+                      <span className={styles.docReadLastDate}>
+                        Last session {new Date(selectedDoc.lastReviewedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && !showMetaSettings && (
+                <div className={styles.docReadProgressBarTrack}>
+                  <div
+                    className={styles.docReadProgressBarFill}
+                    style={{
+                      width: `${Math.min(100, selectedDoc.readProgress)}%`,
+                      background: selectedDoc.readProgress >= 100 ? '#10b981' : 'var(--color-accent)',
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Document Title (hidden in Book Mode to keep reading view locked & clean) */}
               {editorMode !== 'book' && (
                 <input

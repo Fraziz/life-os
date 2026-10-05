@@ -7,38 +7,17 @@ import {
   Pause,
   RotateCcw,
   CheckCircle2,
-  Maximize2,
-  Minimize2,
-  Clock,
-  Flame,
-  Coffee,
-  Zap,
   CheckSquare,
   Square,
-  History,
-  Target,
   Plus,
   X,
-  ArrowRight,
-  Sparkles,
   Volume2,
   VolumeX,
-  Wand2,
-  Send,
-  CloudRain,
-  Waves,
-  Radio,
   BookOpen,
-  BookMarked,
-  Highlighter,
   Eraser,
-  Lock,
   Check,
-  Search,
   ExternalLink,
-  FileText,
   Pin,
-  Eye,
   Save,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
@@ -152,6 +131,7 @@ export default function FocusPage() {
   const [ambientVol, setAmbientVol] = useState(0.35);
   const [parkingLotInput, setParkingLotInput] = useState('');
   const [parkedNotice, setParkedNotice] = useState(false);
+  const [zenParkOpen, setZenParkOpen] = useState(false);
 
   // Reading scroll progress tracker
   const [readingScrollPercent, setReadingScrollPercent] = useState<number>(0);
@@ -176,14 +156,6 @@ export default function FocusPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [activeDoc, focusViewMode]);
 
-  // Word count & estimated reading time
-  const readingStats = React.useMemo(() => {
-    if (!activeDoc || !activeDoc.content) return { words: 0, minutes: 1 };
-    const raw = activeDoc.content.replace(/<[^>]*>/g, ' ').trim();
-    const words = raw.split(/\s+/).filter(Boolean).length;
-    const minutes = Math.max(1, Math.ceil(words / 200));
-    return { words, minutes };
-  }, [activeDoc]);
 
   // Cleanup ambient sound on unmount
   useEffect(() => {
@@ -491,6 +463,13 @@ export default function FocusPage() {
   const handleFinishSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     finishSession(finishNotes, markDoneOnFinish);
+    if (activeDoc) {
+      updateDoc(activeDoc.id, {
+        readProgress: readingScrollPercent,
+        lastReviewedAt: new Date().toISOString(),
+        ...(markDoneOnFinish ? { readStatus: 'completed' as const } : { readStatus: 'reading' as const }),
+      });
+    }
     playTimerCompleteFanfare();
     triggerDopamineBurst();
     setFinishModalOpen(false);
@@ -524,19 +503,202 @@ export default function FocusPage() {
       return timeB - timeA;
     });
 
+  // ── Today's Progress: group sessions by task/book, filtered to today ──
+  const todayStr = new Date().toDateString();
+  const todaySessions = focusHistory.filter((s) => {
+    const d = s.startedAt ? new Date(s.startedAt) : null;
+    return d && d.toDateString() === todayStr;
+  });
+
+  // Accumulate minutes per target
+  const todayProgressMap = new Map<string, { title: string; minutes: number; sessions: number }>();
+  for (const s of todaySessions) {
+    const key = s.taskId || s.taskTitle || 'Unknown';
+    const existing = todayProgressMap.get(key);
+    if (existing) {
+      existing.minutes += s.durationMinutes;
+      existing.sessions += 1;
+    } else {
+      todayProgressMap.set(key, { title: s.taskTitle || 'Unnamed', minutes: s.durationMinutes, sessions: 1 });
+    }
+  }
+  const todayProgressList = Array.from(todayProgressMap.values()).sort((a, b) => b.minutes - a.minutes);
+  const todayTotalMinutes = todayProgressList.reduce((sum, e) => sum + e.minutes, 0);
+
+  function fmtMin(m: number): string {
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+  }
+
   return (
     <div className={`${styles.page} ${isZenMode ? styles.zenMode : ''}`}>
-      {/* ── Zen Mode Top Exit Bar ── */}
+      {/* ── Zen Mode Top Minimalist Floating Bar ── */}
       {isZenMode && (
         <div className={styles.zenTopBar}>
-          <button
-            type="button"
-            className={styles.btnExitZen}
-            onClick={toggleZenMode}
-            title="Exit Zen Mode (or press Esc)"
-          >
-            ← Exit Zen Mode <span className={styles.escBadge}>Esc</span>
-          </button>
+          <div className={styles.zenTopLeft}>
+            <button
+              type="button"
+              className={styles.btnExitZen}
+              onClick={toggleZenMode}
+              title="Exit Zen Mode (or press Esc)"
+            >
+              ← Exit <span className={styles.escBadge}>Esc</span>
+            </button>
+
+            <div className={styles.zenTargetInfo}>
+              <span className={styles.zenTargetLabel}>
+                {activeDoc ? 'BOOK' : 'TARGET'}
+              </span>
+              <span
+                className={styles.zenTargetTitle}
+                title={activeDoc ? activeDoc.title : (liveActiveTask?.title || customTaskTitle || 'Focus Session')}
+              >
+                {activeDoc ? activeDoc.title : (liveActiveTask?.title || customTaskTitle || 'Focus Session')}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.zenTopRight}>
+            {/* Minimalist Live Timer Capsule */}
+            <div className={styles.zenTimerCapsule}>
+              <span className={`${styles.zenTimerStatusDot} ${isRunning ? styles.zenTimerActiveDot : ''}`} />
+              <span className={styles.zenTimerDigits}>
+                {mode === 'flow' ? formatTimer(secondsElapsed) : formatTimer(secondsRemaining)}
+              </span>
+              {isRunning ? (
+                <button
+                  type="button"
+                  className={styles.zenTimerActionBtn}
+                  onClick={pauseTimer}
+                  title="Pause Focus Timer"
+                >
+                  Pause
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`${styles.zenTimerActionBtn} ${styles.zenTimerActionStart}`}
+                  onClick={startTimer}
+                  title="Start Focus Timer"
+                >
+                  {secondsElapsed > 0 ? 'Resume' : 'Start'}
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.zenTimerResetBtn}
+                onClick={resetTimer}
+                title="Reset timer"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                className={styles.zenTimerFinishBtn}
+                onClick={() => setFinishModalOpen(true)}
+                title="Finish & Log Focus Session"
+              >
+                Finish
+              </button>
+            </div>
+
+            {/* Knowledge reading tools when reading a book */}
+            {activeDoc && (
+              <div className={styles.zenBookTools}>
+                <span className={styles.zenReadingStat} title="Reading progress">
+                  {readingScrollPercent}%
+                </span>
+
+                <button
+                  type="button"
+                  className={`${styles.zenSaveBtn} ${showSaveToast ? styles.zenSaveBtnSuccess : ''}`}
+                  onClick={handleManualSave}
+                  title="Save highlights to Knowledge Base"
+                >
+                  {showSaveToast ? 'Saved' : 'Save'}
+                </button>
+
+                {/* Minimal View Toggle in Zen Mode */}
+                <div className={styles.zenViewToggle}>
+                  <button
+                    type="button"
+                    className={`${styles.zenViewBtn} ${focusViewMode === 'book' ? styles.zenViewBtnActive : ''}`}
+                    onClick={() => setFocusViewMode('book')}
+                    title="Switch to Book Reader View"
+                  >
+                    Book
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.zenViewBtn} ${focusViewMode === 'timer' ? styles.zenViewBtnActive : ''}`}
+                    onClick={() => setFocusViewMode('timer')}
+                    title="Switch to Timer View"
+                  >
+                    Timer
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Ambient Sound status & quick mute */}
+            {ambientSound !== 'off' && (
+              <div className={styles.zenAmbientWrap}>
+                <span className={styles.zenAmbientLabel}>♫</span>
+                <button
+                  type="button"
+                  className={styles.zenMuteBtn}
+                  onClick={() => handleAmbientToggle('off')}
+                  title="Mute ambient sound"
+                >
+                  Mute
+                </button>
+              </div>
+            )}
+
+            {/* ADHD Distraction Thought Quick-Park Trigger */}
+            <button
+              type="button"
+              className={`${styles.zenParkTrigger} ${zenParkOpen ? styles.zenParkTriggerActive : ''}`}
+              onClick={() => setZenParkOpen((prev) => !prev)}
+              title="Park an ADHD thought without breaking flow"
+            >
+              {zenParkOpen ? 'Close Park' : 'Park Thought'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Distraction Park Dropdown (Zen Mode) */}
+      {isZenMode && zenParkOpen && (
+        <div className={styles.zenParkDropdown}>
+          <form onSubmit={handleParkDistraction} className={styles.zenParkForm}>
+            <input
+              type="text"
+              value={parkingLotInput}
+              onChange={(e) => setParkingLotInput(e.target.value)}
+              placeholder="Park a distracting thought without losing focus... ↵"
+              className={styles.zenParkInput}
+              autoFocus
+            />
+            <button type="submit" className={styles.zenParkBtn}>
+              Park
+            </button>
+          </form>
+          {parkedNotice && (
+            <span className={styles.zenParkNotice}>Saved to Brain Dump!</span>
+          )}
+        </div>
+      )}
+
+      {/* Hairline reading progress track across viewport top when in Book Zen Mode */}
+      {isZenMode && activeDoc && focusViewMode === 'book' && (
+        <div className={styles.zenReadingProgressBarTrack}>
+          <div
+            className={styles.zenReadingProgressBarFill}
+            style={{ width: `${readingScrollPercent}%` }}
+          />
         </div>
       )}
 
@@ -626,7 +788,7 @@ export default function FocusPage() {
           ) : (
             /* Standard Focus Timer Card */
             <div className={styles.focusCard}>
-              {/* Mode Switcher Tabs */}
+              {/* Mode Switcher Tabs — text only, minimalist */}
               <div className={styles.modeTabs}>
                 <button
                   className={`${styles.modeTab} ${mode === 'pomodoro' ? styles.activeMode : ''}`}
@@ -650,7 +812,7 @@ export default function FocusPage() {
                   className={`${styles.modeTab} ${mode === 'flow' ? styles.activeMode : ''}`}
                   onClick={() => setTimerMode('flow')}
                 >
-                  Flow Mode
+                  Flow
                 </button>
               </div>
 
@@ -771,16 +933,36 @@ export default function FocusPage() {
                       {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
                     </button>
                   )}
-                  <button className={styles.btnReset} onClick={resetTimer} title="Reset timer">
+                  <button className={styles.btnReset} onClick={resetTimer}>
                     Reset
                   </button>
                   <button
                     className={styles.btnFinish}
                     onClick={() => setFinishModalOpen(true)}
-                    title="Finish session and log actual time"
                   >
-                    Finish Session
+                    Finish
                   </button>
+                </div>
+              )}
+
+              {/* Zen Mode Inline Distraction Parking Lot */}
+              {isZenMode && (
+                <div className={styles.zenInlinePark}>
+                  <form onSubmit={handleParkDistraction} className={styles.zenInlineParkForm}>
+                    <input
+                      type="text"
+                      value={parkingLotInput}
+                      onChange={(e) => setParkingLotInput(e.target.value)}
+                      placeholder="Park a distracting thought... ↵"
+                      className={styles.zenInlineParkInput}
+                    />
+                    <button type="submit" className={styles.zenInlineParkBtn}>
+                      Park
+                    </button>
+                  </form>
+                  {parkedNotice && (
+                    <span className={styles.zenInlineParkNotice}>Saved to Brain Dump!</span>
+                  )}
                 </div>
               )}
             </div>
@@ -867,17 +1049,15 @@ export default function FocusPage() {
                 </div>
               </div>
 
-              {/* Session Controls: Primary Start/Pause + Sleek 3-button utility row */}
+              {/* Session Controls — minimalist, text-only */}
               <div className={styles.bookActionCol}>
                 {isRunning ? (
                   <button className={styles.bookBtnPause} onClick={pauseTimer}>
-                    <Pause size={13} fill="currentColor" />
-                    <span>Pause Session</span>
+                    Pause
                   </button>
                 ) : (
                   <button className={styles.bookBtnStart} onClick={startTimer}>
-                    <Play size={13} fill="currentColor" />
-                    <span>{secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}</span>
+                    {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
                   </button>
                 )}
 
@@ -886,28 +1066,22 @@ export default function FocusPage() {
                     type="button"
                     className={styles.bookUtilityBtn}
                     onClick={resetTimer}
-                    title="Reset timer"
                   >
-                    <RotateCcw size={12} />
-                    <span>Reset</span>
+                    Reset
                   </button>
                   <button
                     type="button"
                     className={styles.bookUtilityBtn}
                     onClick={() => setTaskPickerOpen(true)}
-                    title="Switch focus target"
                   >
-                    <Target size={12} />
-                    <span>Target</span>
+                    Switch
                   </button>
                   <button
                     type="button"
                     className={`${styles.bookUtilityBtn} ${styles.bookUtilityFinish}`}
                     onClick={() => setFinishModalOpen(true)}
-                    title="Finish session and log actual time"
                   >
-                    <CheckCircle2 size={12} />
-                    <span>Finish</span>
+                    Finish
                   </button>
                 </div>
               </div>
@@ -918,9 +1092,7 @@ export default function FocusPage() {
               <div>
                 <div className={styles.bookReadingHeader}>
                   <div className={styles.bookReadingMeta}>
-                    <BookOpen size={12} className={styles.readingIcon} />
-                    <span>~{readingStats.minutes}m read</span>
-                    <span className={styles.bookReadingPercent}>{readingScrollPercent}%</span>
+                    <span className={styles.bookReadingPercent}>{readingScrollPercent}% read</span>
                   </div>
                   <div className={styles.bookReadingToolsRight}>
                     <button
@@ -929,7 +1101,6 @@ export default function FocusPage() {
                       onClick={handleManualSave}
                       title="Save highlights to Knowledge Base"
                     >
-                      {showSaveToast ? <Check size={11} /> : <Save size={11} />}
                       <span>{showSaveToast ? 'Saved' : 'Save'}</span>
                     </button>
                     <Link
@@ -937,7 +1108,7 @@ export default function FocusPage() {
                       className={styles.bookExtLink}
                       title="Open in Knowledge Base"
                     >
-                      <ExternalLink size={11} />
+                      Knowledge
                     </Link>
                   </div>
                 </div>
@@ -979,6 +1150,28 @@ export default function FocusPage() {
                   </button>
                 </div>
               </div>
+
+              <div className={styles.bookPanelDivider} />
+
+              {/* ── Today's Progress ── */}
+              {todayProgressList.length > 0 && (
+                <div>
+                  <div className={styles.bookSectionTitle}>
+                    Today&rsquo;s Focus
+                    <span className={styles.todayTotalBadge}>{fmtMin(todayTotalMinutes)}</span>
+                  </div>
+                  <div className={styles.todayList}>
+                    {todayProgressList.map((entry) => (
+                      <div key={entry.title} className={styles.todayEntry}>
+                        <span className={styles.todayEntryTitle} title={entry.title}>
+                          {entry.title.replace(/^Reading:\s*/i, '')}
+                        </span>
+                        <span className={styles.todayEntryTime}>{fmtMin(entry.minutes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className={styles.bookPanelDivider} />
 
@@ -1062,44 +1255,69 @@ export default function FocusPage() {
             <aside className={styles.sideSection}>
               <div className={styles.sideCard}>
                 <div className={styles.sideCardHeader}>
-                  <span className={styles.sideCardTitle}>
-                    Session Controls
-                  </span>
+                  <span className={styles.sideCardTitle}>Session Controls</span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {isRunning ? (
                     <button className={styles.sideBtnPause} onClick={pauseTimer}>
-                      Pause Session
+                      Pause
                     </button>
                   ) : (
                     <button className={styles.sideBtnStart} onClick={startTimer}>
-                      {secondsElapsed > 0 ? 'Resume Focus' : 'Start Focus'}
+                      {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
                     </button>
                   )}
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                    <button className={styles.sideActionBtn} onClick={resetTimer} title="Reset timer">
+                    <button className={styles.sideActionBtn} onClick={resetTimer}>
                       Reset
                     </button>
                     <button
                       className={styles.sideActionBtn}
                       onClick={() => setTaskPickerOpen(true)}
-                      title="Switch focus target"
                     >
-                      Switch Target
+                      Switch
                     </button>
                   </div>
 
                   <button
                     className={styles.sideBtnFinish}
                     onClick={() => setFinishModalOpen(true)}
-                    title="Finish session and log actual time"
                   >
-                    Finish & Log Session
+                    Finish & Log
                   </button>
                 </div>
               </div>
+
+              {/* ── Today's Progress ── */}
+              {todayProgressList.length > 0 && (
+                <div className={styles.sideCard}>
+                  <div className={styles.sideCardHeader}>
+                    <span className={styles.sideCardTitle}>Today&rsquo;s Focus</span>
+                    <span className={styles.todayTotalBadge}>{fmtMin(todayTotalMinutes)}</span>
+                  </div>
+                  <div className={styles.todayList}>
+                    {todayProgressList.map((entry) => (
+                      <div key={entry.title} className={styles.todayEntry}>
+                        <span className={styles.todayEntryTitle} title={entry.title}>
+                          {entry.title.replace(/^Reading:\s*/i, '')}
+                        </span>
+                        <span className={styles.todayEntryTime}>{fmtMin(entry.minutes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.todayBar}>
+                    <div
+                      className={styles.todayBarFill}
+                      style={{ width: `${Math.min(100, (todayTotalMinutes / 120) * 100)}%` }}
+                    />
+                  </div>
+                  <p className={styles.todayBarLabel}>
+                    {fmtMin(todayTotalMinutes)} of 2h goal
+                  </p>
+                </div>
+              )}
 
               {/* Distraction Parking Lot */}
               <div className={styles.sideCard}>
@@ -1407,6 +1625,17 @@ export default function FocusPage() {
                     onChange={(e) => setMarkDoneOnFinish(e.target.checked)}
                   />
                   <span>Mark task &ldquo;{liveActiveTask.title}&rdquo; as completed (Done)</span>
+                </label>
+              )}
+
+              {activeDoc && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--color-text)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={markDoneOnFinish}
+                    onChange={(e) => setMarkDoneOnFinish(e.target.checked)}
+                  />
+                  <span>Mark book &ldquo;{activeDoc.title}&rdquo; as finished (Read)</span>
                 </label>
               )}
 
