@@ -9,7 +9,7 @@ import {
   CheckSquare,
   Square,
   Check,
-  FolderKanban,
+  Folder,
   Target,
   CloudSun,
   FileText,
@@ -232,7 +232,7 @@ export default function InboxPage() {
     switch (type) {
       case 'task': return <CheckSquare size={16} style={{ color: '#22d3a5' }} />;
       case 'goal': return <Target size={16} style={{ color: '#7c6fff' }} />;
-      case 'project': return <FolderKanban size={16} style={{ color: '#3b82f6' }} />;
+      case 'project': return <Folder size={16} style={{ color: '#3b82f6' }} />;
       case 'dream': return <CloudSun size={16} style={{ color: '#f59e0b' }} />;
       case 'idea': return <Sparkles size={16} style={{ color: '#ec4899' }} />;
       default: return <FileText size={16} style={{ color: '#64748b' }} />;
@@ -696,7 +696,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                 }}
               >
-                <FolderKanban size={16} style={{ color: '#38bdf8' }} /> Convert to Project <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Folder of steps</span>
+                <Folder size={16} style={{ color: '#38bdf8' }} /> Convert to Project <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Folder of steps</span>
               </button>
 
               <button

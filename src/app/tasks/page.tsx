@@ -6,6 +6,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useMilestones } from '@/context/MilestoneContext';
+import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Task, TaskStatus, TaskPriority } from '@/types';
 import {
   CheckSquare,
@@ -34,6 +35,7 @@ import {
   Archive,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
+import { formatTagLabel } from '@/utils/tagUtils';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -68,6 +70,7 @@ export default function TasksPage() {
   const { projects } = useProjects();
   const { goals } = useGoals();
   const { milestones } = useMilestones();
+  const { focusedAreaId, areas } = useLifeAreas();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
 
@@ -309,6 +312,29 @@ export default function TasksPage() {
   };
 
   const filteredTasks = tasks.filter((t) => {
+    if (focusedAreaId) {
+      const parentProject = projects.find((p) => p.id === t.projectId);
+      const parentGoal = goals.find((g) => g.id === (t.goalId || parentProject?.goalId));
+      const activeArea = areas.find((a) => a.id === focusedAreaId);
+      const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
+
+      const matchesDirect = t.lifeAreaId === focusedAreaId;
+      const matchesProject = parentProject?.lifeAreaId === focusedAreaId;
+      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
+      const matchesTag = Boolean(
+        areaNameLower &&
+          t.tags &&
+          t.tags.some((tag) => {
+            const tl = tag.toLowerCase();
+            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
+          })
+      );
+
+      if (!matchesDirect && !matchesProject && !matchesGoal && !matchesTag) {
+        return false;
+      }
+    }
+
     if (hideDone && t.status === 'done') return false;
     if (t.status === 'done' && doneTimeframe !== 'all') {
       const taskDate = t.completedAt || t.updatedAt || t.createdAt;
@@ -632,7 +658,7 @@ export default function TasksPage() {
             )}
             {task.tags.map((tg) => (
               <span key={tg} className={styles.tagChip}>
-                #{tg}
+                #{formatTagLabel(tg)}
               </span>
             ))}
           </div>
@@ -936,7 +962,7 @@ export default function TasksPage() {
         })}
       </div>
 
-      {/* ── Kanban Grid: Backlog | To Do | Doing | Done ── */}
+      {/* ── Board Grid: Backlog | To Do | Doing | Done ── */}
       <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);

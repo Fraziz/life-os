@@ -1,349 +1,565 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import {
-  RefreshCw,
-  CheckCircle2,
-  Clock,
-  Target,
-  FolderKanban,
-  CheckSquare,
-  Repeat,
-  Sparkles,
-  Trophy,
-  ArrowRight,
-  Send,
-  Trash2,
-  History,
-  RotateCcw,
-  Loader2,
-  Wand2,
-} from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { useReview } from '@/context/ReviewContext';
-import { useSettings } from '@/context/SettingsContext';
-import { draftWeeklyReviewWithAI } from '@/utils/aiEngine';
+import { useTasks } from '@/context/TaskContext';
+import { useFocus } from '@/context/FocusContext';
+import { useHabits } from '@/context/HabitContext';
+import { useProjects } from '@/context/ProjectContext';
+import { useInbox } from '@/context/InboxContext';
+import { triggerDopamineBurst, playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
 
 export default function WeeklyReviewPage() {
-  const {
-    reviews,
-    currentWeekStats,
-    saveWeeklyReview,
-    deleteWeeklyReview,
-    resetToDefaultReviews,
-    isLoaded,
-  } = useReview();
+  const { reviews, saveWeeklyReview, deleteWeeklyReview, isLoaded: reviewLoaded } = useReview();
+  const { tasks, updateTask, deleteTask, isLoaded: tasksLoaded } = useTasks();
+  const { focusHistory, isLoaded: focusLoaded } = useFocus();
+  const { habits, getWeeklyCompletionsCount, isLoaded: habitsLoaded } = useHabits();
+  const { activeProjects, isLoaded: projectsLoaded } = useProjects();
+  const { activeItems: inboxItems, deleteInboxItem, quickDump, isLoaded: inboxLoaded } = useInbox();
 
-  const { settings } = useSettings();
+  // Tab switch: Guided Review vs Review Archive
+  const [activeTab, setActiveTab] = useState<'guided' | 'archive'>('guided');
 
-  // Form inputs for the 4 reflection questions
-  const [wentWell, setWentWell] = useState('');
-  const [didNotGoWell, setDidNotGoWell] = useState('');
-  const [shouldChange, setShouldChange] = useState('');
-  const [nextWeekFocus, setNextWeekFocus] = useState('');
-  const [savedNotice, setSavedNotice] = useState(false);
-  const [isDrafting, setIsDrafting] = useState(false);
+  // 3-Step Wizard state (1: Celebrate Wins, 2: Clear & Realign, 3: Top 3 for Next Week)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  if (!isLoaded) {
+  // Step 3 selections
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+  const [nextWeekFocusNote, setNextWeekFocusNote] = useState('');
+  const [reflectionWentWell, setReflectionWentWell] = useState('');
+  const [reflectionShouldChange, setReflectionShouldChange] = useState('');
+
+  // Status notification
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+
+  // ── Auto-Aggregated Weekly Metrics ──────────────────────────
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  const day = startOfWeek.getDay();
+  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+  startOfWeek.setDate(diff);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const weekStartStr = startOfWeek.toISOString().split('T')[0];
+  const endOfWeek = new Date(startOfWeek.getTime() + 86400000 * 6);
+  const weekEndStr = endOfWeek.toISOString().split('T')[0];
+
+  // 1. Tasks completed this week
+  const completedTasksThisWeek = useMemo(() => {
+    return tasks.filter((t) => {
+      if (t.status !== 'done') return false;
+      const comp = t.completedAt || t.updatedAt;
+      return !comp || comp.split('T')[0] >= weekStartStr;
+    });
+  }, [tasks, weekStartStr]);
+
+  // 2. Focus reading & timer minutes logged this week
+  const focusMinutesThisWeek = useMemo(() => {
+    return focusHistory
+      .filter((s) => s.completedAt && s.completedAt.split('T')[0] >= weekStartStr)
+      .reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  }, [focusHistory, weekStartStr]);
+
+  // 3. Habit consistency rate
+  const habitConsistency = useMemo(() => {
+    let expected = 0;
+    let actual = 0;
+    habits.forEach((h) => {
+      expected += h.targetCount || 1;
+      actual += getWeeklyCompletionsCount(h.id);
+    });
+    return expected > 0 ? Math.min(100, Math.round((actual / expected) * 100)) : 100;
+  }, [habits, getWeeklyCompletionsCount]);
+
+  // 4. Overdue or open tasks needing realignment
+  const openTasksForRealignment = useMemo(() => {
+    return tasks.filter((t) => t.status !== 'done').slice(0, 8);
+  }, [tasks]);
+
+  const formatFocusTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m logged`;
+    return m > 0 ? `${h}h ${m}m logged` : `${h}h logged`;
+  };
+
+  // ── Step Navigation Handlers ───────────────────────────────
+  const handleStep1Celebrate = (e: React.MouseEvent) => {
+    playSuccessChime();
+    triggerDopamineBurst(e.clientX, e.clientY);
+    setCurrentStep(2);
+  };
+
+  const handleStep2Continue = () => {
+    setCurrentStep(3);
+  };
+
+  const toggleProjectSelection = (projectId: string) => {
+    setSelectedProjectIds((prev) => {
+      if (prev.includes(projectId)) {
+        return prev.filter((id) => id !== projectId);
+      }
+      if (prev.length >= 3) {
+        return [...prev.slice(1), projectId];
+      }
+      return [...prev, projectId];
+    });
+  };
+
+  // Step 2: Zero-Guilt Task Realignment Actions
+  const handlePushTaskToNextWeek = (taskId: string) => {
+    const nextWeekDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    updateTask(taskId, { dueDate: nextWeekDate });
+    setStatusNotice('Task rescheduled to next week without penalty.');
+    setTimeout(() => setStatusNotice(null), 3000);
+  };
+
+  const handleDemoteTaskToInbox = (task: { id: string; title: string }) => {
+    quickDump(task.title, { isReminder: false });
+    deleteTask(task.id);
+    setStatusNotice(`"${task.title}" parked in Brain Dump to free mental bandwidth.`);
+    setTimeout(() => setStatusNotice(null), 3000);
+  };
+
+  const handleArchiveTaskWithoutGuilt = (taskId: string) => {
+    deleteTask(taskId);
+    setStatusNotice('Task archived without guilt.');
+    setTimeout(() => setStatusNotice(null), 3000);
+  };
+
+  const handleClearInboxItem = (itemId: string) => {
+    deleteInboxItem(itemId);
+    setStatusNotice('Inbox item resolved.');
+    setTimeout(() => setStatusNotice(null), 3000);
+  };
+
+  // Finalize Review
+  const handleFinalizeReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    const chosenProjects = activeProjects.filter((p) => selectedProjectIds.includes(p.id));
+    const projectTitles = chosenProjects.map((p) => p.title).join(', ');
+
+    saveWeeklyReview({
+      weekStartDate: weekStartStr,
+      weekEndDate: weekEndStr,
+      completedTaskCount: completedTasksThisWeek.length,
+      openTaskCount: openTasksForRealignment.length,
+      focusMinutesLogged: focusMinutesThisWeek,
+      goalsProgressedCount: chosenProjects.length,
+      projectsProgressedCount: chosenProjects.length,
+      habitsConsistencyRate: habitConsistency,
+      importantWins: completedTasksThisWeek.slice(0, 5).map((t) => t.title),
+      wentWell: reflectionWentWell.trim() || 'Consistent execution maintained across scheduled focus sessions.',
+      didNotGoWell: 'Commitments streamlined to prevent cognitive overload.',
+      shouldChange: reflectionShouldChange.trim() || 'Protect primary deep focus blocks from non-essential interruptions.',
+      nextWeekFocus: nextWeekFocusNote.trim() || (projectTitles ? `Priority projects: ${projectTitles}` : 'Advance primary quarterly objectives.'),
+    });
+
+    playSuccessChime();
+    triggerDopamineBurst();
+    setStatusNotice('Weekly Review successfully recorded in archives.');
+    setCurrentStep(1);
+    setSelectedProjectIds([]);
+    setNextWeekFocusNote('');
+    setReflectionWentWell('');
+    setReflectionShouldChange('');
+    setTimeout(() => setStatusNotice(null), 4000);
+  };
+
+  const isDataReady = reviewLoaded && tasksLoaded && focusLoaded && habitsLoaded && projectsLoaded && inboxLoaded;
+
+  if (!isDataReady) {
     return (
       <div className={styles.page}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Preparing your Weekly Review data...
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>
+          Preparing weekly review parameters...
         </p>
       </div>
     );
   }
 
-  const formatHours = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h === 0) return `${m}m`;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  };
-
-  const handleReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wentWell.trim() && !nextWeekFocus.trim()) {
-      alert('Please write at least a brief reflection on what went well and next week focus.');
-      return;
-    }
-
-    saveWeeklyReview({
-      weekStartDate: currentWeekStats.weekStartStr,
-      weekEndDate: currentWeekStats.weekEndStr,
-      completedTaskCount: currentWeekStats.completedTasks.length,
-      openTaskCount: currentWeekStats.openTasks.length,
-      focusMinutesLogged: currentWeekStats.focusMinutes,
-      goalsProgressedCount: currentWeekStats.goalsProgressed.length,
-      projectsProgressedCount: currentWeekStats.projectsProgressed.length,
-      habitsConsistencyRate: currentWeekStats.habitsConsistency,
-      importantWins: currentWeekStats.importantWins,
-      wentWell: wentWell.trim() || 'Consistent progress maintained across daily focus sessions.',
-      didNotGoWell: didNotGoWell.trim() || 'Some task estimations required recalibration.',
-      shouldChange: shouldChange.trim() || 'Protect morning deep focus blocks from non-essential distractions.',
-      nextWeekFocus: nextWeekFocus.trim() || 'Advance core milestone deliverables.',
-    });
-
-    setSavedNotice(true);
-    setWentWell('');
-    setDidNotGoWell('');
-    setShouldChange('');
-    setNextWeekFocus('');
-    setTimeout(() => setSavedNotice(false), 3500);
-  };
-
-  const handleAutoDraft = async () => {
-    setIsDrafting(true);
-    try {
-      const draft = await draftWeeklyReviewWithAI(
-        {
-          completedTaskCount: currentWeekStats.completedTasks.length,
-          completedTaskTitles: currentWeekStats.completedTasks.map(t => t.title),
-          focusMinutes: currentWeekStats.focusMinutes,
-          habitStreak: Math.round(currentWeekStats.habitsConsistency / 10),
-          activeGoalCount: currentWeekStats.goalsProgressed.length,
-          topGoalTitle: currentWeekStats.goalsProgressed[0]?.title,
-        },
-        settings.aiSettings
-      );
-      setWentWell(draft.wentWell);
-      setDidNotGoWell(draft.didNotGoWell);
-      setShouldChange(draft.shouldChange);
-      setNextWeekFocus(draft.nextWeekFocus);
-    } finally {
-      setIsDrafting(false);
-    }
-  };
-
   return (
     <div className={styles.page}>
-      {/* ── Header ── */}
+      {/* ── Formal Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Weekly Review & Alignment</h1>
           <p className={styles.subtitle}>
-            Close the loop on the past 7 days. Celebrate real momentum, acknowledge friction, calibrate your direction, and lock in next week&apos;s focus.
+            A structured, low-friction reflection protocol to celebrate tangible progress, realign deferred commitments without guilt, and establish priority focus.
           </p>
         </div>
 
-        <Link href="/" className={styles.btnSave} style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', textDecoration: 'none' }}>
-          Return to Command Center <ArrowRight size={14} />
-        </Link>
+        <div className={styles.tabSwitch} role="tablist">
+          <button
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === 'guided' ? styles.tabBtnActive : ''}`}
+            onClick={() => setActiveTab('guided')}
+          >
+            Guided Review
+          </button>
+          <button
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === 'archive' ? styles.tabBtnActive : ''}`}
+            onClick={() => setActiveTab('archive')}
+          >
+            Review Archive ({reviews.length})
+          </button>
+        </div>
       </header>
 
-      {/* ── 1. Weekly Performance Summary Grid ── */}
-      <section className={styles.metricsGrid}>
-        <div className={styles.metricCard}>
-          <div className={styles.metricInfo}>
-            <span className={styles.metricVal}>{currentWeekStats.completedTasks.length} Done</span>
-            <span className={styles.metricLabel}>{currentWeekStats.openTasks.length} Remaining</span>
-          </div>
+      {/* ── Confirmation Banner ── */}
+      {statusNotice && (
+        <div className={styles.confirmationBanner} role="status">
+          {statusNotice}
+        </div>
+      )}
+
+      {/* ── Auto-Aggregated Dopamine Summary (Clean Formal Cards, No Icons) ── */}
+      <section className={styles.summaryGrid} aria-label="Current Week Performance Summary">
+        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#34d399' }}>
+          <span className={styles.summaryLabel}>Completed Tasks</span>
+          <span className={styles.summaryValue}>{completedTasksThisWeek.length}</span>
+          <span className={styles.summaryDetail}>Actions resolved this week</span>
         </div>
 
-        <div className={styles.metricCard}>
-          <div className={styles.metricIcon} style={{ color: '#a855f7' }}>
-            <Clock size={18} />
-          </div>
-          <div className={styles.metricInfo}>
-            <span className={styles.metricVal}>{formatHours(currentWeekStats.focusMinutes)}</span>
-            <span className={styles.metricLabel}>Deep Focus Logged</span>
-          </div>
+        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#818cf8' }}>
+          <span className={styles.summaryLabel}>Focus &amp; Reading Time</span>
+          <span className={styles.summaryValue}>{formatFocusTime(focusMinutesThisWeek)}</span>
+          <span className={styles.summaryDetail}>Logged in deep focus sessions</span>
         </div>
 
-        <div className={styles.metricCard}>
-          <div className={styles.metricIcon} style={{ color: 'var(--color-accent-light)' }}>
-            <Target size={18} />
-          </div>
-          <div className={styles.metricInfo}>
-            <span className={styles.metricVal}>{currentWeekStats.goalsProgressed.length} Goals</span>
-            <span className={styles.metricLabel}>{currentWeekStats.projectsProgressed.length} Projects Moved</span>
-          </div>
+        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#f59e0b' }}>
+          <span className={styles.summaryLabel}>Habit Consistency</span>
+          <span className={styles.summaryValue}>{habitConsistency}%</span>
+          <span className={styles.summaryDetail}>Routine compliance score</span>
         </div>
 
-        <div className={styles.metricCard}>
-          <div className={styles.metricIcon} style={{ color: '#38bdf8' }}>
-            <Repeat size={18} />
-          </div>
-          <div className={styles.metricInfo}>
-            <span className={styles.metricVal}>{currentWeekStats.habitsConsistency}%</span>
-            <span className={styles.metricLabel}>Habit Consistency</span>
-          </div>
+        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#38bdf8' }}>
+          <span className={styles.summaryLabel}>Active Initiatives</span>
+          <span className={styles.summaryValue}>{activeProjects.length} Projects</span>
+          <span className={styles.summaryDetail}>Open multi-step endeavors</span>
         </div>
       </section>
 
-      {/* ── 2. Important Wins Banner ── */}
-      <section className={styles.winsBanner}>
-        <span className={styles.winsTitle}>
-          <Trophy size={14} /> Important Wins This Week
-        </span>
-        <div className={styles.winsList}>
-          {currentWeekStats.importantWins.map((win, idx) => (
-            <div key={idx} className={styles.winItem}>
-              <CheckCircle2 size={13} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
-              <span>{win}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── 3. The 4 Guided Reflection Prompts ── */}
-      <form onSubmit={handleReviewSubmit} className={styles.reviewForm}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-3)' }}>
-          <div>
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-              Weekly Reflection Prompts
-            </h2>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-              Week of {currentWeekStats.weekStartStr} to {currentWeekStats.weekEndStr}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {savedNotice && (
-              <span style={{ color: 'var(--color-success)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
-                ✓ Weekly Review Saved!
-              </span>
-            )}
+      {activeTab === 'guided' ? (
+        <>
+          {/* ── 3-Step Stepper Navigation (Clean & Formal, No Icons) ── */}
+          <nav className={styles.stepperTrack} aria-label="Review Steps">
             <button
               type="button"
-              onClick={handleAutoDraft}
-              disabled={isDrafting}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '10px', border: 'none', cursor: isDrafting ? 'wait' : 'pointer',
-                background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)',
-                color: 'white', fontSize: '12px', fontWeight: 600,
-                opacity: isDrafting ? 0.75 : 1,
-                transition: 'opacity 0.15s',
-              }}
-              title="Let AI draft your weekly review based on this week's data"
-              id="weekly-review-ai-draft-btn"
+              className={`${styles.stepButton} ${currentStep === 1 ? styles.stepButtonActive : ''}`}
+              onClick={() => setCurrentStep(1)}
             >
-              {isDrafting
-                ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Drafting...    </>  
-                : <><Wand2 size={13} /> ✨ Auto-Draft</>}
+              <span className={styles.stepBadge}>Step 1</span>
+              <span className={styles.stepTitle}>Celebrate Wins</span>
             </button>
-          </div>
-        </div>
 
-        {/* Prompt 1 */}
-        <div className={styles.promptBlock}>
-          <label className={styles.promptLabel}>
-            <Sparkles size={16} style={{ color: 'var(--color-success)' }} /> 1. What went well?
-          </label>
-          <span className={styles.promptSubtext}>What gave you energy, worked smoothly, or was a meaningful breakthrough?</span>
-          <textarea
-            className={styles.promptTextarea}
-            value={wentWell}
-            onChange={(e) => setWentWell(e.target.value)}
-            placeholder="e.g. Completed the physics vector math, morning focus was sharp..."
-            required
-          />
-        </div>
+            <button
+              type="button"
+              className={`${styles.stepButton} ${currentStep === 2 ? styles.stepButtonActive : ''}`}
+              onClick={() => setCurrentStep(2)}
+            >
+              <span className={styles.stepBadge}>Step 2</span>
+              <span className={styles.stepTitle}>Clear &amp; Realign</span>
+            </button>
 
-        {/* Prompt 2 */}
-        <div className={styles.promptBlock}>
-          <label className={styles.promptLabel}>
-            <Clock size={16} style={{ color: '#f59e0b' }} /> 2. What didn&apos;t?
-          </label>
-          <span className={styles.promptSubtext}>Where did you hit friction, procrastinate, or get derailed?</span>
-          <textarea
-            className={styles.promptTextarea}
-            value={didNotGoWell}
-            onChange={(e) => setDidNotGoWell(e.target.value)}
-            placeholder="e.g. Underestimated Blender environment lighting setup, got distracted on social..."
-          />
-        </div>
+            <button
+              type="button"
+              className={`${styles.stepButton} ${currentStep === 3 ? styles.stepButtonActive : ''}`}
+              onClick={() => setCurrentStep(3)}
+            >
+              <span className={styles.stepBadge}>Step 3</span>
+              <span className={styles.stepTitle}>Top 3 Priorities</span>
+            </button>
+          </nav>
 
-        {/* Prompt 3 */}
-        <div className={styles.promptBlock}>
-          <label className={styles.promptLabel}>
-            <RefreshCw size={16} style={{ color: 'var(--color-accent)' }} /> 3. What should I change?
-          </label>
-          <span className={styles.promptSubtext}>One concrete adjustment to routines, task breakdown, or environment.</span>
-          <textarea
-            className={styles.promptTextarea}
-            value={shouldChange}
-            onChange={(e) => setShouldChange(e.target.value)}
-            placeholder="e.g. Break 3D modeling tasks into 25-minute steps before opening the project..."
-          />
-        </div>
+          {/* ── Step 1: Celebrate Wins ── */}
+          {currentStep === 1 && (
+            <section className={styles.stepContainer}>
+              <div className={styles.stepHeader}>
+                <h2 className={styles.stepHeading}>Step 1: Celebrate Completed Actions</h2>
+                <p className={styles.stepDescription}>
+                  Acknowledging finished work activates dopamine pathways and directly counteracts working memory amnesia. Review everything accomplished between {weekStartStr} and {weekEndStr}.
+                </p>
+              </div>
 
-        {/* Prompt 4 */}
-        <div className={styles.promptBlock}>
-          <label className={styles.promptLabel}>
-            <Target size={16} style={{ color: '#ec4899' }} /> 4. What matters next week?
-          </label>
-          <span className={styles.promptSubtext}>The #1 or #2 essential outcomes for the upcoming 7 days.</span>
-          <textarea
-            className={styles.promptTextarea}
-            value={nextWeekFocus}
-            onChange={(e) => setNextWeekFocus(e.target.value)}
-            placeholder="e.g. Lock in Blobbit playable level build and test movement controls..."
-            required
-          />
-        </div>
+              {completedTasksThisWeek.length === 0 ? (
+                <div className={styles.emptyStateMessage}>
+                  No tasks marked as completed for the current week window yet. Completing actions in Today or Task Board will automatically surface here.
+                </div>
+              ) : (
+                <div className={styles.winsFeed}>
+                  {completedTasksThisWeek.map((t) => (
+                    <div key={t.id} className={styles.winRow}>
+                      <div className={styles.winMain}>
+                        <span className={styles.winTitle}>{t.title}</span>
+                        {t.completedAt && (
+                          <span className={styles.winSubtitle}>
+                            Resolved on {new Date(t.completedAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                      <span className={styles.winStatusPill}>Done</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-        <button type="submit" className={styles.btnSave}>
-          <Send size={14} /> Save Weekly Review
-        </button>
-      </form>
-
-      {/* ── 4. Past Reviews Archive ── */}
-      <section className={styles.archiveSection}>
-        <div className={styles.archiveHeader}>
-          <span className={styles.archiveTitle}>
-            <History size={16} /> Past Reviews Archive ({reviews.length})
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {reviews.map((rev) => (
-            <article key={rev.id} className={styles.reviewCard}>
-              <div className={styles.reviewCardTop}>
-                <span className={styles.reviewDateRange}>
-                  Week: {rev.weekStartDate} → {rev.weekEndDate}
+              <div className={styles.stepFooter}>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-faint)' }}>
+                  {completedTasksThisWeek.length} accomplishment{completedTasksThisWeek.length === 1 ? '' : 's'} recorded
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                    {rev.completedTaskCount} tasks • {formatHours(rev.focusMinutesLogged)} focus • {rev.habitsConsistencyRate}% habits
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={handleStep1Celebrate}
+                >
+                  Celebrate Wins &amp; Proceed to Alignment ➔
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* ── Step 2: Clear & Realign (Zero Guilt Protocol) ── */}
+          {currentStep === 2 && (
+            <section className={styles.stepContainer}>
+              <div className={styles.stepHeader}>
+                <h2 className={styles.stepHeading}>Step 2: Clear &amp; Realign Without Guilt</h2>
+                <p className={styles.stepDescription}>
+                  Stalled tasks and accumulated inbox thoughts create subconscious drag. Make quick, decisive judgments: push what still matters, park exploratory thoughts into Brain Dump, or archive without self-criticism.
+                </p>
+              </div>
+
+              <div className={styles.realignList}>
+                {openTasksForRealignment.length === 0 && inboxItems.length === 0 ? (
+                  <div className={styles.emptyStateMessage}>
+                    Your active queue and brain dump are clear. No pending items require realignment.
+                  </div>
+                ) : (
+                  <>
+                    {openTasksForRealignment.map((t) => (
+                      <div key={t.id} className={styles.realignCard}>
+                        <div className={styles.realignHeader}>
+                          <span className={styles.realignTitle}>{t.title}</span>
+                          <span className={styles.realignMeta}>
+                            {t.dueDate ? `Due ${t.dueDate}` : 'Pending Queue'}
+                          </span>
+                        </div>
+                        <div className={styles.realignActions}>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handlePushTaskToNextWeek(t.id)}
+                            title="Reschedule deadline by 7 days"
+                          >
+                            Push to Next Week
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handleDemoteTaskToInbox(t)}
+                            title="Move to Brain Dump to remove pressure"
+                          >
+                            Move to Brain Dump
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                            onClick={() => handleArchiveTaskWithoutGuilt(t.id)}
+                            title="Drop task without guilt"
+                          >
+                            Archive Without Guilt
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {inboxItems.slice(0, 5).map((item) => (
+                      <div key={item.id} className={styles.realignCard}>
+                        <div className={styles.realignHeader}>
+                          <span className={styles.realignTitle}>{item.content}</span>
+                          <span className={styles.realignMeta}>Brain Dump</span>
+                        </div>
+                        <div className={styles.realignActions}>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handleClearInboxItem(item.id)}
+                          >
+                            Mark Handled
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              <div className={styles.stepFooter}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setCurrentStep(1)}
+                >
+                  Back to Wins
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={handleStep2Continue}
+                >
+                  Continue to Priority Selection ➔
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* ── Step 3: Top 3 for Next Week ── */}
+          {currentStep === 3 && (
+            <form className={styles.stepContainer} onSubmit={handleFinalizeReview}>
+              <div className={styles.stepHeader}>
+                <h2 className={styles.stepHeading}>Step 3: Establish Top 3 Priorities for Next Week</h2>
+                <p className={styles.stepDescription}>
+                  Focusing on a maximum of three key project initiatives prevents executive paralysis and sets an intentional target for the week ahead.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Select Up to 3 Key Projects ({selectedProjectIds.length} / 3 selected)
+                </label>
+                {activeProjects.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                    No active projects found. You can define projects in the Projects section.
+                  </p>
+                ) : (
+                  <div className={styles.projectSelectionGrid}>
+                    {activeProjects.map((p) => {
+                      const isSelected = selectedProjectIds.includes(p.id);
+                      return (
+                        <div
+                          key={p.id}
+                          className={`${styles.projectChip} ${isSelected ? styles.projectChipSelected : ''}`}
+                          onClick={() => toggleProjectSelection(p.id)}
+                          role="checkbox"
+                          aria-checked={isSelected}
+                          tabIndex={0}
+                        >
+                          <span className={styles.projectChipTitle}>{p.title}</span>
+                          <span className={styles.projectChipProgress}>
+                            Progress: {p.progress}% • {isSelected ? 'Selected' : 'Click to select'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="focus-note-input">
+                  Next Week Focus Objective
+                </label>
+                <textarea
+                  id="focus-note-input"
+                  className={styles.formTextarea}
+                  value={nextWeekFocusNote}
+                  onChange={(e) => setNextWeekFocusNote(e.target.value)}
+                  placeholder="Summarize the single most critical breakthrough or deliverable to achieve next week..."
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="went-well-input">
+                  Notable Successes &amp; Strengths (Optional Reflection)
+                </label>
+                <textarea
+                  id="went-well-input"
+                  className={styles.formTextarea}
+                  value={reflectionWentWell}
+                  onChange={(e) => setReflectionWentWell(e.target.value)}
+                  placeholder="What routines or decisions supported deep focus this week?"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="should-change-input">
+                  Friction to Eliminate (Optional Reflection)
+                </label>
+                <textarea
+                  id="should-change-input"
+                  className={styles.formTextarea}
+                  value={reflectionShouldChange}
+                  onChange={(e) => setReflectionShouldChange(e.target.value)}
+                  placeholder="What caused friction or misdirected focus, and how to calibrate it?"
+                />
+              </div>
+
+              <div className={styles.stepFooter}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setCurrentStep(2)}
+                >
+                  Back to Realignment
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryBtn}
+                >
+                  Complete &amp; Finalize Weekly Review
+                </button>
+              </div>
+            </form>
+          )}
+        </>
+      ) : (
+        /* ── Review Archive View (Formal & Clean) ── */
+        <section className={styles.archiveList} aria-label="Historical Weekly Reviews">
+          {reviews.length === 0 ? (
+            <div className={styles.emptyStateMessage}>
+              No previous reviews found. Finalizing a review in the Guided Review tab will preserve it here.
+            </div>
+          ) : (
+            reviews.map((rev) => (
+              <article key={rev.id} className={styles.archiveCard}>
+                <div className={styles.archiveCardHeader}>
+                  <span className={styles.archiveDateRange}>
+                    Week of {rev.weekStartDate} to {rev.weekEndDate}
                   </span>
                   <button
-                    style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }}
+                    type="button"
+                    className={styles.deleteBtn}
                     onClick={() => deleteWeeklyReview(rev.id)}
-                    title="Delete review"
+                    title="Remove review record"
                   >
-                    <Trash2 size={12} />
+                    Delete Record
                   </button>
                 </div>
-              </div>
 
-              <div className={styles.reviewAnswersGrid}>
-                <div className={styles.answerBox}>
-                  <span className={styles.answerLabel}>What Went Well</span>
-                  <p className={styles.answerText}>{rev.wentWell}</p>
+                <div className={styles.archiveMetricsRow}>
+                  <span>Tasks Completed: {rev.completedTaskCount}</span>
+                  <span>Focus Logged: {Math.floor(rev.focusMinutesLogged / 60)}h {rev.focusMinutesLogged % 60}m</span>
+                  <span>Habit Consistency: {rev.habitsConsistencyRate}%</span>
                 </div>
 
-                <div className={styles.answerBox}>
-                  <span className={styles.answerLabel}>What Didn&apos;t</span>
-                  <p className={styles.answerText}>{rev.didNotGoWell}</p>
-                </div>
+                {rev.nextWeekFocus && (
+                  <div className={styles.archiveNotes}>
+                    <strong>Focus Commitment:</strong> {rev.nextWeekFocus}
+                  </div>
+                )}
 
-                <div className={styles.answerBox}>
-                  <span className={styles.answerLabel}>What To Change</span>
-                  <p className={styles.answerText}>{rev.shouldChange}</p>
-                </div>
-
-                <div className={styles.answerBox}>
-                  <span className={styles.answerLabel}>Next Week Focus</span>
-                  <p className={styles.answerText}>{rev.nextWeekFocus}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+                {rev.wentWell && (
+                  <div className={styles.archiveNotes}>
+                    <strong>Reflection:</strong> {rev.wentWell}
+                  </div>
+                )}
+              </article>
+            ))
+          )}
+        </section>
+      )}
     </div>
   );
 }

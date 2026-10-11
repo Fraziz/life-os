@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Goal, GoalStatus } from '@/types';
 import { loadJsonArray } from '@/lib/localStore';
+import { notifyItemDeleted } from './UndoContext';
 
 const GOALS_STORAGE_KEY = 'life_os_goals_v1';
 
@@ -158,8 +159,26 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteGoal = (id: string) => {
+    const target = goals.find((g) => g.id === id);
     const updated = goals.filter((g) => g.id !== id);
     saveGoals(updated);
+    if (target) {
+      notifyItemDeleted({
+        type: 'Goal',
+        title: target.title,
+        restore: () => {
+          setGoals((prev) => {
+            if (prev.some((g) => g.id === target.id)) return prev;
+            const restored = [target, ...prev];
+            try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            return restored;
+          });
+        },
+        redelete: () => {
+          deleteGoal(id);
+        },
+      });
+    }
   };
 
   const resetToDefaultGoals = () => {

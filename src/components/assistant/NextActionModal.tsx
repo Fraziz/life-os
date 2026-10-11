@@ -19,7 +19,7 @@ import {
   Sparkles,
   X,
   Target,
-  FolderKanban,
+  Folder,
   Zap,
 } from 'lucide-react';
 import styles from './NextActionModal.module.css';
@@ -140,7 +140,7 @@ export default function NextActionModal({ isOpen, onClose }: NextActionModalProp
                 <div className={styles.tagsRow}>
                   {recommendation.projectTitle && (
                     <span className={styles.projectTag}>
-                      <FolderKanban size={11} /> {recommendation.projectTitle}
+                      <Folder size={11} /> {recommendation.projectTitle}
                     </span>
                   )}
                   {recommendation.goalTitle && (

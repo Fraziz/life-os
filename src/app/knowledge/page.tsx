@@ -8,7 +8,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { extractTextFromFile, cleanAndFormatPastedText } from '@/utils/fileImporter';
-import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus, QuizQuestionItem } from '@/types';
+import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus, QuizQuestionItem, ReadingLogItem } from '@/types';
 import {
   BookOpen,
   Plus,
@@ -25,7 +25,7 @@ import {
   Clock,
   CloudSun,
   Target,
-  FolderKanban,
+  Folder,
   CheckSquare,
   Printer,
   Download,
@@ -54,6 +54,9 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  Indent,
+  Outdent,
+  RemoveFormatting,
   Strikethrough,
   Subscript,
   Superscript,
@@ -70,6 +73,15 @@ import {
   HelpCircle,
   ExternalLink,
   ChevronLeft,
+  Table,
+  Play,
+  Pause,
+  Timer,
+  History,
+  ArrowDown,
+  ArrowUp,
+  SlidersHorizontal,
+  Minimize2,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -77,125 +89,262 @@ import PageSkeleton from '@/components/ui/PageSkeleton';
 import { useSettings } from '@/context/SettingsContext';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
+import { formatDocumentWithAI, formatDocumentLocally, type FormatResult } from '@/utils/smartDocumentFormatter';
 
-// ── Color Highlight Palette ───────────────────────────────────────
+// ── Color Highlight Palette (Literal Translucent Highlighter Marker) ──
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
-  { name: 'yellow',   bg: 'rgba(253, 224, 71,  0.55)', border: '#fbbf24', text: '#713f12', label: 'Yellow' },
-  { name: 'lime',     bg: 'rgba(134, 239, 172, 0.55)', border: '#4ade80', text: '#14532d', label: 'Lime' },
-  { name: 'cyan',     bg: 'rgba(103, 232, 249, 0.55)', border: '#22d3ee', text: '#164e63', label: 'Cyan' },
-  { name: 'blue',     bg: 'rgba(147, 197, 253, 0.55)', border: '#60a5fa', text: '#1e3a5f', label: 'Blue' },
-  { name: 'purple',   bg: 'rgba(196, 181, 253, 0.55)', border: '#a78bfa', text: '#3b0764', label: 'Purple' },
-  { name: 'pink',     bg: 'rgba(249, 168, 212, 0.55)', border: '#f472b6', text: '#831843', label: 'Pink' },
-  { name: 'orange',   bg: 'rgba(253, 186, 116, 0.55)', border: '#fb923c', text: '#7c2d12', label: 'Orange' },
-  { name: 'red',      bg: 'rgba(252, 165, 165, 0.55)', border: '#f87171', text: '#7f1d1d', label: 'Red' },
-  { name: 'mint',     bg: 'rgba(110, 231, 183, 0.55)', border: '#34d399', text: '#064e3b', label: 'Mint' },
-  { name: 'lavender', bg: 'rgba(167, 139, 250, 0.55)', border: '#8b5cf6', text: '#2e1065', label: 'Lavender' },
+  { name: 'yellow',   bg: 'rgba(253, 224, 71,  0.42)', border: '#fbbf24', text: 'inherit', label: 'Yellow' },
+  { name: 'lime',     bg: 'rgba(134, 239, 172, 0.42)', border: '#4ade80', text: 'inherit', label: 'Lime' },
+  { name: 'cyan',     bg: 'rgba(103, 232, 249, 0.42)', border: '#22d3ee', text: 'inherit', label: 'Cyan' },
+  { name: 'blue',     bg: 'rgba(147, 197, 253, 0.42)', border: '#60a5fa', text: 'inherit', label: 'Blue' },
+  { name: 'purple',   bg: 'rgba(196, 181, 253, 0.42)', border: '#a78bfa', text: 'inherit', label: 'Purple' },
+  { name: 'pink',     bg: 'rgba(249, 168, 212, 0.42)', border: '#f472b6', text: 'inherit', label: 'Pink' },
+  { name: 'orange',   bg: 'rgba(253, 186, 116, 0.42)', border: '#fb923c', text: 'inherit', label: 'Orange' },
+  { name: 'red',      bg: 'rgba(252, 165, 165, 0.42)', border: '#f87171', text: 'inherit', label: 'Red' },
+  { name: 'mint',     bg: 'rgba(110, 231, 183, 0.42)', border: '#34d399', text: 'inherit', label: 'Mint' },
+  { name: 'lavender', bg: 'rgba(167, 139, 250, 0.42)', border: '#8b5cf6', text: 'inherit', label: 'Lavender' },
 ];
 
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {};
 HIGHLIGHT_COLORS.forEach((c) => { COLOR_MAP[c.name] = { bg: c.bg, border: c.border, text: c.text }; });
 
-// ── ADHD-Friendly Markdown & Document Renderer ───────────────────
+// ── Font Colors Palette (Text Colors) ──────────────────────────────
+const FONT_COLORS: { name: string; label: string; color: string; border: string }[] = [
+  { name: 'default', label: 'Default', color: 'inherit', border: 'var(--color-border)' },
+  { name: 'white', label: 'Pure White', color: '#ffffff', border: '#e2e8f0' },
+  { name: 'emerald', label: 'Emerald Green', color: '#10b981', border: '#059669' },
+  { name: 'lime', label: 'Bright Lime', color: '#84cc16', border: '#65a30d' },
+  { name: 'amber', label: 'Amber Gold', color: '#f59e0b', border: '#d97706' },
+  { name: 'orange', label: 'Coral Orange', color: '#f97316', border: '#ea580c' },
+  { name: 'rose', label: 'Rose Red', color: '#ef4444', border: '#dc2626' },
+  { name: 'pink', label: 'Neon Pink', color: '#ec4899', border: '#db2777' },
+  { name: 'purple', label: 'Royal Purple', color: '#a855f7', border: '#9333ea' },
+  { name: 'cyan', label: 'Vibrant Cyan', color: '#06b6d4', border: '#0891b2' },
+  { name: 'blue', label: 'Sky Blue', color: '#3b82f6', border: '#2563eb' },
+];
+
+// ── Markdown Table Parser ──────────────────────────────────────────
+function renderMarkdownTables(text: string): string {
+  // Regex matches a full markdown table block with header, separator, and data rows
+  const tableRegex = /((?:^[ \t]*\|.+?\|[ \t]*\r?\n)+(?:^[ \t]*\|[ \t]*:?[-]+:?[ \t]*(?:\|[ \t]*:?[-]+:?[ \t]*)*\|[ \t]*\r?\n)(?:^[ \t]*\|.+?\|[ \t]*(?:\r?\n|$))+)/gm;
+
+  return text.replace(tableRegex, (match) => {
+    const lines = match.trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) return match;
+
+    const parseRow = (line: string): string[] => {
+      let trimmed = line;
+      if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+      if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+      return trimmed.split('|').map((c) => c.trim());
+    };
+
+    const headerCells = parseRow(lines[0]);
+    const alignCells = parseRow(lines[1]);
+    const alignments = alignCells.map((a) => {
+      if (a.startsWith(':') && a.endsWith(':')) return 'center';
+      if (a.endsWith(':')) return 'right';
+      return 'left';
+    });
+
+    const bodyLines = lines.slice(2);
+    let theadHtml = '<thead><tr>';
+    headerCells.forEach((h, idx) => {
+      const align = alignments[idx] || 'left';
+      theadHtml += `<th style="text-align:${align}">${h}</th>`;
+    });
+    theadHtml += '</tr></thead>';
+
+    let tbodyHtml = '<tbody>';
+    bodyLines.forEach((rowLine) => {
+      const cells = parseRow(rowLine);
+      tbodyHtml += '<tr>';
+      headerCells.forEach((_, idx) => {
+        const val = cells[idx] || '';
+        const align = alignments[idx] || 'left';
+        tbodyHtml += `<td style="text-align:${align}">${val}</td>`;
+      });
+      tbodyHtml += '</tr>';
+    });
+    tbodyHtml += '</tbody>';
+
+    return `\n\n<div class="table-container"><table class="doc-table">${theadHtml}${tbodyHtml}</table></div>\n\n`;
+  });
+}
+
+// ── Formal Document & Markdown Renderer (Word & Book Ready) ───────
 function renderMarkdown(md: string): string {
-  let html = md
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  if (!md) return '';
 
-  // Code blocks (before other replacements)
-  html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
+  // 1. Extract and preserve Code Blocks
+  const codeBlocks: string[] = [];
+  let html = md.replace(/```([\s\S]*?)```/gm, (_, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
+    return `<!--CODE_BLOCK_${idx}-->`;
+  });
 
-  // Inline code
+  // 2. Extract and preserve pre-existing HTML tables (<table...</table>)
+  const htmlTables: string[] = [];
+  html = html.replace(/<table[\s\S]*?<\/table>/gi, (tableHtml) => {
+    const idx = htmlTables.length;
+    let formatted = tableHtml;
+    if (!formatted.includes('class="doc-table"')) {
+      formatted = formatted.replace(/<table/i, '<table class="doc-table"');
+    }
+    htmlTables.push(`<div class="table-container">${formatted}</div>`);
+    return `<!--HTML_TABLE_${idx}-->`;
+  });
+
+  // 3. Render Markdown Tables (| Header | Header | ...)
+  html = renderMarkdownTables(html);
+
+  // 4. Extract and preserve existing HTML links (<a ...</a>)
+  const htmlLinks: string[] = [];
+  html = html.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, linkText) => {
+    const idx = htmlLinks.length;
+    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${linkText}</a>`);
+    return `<!--HTML_LINK_${idx}-->`;
+  });
+
+  // 5. Convert Markdown Links: [Link Text](https://example.com)
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)/g, (_, label, url) => {
+    const idx = htmlLinks.length;
+    htmlLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="doc-link">${label}</a>`);
+    return `<!--HTML_LINK_${idx}-->`;
+  });
+
+  // 6. Autolink standalone raw URLs (https://..., http://..., or www....)
+  html = html.replace(/(^|[^"'>=\/\w])(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, (match, prefix, rawUrl) => {
+    let url = rawUrl;
+    let trailing = '';
+    const punctMatch = url.match(/[.,;:!?)"']+$/);
+    if (punctMatch) {
+      trailing = punctMatch[0];
+      url = url.slice(0, -trailing.length);
+    }
+    if (!url.includes('.') || url.endsWith('.')) return match;
+    const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    const idx = htmlLinks.length;
+    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${url}</a>`);
+    return `${prefix}<!--HTML_LINK_${idx}-->${trailing}`;
+  });
+
+  // 7. Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
-  // ── Key Ideas & Important Notes (Clean, quiet callouts without emojis) ──
+  // 8. Key Ideas & Callouts
   html = html.replace(/>>>(.+?)<<</g, '<blockquote class="callout">$1</blockquote>');
   html = html.replace(/!!(.+?)!!/g, '<strong style="color:var(--color-accent-light)">$1</strong>');
 
-  // Colored highlights: =={colorname}text== (must come before generic ==text==)
+  // 9. Colored highlights: =={colorname}text==
   html = html.replace(/==\{([a-z]+)\}(.+?)==/g, (_, colorName, content) => {
     const c = COLOR_MAP[colorName];
     if (!c) return `<mark class="highlight-mark">${content}</mark>`;
     return `<mark style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;box-decoration-break:clone;-webkit-box-decoration-break:clone">${content}</mark>`;
   });
 
-  // Generic highlight: ==text== — default yellow
+  // 10. Generic highlight: ==text==
   html = html.replace(/==(.+?)==/g, '<mark class="highlight-mark">$1</mark>');
 
-  // Starred/Remember: ~~text~~ → strikethrough
+  // 11. Strikethrough: ~~text~~
   html = html.replace(/~~(.+?)~~/g, '<s>$1</s>');
 
-  // Headings
+  // 12. Headings
   html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-  // Bold & italic
+  // 13. Bold & italic
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/_(.+?)_/g, '<em>$1</em>');
 
-  // Inline arrows
+  // 14. Inline arrows
   html = html.replace(/\s*->\s*/g, ' &rarr; ');
 
-  // Checkboxes (before list items)
+  // 15. Checkboxes (before list items)
   html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">&#10003; $1</div>');
   html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">&#9633; $1</div>');
 
-  // Numbered list items (supports 1. and 1) formats)
+  // 16. Numbered list items
   html = html.replace(/^(\d+)[\.\)]\s+(.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
   html = html.replace(/(<li class="ol-item">[\s\S]*?<\/li>\n?)+/g, '<ol>$&</ol>');
 
-  // Unordered list items (supports -, *, and literal • bullet characters)
+  // 17. Unordered list items
   html = html.replace(/^([•\*\-])\s+(.+)$/gm, '<li>$2</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
-  // Blockquotes → clean editorial quote style
+  // 18. Blockquotes
   html = html.replace(/^> (.+)$/gm, '<blockquote class="callout">$1</blockquote>');
 
-  // Horizontal rule
+  // 19. Horizontal rule
   html = html.replace(/^---$/gm, '<hr/>');
 
-  // Wrap double-newline separated blocks in <p>
+  // 20. Restore Code blocks, Tables, and Links
+  html = html.replace(/<!--CODE_BLOCK_(\d+)-->/g, (_, idx) => codeBlocks[Number(idx)] || '');
+  html = html.replace(/<!--HTML_TABLE_(\d+)-->/g, (_, idx) => htmlTables[Number(idx)] || '');
+  html = html.replace(/<!--HTML_LINK_(\d+)-->/g, (_, idx) => htmlLinks[Number(idx)] || '');
+
+  // 21. Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
     const trimmed = block.trim();
     if (!trimmed) return '';
-    if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote)/.test(trimmed)) return trimmed;
+    if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote|table)/.test(trimmed)) return trimmed;
+    if (trimmed.startsWith('<div class="table-container"')) return trimmed;
     return `<p>${trimmed}</p>`;
   }).filter(Boolean).join('\n');
 
   return html;
 }
 
-// ── Live Rich Editor Toolbar (Google Docs / Word Style) ───────
-// ── Live Rich Editor Toolbar (Senior Dev / Linear & Notion Style) ───────
+// ── Live Rich Editor Toolbar (Microsoft Word Style) ───────
 function MarkdownToolbar({
   onFormat,
   onHighlight,
   onRemoveHighlight,
   activeColor,
   onSetActiveColor,
-  onInsertTemplate,
-  onAiFormat,
-  isAiFormatting,
-  onCleanBookFormat,
+  onAutoFormat,
+  isAutoFormatting,
+  onApplyFontColor,
+  activeFontColor,
+  activeFormats,
 }: {
-  onFormat: (cmd: string) => void;
+  onFormat: (cmd: string, value?: string) => void;
   onHighlight: (colorName: string, forceApply?: boolean) => void;
   onRemoveHighlight: () => void;
   activeColor: string;
   onSetActiveColor: (colorName: string) => void;
-  onInsertTemplate: () => void;
-  onAiFormat: () => void;
-  isAiFormatting: boolean;
-  onCleanBookFormat?: () => void;
+  onAutoFormat: () => void;
+  isAutoFormatting: boolean;
+  onApplyFontColor?: (color: string) => void;
+  activeFontColor?: string;
+  activeFormats?: {
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
+    code?: boolean;
+    h1?: boolean;
+    h2?: boolean;
+    h3?: boolean;
+    alignLeft?: boolean;
+    alignCenter?: boolean;
+    alignRight?: boolean;
+    alignJustify?: boolean;
+    list?: boolean;
+    numbered?: boolean;
+    quote?: boolean;
+    link?: boolean;
+    important?: boolean;
+    keyIdea?: boolean;
+    lineSpacing?: string;
+  };
 }) {
-  const activeColorDef = HIGHLIGHT_COLORS.find((c) => c.name === activeColor) ?? HIGHLIGHT_COLORS[0];
-
   return (
     <div className={styles.toolbarWrapper}>
-      {/* Row 1: Formal Editor Commands */}
       <div className={styles.toolbar}>
         {/* Undo / Redo */}
         <button
@@ -220,7 +369,7 @@ function MarkdownToolbar({
         {/* Headings */}
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.h1 ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('h1')}
           title="Heading 1"
           style={{ fontWeight: 800 }}
@@ -229,7 +378,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.h2 ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('h2')}
           title="Heading 2"
           style={{ fontWeight: 700 }}
@@ -238,7 +387,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.h3 ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('h3')}
           title="Heading 3"
           style={{ fontWeight: 600 }}
@@ -251,7 +400,7 @@ function MarkdownToolbar({
         {/* Inline formatting */}
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.bold ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('bold')}
           title="Bold (Ctrl+B)"
         >
@@ -259,7 +408,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.italic ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('italic')}
           title="Italic (Ctrl+I)"
         >
@@ -267,7 +416,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.underline ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('underline')}
           title="Underline (Ctrl+U)"
         >
@@ -275,7 +424,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.strikethrough ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('strikethrough')}
           title="Strikethrough"
         >
@@ -283,11 +432,19 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.code ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('code')}
           title="Inline Code"
         >
           <Code size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('removeFormat')}
+          title="Clear Formatting (Ctrl+Space)"
+        >
+          <RemoveFormatting size={12} />
         </button>
 
         <span className={styles.toolbarDivider} />
@@ -295,7 +452,7 @@ function MarkdownToolbar({
         {/* Text Alignment */}
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.alignLeft ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('alignLeft')}
           title="Align Left"
         >
@@ -303,7 +460,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.alignCenter ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('alignCenter')}
           title="Align Center"
         >
@@ -311,7 +468,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.alignRight ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('alignRight')}
           title="Align Right"
         >
@@ -319,7 +476,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.alignJustify ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('alignJustify')}
           title="Justify"
         >
@@ -328,10 +485,42 @@ function MarkdownToolbar({
 
         <span className={styles.toolbarDivider} />
 
-        {/* Lists & Blocks */}
+        {/* Indentation & Line Spacing */}
         <button
           type="button"
           className={styles.toolbarBtn}
+          onClick={() => onFormat('outdent')}
+          title="Decrease Indent (Shift+Tab)"
+        >
+          <Outdent size={12} />
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('indent')}
+          title="Increase Indent (Tab)"
+        >
+          <Indent size={12} />
+        </button>
+
+        <select
+          className={styles.toolbarSelect}
+          value={activeFormats?.lineSpacing || '1.15'}
+          onChange={(e) => onFormat('lineSpacing', e.target.value)}
+          title="Line Spacing (Single, 1.15, 1.5, Double)"
+        >
+          <option value="1">1.0 Single</option>
+          <option value="1.15">1.15 Normal</option>
+          <option value="1.5">1.5 Lines</option>
+          <option value="2">2.0 Double</option>
+        </select>
+
+        <span className={styles.toolbarDivider} />
+
+        {/* Lists & Blocks */}
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${activeFormats?.list ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('list')}
           title="Bullet List"
         >
@@ -339,7 +528,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.numbered ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('numbered')}
           title="Numbered List"
         >
@@ -355,7 +544,7 @@ function MarkdownToolbar({
         </button>
         <button
           type="button"
-          className={styles.toolbarBtn}
+          className={`${styles.toolbarBtn} ${activeFormats?.quote ? styles.toolbarBtnActive : ''}`}
           onClick={() => onFormat('quote')}
           title="Blockquote"
         >
@@ -370,22 +559,40 @@ function MarkdownToolbar({
           <Minus size={12} />
         </button>
 
+        {/* Table & Hyperlink (Microsoft Word Style) */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={() => onFormat('table')}
+          title="Insert Table (Microsoft Word Style)"
+        >
+          <Table size={12} style={{ marginRight: 3 }} /> Table
+        </button>
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${activeFormats?.link ? styles.toolbarBtnActive : ''}`}
+          onClick={() => onFormat('link')}
+          title="Insert / Edit Hyperlink (Ctrl+K)"
+        >
+          <Link2 size={12} style={{ marginRight: 3 }} /> Link
+        </button>
+
         <span className={styles.toolbarDivider} />
 
         {/* Formal Callouts */}
         <button
           type="button"
-          className={`${styles.toolbarBtn} ${styles.toolbarImportant}`}
+          className={`${styles.toolbarBtn} ${styles.toolbarImportant} ${activeFormats?.important ? styles.toolbarImportantActive : ''}`}
           onClick={() => onFormat('important')}
-          title="Mark as Important requirement"
+          title="Toggle Important Callout (Educational Book Style)"
         >
           <AlertCircle size={12} style={{ marginRight: 3 }} /> Important
         </button>
         <button
           type="button"
-          className={`${styles.toolbarBtn} ${styles.toolbarKeyIdea}`}
+          className={`${styles.toolbarBtn} ${styles.toolbarKeyIdea} ${activeFormats?.keyIdea ? styles.toolbarKeyIdeaActive : ''}`}
           onClick={() => onFormat('key-idea')}
-          title="Mark as Key Concept / Idea"
+          title="Toggle Key Idea Callout (Core Concept / Lesson)"
         >
           <Lightbulb size={12} style={{ marginRight: 3 }} /> Key Idea
         </button>
@@ -429,40 +636,58 @@ function MarkdownToolbar({
           </button>
         </div>
 
-        {/* Template Action */}
-        <button
-          type="button"
-          className={`${styles.toolbarBtn} ${styles.templateBtn}`}
-          onClick={onInsertTemplate}
-          title="Insert Executive Document Template"
-        >
-          <FileText size={11} style={{ marginRight: 3 }} /> Template
-        </button>
-
-        {/* AI Auto-Format in toolbar */}
-        <button
-          type="button"
-          className={`${styles.toolbarBtn} ${styles.toolbarAiBtn}`}
-          onClick={onAiFormat}
-          disabled={isAiFormatting}
-          title="AI Auto-Format and Structure Note"
-        >
-          {isAiFormatting && <Loader2 size={11} className={styles.spin} />}
-          <span>{isAiFormatting ? 'Formatting...' : 'AI Format'}</span>
-        </button>
-
-        {/* Clean Book Format Action in toolbar */}
-        {onCleanBookFormat && (
+        {/* Executive Compact Font Color Picker */}
+        <div className={styles.inlineHighlightGroup} title="Select text and click a color to change font color">
+          <Type size={12} className={styles.highlighterIcon} />
+          {FONT_COLORS.slice(1, 8).map((fc) => (
+            <button
+              key={fc.name}
+              type="button"
+              className={`${styles.compactSwatch} ${activeFontColor === fc.color ? styles.compactSwatchActive : ''}`}
+              style={{
+                background: fc.color,
+                borderColor: fc.border,
+                color: '#ffffff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '8px',
+                fontWeight: 800,
+              }}
+              onClick={() => onApplyFontColor?.(fc.color)}
+              title={`Font Color: ${fc.label}`}
+              aria-label={`Font Color ${fc.label}`}
+            >
+              A
+            </button>
+          ))}
           <button
             type="button"
-            className={styles.toolbarBtn}
-            onClick={onCleanBookFormat}
-            title="Clean & Format as Book: automatically structures text, paragraphs, and headings into a publication-ready Book format"
+            className={styles.clearHighlightBtn}
+            onClick={() => onApplyFontColor?.('inherit')}
+            title="Reset font color to default"
+            aria-label="Reset font color"
           >
-            <BookMarked size={11} style={{ marginRight: 3, color: 'var(--color-accent)' }} />
-            <span>Format as Book</span>
+            <RotateCcw size={11} />
           </button>
-        )}
+        </div>
+
+        {/* Single Unified Auto Format Button (Manual Activation Only) */}
+        <button
+          type="button"
+          className={`${styles.toolbarBtn} ${styles.toolbarAutoFormatBtn}`}
+          onClick={onAutoFormat}
+          disabled={isAutoFormatting}
+          title="Smart Auto Format: analyze structure and format into a professional book or study guide (manual click only)"
+          style={{ marginLeft: 'auto' }}
+        >
+          {isAutoFormatting ? (
+            <Loader2 size={11} className={styles.spin} />
+          ) : (
+            <Sparkles size={11} style={{ color: 'var(--color-accent-light)' }} />
+          )}
+          <span>{isAutoFormatting ? 'Analyzing...' : 'Auto Format'}</span>
+        </button>
       </div>
     </div>
   );
@@ -470,7 +695,7 @@ function MarkdownToolbar({
 
 
 export default function KnowledgePage() {
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, togglePinDoc, resetToDefaultDocs } = useKnowledge();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, resetToDefaultDocs } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -485,8 +710,46 @@ export default function KnowledgePage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [isAiFormatting, setIsAiFormatting] = useState(false);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  
+  // Dedicated history stack for robust Ctrl+Z (Undo) and Ctrl+Y (Redo)
+  const historyStackRef = useRef<string[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const isNavigatingHistoryRef = useRef<boolean>(false);
+  const typingHistoryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const performUndoRef = useRef<() => void>(() => {});
+  const performRedoRef = useRef<() => void>(() => {});
+
+  // Microsoft Word-Style Live Active Formatting & Link Popover
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+    code: false,
+    h1: false,
+    h2: false,
+    h3: false,
+    alignLeft: true,
+    alignCenter: false,
+    alignRight: false,
+    alignJustify: false,
+    list: false,
+    numbered: false,
+    quote: false,
+    link: false,
+    important: false,
+    keyIdea: false,
+    lineSpacing: '1.15',
+  });
+  const [linkPopover, setLinkPopover] = useState<{
+    x: number;
+    y: number;
+    url: string;
+    targetEl: HTMLAnchorElement;
+  } | null>(null);
+
+  // Minimized by default reader companion (typography, highlights, timer)
+  const [isCompanionOpen, setIsCompanionOpen] = useState(false);
 
   const importFileRef = useRef<HTMLInputElement>(null);
   const hasHandledInitialUrlDoc = useRef(false);
@@ -538,7 +801,7 @@ export default function KnowledgePage() {
   // Editor state
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedDoc = selectedId ? docs.find((d) => d.id === selectedId) ?? null : null;
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book' | 'quiz'>('book');
+  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'book' | 'word' | 'quiz'>('book');
   const [isCreating, setIsCreating] = useState(false);
   const [showMetaSettings, setShowMetaSettings] = useState(false);
 
@@ -574,18 +837,22 @@ export default function KnowledgePage() {
 
   const editorRef = useRef<HTMLDivElement>(null);
   const bookEditorRef = useRef<HTMLDivElement>(null);
+  const wordEditorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
   const cachedSelectionRangeRef = useRef<Range | null>(null);
-  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number } | null>(null);
+  const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number; targetMark?: HTMLElement | null } | null>(null);
 
   // Smart Paste as Book states
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [pasteModalText, setPasteModalText] = useState('');
   const [pasteToast, setPasteToast] = useState<string | null>(null);
 
-  // Reading mode typography settings (font family & font size)
+  // Reading mode typography settings (font family, font size & reader text color)
   const [readingFont, setReadingFont] = useState<'sans' | 'serif'>('sans');
   const [readingFontSize, setReadingFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [readingTextColor, setReadingTextColor] = useState<string>('default');
+  const [annotationTab, setAnnotationTab] = useState<'highlight' | 'fontColor'>('highlight');
+  const [activeFontColor, setActiveFontColor] = useState<string>('#ffffff');
 
   const changeReadingFont = (font: 'sans' | 'serif') => {
     setReadingFont(font);
@@ -597,12 +864,236 @@ export default function KnowledgePage() {
     if (typeof window !== 'undefined') localStorage.setItem('lifeos_reading_font_size', size);
   };
 
+  const changeReadingTextColor = (colorVal: string) => {
+    setReadingTextColor(colorVal);
+    if (typeof window !== 'undefined') localStorage.setItem('lifeos_reading_text_color', colorVal);
+  };
+
+  // ── Smooth Auto-Scroll State & Effect ─────────────────────────────
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState<number>(30); // pixels per second
+  const scrollAccRef = useRef<number>(0);
+  const lastScrollTimeRef = useRef<number | null>(null);
+  const autoScrollRafRef = useRef<number | null>(null);
+
+  // ── Reading Time Tracker State ("what time i use to read") ──────────
+  const [readingSeconds, setReadingSeconds] = useState<number>(0);
+  const [isReadingTimerRunning, setIsReadingTimerRunning] = useState<boolean>(false);
+  const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
+  const [readingLogsModalOpen, setReadingLogsModalOpen] = useState(false);
+  const [manualReadMinutes, setManualReadMinutes] = useState('20');
+  const [manualReadTime, setManualReadTime] = useState('');
+
+  // Reset reading timer & autoscroll on doc switch (starts paused, does not auto-start)
+  useEffect(() => {
+    setReadingSeconds(0);
+    setIsReadingTimerRunning(false);
+    setSessionStartTime(new Date());
+    setIsAutoScrolling(false);
+  }, [selectedId]);
+
+  // Pause reading timer if leaving reader modes
+  useEffect(() => {
+    if (editorMode !== 'book' && editorMode !== 'word') {
+      setIsReadingTimerRunning(false);
+    }
+  }, [editorMode]);
+
+  // Live timer tick when reading in Book mode (only when user starts it)
+  useEffect(() => {
+    if (!selectedId || !isReadingTimerRunning || (editorMode !== 'book' && editorMode !== 'word')) return;
+    const interval = setInterval(() => {
+      setReadingSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [selectedId, isReadingTimerRunning, editorMode]);
+
+  // Toggle Reading Timer (Start / Pause)
+  const handleToggleReadingTimer = () => {
+    if (!isReadingTimerRunning) {
+      if (readingSeconds === 0) {
+        setSessionStartTime(new Date());
+      }
+      setIsReadingTimerRunning(true);
+    } else {
+      setIsReadingTimerRunning(false);
+    }
+  };
+
+  // Reset Reading Timer to 00:00
+  const handleResetReadingTimer = () => {
+    setIsReadingTimerRunning(false);
+    setReadingSeconds(0);
+    setSessionStartTime(new Date());
+  };
+
+  // Guard against any typing or deletion keystrokes in locked Book/Word modes
+  const handleLockedKeyDown = (e: React.KeyboardEvent) => {
+    // Allow copy, select-all, search
+    if (e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter' || (e.key.length === 1 && !e.altKey)) {
+      e.preventDefault();
+    }
+  };
+
+  // Smooth Auto-Scroll requestAnimationFrame loop
+  useEffect(() => {
+    if (!isAutoScrolling) {
+      if (autoScrollRafRef.current) cancelAnimationFrame(autoScrollRafRef.current);
+      lastScrollTimeRef.current = null;
+      scrollAccRef.current = 0;
+      return;
+    }
+
+    const step = (now: number) => {
+      if (lastScrollTimeRef.current === null) {
+        lastScrollTimeRef.current = now;
+      }
+      const dt = (now - lastScrollTimeRef.current) / 1000;
+      lastScrollTimeRef.current = now;
+
+      scrollAccRef.current += autoScrollSpeed * dt;
+      if (scrollAccRef.current >= 1) {
+        const px = Math.floor(scrollAccRef.current);
+        scrollAccRef.current -= px;
+
+        const scrollContainer = (document.querySelector(`.${styles.editorCanvas}`) ||
+                                 document.querySelector(`.${styles.bookWrapper}`) ||
+                                 document.querySelector(`.${styles.wordDocumentWrapper}`)) as HTMLElement | null;
+
+        if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 10) {
+          scrollContainer.scrollTop += px;
+          if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 4) {
+            setIsAutoScrolling(false);
+            return;
+          }
+        } else {
+          window.scrollBy({ top: px, behavior: 'instant' as ScrollBehavior });
+          if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 6) {
+            setIsAutoScrolling(false);
+            return;
+          }
+        }
+      }
+
+      autoScrollRafRef.current = requestAnimationFrame(step);
+    };
+
+    autoScrollRafRef.current = requestAnimationFrame(step);
+
+    const container = document.querySelector(`.${styles.editorCanvas}`);
+    const handleUserInterrupt = () => {
+      setIsAutoScrolling(false);
+    };
+    if (container) {
+      container.addEventListener('wheel', handleUserInterrupt, { passive: true });
+      container.addEventListener('touchmove', handleUserInterrupt, { passive: true });
+    }
+
+    return () => {
+      if (autoScrollRafRef.current) cancelAnimationFrame(autoScrollRafRef.current);
+      if (container) {
+        container.removeEventListener('wheel', handleUserInterrupt);
+        container.removeEventListener('touchmove', handleUserInterrupt);
+      }
+    };
+  }, [isAutoScrolling, autoScrollSpeed]);
+
+  // Save active reading session to document
+  const handleSaveReadingSession = () => {
+    if (!selectedDoc || readingSeconds < 30) return;
+    const durationMin = Math.max(1, Math.round(readingSeconds / 60));
+    const timeStr = sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const logItem: ReadingLogItem = {
+      id: `read_${Date.now()}`,
+      startedAt: sessionStartTime.toISOString(),
+      endedAt: new Date().toISOString(),
+      durationMinutes: durationMin,
+      timeOfDay: timeStr,
+      notes: `Read: ${selectedDoc.title}`,
+    };
+
+    const currentLogs = selectedDoc.readingLogs || [];
+    const nextLogs = [logItem, ...currentLogs].slice(0, 50);
+    const total = (selectedDoc.totalReadMinutes || 0) + durationMin;
+
+    updateDoc(selectedDoc.id, {
+      readingLogs: nextLogs,
+      totalReadMinutes: total,
+      lastReadAt: new Date().toISOString(),
+      preferredReadingTime: timeStr,
+    });
+
+    setIsReadingTimerRunning(false);
+    setReadingSeconds(0);
+    setSessionStartTime(new Date());
+
+    setPasteToast(`Logged ${durationMin} min reading session at ${timeStr}!`);
+    setTimeout(() => setPasteToast(null), 3000);
+  };
+
+  // Add manual reading log
+  const handleAddManualReadingLog = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDoc) return;
+    const mins = parseInt(manualReadMinutes, 10) || 20;
+    const timeStr = manualReadTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const logItem: ReadingLogItem = {
+      id: `read_${Date.now()}`,
+      startedAt: new Date().toISOString(),
+      durationMinutes: mins,
+      timeOfDay: timeStr,
+      notes: `Manual log: ${selectedDoc.title}`,
+    };
+    const currentLogs = selectedDoc.readingLogs || [];
+    const nextLogs = [logItem, ...currentLogs].slice(0, 50);
+    const total = (selectedDoc.totalReadMinutes || 0) + mins;
+
+    updateDoc(selectedDoc.id, {
+      readingLogs: nextLogs,
+      totalReadMinutes: total,
+      lastReadAt: new Date().toISOString(),
+      preferredReadingTime: timeStr,
+    });
+
+    setPasteToast(`Recorded ${mins} min read at ${timeStr}!`);
+    setTimeout(() => setPasteToast(null), 3000);
+    setManualReadTime('');
+  };
+
+  // Ensure all links in document are clickable
+  // Ensure all links in document are clickable & clicking a highlight mark or font-span opens the format toolbar
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor && anchor.href) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(anchor.href, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const clickedMark = target.closest('mark, .font-color-span') as HTMLElement | null;
+    if (clickedMark) {
+      const rect = clickedMark.getBoundingClientRect();
+      let x = rect.left + rect.width / 2;
+      x = Math.max(130, Math.min(window.innerWidth - 130, x));
+      let y = rect.top - 46;
+      if (y < 60) {
+        y = rect.bottom + 12;
+      }
+      setFloatingMenu({ x, y, targetMark: clickedMark });
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedF = localStorage.getItem('lifeos_reading_font');
       if (savedF === 'serif' || savedF === 'sans') setReadingFont(savedF);
       const savedS = localStorage.getItem('lifeos_reading_font_size');
       if (savedS === 'sm' || savedS === 'md' || savedS === 'lg') setReadingFontSize(savedS);
+      const savedC = localStorage.getItem('lifeos_reading_text_color');
+      if (savedC) setReadingTextColor(savedC);
     }
   }, []);
 
@@ -612,9 +1103,13 @@ export default function KnowledgePage() {
 
     const handleSelection = () => {
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      if (!sel || !sel.rangeCount) {
         setFloatingMenu(null);
         cachedSelectionRangeRef.current = null;
+        return;
+      }
+
+      if (sel.isCollapsed) {
         return;
       }
 
@@ -629,10 +1124,12 @@ export default function KnowledgePage() {
       const container = range.commonAncestorContainer;
       const editorEl = editorRef.current;
       const bookEl = bookEditorRef.current;
+      const wordEl = wordEditorRef.current;
 
       const isInside =
         (editorEl && editorEl.contains(container)) ||
-        (bookEl && bookEl.contains(container));
+        (bookEl && bookEl.contains(container)) ||
+        (wordEl && wordEl.contains(container));
 
       if (!isInside) {
         setFloatingMenu(null);
@@ -661,7 +1158,18 @@ export default function KnowledgePage() {
         y = rect.bottom + 12;
       }
 
-      setFloatingMenu({ x, y });
+      // Check if selection is inside an existing mark or font-span
+      let targetMark: HTMLElement | null = null;
+      let node: Node | null = container;
+      while (node && node !== editorEl && node !== bookEl && node !== wordEl) {
+        if (node.nodeName === 'MARK' || (node.nodeName === 'SPAN' && (node as HTMLElement).classList.contains('font-color-span'))) {
+          targetMark = node as HTMLElement;
+          break;
+        }
+        node = node.parentNode;
+      }
+
+      setFloatingMenu({ x, y, targetMark });
     };
 
     const debouncedSelection = () => {
@@ -843,64 +1351,101 @@ export default function KnowledgePage() {
     setTimeout(() => setPasteToast(null), 3500);
   };
 
-  // Smart paste inside the contentEditable rich editor: intercepts raw paste,
-  // sanitizes and formats it into clean Book format, and inserts it cleanly
+  // Paste inside the contentEditable rich editor: preserves exact text formatting while
+  // automatically detecting and converting URLs and Markdown links into clickable hyperlinks.
   const handleSmartPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const plainText = e.clipboardData.getData('text/plain');
-    const htmlText = e.clipboardData.getData('text/html');
+    const rawText = e.clipboardData.getData('text/plain');
+    if (!rawText) return;
 
-    if (!plainText && !htmlText) return;
+    // Automatically put space after numbering: e.g. "1.hha" -> "1. hha"
+    const plainText = rawText.replace(/(^|[\s\n])(\d+)[\.\)]([A-Za-z\u00C0-\u024F\u1E00-\u1EFF])/g, '$1$2. $3');
 
-    const formatted = cleanAndFormatPastedText(plainText, htmlText, fTitle);
+    // Check if plainText contains URLs or Markdown links
+    const hasUrls = /(https?:\/\/[^\s<]+|www\.[^\s<]+|\[[^\]]+\]\([^\)]+\))/.test(plainText);
 
-    if ((!fTitle || fTitle === 'Untitled' || fTitle.trim() === '') && formatted.title) {
-      setFTitle(formatted.title);
-    }
+    if (hasUrls) {
+      let html = plainText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-    const cleanHtml = renderMarkdown(formatted.markdown);
+      // Convert Markdown links: [label](url)
+      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|www\.[^\s\)]+)\)/g, (_, label, url) => {
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${label}</a>`;
+      });
 
-    // Insert clean HTML at current cursor selection
-    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
-    if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      range.deleteContents();
-      const div = document.createElement('div');
-      div.innerHTML = cleanHtml;
-      const frag = document.createDocumentFragment();
-      let node: ChildNode | null;
-      let lastNode: ChildNode | null = null;
-      while ((node = div.firstChild)) {
-        lastNode = frag.appendChild(node);
-      }
-      range.insertNode(frag);
-      if (lastNode) {
-        range.setStartAfter(lastNode);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    } else if (editorRef.current) {
-      editorRef.current.innerHTML = cleanHtml;
+      // Convert standalone URLs
+      html = html.replace(/(^|[\s(>])(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, (match, prefix, rawUrl) => {
+        let url = rawUrl;
+        let trailing = '';
+        const punctMatch = url.match(/[.,;:!?)"']+$/);
+        if (punctMatch) {
+          trailing = punctMatch[0];
+          url = url.slice(0, -trailing.length);
+        }
+        if (!url.includes('.') || url.endsWith('.')) return match;
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${url}</a>${trailing}`;
+      });
+
+      // Convert line breaks to preserve spacing
+      html = html.replace(/\r?\n/g, '<br/>');
+
+      document.execCommand('insertHTML', false, html);
+    } else {
+      document.execCommand('insertText', false, plainText);
     }
 
     if (editorRef.current) {
       setFContent(editorRef.current.innerHTML);
+      pushHistorySnapshot(editorRef.current.innerHTML);
     }
-    setPasteToast('Pasted in clean Book format (icons & tags cleaned)!');
-    setTimeout(() => setPasteToast(null), 3000);
+    updateActiveFormats();
   };
 
-  // Listen for Ctrl+V while reading in Book Mode so user can directly paste into book
+  // Global shortcut handler for paste in Book mode and Undo/Redo in Edit mode or Document deletion
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && editorMode === 'book') {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      if (!isCtrlOrMeta) return;
+
+      const key = e.key.toLowerCase();
+
+      // Paste in Book Mode
+      if (key === 'v' && editorMode === 'book') {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
         if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.getAttribute('contenteditable') === 'true') {
           return;
         }
         e.preventDefault();
         handlePasteIntoCurrentBook();
+        return;
+      }
+
+      // Ctrl+Z and Ctrl+Y in Edit Mode (Text Editor)
+      if (editorMode === 'edit') {
+        const activeEl = document.activeElement;
+        // Don't intercept if user is typing in title input or modal inputs
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && activeEl !== editorRef.current) {
+          return;
+        }
+
+        if (key === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            performRedoRef.current();
+          } else {
+            performUndoRef.current();
+          }
+          return;
+        }
+        if (key === 'y') {
+          e.preventDefault();
+          performRedoRef.current();
+          return;
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -955,6 +1500,10 @@ export default function KnowledgePage() {
     setMobileTab('editor');
     setAiSummaryResult(null);
     setAiQuizResult(null);
+    const canvasEl = document.querySelector(`.${styles.editorCanvas}`);
+    if (canvasEl) {
+      canvasEl.scrollTop = 0;
+    }
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('docId', docId);
@@ -964,15 +1513,9 @@ export default function KnowledgePage() {
     }
   };
 
-  // Helper to convert content into rich HTML for live editing and book reading
+  // Helper to convert content into rich HTML for live editing, Word doc, and book reading
   const getRichHtml = (content: string) => {
     if (!content) return '';
-    // If content already has HTML tags (marked up, highlighted, formatted), return as-is.
-    // This is critical — re-processing HTML through renderMarkdown strips <mark> and other tags.
-    if (/<[a-z][^>]*>/i.test(content)) {
-      return content;
-    }
-    // Plain markdown text — convert to HTML
     return renderMarkdown(content);
   };
 
@@ -1007,17 +1550,20 @@ export default function KnowledgePage() {
           bookEditorRef.current.innerHTML = html;
         }
         isInternalChange.current = false;
+        historyStackRef.current = [html];
+        historyIndexRef.current = 0;
       }, 0);
     }
   }, [selectedDoc]);
 
   // Keep editor & book innerHTML in sync when mode or content changes
-  // Only fire when not in the middle of an internal highlight save
+  // Only fire when not in the middle of an internal highlight save or active user typing
   useEffect(() => {
     if (isInternalChange.current) return;
     const html = getRichHtml(fContent || '');
     if (editorMode === 'edit' && editorRef.current) {
-      if (editorRef.current.innerHTML !== html) {
+      const isFocused = typeof document !== 'undefined' && (document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement));
+      if (!isFocused && editorRef.current.innerHTML !== html) {
         isInternalChange.current = true;
         editorRef.current.innerHTML = html;
         isInternalChange.current = false;
@@ -1075,10 +1621,14 @@ export default function KnowledgePage() {
     setSelectedId(null);
     setIsCreating(true);
     clearEditor();
+    historyStackRef.current = [''];
+    historyIndexRef.current = 0;
     setEditorMode('edit');
     setMobileTab('editor');
     setAiSummaryResult(null);
     setAiQuizResult(null);
+    const canvasEl = document.querySelector(`.${styles.editorCanvas}`);
+    if (canvasEl) canvasEl.scrollTop = 0;
   };
 
   const handleSave = () => {
@@ -1421,32 +1971,99 @@ export default function KnowledgePage() {
     printWindow.document.close();
   };
 
-  // History management helper
-  const updateContentWithHistory = (newContent: string) => {
-    setFContent(newContent);
-    setHistory((prev) => {
-      const branch = prev.slice(0, historyIndex + 1);
-      branch.push(newContent);
-      return branch;
-    });
-    setHistoryIndex((prev) => prev + 1);
+  // Robust Undo/Redo history management for Ctrl+Z and Ctrl+Y
+  const pushHistorySnapshot = (html: string) => {
+    if (isNavigatingHistoryRef.current) return;
+    if (typeof html !== 'string') return;
+    const stack = historyStackRef.current;
+    const curIdx = historyIndexRef.current;
+    if (curIdx >= 0 && stack[curIdx] === html) return;
+
+    const nextStack = stack.slice(0, curIdx + 1);
+    nextStack.push(html);
+    if (nextStack.length > 100) nextStack.shift();
+    historyStackRef.current = nextStack;
+    historyIndexRef.current = nextStack.length - 1;
   };
 
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const prevIdx = historyIndex - 1;
-      setHistoryIndex(prevIdx);
-      setFContent(history[prevIdx]);
+  const performUndo = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // Snapshot current unsaved DOM if needed
+    const curHtml = editor.innerHTML;
+    if (historyIndexRef.current >= 0 && historyStackRef.current[historyIndexRef.current] !== curHtml) {
+      pushHistorySnapshot(curHtml);
+    }
+
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      const targetHtml = historyStackRef.current[historyIndexRef.current];
+      isNavigatingHistoryRef.current = true;
+      isInternalChange.current = true;
+      editor.innerHTML = targetHtml;
+      setFContent(targetHtml);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: targetHtml });
+      isInternalChange.current = false;
+      isNavigatingHistoryRef.current = false;
+      updateActiveFormats();
+      // Position cursor at end for smooth typing
+      const sel = window.getSelection();
+      if (sel) {
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch {}
+      }
+    } else {
+      document.execCommand('undo');
+      if (editor) setFContent(editor.innerHTML);
+      updateActiveFormats();
     }
   };
 
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const nextIdx = historyIndex + 1;
-      setHistoryIndex(nextIdx);
-      setFContent(history[nextIdx]);
+  const performRedo = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (historyIndexRef.current < historyStackRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      const targetHtml = historyStackRef.current[historyIndexRef.current];
+      isNavigatingHistoryRef.current = true;
+      isInternalChange.current = true;
+      editor.innerHTML = targetHtml;
+      setFContent(targetHtml);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: targetHtml });
+      isInternalChange.current = false;
+      isNavigatingHistoryRef.current = false;
+      updateActiveFormats();
+      // Position cursor at end for smooth typing
+      const sel = window.getSelection();
+      if (sel) {
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch {}
+      }
+    } else {
+      document.execCommand('redo');
+      if (editor) setFContent(editor.innerHTML);
+      updateActiveFormats();
     }
   };
+
+  performUndoRef.current = performUndo;
+  performRedoRef.current = performRedo;
+
+  // Backwards compatibility aliases
+  const handleUndo = performUndo;
+  const handleRedo = performRedo;
 
   // Copy plain text to clipboard
   const handleCopyText = async () => {
@@ -1460,97 +2077,290 @@ export default function KnowledgePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Insert Formal Document Template in Live Rich Editor
-  const handleInsertTemplate = () => {
-    const templateHtml = `
-      <h2>1. Executive Summary</h2>
-      <p>Brief high-level summary of this document, objectives, and main takeaways.</p>
-      <hr />
-      <h2>2. Core Objectives &amp; Scope</h2>
-      <ul>
-        <li><strong>Primary Goal</strong>: Specify the core ambition.</li>
-        <li><strong>Key Success Metric</strong>: How success is measured.</li>
-      </ul>
-      <hr />
-      <h2>3. Key Takeaways &amp; Strategic Insights</h2>
-      <div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border:1px solid rgba(6,182,212,0.25);border-radius:6px;padding:10px 14px;margin:12px 0;font-weight:600;">
-        💡 <strong>Key Idea:</strong> Core principle or foundational insight
-      </div>
-      <p><span class="important-mark" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);border-radius:4px;padding:2px 8px;font-weight:700;">⚡ Critical Requirement:</span> Must-know parameter or benchmark.</p>
-      <hr />
-      <h2>4. Action Items &amp; Execution Checklist</h2>
-      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Define initial project requirements</span></div>
-      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Execute primary development phase</span></div>
-      <div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Review progress and finalize documentation</span></div>
-      <hr />
-      <h2>5. Working Annotations &amp; Notes</h2>
-      <p>Highlight key words using the top color palette swatches: <mark class="highlight-mark" style="background:rgba(253,224,71,0.55);border:1px solid #fbbf24;color:#713f12;border-radius:3px;padding:1px 5px;font-weight:600;">Yellow for key notes</mark>, <mark class="highlight-mark" style="background:rgba(103,232,249,0.55);border:1px solid #22d3ee;color:#164e63;border-radius:3px;padding:1px 5px;font-weight:600;">Cyan for definitions</mark>.</p>
-    `;
+  // Query active formatting from current cursor / selection (Microsoft Word behavior)
+  const updateActiveFormats = () => {
+    if (editorMode !== 'edit') return;
+    try {
+      const isBold = typeof document !== 'undefined' ? document.queryCommandState('bold') : false;
+      const isItalic = typeof document !== 'undefined' ? document.queryCommandState('italic') : false;
+      const isUnderline = typeof document !== 'undefined' ? document.queryCommandState('underline') : false;
+      const isStrike = typeof document !== 'undefined' ? document.queryCommandState('strikeThrough') : false;
+      const isList = typeof document !== 'undefined' ? document.queryCommandState('insertUnorderedList') : false;
+      const isNumbered = typeof document !== 'undefined' ? document.queryCommandState('insertOrderedList') : false;
+      const isCenter = typeof document !== 'undefined' ? document.queryCommandState('justifyCenter') : false;
+      const isRight = typeof document !== 'undefined' ? document.queryCommandState('justifyRight') : false;
+      const isJustify = typeof document !== 'undefined' ? document.queryCommandState('justifyFull') : false;
+      const isLeft = (typeof document !== 'undefined' ? document.queryCommandState('justifyLeft') : false) || (!isCenter && !isRight && !isJustify);
 
-    if (editorRef.current) {
-      editorRef.current.focus();
-      document.execCommand('insertHTML', false, templateHtml);
-      setFContent(editorRef.current.innerHTML);
+      const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+      let isH1 = false;
+      let isH2 = false;
+      let isH3 = false;
+      let isQuote = false;
+      let isCode = false;
+      let isLink = false;
+      let isImportant = false;
+      let isKeyIdea = false;
+      let curLineSpacing = '1.15';
+
+      if (sel && sel.anchorNode && editorRef.current) {
+        let node: Node | null = sel.anchorNode;
+        while (node && node !== editorRef.current) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            const tag = el.tagName?.toLowerCase();
+            if (tag === 'h1') isH1 = true;
+            if (tag === 'h2') isH2 = true;
+            if (tag === 'h3') isH3 = true;
+            if (tag === 'blockquote') isQuote = true;
+            if (tag === 'code') isCode = true;
+            if (tag === 'a') isLink = true;
+            if (el.classList.contains('callout-important')) isImportant = true;
+            if (el.classList.contains('callout-key-idea')) isKeyIdea = true;
+            if (el.style?.lineHeight) curLineSpacing = el.style.lineHeight;
+          }
+          node = node.parentNode;
+        }
+      }
+
+      setActiveFormats({
+        bold: isBold,
+        italic: isItalic,
+        underline: isUnderline,
+        strikethrough: isStrike,
+        code: isCode,
+        h1: isH1,
+        h2: isH2,
+        h3: isH3,
+        alignLeft: isLeft,
+        alignCenter: isCenter,
+        alignRight: isRight,
+        alignJustify: isJustify,
+        list: isList,
+        numbered: isNumbered,
+        quote: isQuote,
+        link: isLink,
+        important: isImportant,
+        keyIdea: isKeyIdea,
+        lineSpacing: curLineSpacing,
+      });
+    } catch {
+      // non-fatal
     }
   };
 
-  // Live WYSIWYG formatting commands (Google Docs / Word style)
-  const handleFormat = (cmd: string) => {
-    if (editorMode === 'book') return; // Book mode is locked for reading
+  // Keep selection format synced when user moves cursor or selects text
+  useEffect(() => {
+    if (editorMode !== 'edit') return;
+    const handleSelectionChange = () => {
+      updateActiveFormats();
+    };
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [editorMode]);
+
+  // Automatic Clickable Hyperlinks on typing (Space or Enter after typing URL)
+  const checkAndAutoLinkBeforeCaret = () => {
+    try {
+      const sel = window.getSelection();
+      if (!sel || !sel.isCollapsed || !sel.anchorNode) return;
+      const node = sel.anchorNode;
+      if (node.nodeType !== Node.TEXT_NODE) return;
+
+      // Do not auto-link if already inside an anchor
+      if (node.parentElement?.closest('a')) return;
+
+      const text = node.textContent || '';
+      const caretOffset = sel.anchorOffset;
+      const textBefore = text.slice(0, caretOffset);
+
+      // Match URL ending right before caret or trailing space
+      const urlMatch = textBefore.match(/(https?:\/\/[^\s]+|www\.[^\s]+)[\s]?$/);
+      if (!urlMatch) return;
+
+      let rawUrl = urlMatch[1];
+      let trailingPunct = '';
+      const punctMatch = rawUrl.match(/[.,;:!?)"']+$/);
+      if (punctMatch) {
+        trailingPunct = punctMatch[0];
+        rawUrl = rawUrl.slice(0, -trailingPunct.length);
+      }
+
+      if (!rawUrl.includes('.') || rawUrl.endsWith('.') || rawUrl.length < 5) return;
+
+      const href = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+      const urlIndex = textBefore.indexOf(rawUrl);
+      if (urlIndex === -1) return;
+
+      const beforeUrl = text.slice(0, urlIndex);
+      const afterUrl = text.slice(urlIndex + rawUrl.length);
+
+      const parent = node.parentNode;
+      if (!parent) return;
+
+      const linkEl = document.createElement('a');
+      linkEl.href = href;
+      linkEl.target = '_blank';
+      linkEl.rel = 'noopener noreferrer';
+      linkEl.className = 'doc-link';
+      linkEl.textContent = rawUrl;
+
+      const afterNode = document.createTextNode(afterUrl);
+
+      parent.insertBefore(linkEl, node.nextSibling);
+      parent.insertBefore(afterNode, linkEl.nextSibling);
+      node.textContent = beforeUrl;
+
+      const range = document.createRange();
+      range.setStart(afterNode, Math.min(afterUrl.length, 1));
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      if (editorRef.current) {
+        setFContent(editorRef.current.innerHTML);
+      }
+    } catch {
+      // non-fatal
+    }
+  };
+
+  // Automatically puts space after numbering (e.g. "1.hha" -> "1. hha")
+  const fixNumberingSpaceBeforeCaret = () => {
+    try {
+      const sel = window.getSelection();
+      if (!sel || !sel.isCollapsed || !sel.anchorNode) return;
+      const node = sel.anchorNode;
+      if (node.nodeType !== Node.TEXT_NODE) return;
+
+      const text = node.textContent || '';
+      const offset = sel.anchorOffset;
+
+      // Regex matching any number immediately followed by dot/paren and a letter
+      const numMatch = text.match(/(^|[\s\u00A0])(\d+)([\.\)])([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF])/);
+      if (!numMatch || numMatch.index === undefined) return;
+
+      const fixed = text.replace(
+        /(^|[\s\u00A0])(\d+)([\.\)])([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF])/g,
+        '$1$2$3 $4'
+      );
+
+      if (fixed !== text) {
+        const textBefore = text.slice(0, offset);
+        const fixedBefore = textBefore.replace(
+          /(^|[\s\u00A0])(\d+)([\.\)])([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF])/g,
+          '$1$2$3 $4'
+        );
+        const newOffset = Math.min(fixed.length, fixedBefore.length);
+
+        node.textContent = fixed;
+        const range = document.createRange();
+        range.setStart(node, newOffset);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        if (editorRef.current) {
+          setFContent(editorRef.current.innerHTML);
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+  };
+
+  // Educational Book Callout Toggle: Important and Key Idea
+  const toggleCallout = (type: 'important' | 'key-idea') => {
     const editor = editorRef.current;
     if (!editor) return;
     editor.focus();
 
-    if (cmd === 'undo') {
-      document.execCommand('undo');
-    } else if (cmd === 'redo') {
-      document.execCommand('redo');
-    } else if (cmd === 'bold') {
-      document.execCommand('bold');
-    } else if (cmd === 'italic') {
-      document.execCommand('italic');
-    } else if (cmd === 'underline') {
-      document.execCommand('underline');
-    } else if (cmd === 'h1') {
-      document.execCommand('formatBlock', false, '<h1>');
-    } else if (cmd === 'h2') {
-      document.execCommand('formatBlock', false, '<h2>');
-    } else if (cmd === 'h3') {
-      document.execCommand('formatBlock', false, '<h3>');
-    } else if (cmd === 'quote') {
-      document.execCommand('formatBlock', false, '<blockquote>');
-    } else if (cmd === 'list') {
-      document.execCommand('insertUnorderedList');
-    } else if (cmd === 'numbered') {
-      document.execCommand('insertOrderedList');
-    } else if (cmd === 'divider') {
-      document.execCommand('insertHorizontalRule');
-    } else if (cmd === 'code') {
-      const sel = window.getSelection();
-      const txt = (sel && !sel.isCollapsed) ? sel.toString() : 'code';
-      document.execCommand('insertHTML', false, `<code>${txt}</code>&nbsp;`);
-    } else if (cmd === 'task') {
-      document.execCommand('insertHTML', false, '<div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Task item</span></div><p></p>');
-    } else if (cmd === 'important') {
-      const sel = window.getSelection();
-      const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Important concept';
-      document.execCommand('insertHTML', false, `<span class="important-mark" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.3);border-radius:4px;padding:2px 8px;font-weight:700;">⚡ ${text}</span>&nbsp;`);
-    } else if (cmd === 'key-idea') {
-      const sel = window.getSelection();
-      const text = (sel && !sel.isCollapsed) ? sel.toString() : 'Core principle / key concept';
-      document.execCommand('insertHTML', false, `<div class="key-idea" style="background:linear-gradient(135deg, rgba(6,182,212,0.12), rgba(99,102,241,0.08));border:1px solid rgba(6,182,212,0.25);border-radius:6px;padding:10px 14px;margin:12px 0;font-weight:600;color:var(--color-text);">💡 <strong>Key Idea:</strong> ${text}</div><p></p>`);
-    } else if (cmd === 'strikethrough') {
-      document.execCommand('strikeThrough');
-    } else if (cmd === 'alignLeft') {
-      document.execCommand('justifyLeft');
-    } else if (cmd === 'alignCenter') {
-      document.execCommand('justifyCenter');
-    } else if (cmd === 'alignRight') {
-      document.execCommand('justifyRight');
-    } else if (cmd === 'alignJustify') {
-      document.execCommand('justifyFull');
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    let calloutEl: HTMLElement | null = null;
+    let node: Node | null = sel.anchorNode;
+    while (node && node !== editor) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        if (el.classList.contains('callout-block') || el.classList.contains('callout-important') || el.classList.contains('callout-key-idea')) {
+          calloutEl = el;
+          break;
+        }
+      }
+      node = node.parentNode;
     }
 
+    const targetClass = type === 'important' ? 'callout-important' : 'callout-key-idea';
+    const targetBadge = type === 'important' ? 'IMPORTANT' : 'KEY IDEA';
+
+    if (calloutEl) {
+      // Toggle off back to normal paragraph
+      if (calloutEl.classList.contains(targetClass)) {
+        const bodyEl = calloutEl.querySelector('.callout-body');
+        const bodyHtml = bodyEl ? bodyEl.innerHTML : calloutEl.innerHTML;
+        const p = document.createElement('p');
+        p.innerHTML = bodyHtml.trim() || '<br>';
+        calloutEl.replaceWith(p);
+      } else {
+        // Switch between Important and Key Idea
+        calloutEl.classList.remove('callout-important', 'callout-key-idea');
+        calloutEl.classList.add('callout-block', targetClass);
+        const badgeEl = calloutEl.querySelector('.callout-badge');
+        if (badgeEl) {
+          badgeEl.textContent = targetBadge;
+        } else {
+          const newBadge = document.createElement('div');
+          newBadge.className = 'callout-badge';
+          newBadge.textContent = targetBadge;
+          calloutEl.insertBefore(newBadge, calloutEl.firstChild);
+        }
+      }
+    } else {
+      let contentHtml = '';
+      if (!sel.isCollapsed) {
+        const div = document.createElement('div');
+        div.appendChild(sel.getRangeAt(0).cloneContents());
+        contentHtml = div.innerHTML;
+      } else {
+        let block: Node | null = sel.anchorNode;
+        while (block && block !== editor && !/^(P|H[1-6]|DIV|BLOCKQUOTE)$/i.test(block.nodeName)) {
+          block = block.parentNode;
+        }
+        if (block && block !== editor) {
+          contentHtml = (block as HTMLElement).innerHTML;
+          const calloutHtml = `
+            <div class="callout-block ${targetClass}">
+              <div class="callout-badge">${targetBadge}</div>
+              <div class="callout-body"><p>${contentHtml || 'Add text here...'}</p></div>
+            </div>
+          `;
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = calloutHtml.trim();
+          const newEl = wrapper.firstElementChild!;
+          (block as HTMLElement).replaceWith(newEl);
+          updateActiveFormats();
+          if (editor) {
+            setFContent(editor.innerHTML);
+            if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+          }
+          return;
+        } else {
+          contentHtml = 'Add text here...';
+        }
+      }
+
+      const calloutHtml = `
+        <div class="callout-block ${targetClass}">
+          <div class="callout-badge">${targetBadge}</div>
+          <div class="callout-body"><p>${contentHtml}</p></div>
+        </div>
+        <p></p>
+      `;
+      document.execCommand('insertHTML', false, calloutHtml);
+    }
+
+    updateActiveFormats();
     if (editor) {
       setFContent(editor.innerHTML);
       if (selectedDoc) {
@@ -1559,14 +2369,195 @@ export default function KnowledgePage() {
     }
   };
 
-  // Live Color Highlighter (works in both Live Editor and Book View)
-  const handleHighlight = (colorName: string, forceApply = false) => {
+  // Live WYSIWYG formatting commands (Microsoft Word style)
+  const handleFormat = (cmd: string, value?: string) => {
+    if (editorMode === 'book') return; // Book mode is locked for reading
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+
+    if (cmd === 'undo') {
+      performUndo();
+      return;
+    } else if (cmd === 'redo') {
+      performRedo();
+      return;
+    } else if (cmd === 'bold') {
+      document.execCommand('bold');
+    } else if (cmd === 'italic') {
+      document.execCommand('italic');
+    } else if (cmd === 'underline') {
+      document.execCommand('underline');
+    } else if (cmd === 'strikethrough') {
+      document.execCommand('strikeThrough');
+    } else if (cmd === 'code') {
+      const sel = window.getSelection();
+      const txt = (sel && !sel.isCollapsed) ? sel.toString() : 'code';
+      document.execCommand('insertHTML', false, `<code class="inline-code">${txt}</code>&nbsp;`);
+    } else if (cmd === 'removeFormat') {
+      document.execCommand('removeFormat');
+      document.execCommand('formatBlock', false, '<p>');
+    } else if (cmd === 'h1' || cmd === 'h2' || cmd === 'h3') {
+      const sel = window.getSelection();
+      let isSame = false;
+      if (sel && sel.anchorNode) {
+        let el = sel.anchorNode as HTMLElement | null;
+        while (el && el !== editor) {
+          if (el.nodeName?.toLowerCase() === cmd) {
+            isSame = true;
+            break;
+          }
+          el = el.parentElement;
+        }
+      }
+      if (isSame) {
+        document.execCommand('formatBlock', false, '<p>');
+      } else {
+        document.execCommand('formatBlock', false, `<${cmd}>`);
+      }
+    } else if (cmd === 'quote') {
+      document.execCommand('formatBlock', false, '<blockquote>');
+    } else if (cmd === 'list') {
+      document.execCommand('insertUnorderedList');
+    } else if (cmd === 'numbered') {
+      document.execCommand('insertOrderedList');
+    } else if (cmd === 'indent') {
+      document.execCommand('indent');
+    } else if (cmd === 'outdent') {
+      document.execCommand('outdent');
+    } else if (cmd === 'lineSpacing' && value) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        let node: Node | null = sel.anchorNode;
+        while (node && node !== editor && !/^(P|H[1-6]|DIV|LI|BLOCKQUOTE)$/i.test(node.nodeName)) {
+          node = node.parentNode;
+        }
+        if (node && node !== editor) {
+          (node as HTMLElement).style.lineHeight = value;
+        }
+      }
+    } else if (cmd === 'alignLeft') {
+      document.execCommand('justifyLeft');
+    } else if (cmd === 'alignCenter') {
+      document.execCommand('justifyCenter');
+    } else if (cmd === 'alignRight') {
+      document.execCommand('justifyRight');
+    } else if (cmd === 'alignJustify') {
+      document.execCommand('justifyFull');
+    } else if (cmd === 'divider') {
+      document.execCommand('insertHorizontalRule');
+    } else if (cmd === 'task') {
+      document.execCommand('insertHTML', false, '<div class="md-check" style="display:flex;align-items:center;gap:8px;margin:6px 0;"><input type="checkbox" /> <span>Task item</span></div><p></p>');
+    } else if (cmd === 'table') {
+      const tableHtml = `
+        <div class="table-container">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Column 1</th>
+                <th>Column 2</th>
+                <th>Column 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Data 1</td>
+                <td>Data 2</td>
+                <td>Data 3</td>
+              </tr>
+              <tr>
+                <td>Data 4</td>
+                <td>Data 5</td>
+                <td>Data 6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p></p>
+      `;
+      document.execCommand('insertHTML', false, tableHtml);
+    } else if (cmd === 'link') {
+      const sel = window.getSelection();
+      let initialUrl = '';
+      let initialText = '';
+      let existingAnchor: HTMLAnchorElement | null = null;
+      if (sel && sel.anchorNode) {
+        let el = sel.anchorNode as HTMLElement | null;
+        while (el && el !== editor) {
+          if (el.nodeName === 'A') {
+            existingAnchor = el as HTMLAnchorElement;
+            break;
+          }
+          el = el.parentElement;
+        }
+      }
+      if (existingAnchor) {
+        initialUrl = existingAnchor.href;
+        initialText = existingAnchor.textContent || '';
+      } else if (sel && !sel.isCollapsed) {
+        initialText = sel.toString();
+        if (/^https?:\/\//i.test(initialText) || /^www\./i.test(initialText)) {
+          initialUrl = initialText;
+        }
+      }
+      const url = prompt('Enter link URL (e.g. https://example.com or www.google.com):', initialUrl || 'https://');
+      if (url && url.trim() && url !== 'https://') {
+        const cleanUrl = url.trim();
+        const href = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
+        if (existingAnchor) {
+          existingAnchor.href = href;
+        } else {
+          const displayText = initialText || cleanUrl;
+          document.execCommand('insertHTML', false, `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${displayText}</a>&nbsp;`);
+        }
+      }
+    } else if (cmd === 'important') {
+      toggleCallout('important');
+      return;
+    } else if (cmd === 'key-idea') {
+      toggleCallout('key-idea');
+      return;
+    }
+
+    updateActiveFormats();
+    if (editor) {
+      setFContent(editor.innerHTML);
+      pushHistorySnapshot(editor.innerHTML);
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
+    }
+  };
+
+  // Live Color Highlighter (works in Live Editor, Book View, and Word Mode)
+  const handleHighlight = (colorName: string, forceApply = false, explicitMark?: HTMLElement | null) => {
     setActiveHighlightColor(colorName);
-    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
+    const editor = (editorMode === 'book' ? bookEditorRef.current : (editorMode === 'word' ? wordEditorRef.current : editorRef.current)) || bookEditorRef.current || wordEditorRef.current || editorRef.current;
     if (!editor) return;
 
-    const sel = window.getSelection();
     const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
+
+    // 1. Direct explicit mark update (literal highlight, zero spacing change)
+    if (explicitMark && editor.contains(explicitMark)) {
+      explicitMark.style.background = c.bg;
+      explicitMark.style.border = 'none';
+      explicitMark.style.padding = '0 1px';
+      explicitMark.style.margin = '0';
+      explicitMark.style.fontWeight = 'inherit';
+      if (!explicitMark.style.color) {
+        explicitMark.style.color = 'inherit';
+      }
+      const saved = editor.innerHTML;
+      isInternalChange.current = true;
+      setFContent(saved);
+      isInternalChange.current = false;
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: saved });
+      }
+      return;
+    }
+
+    const sel = window.getSelection();
 
     let range: Range | null = null;
     if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -1583,10 +2574,10 @@ export default function KnowledgePage() {
 
     // If nothing selected
     if (!range || range.collapsed) {
-      // In book mode, never insert dummy text or push content
-      if (forceApply && editorMode !== 'book') {
+      // In book or word reading modes, never insert dummy text to keep document layout fixed
+      if (forceApply && editorMode === 'edit') {
         editor.focus();
-        document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};border:1px solid ${c.border};color:${c.text};border-radius:3px;padding:1px 5px;font-weight:600;">highlighted text</mark>&nbsp;`);
+        document.execCommand('insertHTML', false, `<mark class="highlight-mark" style="background:${c.bg};color:inherit;border:none;padding:0 1px;margin:0;border-radius:2px;font-weight:inherit;">highlighted text</mark>&nbsp;`);
         setFContent(editor.innerHTML);
         if (selectedDoc) {
           updateDoc(selectedDoc.id, { content: editor.innerHTML });
@@ -1595,19 +2586,30 @@ export default function KnowledgePage() {
       return;
     }
 
-    // Ensure selection is inside the editor/book container
+    // Ensure selection is inside the editor/book/word container
     if (!editor.contains(range.commonAncestorContainer)) {
       return;
     }
 
-    // If selection is already inside an existing highlight mark, update its color directly
+    // If selection is already inside an existing highlight mark, update its color directly with zero spacing change
     let cur: Node | null = range.commonAncestorContainer;
     while (cur && cur !== editor) {
       if (cur.nodeName === 'MARK') {
         const markEl = cur as HTMLElement;
         markEl.style.background = c.bg;
-        markEl.style.border = `1px solid ${c.border}`;
-        markEl.style.color = c.text;
+        markEl.style.border = 'none';
+        markEl.style.padding = '0';
+        markEl.style.margin = '0';
+        markEl.style.borderRadius = '0';
+        markEl.style.fontWeight = 'inherit';
+        markEl.style.fontStyle = 'inherit';
+        markEl.style.letterSpacing = 'inherit';
+        markEl.style.lineHeight = 'inherit';
+        markEl.style.verticalAlign = 'baseline';
+        markEl.style.display = 'inline';
+        if (!markEl.style.color) {
+          markEl.style.color = 'inherit';
+        }
         const saved = editor.innerHTML;
         isInternalChange.current = true;
         setFContent(saved);
@@ -1623,11 +2625,17 @@ export default function KnowledgePage() {
     const mark = document.createElement('mark');
     mark.className = 'highlight-mark';
     mark.style.background = c.bg;
-    mark.style.border = `1px solid ${c.border}`;
-    mark.style.color = c.text;
-    mark.style.borderRadius = '3px';
-    mark.style.padding = '1px 5px';
-    mark.style.fontWeight = '600';
+    mark.style.color = 'inherit';
+    mark.style.border = 'none';
+    mark.style.padding = '0';
+    mark.style.margin = '0';
+    mark.style.borderRadius = '0';
+    mark.style.fontWeight = 'inherit';
+    mark.style.fontStyle = 'inherit';
+    mark.style.letterSpacing = 'inherit';
+    mark.style.lineHeight = 'inherit';
+    mark.style.verticalAlign = 'baseline';
+    mark.style.display = 'inline';
     mark.style.boxDecorationBreak = 'clone';
     (mark.style as any).webkitBoxDecorationBreak = 'clone';
 
@@ -1661,16 +2669,34 @@ export default function KnowledgePage() {
     const saved = editor.innerHTML;
     isInternalChange.current = true;
     setFContent(saved);
+    pushHistorySnapshot(saved);
     isInternalChange.current = false;
     if (selectedDoc) {
       updateDoc(selectedDoc.id, { content: saved });
     }
   };
 
-  // Remove highlight on selection in Editor or Book Mode
-  const handleRemoveHighlight = () => {
-    const editor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
+  // Remove highlight on selection in Editor, Book, or Word Mode
+  const handleRemoveHighlight = (explicitMark?: HTMLElement | null) => {
+    const editor = (editorMode === 'book' ? bookEditorRef.current : (editorMode === 'word' ? wordEditorRef.current : editorRef.current)) || bookEditorRef.current || wordEditorRef.current || editorRef.current;
     if (!editor) return;
+
+    // 1. Direct explicit mark removal
+    if (explicitMark && editor.contains(explicitMark)) {
+      const parent = explicitMark.parentNode;
+      while (explicitMark.firstChild) {
+        parent?.insertBefore(explicitMark.firstChild, explicitMark);
+      }
+      parent?.removeChild(explicitMark);
+      const saved = editor.innerHTML;
+      isInternalChange.current = true;
+      setFContent(saved);
+      isInternalChange.current = false;
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: saved });
+      }
+      return;
+    }
 
     const sel = window.getSelection();
     let range: Range | null = null;
@@ -1684,10 +2710,10 @@ export default function KnowledgePage() {
     try {
       const container = range.commonAncestorContainer;
       
-      // If common ancestor or parent is MARK
+      // If common ancestor or parent is MARK or font-color-span
       let cur: Node | null = container;
       while (cur && cur !== editor) {
-        if (cur.nodeName === 'MARK') {
+        if (cur.nodeName === 'MARK' || (cur.nodeName === 'SPAN' && (cur as HTMLElement).classList.contains('font-color-span'))) {
           const parent = cur.parentNode;
           while (cur.firstChild) {
             parent?.insertBefore(cur.firstChild, cur);
@@ -1699,7 +2725,7 @@ export default function KnowledgePage() {
       }
 
       // Also unwrap any marks within the selection range
-      const marks = editor.querySelectorAll('mark');
+      const marks = editor.querySelectorAll('mark, .font-color-span');
       marks.forEach((m) => {
         if (sel && sel.containsNode && sel.containsNode(m, true)) {
           const parent = m.parentNode;
@@ -1716,40 +2742,347 @@ export default function KnowledgePage() {
     const saved = editor.innerHTML;
     isInternalChange.current = true;
     setFContent(saved);
+    pushHistorySnapshot(saved);
     isInternalChange.current = false;
     if (selectedDoc) {
       updateDoc(selectedDoc.id, { content: saved });
     }
   };
 
-  // AI Auto-Format and Structure Note (supports both Editor and Book Mode)
-  const handleAiFormat = async () => {
-    const activeEditor = editorMode === 'book' ? bookEditorRef.current : editorRef.current;
-    const raw = (activeEditor ? activeEditor.innerHTML : fContent) || '';
-    if (!raw.trim() || raw.trim().length < 5) {
-      alert('Please write or paste some notes first to format.');
+  // Live Font Color Styler (works in Live Editor, Book View, and Word Mode)
+  const handleApplyFontColor = (fontColor: string, explicitTarget?: HTMLElement | null) => {
+    setActiveFontColor(fontColor);
+    const editor = (editorMode === 'book' ? bookEditorRef.current : (editorMode === 'word' ? wordEditorRef.current : editorRef.current)) || bookEditorRef.current || wordEditorRef.current || editorRef.current;
+    if (!editor) return;
+
+    // 1. Direct explicit target (e.g. mark or font span)
+    if (explicitTarget && editor.contains(explicitTarget)) {
+      if (fontColor === 'inherit') {
+        explicitTarget.style.color = '';
+      } else {
+        explicitTarget.style.color = fontColor;
+      }
+      explicitTarget.style.fontWeight = 'inherit';
+      const saved = editor.innerHTML;
+      isInternalChange.current = true;
+      setFContent(saved);
+      isInternalChange.current = false;
+      if (selectedDoc) {
+        updateDoc(selectedDoc.id, { content: saved });
+      }
       return;
     }
 
-    setIsAiFormatting(true);
-    try {
-      const result = await formatStudyNotesWithAI(raw, fTitle || 'Study Document', settings);
-      if (editorRef.current) {
-        editorRef.current.innerHTML = result.formattedHtml;
-      }
-      if (bookEditorRef.current) {
-        bookEditorRef.current.innerHTML = result.formattedHtml;
-      }
-      setFContent(result.formattedHtml);
-
-      if (selectedDoc) {
-        updateDoc(selectedDoc.id, { content: result.formattedHtml });
-      }
-    } catch (err) {
-      console.error('AI formatting failed:', err);
-    } finally {
-      setIsAiFormatting(false);
+    const sel = window.getSelection();
+    let range: Range | null = null;
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      range = sel.getRangeAt(0);
+    } else if (cachedSelectionRangeRef.current) {
+      range = cachedSelectionRangeRef.current;
+      try {
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } catch {}
     }
+
+    if (!range || range.collapsed || !editor.contains(range.commonAncestorContainer)) return;
+
+    // 2. Check if inside existing mark or font-span
+    let cur: Node | null = range.commonAncestorContainer;
+    while (cur && cur !== editor) {
+      if (cur.nodeName === 'MARK' || (cur.nodeName === 'SPAN' && (cur as HTMLElement).style.color)) {
+        const el = cur as HTMLElement;
+        if (fontColor === 'inherit') {
+          el.style.color = '';
+        } else {
+          el.style.color = fontColor;
+        }
+        el.style.fontWeight = 'inherit';
+        const saved = editor.innerHTML;
+        isInternalChange.current = true;
+        setFContent(saved);
+        isInternalChange.current = false;
+        if (selectedDoc) {
+          updateDoc(selectedDoc.id, { content: saved });
+        }
+        return;
+      }
+      cur = cur.parentNode;
+    }
+
+    // 3. Wrap selection in span with zero spacing change
+    if (fontColor !== 'inherit') {
+      const span = document.createElement('span');
+      span.className = 'font-color-span';
+      span.style.color = fontColor;
+      span.style.fontWeight = 'inherit';
+      span.style.padding = '0';
+      span.style.margin = '0';
+      span.style.border = 'none';
+      try {
+        const frag = range.extractContents();
+        span.appendChild(frag);
+        range.insertNode(span);
+        if (sel) {
+          sel.removeAllRanges();
+          const newRange = document.createRange();
+          newRange.selectNodeContents(span);
+          sel.addRange(newRange);
+          cachedSelectionRangeRef.current = newRange;
+        }
+      } catch {
+        try {
+          document.execCommand('foreColor', false, fontColor);
+        } catch {}
+      }
+    } else {
+      try {
+        document.execCommand('removeFormat', false, undefined);
+      } catch {}
+    }
+
+    const saved = editor.innerHTML;
+    isInternalChange.current = true;
+    setFContent(saved);
+    pushHistorySnapshot(saved);
+    isInternalChange.current = false;
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, { content: saved });
+    }
+  };
+
+  // Editor Interaction Handlers (Click for Link Popover, Keyboard Shortcuts, Tab/Shift+Tab)
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a') as HTMLAnchorElement | null;
+    if (anchor && anchor.href) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        window.open(anchor.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      const rect = anchor.getBoundingClientRect();
+      setLinkPopover({
+        x: rect.left,
+        y: rect.bottom + 6,
+        url: anchor.href,
+        targetEl: anchor,
+      });
+      return;
+    }
+    if (linkPopover && !(e.target as HTMLElement).closest(`.${styles.linkPopover}`)) {
+      setLinkPopover(null);
+    }
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      const key = e.key.toLowerCase();
+      if (key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          performRedo();
+        } else {
+          performUndo();
+        }
+        return;
+      }
+      if (key === 'y') {
+        e.preventDefault();
+        performRedo();
+        return;
+      }
+      if (key === 'b') {
+        e.preventDefault();
+        document.execCommand('bold');
+        updateActiveFormats();
+        if (editorRef.current) pushHistorySnapshot(editorRef.current.innerHTML);
+        return;
+      }
+      if (key === 'i') {
+        e.preventDefault();
+        document.execCommand('italic');
+        updateActiveFormats();
+        if (editorRef.current) pushHistorySnapshot(editorRef.current.innerHTML);
+        return;
+      }
+      if (key === 'u') {
+        e.preventDefault();
+        document.execCommand('underline');
+        updateActiveFormats();
+        if (editorRef.current) pushHistorySnapshot(editorRef.current.innerHTML);
+        return;
+      }
+      if (key === 'k') {
+        e.preventDefault();
+        handleFormat('link');
+        return;
+      }
+      if (key === 'x') {
+        // Cut - snapshot immediately before cut so Ctrl+Z brings cut text back
+        if (editorRef.current) {
+          pushHistorySnapshot(editorRef.current.innerHTML);
+        }
+      }
+    }
+
+    // Backspace / Delete - Snapshot immediately before deletion occurs so Ctrl+Z brings deleted text back
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (editorRef.current) {
+        pushHistorySnapshot(editorRef.current.innerHTML);
+      }
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        document.execCommand('outdent');
+      } else {
+        document.execCommand('indent');
+      }
+      updateActiveFormats();
+      if (editorRef.current) {
+        setFContent(editorRef.current.innerHTML);
+        pushHistorySnapshot(editorRef.current.innerHTML);
+      }
+      return;
+    }
+
+    // Auto-spacing when typing numbering like 1.hha -> automatically type space + letter: 1. hha
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1 && /^[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]$/.test(e.key)) {
+      try {
+        const sel = window.getSelection();
+        if (sel && sel.isCollapsed && sel.anchorNode && sel.anchorNode.nodeType === Node.TEXT_NODE) {
+          const text = sel.anchorNode.textContent || '';
+          const before = text.slice(0, sel.anchorOffset);
+          if (/(?:^|[\s\u00A0])\d+[\.\)]$/.test(before)) {
+            e.preventDefault();
+            document.execCommand('insertText', false, ' ' + e.key);
+            if (editorRef.current) {
+              setFContent(editorRef.current.innerHTML);
+            }
+            updateActiveFormats();
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (e.key === ' ' || e.key === 'Enter') {
+      fixNumberingSpaceBeforeCaret();
+      if (editorRef.current) {
+        pushHistorySnapshot(editorRef.current.innerHTML);
+      }
+      setTimeout(() => {
+        fixNumberingSpaceBeforeCaret();
+        checkAndAutoLinkBeforeCaret();
+        updateActiveFormats();
+      }, 0);
+    }
+  };
+
+  const handleEditorKeyUp = () => {
+    fixNumberingSpaceBeforeCaret();
+    updateActiveFormats();
+  };
+
+  const handleEditorMouseUp = () => {
+    updateActiveFormats();
+  };
+
+  // ── Smart Auto Format (Manual Activation Only & Side-by-Side Preview) ──
+  const [formatPreviewModalOpen, setFormatPreviewModalOpen] = useState(false);
+  const [pendingFormatResult, setPendingFormatResult] = useState<FormatResult | null>(null);
+  const [originalTextForReview, setOriginalTextForReview] = useState('');
+  const [isAutoFormatting, setIsAutoFormatting] = useState(false);
+  const previousContentBeforeFormatRef = useRef<string | null>(null);
+  const previousTitleBeforeFormatRef = useRef<string | null>(null);
+
+  const handleTriggerAutoFormat = async () => {
+    const raw = (editorRef.current ? editorRef.current.innerText : fContent) || fContent || '';
+    if (!raw.trim() || raw.trim().length < 5) {
+      alert('Please write or paste some text first before clicking Auto Format.');
+      return;
+    }
+
+    setIsAutoFormatting(true);
+    try {
+      const result = await formatDocumentWithAI(raw, fTitle || 'Document', settings);
+      setOriginalTextForReview(raw);
+      setPendingFormatResult(result);
+      setFormatPreviewModalOpen(true);
+    } catch (err) {
+      console.error('Auto format analysis failed:', err);
+      const localRes = formatDocumentLocally(raw, fTitle || 'Document');
+      setOriginalTextForReview(raw);
+      setPendingFormatResult(localRes);
+      setFormatPreviewModalOpen(true);
+    } finally {
+      setIsAutoFormatting(false);
+    }
+  };
+
+  const handleApplyAutoFormat = () => {
+    if (!pendingFormatResult) return;
+
+    // Save previous state for Undo
+    previousContentBeforeFormatRef.current = fContent;
+    previousTitleBeforeFormatRef.current = fTitle;
+
+    const formattedMd = pendingFormatResult.formattedMarkdown;
+    const formattedHtml = renderMarkdown(formattedMd);
+
+    setFContent(formattedMd);
+    if ((!fTitle || fTitle === 'Untitled' || fTitle === 'Untitled Document') && pendingFormatResult.title) {
+      setFTitle(pendingFormatResult.title);
+    }
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = formattedHtml;
+    }
+    if (bookEditorRef.current) {
+      bookEditorRef.current.innerHTML = formattedHtml;
+    }
+
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, {
+        content: formattedMd,
+        title: (!fTitle || fTitle === 'Untitled') && pendingFormatResult.title ? pendingFormatResult.title : fTitle,
+      });
+    }
+
+    setFormatPreviewModalOpen(false);
+    setPasteToast('Document formatted into clean Book layout! Click Undo to revert.');
+    setTimeout(() => setPasteToast(null), 5000);
+  };
+
+  const handleUndoAutoFormat = () => {
+    if (previousContentBeforeFormatRef.current === null) return;
+    const prevContent = previousContentBeforeFormatRef.current;
+    const prevTitle = previousTitleBeforeFormatRef.current || fTitle;
+
+    setFContent(prevContent);
+    setFTitle(prevTitle);
+
+    const prevHtml = getRichHtml(prevContent);
+    if (editorRef.current) editorRef.current.innerHTML = prevHtml;
+    if (bookEditorRef.current) bookEditorRef.current.innerHTML = prevHtml;
+
+    if (selectedDoc) {
+      updateDoc(selectedDoc.id, {
+        content: prevContent,
+        title: prevTitle,
+      });
+    }
+
+    previousContentBeforeFormatRef.current = null;
+    previousTitleBeforeFormatRef.current = null;
+    setPasteToast('Reverted formatting back to original version.');
+    setTimeout(() => setPasteToast(null), 3000);
   };
 
   // AI Executive Summary Generator
@@ -1905,6 +3238,330 @@ export default function KnowledgePage() {
   const linkedProject = projects.find((p) => p.id === fProjectId);
   const linkedTask = tasks.find((t) => t.id === fTaskId);
 
+  // Formal Right-Hand Reader Companion Panel (Like Focus Space)
+  const renderReaderCompanion = (isWord: boolean = true) => (
+    <aside className={styles.readerRightCompanion}>
+      {/* Top Header Bar with Minimize button */}
+      <div className={styles.companionPanelTopBar}>
+        <div className={styles.companionPanelTopBarLeft}>
+          <SlidersHorizontal size={13} style={{ color: 'var(--color-accent-light)' }} />
+          <span className={styles.companionPanelTopBarTitle}>Reading Tools</span>
+        </div>
+        <button
+          type="button"
+          className={styles.companionMinimizeBtn}
+          onClick={() => setIsCompanionOpen(false)}
+          title="Minimize Reading Tools panel"
+        >
+          <Minimize2 size={12} />
+          <span>Minimize</span>
+        </button>
+      </div>
+
+      {/* Card 1: Typography & Reading View (Works in Book & Word Mode) */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <span className={styles.companionCardTitle}>
+            <Type size={12} style={{ color: 'var(--color-accent-light)' }} /> Typography
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className={styles.companionPillTabs} title="Font Family">
+            <button
+              type="button"
+              className={`${styles.companionPillBtn} ${readingFont === 'sans' ? styles.companionPillBtnActive : ''}`}
+              onClick={() => changeReadingFont('sans')}
+            >
+              Sans-Serif
+            </button>
+            <button
+              type="button"
+              className={`${styles.companionPillBtn} ${readingFont === 'serif' ? styles.companionPillBtnActive : ''}`}
+              onClick={() => changeReadingFont('serif')}
+              style={{ fontFamily: 'Georgia, serif' }}
+            >
+              Serif Book
+            </button>
+          </div>
+
+          <div className={styles.companionPillTabs} title="Font Size Scale">
+            <button
+              type="button"
+              className={`${styles.companionPillBtn} ${readingFontSize === 'sm' ? styles.companionPillBtnActive : ''}`}
+              onClick={() => changeReadingFontSize('sm')}
+            >
+              A- (15px)
+            </button>
+            <button
+              type="button"
+              className={`${styles.companionPillBtn} ${readingFontSize === 'md' ? styles.companionPillBtnActive : ''}`}
+              onClick={() => changeReadingFontSize('md')}
+            >
+              A (17px)
+            </button>
+            <button
+              type="button"
+              className={`${styles.companionPillBtn} ${readingFontSize === 'lg' ? styles.companionPillBtnActive : ''}`}
+              onClick={() => changeReadingFontSize('lg')}
+            >
+              A+ (19px)
+            </button>
+          </div>
+
+          <div className={styles.companionPillTabs} title="Reader Text Color Theme">
+            {[
+              { id: 'default', label: 'Default' },
+              { id: '#ffffff', label: 'White' },
+              { id: '#fef08a', label: 'Sepia' },
+              { id: '#6ee7b7', label: 'Mint' },
+              { id: '#67e8f9', label: 'Cyan' },
+            ].map((tc) => (
+              <button
+                key={tc.id}
+                type="button"
+                className={`${styles.companionPillBtn} ${readingTextColor === tc.id ? styles.companionPillBtnActive : ''}`}
+                onClick={() => changeReadingTextColor(tc.id)}
+                style={{
+                  color: tc.id !== 'default' ? tc.id : undefined,
+                  fontWeight: readingTextColor === tc.id ? 700 : 500,
+                }}
+              >
+                {tc.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Card 2: Highlighters & Font Colors (Works in Book & Word Mode) */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <div className={styles.companionAnnotateTabs}>
+            <button
+              type="button"
+              className={`${styles.companionAnnotateTab} ${annotationTab === 'highlight' ? styles.companionAnnotateTabActive : ''}`}
+              onClick={() => setAnnotationTab('highlight')}
+            >
+              Highlight (BG)
+            </button>
+            <button
+              type="button"
+              className={`${styles.companionAnnotateTab} ${annotationTab === 'fontColor' ? styles.companionAnnotateTabActive : ''}`}
+              onClick={() => setAnnotationTab('fontColor')}
+            >
+              Font Color (Text)
+            </button>
+          </div>
+          <span style={{ fontSize: '10px', color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            <Lock size={9} /> Locked Spacing
+          </span>
+        </div>
+
+        {annotationTab === 'highlight' ? (
+          <>
+            <div className={styles.companionSwatchesGrid} title="Select color to highlight marked text">
+              {HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  className={`${styles.companionSwatchCircle} ${activeHighlightColor === c.name ? styles.companionSwatchActive : ''}`}
+                  style={{
+                    background: c.bg,
+                    borderColor: c.border,
+                    '--swatch-border': c.border,
+                  } as React.CSSProperties}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleHighlight(c.name, false)}
+                  title={`Highlight: ${c.label}`}
+                  aria-label={`Highlight ${c.label}`}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className={styles.companionEraserBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleRemoveHighlight()}
+              title="Clear highlight from selected text"
+            >
+              <Eraser size={12} />
+              <span>Clear Highlight</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <div className={styles.companionSwatchesGrid} title="Select text and click color to change font color">
+              {FONT_COLORS.map((fc) => (
+                <button
+                  key={fc.name}
+                  type="button"
+                  className={`${styles.companionSwatchCircle} ${activeFontColor === fc.color ? styles.companionSwatchActive : ''}`}
+                  style={{
+                    background: fc.color === 'inherit' ? 'var(--color-surface-2)' : fc.color,
+                    borderColor: fc.border,
+                    color: fc.name === 'white' ? '#0f172a' : fc.color === 'inherit' ? 'var(--color-text)' : '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleApplyFontColor(fc.color)}
+                  title={`Font Color: ${fc.label}`}
+                  aria-label={`Font Color ${fc.label}`}
+                >
+                  A
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className={styles.companionEraserBtn}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleApplyFontColor('inherit')}
+              title="Reset font color to default"
+            >
+              <RotateCcw size={12} />
+              <span>Reset Font Color</span>
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Card 3: Reading Session & Digital Clock */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <span className={styles.companionCardTitle}>
+            <Clock size={12} style={{ color: 'var(--color-accent-light)' }} /> Reading Session
+          </span>
+          <span className={styles.companionCardBadge} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Lock size={9} style={{ color: '#10b981' }} />
+            Book Reader (Locked)
+          </span>
+        </div>
+
+        <div className={styles.companionTimerBox}>
+          <div className={styles.companionTimerDigits}>
+            <span className={`${styles.companionTimerDot} ${!isReadingTimerRunning ? styles.companionTimerDotPaused : ''}`} />
+            {String(Math.floor(readingSeconds / 60)).padStart(2, '0')}:{String(readingSeconds % 60).padStart(2, '0')}
+          </div>
+          <span className={styles.companionTimerMeta}>
+            {!isReadingTimerRunning && readingSeconds === 0
+              ? 'Ready • Tap Start to track time'
+              : !isReadingTimerRunning
+              ? `Paused • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : `Reading • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </div>
+
+        <div className={styles.companionTimerControlsRow}>
+          <button
+            type="button"
+            className={`${styles.companionTimerToggleBtn} ${isReadingTimerRunning ? styles.companionTimerToggleRunning : ''}`}
+            onClick={handleToggleReadingTimer}
+            title={isReadingTimerRunning ? 'Pause reading timer' : readingSeconds > 0 ? 'Resume reading session' : 'Start reading session'}
+          >
+            {isReadingTimerRunning ? (
+              <>
+                <Pause size={12} />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <Play size={12} />
+                <span>{readingSeconds > 0 ? 'Resume' : 'Start'}</span>
+              </>
+            )}
+          </button>
+          {readingSeconds > 0 && (
+            <button
+              type="button"
+              className={styles.companionTimerResetBtn}
+              onClick={handleResetReadingTimer}
+              title="Reset reading timer to 00:00"
+            >
+              <RotateCcw size={12} />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className={styles.companionLogActionBtn}
+          onClick={() => setReadingLogsModalOpen(true)}
+          title="View Reading History Logs & Schedule"
+        >
+          <History size={12} />
+          <span>Reading Logs &amp; Stats</span>
+        </button>
+      </div>
+
+      {/* Card 4: Smooth Auto-Scroll Controller */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <span className={styles.companionCardTitle}>
+            <Play size={12} style={{ color: 'var(--color-accent-light)' }} /> Auto-Scroll
+          </span>
+          <span className={styles.companionCardBadge}>
+            {(autoScrollSpeed / 30).toFixed(1)}x speed
+          </span>
+        </div>
+
+        <div className={styles.companionScrollRow}>
+          <button
+            type="button"
+            className={`${styles.companionAutoScrollBtn} ${isAutoScrolling ? styles.companionAutoScrollActive : ''}`}
+            onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+            title={isAutoScrolling ? 'Pause Auto-Scroll' : 'Start Smooth Auto-Scroll'}
+          >
+            {isAutoScrolling ? <Pause size={13} style={{ color: 'var(--color-accent)' }} /> : <Play size={13} />}
+            <span>{isAutoScrolling ? 'Pause' : 'Auto Scroll'}</span>
+          </button>
+
+          <div className={styles.companionSpeedBox} title="Adjust scroll speed">
+            <button
+              type="button"
+              className={styles.companionSpeedBtn}
+              onClick={() => setAutoScrollSpeed((prev) => Math.max(10, prev - 10))}
+              title="Slower"
+            >
+              -
+            </button>
+            <span className={styles.companionSpeedValue}>
+              {(autoScrollSpeed / 30).toFixed(1)}x
+            </span>
+            <button
+              type="button"
+              className={styles.companionSpeedBtn}
+              onClick={() => setAutoScrollSpeed((prev) => Math.min(150, prev + 10))}
+              title="Faster"
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className={styles.companionScrollTopBtn}
+            onClick={() => {
+              const el = document.querySelector(`.${styles.editorCanvas}`) as HTMLElement | null;
+              if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+              else window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            title="Scroll to Top"
+          >
+            <ArrowUp size={13} />
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+
   if (!isLoaded) {
     return <PageSkeleton variant="knowledge" cardsCount={5} showMetrics={false} showControls={true} />;
   }
@@ -1934,6 +3591,24 @@ export default function KnowledgePage() {
             title="Import PDF, Word (.docx), Markdown, or Text files"
           >
             <FileUp size={14} /> {isImporting ? (importStatus || 'Importing...') : 'Import File'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.btnSecondary} ${isCompanionOpen ? styles.btnSecondaryActive : ''}`}
+            onClick={() => {
+              if (!selectedId && filteredDocs.length > 0) {
+                handleSelectDoc(filteredDocs[0].id);
+              }
+              if (editorMode !== 'book' && editorMode !== 'word') {
+                setEditorMode('book');
+              }
+              setMobileTab('editor');
+              setIsCompanionOpen((prev) => !prev);
+            }}
+            title={isCompanionOpen ? "Minimize Reading Tools (Typography & Highlights)" : "Show Reading Tools (Typography, Highlights & Timer)"}
+          >
+            <SlidersHorizontal size={14} style={{ color: isCompanionOpen ? 'var(--color-accent-light)' : 'inherit' }} />
+            <span>Reading Tools</span>
           </button>
           <button
             className={styles.btnSecondary}
@@ -2176,18 +3851,18 @@ export default function KnowledgePage() {
 
                   <div className={styles.segmentedControl}>
                     <button
+                      className={`${styles.segmentBtn} ${(editorMode === 'book' || editorMode === 'word') ? styles.segmentBtnActive : ''}`}
+                      onClick={() => setEditorMode('book')}
+                      title="Book reading mode — Formal document layout"
+                    >
+                      <BookOpen size={12} /> Book
+                    </button>
+                    <button
                       className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
                       onClick={() => setEditorMode('edit')}
                       title="Edit note"
                     >
                       <Edit2 size={12} /> Edit
-                    </button>
-                    <button
-                      className={`${styles.segmentBtn} ${editorMode === 'book' ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('book')}
-                      title="Book reading mode — clean, distraction-free"
-                    >
-                      <BookMarked size={12} /> Book
                     </button>
                     <button
                       className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
@@ -2446,7 +4121,7 @@ export default function KnowledgePage() {
                   )}
                   {linkedProject && (
                     <span className={styles.linkedBadge}>
-                      <FolderKanban size={11} /> Project: {linkedProject.title}
+                      <Folder size={11} /> Project: {linkedProject.title}
                     </span>
                   )}
                   {linkedTask && (
@@ -2511,34 +4186,112 @@ export default function KnowledgePage() {
                   onRemoveHighlight={handleRemoveHighlight}
                   activeColor={activeHighlightColor}
                   onSetActiveColor={setActiveHighlightColor}
-                  onInsertTemplate={handleInsertTemplate}
-                  onAiFormat={handleAiFormat}
-                  isAiFormatting={isAiFormatting}
-                  onCleanBookFormat={handleFormatCurrentAsBook}
+                  onApplyFontColor={handleApplyFontColor}
+                  activeFontColor={activeFontColor}
+                  onAutoFormat={handleTriggerAutoFormat}
+                  isAutoFormatting={isAutoFormatting}
+                  activeFormats={activeFormats}
                 />
               )}
 
-              {/* Live WYSIWYG Rich Editor Canvas (Google Docs / Word Style) */}
+              {/* Live WYSIWYG Rich Editor Canvas (Microsoft Word Style) */}
               {editorMode === 'edit' ? (
-                <div
-                  ref={editorRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className={styles.richEditor}
-                  data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
-                  dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
-                  onPaste={handleSmartPaste}
-                  onInput={() => {
-                    if (editorRef.current && !isInternalChange.current) {
-                      setFContent(editorRef.current.innerHTML);
-                    }
-                  }}
-                  onBlur={() => {
-                    if (editorRef.current) {
-                      setFContent(editorRef.current.innerHTML);
-                    }
-                  }}
-                />
+                <>
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className={styles.richEditor}
+                    data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
+                    dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                    onPaste={handleSmartPaste}
+                    onClick={handleEditorClick}
+                    onKeyDown={handleEditorKeyDown}
+                    onKeyUp={handleEditorKeyUp}
+                    onMouseUp={handleEditorMouseUp}
+                    onInput={() => {
+                      if (editorRef.current && !isInternalChange.current) {
+                        fixNumberingSpaceBeforeCaret();
+                        setFContent(editorRef.current.innerHTML);
+                        if (typingHistoryTimerRef.current) {
+                          clearTimeout(typingHistoryTimerRef.current);
+                        }
+                        typingHistoryTimerRef.current = setTimeout(() => {
+                          if (editorRef.current) {
+                            pushHistorySnapshot(editorRef.current.innerHTML);
+                          }
+                        }, 500);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (editorRef.current) {
+                        setFContent(editorRef.current.innerHTML);
+                      }
+                    }}
+                  />
+
+                  {/* Sleek Floating Link Popover in Edit Mode */}
+                  {linkPopover && (
+                    <div
+                      className={styles.linkPopover}
+                      style={{ top: linkPopover.y, left: linkPopover.x }}
+                    >
+                      <a
+                        href={linkPopover.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.linkPopoverUrl}
+                        title={linkPopover.url}
+                      >
+                        {linkPopover.url}
+                      </a>
+                      <button
+                        type="button"
+                        className={styles.linkPopoverBtn}
+                        onClick={() => window.open(linkPopover.url, '_blank', 'noopener,noreferrer')}
+                        title="Open link in new tab (Ctrl+Click)"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Open</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.linkPopoverBtn}
+                        onClick={() => {
+                          const newUrl = prompt('Edit link destination:', linkPopover.url);
+                          if (newUrl && newUrl.trim()) {
+                            const clean = newUrl.trim();
+                            const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
+                            linkPopover.targetEl.href = href;
+                            setLinkPopover((prev) => prev ? { ...prev, url: href } : null);
+                            if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                          }
+                        }}
+                        title="Edit link destination"
+                      >
+                        <Edit2 size={12} />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.linkPopoverBtn} ${styles.linkPopoverRemove}`}
+                        onClick={() => {
+                          const parent = linkPopover.targetEl.parentNode;
+                          while (linkPopover.targetEl.firstChild) {
+                            parent?.insertBefore(linkPopover.targetEl.firstChild, linkPopover.targetEl);
+                          }
+                          parent?.removeChild(linkPopover.targetEl);
+                          setLinkPopover(null);
+                          if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                        }}
+                        title="Remove link"
+                      >
+                        <X size={12} />
+                        <span>Unlink</span>
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : editorMode === 'preview' ? (
                 <div
                   className={styles.previewCanvas}
@@ -2548,138 +4301,64 @@ export default function KnowledgePage() {
                       : '<p style="color:var(--color-text-faint)">No content to preview.</p>',
                   }}
                 />
-              ) : editorMode === 'book' ? (
-                /* ── Book Mode with Clean Minimalist Reading Bar ── */
-                <div className={styles.bookWrapper}>
-                  {/* Clean Minimalist Floating Reading Bar */}
-                  <div className={styles.bookHighlighterBar}>
-                    <div className={styles.bookHighlighterGroup}>
-                      <span className={styles.bookLockBadge} title="Read Mode is active">
-                        <BookOpen size={12} /> Read Mode
-                      </span>
-
-                      <div className={styles.bookHighlighterDivider} />
-
-                      {/* Font family: Sans vs Serif */}
-                      <div className={styles.readerFontGroup} title="Reading typography font">
-                        <button
-                          type="button"
-                          className={`${styles.readerPillBtn} ${readingFont === 'sans' ? styles.readerPillBtnActive : ''}`}
-                          onClick={() => changeReadingFont('sans')}
-                          title="Modern clean Sans-Serif font"
-                        >
-                          Sans
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.readerPillBtn} ${readingFont === 'serif' ? styles.readerPillBtnActive : ''}`}
-                          onClick={() => changeReadingFont('serif')}
-                          style={{ fontFamily: 'Georgia, serif' }}
-                          title="Editorial classic Serif Book font"
-                        >
-                          Serif
-                        </button>
+              ) : (editorMode === 'book' || editorMode === 'word') ? (
+                /* ── Formal Microsoft Word Document Layout with Right Companion (Unified Book Mode) ── */
+                <div className={isCompanionOpen ? styles.readerTwoColumnLayout : styles.readerTwoColumnLayoutCollapsed}>
+                  <div className={styles.readerMainContent}>
+                    {/* Formal Microsoft Word Paper Sheet */}
+                    <div className={styles.wordDocumentSheet}>
+                      <div className={styles.wordDocumentHeader}>
+                        <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Document'}</div>
+                        <div className={styles.wordDocumentMetaRow}>
+                          <div className={styles.wordDocumentBadges}>
+                            <span className={styles.wordDocumentBadge}>
+                              <FileText size={11} /> Microsoft Word / PDF Style
+                            </span>
+                            <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Lock size={10} /> Locked (Read-Only)
+                            </span>
+                            <span className={styles.wordDocumentBadge}>
+                              Author: Sariling Mundo
+                            </span>
+                            {fCategory && (
+                              <span className={styles.wordDocumentBadge}>
+                                Category: {fCategory}
+                              </span>
+                            )}
+                            {fTags && fTags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
+                              <span key={t} className={styles.wordDocumentBadge}>{t}</span>
+                            ))}
+                          </div>
+                          <div>
+                            {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className={styles.bookHighlighterDivider} />
+                      <div
+                        ref={(el) => {
+                          (bookEditorRef as any).current = el;
+                          (wordEditorRef as any).current = el;
+                        }}
+                        contentEditable={false}
+                        onClick={handleContentClick}
+                        onKeyDown={handleLockedKeyDown}
+                        className={`${styles.wordDocumentBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
+                        style={{
+                          color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                        }}
+                        dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                      />
 
-                      {/* Font size: A- / A / A+ */}
-                      <div className={styles.readerSizeGroup} title="Reading text size">
-                        <button
-                          type="button"
-                          className={`${styles.readerSizeBtn} ${readingFontSize === 'sm' ? styles.readerPillBtnActive : ''}`}
-                          onClick={() => changeReadingFontSize('sm')}
-                          title="Compact text (15px)"
-                        >
-                          A-
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.readerSizeBtn} ${readingFontSize === 'md' ? styles.readerPillBtnActive : ''}`}
-                          onClick={() => changeReadingFontSize('md')}
-                          title="Standard comfortable text (17px)"
-                        >
-                          A
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.readerSizeBtn} ${readingFontSize === 'lg' ? styles.readerPillBtnActive : ''}`}
-                          onClick={() => changeReadingFontSize('lg')}
-                          title="Large spacious text (19px)"
-                        >
-                          A+
-                        </button>
+                      <div className={styles.wordDocumentFooter}>
+                        <span>Page 1 of 1 • Sariling Mundo Official Document</span>
+                        <span>Confidential &amp; Personal Knowledge Asset</span>
                       </div>
-
-                      <div className={styles.bookHighlighterDivider} />
-
-                      {/* Highlighter Swatches */}
-                      <div className={styles.bookSwatches} title="Click a color to highlight selected text">
-                        {HIGHLIGHT_COLORS.slice(0, 5).map((c) => (
-                          <button
-                            key={c.name}
-                            type="button"
-                            className={`${styles.bookSwatch} ${activeHighlightColor === c.name ? styles.bookSwatchActive : ''}`}
-                            style={{
-                              background: c.bg,
-                              borderColor: c.border,
-                              '--swatch-border': c.border,
-                            } as React.CSSProperties}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleHighlight(c.name, false)}
-                            title={`Highlight: ${c.label}`}
-                            aria-label={`Highlight ${c.label}`}
-                          />
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        className={styles.bookEraserBtn}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handleRemoveHighlight}
-                        title="Clear highlight from selected text"
-                        aria-label="Clear highlight"
-                      >
-                        <Eraser size={13} />
-                      </button>
-
-                      <div className={styles.bookHighlighterDivider} />
-
-                      {/* Instant Auto-Format Button */}
-                      <button
-                        type="button"
-                        className={styles.readerFormatBtn}
-                        onClick={handleFormatCurrentAsBook}
-                        title="Auto-Format: Clean spacing, unbreak words, format lists, and normalize font sizes into formal layout"
-                      >
-                        <Sparkles size={12} style={{ color: 'var(--color-accent-light)' }} />
-                        <span>Auto-Format</span>
-                      </button>
                     </div>
                   </div>
 
-                  <div className={`${styles.bookPage} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}>
-                    <div className={styles.bookTitle}>{fTitle || 'Untitled'}</div>
-                    {fTags && (
-                      <div className={styles.bookMeta}>
-                        {fTags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
-                          <span key={t} className={styles.bookTag}>{t}</span>
-                        ))}
-                      </div>
-                    )}
-                    <div className={styles.bookDivider} />
-                    <div
-                      ref={bookEditorRef}
-                      contentEditable={false}
-                      className={styles.bookContent}
-                      dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
-                    />
-                    <div className={styles.bookFooter}>
-                      <span>Sariling Mundo · Knowledge Base</span>
-                      <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
-                    </div>
-                  </div>
+                  {/* Formal Right Companion Panel (Shown on demand when toggled) */}
+                  {isCompanionOpen && renderReaderCompanion(true)}
                 </div>
               ) : (
                 /* ── Study & Review Quiz Mode (Active Recall Hub) ── */
@@ -2827,7 +4506,7 @@ export default function KnowledgePage() {
         </main>
       </div>
 
-      {/* Floating Selection Highlight Toolbar — colors only, clean */}
+      {/* Floating Selection Highlight Toolbar — highlight colors & font colors */}
       {floatingMenu && (
         <div
           data-floating-toolbar="true"
@@ -2837,7 +4516,7 @@ export default function KnowledgePage() {
           onTouchStart={(e) => e.preventDefault()}
           onMouseDown={(e) => e.preventDefault()}
         >
-          {HIGHLIGHT_COLORS.slice(0, 8).map((c) => (
+          {HIGHLIGHT_COLORS.slice(0, 6).map((c) => (
             <button
               key={c.name}
               type="button"
@@ -2861,14 +4540,54 @@ export default function KnowledgePage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleHighlight(c.name, false);
+                handleHighlight(c.name, false, floatingMenu.targetMark);
                 setFloatingMenu(null);
               }}
-              title={`Highlight ${c.label}`}
+              title={`Highlight: ${c.label}`}
               aria-label={`Highlight ${c.label}`}
             />
           ))}
-          {/* Eraser — remove highlight */}
+
+          <div className={styles.floatingDivider} />
+
+          {/* Font Color Swatches */}
+          {FONT_COLORS.slice(1, 8).map((fc) => (
+            <button
+              key={fc.name}
+              type="button"
+              className={styles.floatingFontSwatch}
+              style={{
+                backgroundColor: fc.color,
+                borderColor: fc.border,
+              }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleApplyFontColor(fc.color, floatingMenu.targetMark);
+                setFloatingMenu(null);
+              }}
+              title={`Font Color: ${fc.label}`}
+              aria-label={`Font Color ${fc.label}`}
+            >
+              A
+            </button>
+          ))}
+
+          <div className={styles.floatingDivider} />
+
+          {/* Eraser — remove highlight or font color */}
           <button
             type="button"
             className={styles.floatingEraserBtn}
@@ -2887,10 +4606,10 @@ export default function KnowledgePage() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              handleRemoveHighlight();
+              handleRemoveHighlight(floatingMenu.targetMark);
               setFloatingMenu(null);
             }}
-            title="Remove highlight"
+            title="Remove Highlight / Clear"
           >
             ✕
           </button>
@@ -2975,13 +4694,13 @@ export default function KnowledgePage() {
                       type="button"
                       className={styles.btnPrimaryGradient}
                       onClick={async () => {
-                        await handleAiFormat();
                         setAiModalOpen(false);
+                        await handleTriggerAutoFormat();
                       }}
-                      disabled={isAiFormatting}
+                      disabled={isAutoFormatting}
                     >
-                      {isAiFormatting && <Loader2 size={14} className={styles.spin} />}
-                      <span>{isAiFormatting ? 'Formatting Document...' : 'Run Auto-Format'}</span>
+                      {isAutoFormatting && <Loader2 size={14} className={styles.spin} />}
+                      <span>{isAutoFormatting ? 'Formatting Document...' : 'Run Auto-Format'}</span>
                     </button>
                   </div>
                 </div>
@@ -3220,11 +4939,237 @@ export default function KnowledgePage() {
         </div>
       )}
 
+      {/* ── Reading Schedule & Session Logs Modal ── */}
+      {readingLogsModalOpen && (
+        <div className={styles.readingModalOverlay} onClick={() => setReadingLogsModalOpen(false)}>
+          <div className={styles.readingModalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.readingModalHeader}>
+              <h2 className={styles.readingModalTitle}>
+                <Clock size={20} style={{ color: 'var(--color-accent)' }} />
+                Reading Schedule &amp; Time Log
+              </h2>
+              <button
+                type="button"
+                className={styles.docActionBtn}
+                onClick={() => setReadingLogsModalOpen(false)}
+                aria-label="Close reading schedule"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+              Track what time you read and view your reading habit consistency for <strong>&ldquo;{selectedDoc?.title || fTitle || 'this book'}&rdquo;</strong>.
+            </p>
+
+            <div className={styles.readingStatsGrid}>
+              <div className={styles.readingStatCard}>
+                <span className={styles.readingStatLabel}>Current Reading Time</span>
+                <span className={styles.readingStatValue}>
+                  {Math.floor(readingSeconds / 60)} min {readingSeconds % 60}s
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                  Started at {sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div className={styles.readingStatCard}>
+                <span className={styles.readingStatLabel}>Total Time Read</span>
+                <span className={styles.readingStatValue}>
+                  {selectedDoc?.totalReadMinutes || 0} mins
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                  Usual time: {selectedDoc?.preferredReadingTime || sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+
+            {readingSeconds >= 30 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={handleSaveReadingSession}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Save size={13} />
+                  <span>Save Current Session ({Math.round(readingSeconds / 60)}m)</span>
+                </button>
+              </div>
+            )}
+
+            <div>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '12px 0 8px', color: 'var(--color-text)' }}>
+                Past Reading Sessions
+              </h3>
+              {(!selectedDoc?.readingLogs || selectedDoc.readingLogs.length === 0) ? (
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', margin: 0 }}>
+                  No past sessions recorded yet. Keep reading in Book or Word mode to automatically track your time!
+                </p>
+              ) : (
+                <div className={styles.readingLogsList}>
+                  {selectedDoc.readingLogs.map((log) => (
+                    <div key={log.id} className={styles.readingLogItem}>
+                      <div>
+                        <strong>{new Date(log.startedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong>
+                        {' · '}
+                        <span>{log.timeOfDay || new Date(log.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <span style={{ fontWeight: 700, color: 'var(--color-accent)' }}>
+                        {log.durationMinutes} min{log.durationMinutes === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleAddManualReadingLog} style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: '12px' }}>
+              <h4 style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)' }}>
+                Log a Past Reading Time Manually
+              </h4>
+              <div className={styles.manualLogForm}>
+                <input
+                  type="text"
+                  className={styles.manualLogInput}
+                  placeholder="Time used to read (e.g. 9:00 PM)"
+                  value={manualReadTime}
+                  onChange={(e) => setManualReadTime(e.target.value)}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="480"
+                  className={styles.manualLogInput}
+                  placeholder="Duration (mins)"
+                  value={manualReadMinutes}
+                  onChange={(e) => setManualReadMinutes(e.target.value)}
+                  style={{ maxWidth: '100px' }}
+                />
+                <button type="submit" className={styles.btnSecondary}>
+                  Add Log
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Smart Auto Format: Side-by-Side Review & Preview Modal ── */}
+      {formatPreviewModalOpen && pendingFormatResult && (
+        <div className={styles.formatReviewOverlay} onClick={() => setFormatPreviewModalOpen(false)}>
+          <div className={styles.formatReviewModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.formatReviewHeader}>
+              <div className={styles.formatReviewTitleRow}>
+                <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
+                <div>
+                  <h3 className={styles.formatReviewTitle}>Smart Auto Format Review</h3>
+                  <p className={styles.formatReviewSubtitle}>
+                    Review original text vs. formatted publication book style. Click <strong>Apply</strong> to confirm or <strong>Cancel</strong> to keep original text unchanged.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.docActionBtn}
+                onClick={() => setFormatPreviewModalOpen(false)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Structure & Improvements Summary Bar */}
+            <div className={styles.formatReviewStatsBar}>
+              <span className={styles.formatReviewStatItem}>
+                📚 <strong>{pendingFormatResult.stats.headingsCount}</strong> Headings Structured
+              </span>
+              <span>•</span>
+              <span className={styles.formatReviewStatItem}>
+                📑 <strong>{pendingFormatResult.stats.paragraphsCount}</strong> Clean Paragraphs
+              </span>
+              <span>•</span>
+              <span className={styles.formatReviewStatItem}>
+                🔢 <strong>{pendingFormatResult.stats.listsCount}</strong> Normalized Lists
+              </span>
+              {pendingFormatResult.stats.fixedNumberingCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className={styles.formatReviewStatItem} style={{ color: '#10b981' }}>
+                    ✓ Fixed {pendingFormatResult.stats.fixedNumberingCount} Duplicate Numbers
+                  </span>
+                </>
+              )}
+              <span>•</span>
+              <span className={styles.formatReviewStatItem} style={{ color: '#10b981' }}>
+                🔒 100% Original Wording Preserved
+              </span>
+            </div>
+
+            {/* Side-by-Side Split Grid */}
+            <div className={styles.formatReviewSplitGrid}>
+              {/* Left Column: Original Text */}
+              <div className={styles.formatReviewColumn}>
+                <div className={styles.formatReviewColHeader}>
+                  <span>Original Document (Unchanged)</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>Raw text / input</span>
+                </div>
+                <div className={styles.formatReviewOriginalBox}>
+                  {originalTextForReview || '(Empty content)'}
+                </div>
+              </div>
+
+              {/* Right Column: Formatted Book Version */}
+              <div className={styles.formatReviewColumn}>
+                <div className={styles.formatReviewColHeader}>
+                  <span>Formatted Book Style (Preview)</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-accent-light)' }}>Publication layout</span>
+                </div>
+                <div className={styles.formatReviewPreviewBox}>
+                  <div
+                    className={styles.wordDocumentBody}
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(pendingFormatResult.formattedMarkdown) }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className={styles.formatReviewActions}>
+              <button
+                type="button"
+                className={styles.formatReviewCancelBtn}
+                onClick={() => setFormatPreviewModalOpen(false)}
+              >
+                Cancel (Keep Original)
+              </button>
+              <button
+                type="button"
+                className={styles.formatReviewApplyBtn}
+                onClick={handleApplyAutoFormat}
+              >
+                <Check size={16} strokeWidth={2.5} color="#ffffff" />
+                <span>Apply Formatting to Document</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Toast Notification for Smart Paste & Book Operations */}
       {pasteToast && (
         <div className={styles.pasteToast}>
           <Check size={16} style={{ color: 'var(--color-accent)' }} />
           <span>{pasteToast}</span>
+          {previousContentBeforeFormatRef.current !== null && (
+            <button
+              type="button"
+              className={styles.toastUndoBtn}
+              onClick={handleUndoAutoFormat}
+              title="Undo formatting and revert to original"
+            >
+              Undo
+            </button>
+          )}
         </div>
       )}
     </div>

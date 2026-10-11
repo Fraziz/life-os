@@ -1041,10 +1041,22 @@
 
 .tagChip {
   font-size: 10px;
+  font-weight: 500;
   background: var(--color-surface-2);
   color: var(--color-text-muted);
-  padding: 1px 6px;
+  padding: 1.5px 7px;
   border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-subtle);
+  transition: all var(--transition-fast, 140ms ease);
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+}
+
+.tagChip:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 .goalBreadcrumbChip {

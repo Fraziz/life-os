@@ -15,7 +15,6 @@ import {
   TrendingUp,
   Zap,
   CheckCircle2,
-  FolderKanban,
   Repeat,
   ArrowRight,
   Flame,

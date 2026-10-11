@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Task, TaskStatus, TaskPriority, Subtask } from '@/types';
 import { loadJsonArray } from '@/lib/localStore';
+import { notifyItemDeleted } from './UndoContext';
 
 const TASKS_STORAGE_KEY = 'life_os_tasks_v1';
 
@@ -340,8 +341,26 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTask = (id: string) => {
+    const target = tasks.find((t) => t.id === id);
     const updated = tasks.filter((t) => t.id !== id);
     saveTasks(updated);
+    if (target) {
+      notifyItemDeleted({
+        type: 'Task',
+        title: target.title,
+        restore: () => {
+          setTasks((prev) => {
+            if (prev.some((t) => t.id === target.id)) return prev;
+            const restored = [target, ...prev];
+            try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            return restored;
+          });
+        },
+        redelete: () => {
+          deleteTask(id);
+        },
+      });
+    }
   };
 
   const clearDoneTasks = () => {

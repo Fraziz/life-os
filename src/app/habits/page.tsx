@@ -41,7 +41,7 @@ export default function HabitsPage() {
   } = useHabits();
 
   const { goals } = useGoals();
-  const { activeAreas } = useLifeAreas();
+  const { activeAreas, focusedAreaId } = useLifeAreas();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
 
@@ -97,6 +97,12 @@ export default function HabitsPage() {
   }
 
   const filteredHabits = habits.filter((habit) => {
+    if (focusedAreaId) {
+      const matchesDirect = habit.lifeAreaId === focusedAreaId;
+      const parentGoal = goals.find((g) => g.id === habit.parentGoalId);
+      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
+      if (!matchesDirect && !matchesGoal) return false;
+    }
     if (habitFilter === 'pending') {
       return !isHabitCompletedOnDate(habit.id, todayStr);
     }

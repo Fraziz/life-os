@@ -5,6 +5,54 @@
  */
 
 import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
+
+/**
+ * Converts an HTML <table> element into clean, aligned Markdown table syntax.
+ */
+export function htmlTableToMarkdown(tableEl: HTMLElement): string {
+  const rows = Array.from(tableEl.querySelectorAll('tr'));
+  if (rows.length === 0) return '';
+
+  const parsedRows: string[][] = [];
+  rows.forEach((tr) => {
+    const cells = Array.from(tr.querySelectorAll('th, td')).map((c) => {
+      // Check for links inside cell
+      const links = Array.from(c.querySelectorAll('a'));
+      let text = c.textContent || '';
+      if (links.length > 0 && links[0].getAttribute('href')) {
+        const href = links[0].getAttribute('href');
+        const linkText = links[0].textContent || href;
+        text = `[${linkText}](${href})`;
+      }
+      return text.replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+    });
+    if (cells.length > 0 && cells.some((c) => c.length > 0)) {
+      parsedRows.push(cells);
+    }
+  });
+
+  if (parsedRows.length === 0) return '';
+
+  const maxCols = Math.max(...parsedRows.map((r) => r.length));
+  if (maxCols === 0) return '';
+
+  const padded = parsedRows.map((r) => {
+    const copy = [...r];
+    while (copy.length < maxCols) copy.push('');
+    return copy;
+  });
+
+  const header = padded[0].map((h, i) => h || `Col ${i + 1}`);
+  const separator = header.map(() => '---');
+  const body = padded.slice(1);
+
+  let md = `| ${header.join(' | ')} |\n| ${separator.join(' | ')} |`;
+  if (body.length > 0) {
+    md += '\n' + body.map((r) => `| ${r.join(' | ')} |`).join('\n');
+  }
+  return md;
+}
 
 // Dynamically load PDF.js from local /vendor/pdfjs/ with CDN fallback
 async function loadPdfJs(): Promise<any> {
@@ -355,12 +403,22 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     return { title, content: text.trim() };
   }
 
-  // 2. Word Document (.docx) — parse cleanly using Mammoth
+  // 2. Word Document (.docx) — parse cleanly using Mammoth with full table & HTML fidelity
   if (ext === 'docx' || file.type.includes('wordprocessingml')) {
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      const rawText = result.value || '';
+      // Try convertToHtml first to preserve tables, headings, bold, italic, lists, and links!
+      const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+      const htmlVal = htmlResult.value || '';
+      if (htmlVal.trim().length > 10) {
+        const parsed = cleanAndFormatPastedText(htmlVal, htmlVal, title);
+        if (parsed.markdown.trim().length > 10) {
+          return { title: parsed.title || title, content: parsed.markdown };
+        }
+      }
+      // Fallback to extractRawText if convertToHtml gave minimal text
+      const rawResult = await mammoth.extractRawText({ arrayBuffer });
+      const rawText = rawResult.value || '';
       if (rawText.trim().length > 10) {
         return { title, content: formatAsNotes(rawText, title) };
       }
@@ -369,7 +427,102 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     }
   }
 
-  // 3. Legacy Word Document (.doc) — extract readable UTF-16LE / ASCII text
+  // 3. Excel Spreadsheets (.xlsx, .xls, .ods) — parse all sheets into formal tables
+  if (
+    ext === 'xlsx' ||
+    ext === 'xls' ||
+    ext === 'ods' ||
+    file.type.includes('spreadsheet') ||
+    file.type.includes('excel')
+  ) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetNames = workbook.SheetNames || [];
+      const parts: string[] = [];
+
+      sheetNames.forEach((sheetName) => {
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) return;
+
+        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        if (!rows || rows.length === 0) return;
+
+        const validRows = rows.filter((r) =>
+          r.some((c) => c !== undefined && c !== null && String(c).trim() !== '')
+        );
+        if (validRows.length === 0) return;
+
+        parts.push(`## Sheet: ${sheetName}`);
+
+        const headerRow = validRows[0].map((c, i) => String(c ?? '').trim() || `Col ${i + 1}`);
+        const dataRows = validRows.slice(1);
+
+        let tableMd = `| ${headerRow.join(' | ')} |\n| ${headerRow.map(() => '---').join(' | ')} |\n`;
+        dataRows.forEach((row) => {
+          const cells = headerRow.map((_, colIdx) => {
+            const val = row[colIdx];
+            return String(val !== undefined && val !== null ? val : '')
+              .replace(/\|/g, '\\|')
+              .replace(/\r?\n/g, ' ')
+              .trim();
+          });
+          tableMd += `| ${cells.join(' | ')} |\n`;
+        });
+
+        parts.push(tableMd.trim());
+      });
+
+      if (parts.length > 0) {
+        return {
+          title,
+          content: `# ${title}\n\n> 📊 **Excel Spreadsheet Document** (${sheetNames.length} sheet${sheetNames.length > 1 ? 's' : ''})\n\n${parts.join('\n\n')}`,
+        };
+      }
+    } catch (excelErr) {
+      console.warn('[File Importer] Excel parsing failed:', excelErr);
+    }
+  }
+
+  // 4. Tabular Data (CSV, TSV) — parse into structured markdown table
+  if (ext === 'csv' || ext === 'tsv' || file.type.includes('csv')) {
+    try {
+      const text = await file.text();
+      const workbook = XLSX.read(text, { type: 'string' });
+      const sheetName = workbook.SheetNames[0];
+      if (sheetName) {
+        const worksheet = workbook.Sheets[sheetName];
+        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        const validRows = rows.filter((r) =>
+          r.some((c) => c !== undefined && c !== null && String(c).trim() !== '')
+        );
+        if (validRows.length > 0) {
+          const headerRow = validRows[0].map((c, i) => String(c ?? '').trim() || `Col ${i + 1}`);
+          const dataRows = validRows.slice(1);
+          let tableMd = `| ${headerRow.join(' | ')} |\n| ${headerRow.map(() => '---').join(' | ')} |\n`;
+          dataRows.forEach((row) => {
+            const cells = headerRow.map((_, colIdx) => {
+              const val = row[colIdx];
+              return String(val !== undefined && val !== null ? val : '')
+                .replace(/\|/g, '\\|')
+                .replace(/\r?\n/g, ' ')
+                .trim();
+            });
+            tableMd += `| ${cells.join(' | ')} |\n`;
+          });
+          return {
+            title,
+            content: `# ${title}\n\n> 📊 **Tabular Document (${ext.toUpperCase()})**\n\n${tableMd.trim()}`,
+          };
+        }
+      }
+      return { title, content: formatAsNotes(text, title) };
+    } catch (csvErr) {
+      console.warn('[File Importer] CSV table parsing failed, falling back:', csvErr);
+    }
+  }
+
+  // 5. Legacy Word Document (.doc) — extract readable UTF-16LE / ASCII text
   if (ext === 'doc' || file.type === 'application/msword') {
     try {
       const buffer = await file.arrayBuffer();
@@ -382,31 +535,25 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     }
   }
 
-  // 4. HTML (.html, .htm) — parse via DOMParser for clean text
+  // 6. HTML (.html, .htm) — parse with full structure & table preservation
   if (ext === 'html' || ext === 'htm' || file.type.includes('html')) {
     try {
       const html = await file.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      // Remove scripts and styles
-      doc.querySelectorAll('script, style, noscript, svg, nav, footer').forEach((el) => el.remove());
-      const bodyText = doc.body.innerText || doc.body.textContent || '';
-      if (bodyText.trim().length > 5) {
-        return { title, content: formatAsNotes(bodyText, title) };
+      const parsed = cleanAndFormatPastedText(html, html, title);
+      if (parsed.markdown.trim().length > 5) {
+        return { title: parsed.title || title, content: parsed.markdown };
       }
     } catch (htmlErr) {
       console.warn('[File Importer] HTML extraction failed:', htmlErr);
     }
   }
 
-  // 5. Plain text, CSV, JSON, TSV
+  // 7. Plain text, JSON
   if (
     ext === 'txt' ||
-    ext === 'csv' ||
-    ext === 'tsv' ||
     ext === 'json' ||
     file.type.includes('text') ||
-    file.type.includes('json') ||
-    file.type.includes('csv')
+    file.type.includes('json')
   ) {
     try {
       const text = await file.text();
@@ -416,7 +563,7 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     }
   }
 
-  // 6. PDF Documents (.pdf)
+  // 8. PDF Documents (.pdf)
   if (ext === 'pdf' || file.type.includes('pdf')) {
     try {
       const buffer = await file.arrayBuffer();
@@ -669,12 +816,30 @@ export function cleanAndFormatPastedText(
       const doc = new DOMParser().parseFromString(htmlText, 'text/html');
       doc.querySelectorAll('script, style, noscript, svg, nav, footer, iframe, link').forEach((el) => el.remove());
 
-      const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre, hr');
+      const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre, hr, table');
       if (elements.length > 0) {
         const parts: string[] = [];
         elements.forEach((el) => {
           const tag = el.tagName.toLowerCase();
-          const t = el.textContent?.trim() || '';
+
+          // Table handling: convert HTML table to clean Markdown table syntax
+          if (tag === 'table') {
+            const tableMd = htmlTableToMarkdown(el as HTMLElement);
+            if (tableMd.trim()) parts.push(tableMd.trim());
+            return;
+          }
+
+          // Convert inline links: <a href="url">text</a> -> [text](url)
+          const clone = el.cloneNode(true) as HTMLElement;
+          clone.querySelectorAll('a').forEach((a) => {
+            const href = a.getAttribute('href');
+            if (href) {
+              const label = a.textContent?.trim() || href;
+              a.replaceWith(`[${label}](${href})`);
+            }
+          });
+
+          const t = clone.textContent?.trim() || '';
           if (!t && tag !== 'hr') return;
 
           if (tag === 'h1') parts.push(`# ${t}`);
@@ -687,7 +852,15 @@ export function cleanAndFormatPastedText(
           else if (tag === 'hr') parts.push('---');
           else if (tag === 'ul' || tag === 'ol') {
             const listItems = Array.from(el.querySelectorAll('li')).map((li, idx) => {
-              const liText = li.textContent?.trim() || '';
+              const liClone = li.cloneNode(true) as HTMLElement;
+              liClone.querySelectorAll('a').forEach((a) => {
+                const href = a.getAttribute('href');
+                if (href) {
+                  const label = a.textContent?.trim() || href;
+                  a.replaceWith(`[${label}](${href})`);
+                }
+              });
+              const liText = liClone.textContent?.trim() || '';
               return tag === 'ol' ? `${idx + 1}. ${liText}` : `- ${liText}`;
             });
             if (listItems.length > 0) parts.push(listItems.join('\n'));
@@ -726,6 +899,8 @@ export function cleanAndFormatPastedText(
     // Ensure space after punctuation when followed immediately by a letter (avoiding URLs like https://)
     .replace(/([,;?!])([A-Za-z])/g, '$1 $2')
     .replace(/(\.)([A-Z])/g, '$1 $2')
+    // Ensure space after numbering: e.g. "1.hha" -> "1. hha" (protecting decimals like 1.5)
+    .replace(/(^|[\s\n])(\d+)[\.\)]([A-Za-z\u00C0-\u024F\u1E00-\u1EFF])/g, '$1$2. $3')
     // Collapse multiple horizontal spaces to single space
     .replace(/[^\S\n]{2,}/g, ' ')
     // Normalize newlines to max 2
@@ -780,6 +955,16 @@ export function cleanAndFormatPastedText(
     // Check if it's already markdown heading
     const isMarkdownHeading = /^#{1,4}\s+/.test(lines[0]);
     if (isMarkdownHeading) {
+      formattedBlocks.push(lines.join('\n'));
+      continue;
+    }
+
+    // Check if block is a markdown table (contains | with divider row |---|)
+    const isMarkdownTable =
+      lines.length >= 2 &&
+      lines.some((l) => /\|.*\|/.test(l)) &&
+      lines.some((l) => /\|\s*[-:]+[-| :]*\|/.test(l));
+    if (isMarkdownTable) {
       formattedBlocks.push(lines.join('\n'));
       continue;
     }

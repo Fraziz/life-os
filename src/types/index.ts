@@ -19,6 +19,7 @@ export type PlanningStyle =
   | 'time-blocking'
   | 'eisenhower'
   | 'gtd'
+  | 'board'
   | 'kanban'
   | 'weekly-focus';
 
@@ -219,6 +220,7 @@ export interface Project {
   dueDate?: string;
   progress: number;            // 0–100%
   goalId?: string;             // Parent Goal ID
+  lifeAreaId?: string;         // Linked Life Area ID
   milestoneId?: string;        // Parent Milestone ID
   color?: string;              // Custom project color e.g. '#38bdf8'
   notes?: string;              // Execution notes & scratchpad
@@ -249,6 +251,7 @@ export interface Task {
   actualDuration?: number;     // in minutes
   projectId?: string;          // Parent Project ID
   goalId?: string;             // Parent Goal ID
+  lifeAreaId?: string;         // Linked Life Area ID
   milestoneId?: string;        // Parent Milestone ID
   parentTaskId?: string;       // Linked Parent Task (if nested)
   isCompound?: boolean;        // Large / compound task requiring breakdown
@@ -391,6 +394,15 @@ export interface QuizQuestionItem {
   userMastered?: boolean;
 }
 
+export interface ReadingLogItem {
+  id: string;
+  startedAt: string; // ISO date-time string
+  endedAt?: string;   // ISO date-time string
+  durationMinutes: number;
+  timeOfDay?: string; // e.g. "9:15 PM"
+  notes?: string;
+}
+
 export interface KnowledgeDocument {
   id: string;
   title: string;
@@ -411,6 +423,10 @@ export interface KnowledgeDocument {
   updatedAt: string;
   studyQuiz?: QuizQuestionItem[];
   lastReviewedAt?: string;
+  readingLogs?: ReadingLogItem[];
+  totalReadMinutes?: number;
+  lastReadAt?: string;
+  preferredReadingTime?: string;
 }
 
 // ── Reminders & Notifications (Phase 24) ───────────────────

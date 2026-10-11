@@ -739,3 +739,54 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(99, 102, 241, 0.35);
   color: #00f0ff;
 }
+
+/* Literal Highlighter Marks & Font Color Spans (Zero Spacing Change, Fix Text Position) */
+mark.highlight-mark,
+mark {
+  background-color: transparent;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  font-style: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
+  word-spacing: inherit !important;
+  white-space: inherit !important;
+  text-transform: inherit !important;
+  vertical-align: baseline !important;
+  display: inline !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+mark.highlight-mark:hover,
+mark:hover {
+  filter: brightness(1.12);
+  outline: none !important;
+}
+
+.font-color-span {
+  cursor: pointer;
+  display: inline !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
+  transition: filter 0.12s ease;
+}
+
+.font-color-span:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+}

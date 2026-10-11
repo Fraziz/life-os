@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearch, SearchResultType } from '@/context/SearchContext';
 import {
-  Search, X, Target, FolderKanban,
+  Search, X, Target, Folder,
   CheckSquare, Repeat, Inbox, CloudSun, BookOpen,
 } from 'lucide-react';
 import styles from './SearchModal.module.css';
@@ -12,7 +12,7 @@ import styles from './SearchModal.module.css';
 const TYPE_META: Record<SearchResultType, { label: string; icon: React.ReactNode; color: string }> = {
   dream:      { label: 'Dream',      icon: <CloudSun    size={14} />, color: '#a594ff' },
   goal:       { label: 'Goal',       icon: <Target      size={14} />, color: '#38bdf8' },
-  project:    { label: 'Project',    icon: <FolderKanban size={14} />, color: '#22d3a5' },
+  project:    { label: 'Project',    icon: <Folder      size={14} />, color: '#22d3a5' },
   task:       { label: 'Task',       icon: <CheckSquare size={14} />, color: '#f59e0b' },
   habit:      { label: 'Habit',      icon: <Repeat      size={14} />, color: '#ec4899' },
   brain_dump: { label: 'Idea Parking', icon: <Inbox       size={14} />, color: '#84cc16' },

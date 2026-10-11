@@ -19,7 +19,6 @@ import {
   Calendar,
   Cloud,
   Target,
-  FolderKanban,
   BookOpen,
   Repeat,
   Dumbbell,
@@ -35,6 +34,7 @@ import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import Logo from '@/components/ui/Logo';
+import LifeDomainBar from './LifeDomainBar';
 import styles from './Sidebar.module.css';
 
 // Mapping of navigation icon identifiers to Lucide icons
@@ -47,7 +47,7 @@ const NAV_ICON_MAP: Record<string, React.ComponentType<{ size?: number; classNam
   roadmap: Compass,
   dreams: Cloud,
   goals: Target,
-  projects: FolderKanban,
+  projects: Folder,
   knowledge: BookOpen,
   habits: Repeat,
   workout: Dumbbell,
@@ -195,29 +195,9 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Next Action Quick Launcher */}
-        <div className={styles.nextActionWrap}>
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenNextAction) onOpenNextAction();
-              else window.dispatchEvent(new CustomEvent('open-next-action'));
-            }}
-            className={styles.nextActionBtn}
-            title={!isExpanded ? 'Next Action (Ctrl+J)' : 'What should I do right now? (Ctrl+J / ⌘J)'}
-            aria-label="What should I do right now? (Ctrl+J)"
-          >
-            <div className={styles.nextActionLeft}>
-              <span className={styles.nextActionIconBox}>
-                <Compass size={18} className={styles.nextActionIcon} />
-              </span>
-              <span className={styles.nextActionLabel}>Next Action</span>
-            </div>
-            <kbd className={styles.nextActionKbd}>Ctrl+J</kbd>
-            {!isExpanded && (
-              <span className={styles.navTooltip}>Next Action (Ctrl+J)</span>
-            )}
-          </button>
+        {/* Life Domain Focus Selector */}
+        <div className={styles.domainBarWrap}>
+          <LifeDomainBar isExpanded={isExpanded} />
         </div>
 
         {/* Navigation Sections */}

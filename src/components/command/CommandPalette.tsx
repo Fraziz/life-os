@@ -179,7 +179,7 @@ export default function CommandPalette() {
     {
       id: 'nav-tasks',
       category: 'Navigation',
-      title: 'Tasks Kanban & List',
+      title: 'Task Board & List',
       subtitle: '/tasks',
       keywords: ['todo', 'doing', 'done', 'backlog'],
       onSelect: () => {
@@ -247,7 +247,7 @@ export default function CommandPalette() {
       category: 'Navigation',
       title: 'Projects',
       subtitle: '/projects',
-      keywords: ['kanban', 'milestones'],
+      keywords: ['board', 'initiatives'],
       onSelect: () => {
         router.push('/projects');
         closePalette();

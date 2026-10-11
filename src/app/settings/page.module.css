@@ -996,3 +996,177 @@
   }
 }
 
+/* ── Life Domain Focus & Shortcuts Section ── */
+.domainStatusBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 8px);
+}
+
+.domainStatusLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.domainStatusLabel {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.domainStatusValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.domainDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.domainResetBtn {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-accent, #818cf8);
+  background: rgba(129, 140, 248, 0.08);
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.domainResetBtn:hover {
+  background: rgba(129, 140, 248, 0.16);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.domainPillGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.domainPillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.domainPillBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+}
+
+.domainPillActive {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--pill-border, var(--color-accent, #818cf8));
+  color: #ffffff;
+  box-shadow: 0 0 0 1px var(--pill-border, var(--color-accent, #818cf8));
+}
+
+.domainKbd {
+  font-size: 0.68rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+}
+
+.shortcutsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.02));
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
+.shortcutRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.shortcutDesc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shortcutName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.shortcutSub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.shortcutKeys {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.shortcutsCategoryHeader {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint, #64748b);
+  padding: 10px 10px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 6px;
+}
+
+.shortcutsCategoryHeader:first-child {
+  margin-top: 0;
+  padding-top: 4px;
+}
+
+
+

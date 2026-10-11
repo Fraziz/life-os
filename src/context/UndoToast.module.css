@@ -1,0 +1,193 @@
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  max-width: min(480px, calc(100vw - 32px));
+  width: auto;
+  pointer-events: auto;
+  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (max-width: 768px) {
+  .toastContainer {
+    right: 16px;
+    left: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+  }
+}
+
+.toastCard {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 12px 14px;
+  background: color-mix(in srgb, var(--color-surface, #1e293b) 94%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14));
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 
+    0 10px 30px -4px rgba(0, 0, 0, 0.28),
+    0 4px 12px -2px rgba(0, 0, 0, 0.12);
+  color: var(--color-text, #f8fafc);
+  font-family: var(--font-sans, inherit);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.toastCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 14px 38px -4px rgba(0, 0, 0, 0.34),
+    0 6px 16px -2px rgba(0, 0, 0, 0.18);
+}
+
+.toastContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 16%, transparent);
+  color: var(--color-accent, #818cf8);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.titleText {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--color-text, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.actionPrefix {
+  color: var(--color-text-muted, #94a3b8);
+  font-weight: 400;
+  margin-right: 4px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.undoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid color-mix(in srgb, var(--color-accent, #6366f1) 32%, transparent);
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 14%, transparent);
+  color: var(--color-accent, #818cf8);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.undoBtn:hover {
+  background: var(--color-accent, #6366f1);
+  color: var(--color-text-inverse, #ffffff);
+  border-color: var(--color-accent, #6366f1);
+  transform: scale(1.02);
+}
+
+.undoBtn:active {
+  transform: scale(0.98);
+}
+
+.kbd {
+  font-size: 0.67rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-text, #ffffff) 10%, transparent);
+  color: inherit;
+  opacity: 0.85;
+  margin-left: 2px;
+}
+
+.closeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.closeBtn:hover {
+  color: var(--color-text, #f8fafc);
+  background: color-mix(in srgb, var(--color-text, #ffffff) 10%, transparent);
+}
+
+/* Loading countdown progress bar */
+.progressBarTrack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: color-mix(in srgb, var(--color-border, #ffffff) 20%, transparent);
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--color-accent, #6366f1);
+  animation: countdownBar 6000ms linear forwards;
+}
+
+.toastCard:hover .progressBarFill {
+  animation-play-state: paused;
+}
+
+@keyframes countdownBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

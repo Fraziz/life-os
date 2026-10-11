@@ -90,6 +90,9 @@ interface LifeAreaContextType {
   areas: LifeArea[];
   activeAreas: LifeArea[];
   archivedAreas: LifeArea[];
+  focusedAreaId: string | null;
+  focusedArea: LifeArea | null;
+  setFocusedAreaId: (id: string | null) => void;
   addArea: (area: Omit<LifeArea, 'id' | 'sortOrder' | 'isArchived' | 'createdAt' | 'updatedAt'>) => void;
   updateArea: (id: string, partial: Partial<LifeArea>) => void;
   reorderArea: (id: string, direction: 'up' | 'down') => void;
@@ -104,6 +107,7 @@ const LifeAreaContext = createContext<LifeAreaContextType | undefined>(undefined
 export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
   const [areas, setAreas] = useState<LifeArea[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [focusedAreaId, setFocusedAreaIdState] = useState<string | null>(null);
 
   const reloadFromStorage = () => {
     try {
@@ -118,10 +122,28 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
     reloadFromStorage();
     setIsLoaded(true);
 
+    try {
+      const saved = localStorage.getItem('life_os_focused_area_id');
+      if (saved && saved !== 'all') {
+        setFocusedAreaIdState(saved);
+      }
+    } catch {}
+
     const handleSync = () => reloadFromStorage();
     window.addEventListener('life_os_cloud_synced', handleSync);
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
+
+  const setFocusedAreaId = (id: string | null) => {
+    setFocusedAreaIdState(id);
+    try {
+      if (id) {
+        localStorage.setItem('life_os_focused_area_id', id);
+      } else {
+        localStorage.removeItem('life_os_focused_area_id');
+      }
+    } catch {}
+  };
 
   // Save to localStorage whenever areas change
   const saveAreas = (newAreas: LifeArea[]) => {
@@ -201,12 +223,17 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
     saveAreas(DEFAULT_LIFE_AREAS);
   };
 
+  const focusedArea = focusedAreaId ? (areas.find((a) => a.id === focusedAreaId) || null) : null;
+
   return (
     <LifeAreaContext.Provider
       value={{
         areas,
         activeAreas,
         archivedAreas,
+        focusedAreaId,
+        focusedArea,
+        setFocusedAreaId,
         addArea,
         updateArea,
         reorderArea,

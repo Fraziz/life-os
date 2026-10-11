@@ -30,7 +30,7 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  FolderKanban,
+  Folder,
   CheckSquare,
   Zap,
 } from 'lucide-react';
@@ -62,7 +62,7 @@ export default function GoalsPage() {
   const { goals, addGoal, updateGoal, updateGoalProgress, deleteGoal, resetToDefaultGoals, isLoaded } = useGoals();
   const { dreams } = useDreams();
   const { addProject } = useProjects();
-  const { activeAreas } = useLifeAreas();
+  const { activeAreas, focusedAreaId } = useLifeAreas();
   const { tasks, addTask } = useTasks();
   const { settings } = useSettings();
 
@@ -264,6 +264,7 @@ export default function GoalsPage() {
   };
 
   const filteredGoals = goals.filter((g) => {
+    if (focusedAreaId && g.lifeAreaId !== focusedAreaId) return false;
     if (statusFilter === 'active' && (g.status === 'completed' || g.status === 'archived')) return false;
     if (statusFilter === 'completed' && g.status !== 'completed') return false;
     if (horizonFilter !== 'all' && g.horizon !== horizonFilter) return false;

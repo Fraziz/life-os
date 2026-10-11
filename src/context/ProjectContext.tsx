@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Project, ProjectStatus, ProjectPriority } from '@/types';
 import { loadJsonArray } from '@/lib/localStore';
+import { notifyItemDeleted } from './UndoContext';
 
 const PROJECTS_STORAGE_KEY = 'life_os_projects_v1';
 
@@ -119,8 +120,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteProject = (id: string) => {
+    const target = projects.find((p) => p.id !== id);
     const updated = projects.filter((p) => p.id !== id);
     saveProjects(updated);
+    if (target) {
+      notifyItemDeleted({
+        type: 'Project',
+        title: target.title,
+        restore: () => {
+          setProjects((prev) => {
+            if (prev.some((p) => p.id === target.id)) return prev;
+            const restored = [target, ...prev];
+            try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            return restored;
+          });
+        },
+        redelete: () => {
+          deleteProject(id);
+        },
+      });
+    }
   };
 
   const resetToDefaultProjects = () => {

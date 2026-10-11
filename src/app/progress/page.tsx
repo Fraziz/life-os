@@ -8,7 +8,7 @@ import {
   Clock,
   Target,
   Flag,
-  FolderKanban,
+  Folder,
   CheckSquare,
   Repeat,
   Headphones,
@@ -135,7 +135,7 @@ export default function ProgressPage() {
 
         <div className={styles.statCard}>
           <div className={styles.statIcon} style={{ color: '#38bdf8' }}>
-            <FolderKanban size={20} />
+            <Folder size={20} />
           </div>
           <div className={styles.statInfo}>
             <span className={styles.statValue}>{completedProjects.length} / {totalProjects}</span>
@@ -237,7 +237,7 @@ export default function ProgressPage() {
           <section className={styles.sectionBlock}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>
-                <FolderKanban size={16} style={{ color: '#38bdf8' }} /> Active Projects ({activeProjects.length})
+                <Folder size={16} style={{ color: '#38bdf8' }} /> Active Projects ({activeProjects.length})
               </span>
               <Link href="/projects" style={{ fontSize: '11px', color: 'var(--color-text-faint)', textDecoration: 'none' }}>
                 View all projects ➔
@@ -283,7 +283,7 @@ export default function ProgressPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {completedTasks.length === 0 ? (
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                  No completed tasks yet. Finish actions in Today or Tasks Kanban to build your accomplishment record.
+                  No completed tasks yet. Finish actions in Today or Tasks Board to build your accomplishment record.
                 </p>
               ) : (
                 completedTasks.map((t) => (
@@ -401,7 +401,7 @@ export default function ProgressPage() {
                 <Clock size={16} style={{ color: 'var(--color-accent)' }} /> Open & Stalled Tasks ({unfinishedTasks.length})
               </span>
               <Link href="/tasks" style={{ fontSize: '11px', color: 'var(--color-text-faint)', textDecoration: 'none' }}>
-                Open Kanban board ➔
+                Open Task Board ➔
               </Link>
             </div>
 

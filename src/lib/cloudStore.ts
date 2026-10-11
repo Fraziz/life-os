@@ -95,9 +95,11 @@ function patchLocalStorage() {
       pendingDeletions.delete(key);
       pending.set(key, value);
       scheduleFlush();
-      // Notify UI that a write is in progress so sync indicator can show
+      // Notify UI asynchronously that a write is in progress so sync indicator can show safely
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('life_os_writing'));
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('life_os_writing'));
+        }, 0);
       }
     }
   };
@@ -162,7 +164,9 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   if (!snap) {
     activeUid = uid;
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+      }, 0);
     }
     return;
   }
@@ -192,7 +196,9 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 
   // Notify all components that cloud data is loaded
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+    }, 0);
   }
 }
 
@@ -257,7 +263,9 @@ export function startCloudSync(uid: string) {
         });
 
         if (hasChanges && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+          }, 0);
         }
       },
       (err) => {

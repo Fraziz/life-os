@@ -7,9 +7,10 @@ import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useTasks } from '@/context/TaskContext';
+import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Project, ProjectStatus, ProjectPriority } from '@/types';
 import {
-  FolderKanban,
+  Folder,
   Plus,
   Edit2,
   Trash2,
@@ -41,9 +42,9 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled',    color: '#6b7280' },
 };
 
-const KANBAN_COLS: ProjectStatus[] = ['planning', 'active', 'on-hold', 'completed'];
+const BOARD_COLS: ProjectStatus[] = ['planning', 'active', 'on-hold', 'completed'];
 
-type ViewMode = 'list' | 'kanban' | 'calendar';
+type ViewMode = 'list' | 'board' | 'calendar';
 
 function ProgressBar({ value, color }: { value: number; color?: string }) {
   return (
@@ -53,7 +54,7 @@ function ProgressBar({ value, color }: { value: number; color?: string }) {
   );
 }
 
-/** Compact row used in List and Kanban views */
+/** Compact row used in List and Board views */
 function ProjectRow({
   project,
   onEdit,
@@ -73,6 +74,14 @@ function ProjectRow({
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
 }) {
+  const { tasks } = useTasks();
+  const linkedTasks = tasks.filter(
+    (t) =>
+      t.projectId === project.id ||
+      (t.tags && t.tags.some((tag) => tag.trim().toLowerCase() === project.title.trim().toLowerCase()))
+  );
+  const doneTasksCount = linkedTasks.filter((t) => t.status === 'done').length;
+
   const cfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.active;
   const accent = project.color || cfg.color;
   const isHighlighted = highlightId === project.id;
@@ -132,6 +141,11 @@ function ProjectRow({
           <span style={{ fontSize: '11px', fontWeight: 700, color: accent, minWidth: '30px', textAlign: 'right' }}>
             {project.progress}%
           </span>
+          {linkedTasks.length > 0 && (
+            <span style={{ fontSize: '10.5px', color: 'var(--color-text-faint)', whiteSpace: 'nowrap' }}>
+              ({doneTasksCount}/{linkedTasks.length} tasks)
+            </span>
+          )}
           <input
             type="range" min="0" max="100" step="5"
             value={project.progress}
@@ -242,8 +256,8 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
   );
 }
 
-/** ── Kanban View ── */
-function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
+/** ── Board View ── */
+function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -254,7 +268,7 @@ function KanbanView({ projects, goals, onEdit, onDelete, onProgressChange, highl
 }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', overflowX: 'auto' }}>
-      {KANBAN_COLS.map((status) => {
+      {BOARD_COLS.map((status) => {
         const cfg = STATUS_CONFIG[status];
         const colProjects = projects.filter((p) => p.status === status);
         return (
@@ -492,7 +506,7 @@ const calNavBtn: React.CSSProperties = {
 function EmptyState() {
   return (
     <div style={{ textAlign: 'center', padding: '48px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-subtle)' }}>
-      <FolderKanban size={40} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
+      <Folder size={40} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
       <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>No projects match. Click &quot;New Project&quot; to add one.</p>
     </div>
   );
@@ -514,7 +528,8 @@ export default function ProjectsPage() {
   const { milestones } = useMilestones();
   const { goals } = useGoals();
   const { dreams } = useDreams();
-  const { addTask } = useTasks();
+  const { addTask, tasks } = useTasks();
+  const { focusedAreaId } = useLifeAreas();
 
   // ADHD Guidance & 1-Click Bridges
   const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
@@ -657,6 +672,12 @@ export default function ProjectsPage() {
   };
 
   const filteredProjects = projects.filter((p) => {
+    if (focusedAreaId) {
+      const parentGoal = goals.find((g) => g.id === p.goalId);
+      const matchesDirect = p.lifeAreaId === focusedAreaId;
+      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
+      if (!matchesDirect && !matchesGoal) return false;
+    }
     if (statusFilter === 'active' && (p.status === 'completed' || p.status === 'cancelled')) return false;
     if (statusFilter === 'planning' && p.status !== 'planning') return false;
     if (statusFilter === 'completed' && p.status !== 'completed') return false;
@@ -697,7 +718,7 @@ export default function ProjectsPage() {
       {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
-          <FolderKanban size={16} className={styles.quickAddIcon} />
+          <Folder size={16} className={styles.quickAddIcon} />
           <input
             type="text"
             className={styles.quickAddInput}
@@ -792,7 +813,7 @@ export default function ProjectsPage() {
           }}>
             {([
               { mode: 'list' as ViewMode, icon: <LayoutList size={15} />, label: 'List' },
-              { mode: 'kanban' as ViewMode, icon: <Columns size={15} />, label: 'Kanban' },
+              { mode: 'board' as ViewMode, icon: <Columns size={15} />, label: 'Board' },
               { mode: 'calendar' as ViewMode, icon: <CalendarDays size={15} />, label: 'Calendar' },
             ]).map(({ mode, icon, label }) => (
               <button
@@ -828,8 +849,8 @@ export default function ProjectsPage() {
         />
       )}
 
-      {viewMode === 'kanban' && (
-        <KanbanView
+      {viewMode === 'board' && (
+        <BoardView
           projects={filteredProjects}
           goals={goalList}
           onEdit={openEditModal}

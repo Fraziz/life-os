@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Sun,
@@ -35,7 +35,9 @@ import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
 import { useCalendar } from '@/context/CalendarContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
+import { useLifeAreas } from '@/context/LifeAreaContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
+import { formatTagLabel, getTagCategory } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
 
 import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
@@ -48,6 +50,7 @@ export default function TodayDashboardContent() {
   const { tasks, toggleTaskDone, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
+  const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
@@ -177,17 +180,45 @@ export default function TodayDashboardContent() {
     return () => window.removeEventListener('life_os_energy_changed', onEnergyChange);
   }, []);
 
+  // ── Domain Filter ───────────────────────────────────────────
+  const domainTasks = useMemo(() => {
+    if (!focusedAreaId) return tasks;
+    const activeArea = areas.find((a) => a.id === focusedAreaId);
+    const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
+    return tasks.filter((t) => {
+      const parentProject = activeProjects.find((p) => p.id === t.projectId);
+      const parentGoal = activeGoals.find((g) => g.id === (t.goalId || parentProject?.goalId));
+      const matchesDirect = t.lifeAreaId === focusedAreaId;
+      const matchesProject = parentProject?.lifeAreaId === focusedAreaId;
+      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
+      const matchesTag = Boolean(
+        areaNameLower &&
+          t.tags &&
+          t.tags.some((tag) => {
+            const tl = tag.toLowerCase();
+            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
+          })
+      );
+      return matchesDirect || matchesProject || matchesGoal || matchesTag;
+    });
+  }, [tasks, focusedAreaId, areas, activeProjects, activeGoals]);
+
+  const domainHabits = useMemo(() => {
+    if (!focusedAreaId) return habits;
+    return habits.filter((h) => h.lifeAreaId === focusedAreaId);
+  }, [habits, focusedAreaId]);
+
   // ── Tasks ────────────────────────────────────────────────────
-  const top3 = tasks
+  const top3 = domainTasks
     .filter((t) => t.status !== 'done' && (t.priority === 'urgent' || t.priority === 'high'))
     .slice(0, 3);
 
-  const otherTasks = tasks
+  const otherTasks = domainTasks
     .filter((t) => t.status !== 'done' && !top3.some((p) => p.id === t.id))
     .slice(0, 6);
 
   // Filter completed tasks to show ONLY tasks completed TODAY
-  const completedTasks = tasks
+  const completedTasks = domainTasks
     .filter((t) => {
       if (t.status !== 'done') return false;
       if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
@@ -204,7 +235,11 @@ export default function TodayDashboardContent() {
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTaskTitle.trim()) {
-      quickAddTask(newTaskTitle.trim(), { priority: 'medium', dueDate: todayStr });
+      quickAddTask(newTaskTitle.trim(), {
+        priority: 'medium',
+        dueDate: todayStr,
+        lifeAreaId: focusedAreaId || undefined,
+      });
       setNewTaskTitle('');
       setAddingTask(false);
       playSuccessChime();
@@ -225,7 +260,7 @@ export default function TodayDashboardContent() {
   };
 
   // ── Habits ───────────────────────────────────────────────────
-  const todayHabits = habits.slice(0, 6);
+  const todayHabits = domainHabits.slice(0, 6);
   const habitsCompletedToday = todayHabits.filter((h) =>
     isHabitCompletedOnDate(h.id, todayStr)
   ).length;
@@ -298,10 +333,23 @@ export default function TodayDashboardContent() {
 
   // ── Helpers ──────────────────────────────────────────────────
   const getTagStyle = (tags: string[] = []) => {
-    const tag = tags[0] || '';
-    if (/school|class|bsit/i.test(tag)) return styles.tagSchool;
-    if (/health|workout|fitness/i.test(tag)) return styles.tagHealth;
-    return styles.tagStudy;
+    const category = getTagCategory(tags[0] || '');
+    switch (category) {
+      case 'project':
+        return styles.tagProject;
+      case 'goal':
+        return styles.tagGoal;
+      case 'dream':
+        return styles.tagDream;
+      case 'school':
+        return styles.tagSchool;
+      case 'health':
+        return styles.tagHealth;
+      case 'ai':
+        return styles.tagAi;
+      default:
+        return styles.tagDefault;
+    }
   };
 
   const getProjectIcon = (title: string) => {
@@ -653,7 +701,8 @@ export default function TodayDashboardContent() {
                     </div>
                     {item.tags && item.tags.length > 0 && (
                       <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
-                        {item.tags[0]}
+                        <span className={styles.tagDot} />
+                        {formatTagLabel(item.tags[0])}
                       </span>
                     )}
                   </div>
@@ -717,6 +766,12 @@ export default function TodayDashboardContent() {
                         <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps</span>
                         <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
                       </button>
+                    )}
+                    {task.tags && task.tags.length > 0 && (
+                      <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`} style={{ marginLeft: 'auto' }}>
+                        <span className={styles.tagDot} />
+                        {formatTagLabel(task.tags[0])}
+                      </span>
                     )}
                   </div>
 

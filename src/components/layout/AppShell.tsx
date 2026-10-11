@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import styles from './AppShell.module.css';
@@ -23,6 +23,7 @@ import { KnowledgeProvider } from '@/context/KnowledgeContext';
 import { QuickNotesProvider } from '@/context/QuickNotesContext';
 import { ReminderProvider, useReminders } from '@/context/ReminderContext';
 import { SearchProvider, useSearch } from '@/context/SearchContext';
+import { UndoProvider } from '@/context/UndoContext';
 import SearchModal from '@/components/search/SearchModal';
 import ReminderDrawer from '@/components/reminders/ReminderDrawer';
 import AssistantModal from '@/components/assistant/AssistantModal';
@@ -31,6 +32,7 @@ import AIAssistantPanel from '@/components/assistant/AIAssistantPanel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import CommandPalette from '@/components/command/CommandPalette';
+import ProjectProgressCascade from './ProjectProgressCascade';
 import GrammarAssist from '@/components/ui/GrammarAssist';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
@@ -53,6 +55,7 @@ function getPageTitle(pathname: string): string {
 /** Wraps shell content to access Search and Reminders Context */
 function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isOpen, openSearch } = useSearch();
 
   // Desktop: pinned state — when true, sidebar is locked open at 248px.
@@ -132,6 +135,10 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   // Global keybindings
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const isInput =
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) ||
+        (e.target as HTMLElement)?.isContentEditable;
+
       if (e.key === 'Escape' && mobileOpen) {
         setMobileOpen(false);
       }
@@ -160,14 +167,44 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         setAiChatOpen(prev => !prev);
       }
       // Shift+? or ? (when not typing in an input) → Shortcuts
-      if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+      if (e.key === '?' && !isInput) {
         e.preventDefault();
         setShortcutsOpen(true);
+      }
+
+      // Alt+key quick navigation across website modules (when not typing)
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !isInput) {
+        const k = e.key.toLowerCase();
+        if (k === 'i') {
+          e.preventDefault();
+          router.push('/inbox'); // Idea Parking
+        } else if (k === 'g') {
+          e.preventDefault();
+          router.push('/goals'); // Goals
+        } else if (k === 'p') {
+          e.preventDefault();
+          router.push('/projects'); // Projects
+        } else if (k === 't') {
+          e.preventDefault();
+          router.push('/tasks'); // Tasks
+        } else if (k === 'f') {
+          e.preventDefault();
+          router.push('/focus'); // Focus Space
+        } else if (k === 'b') {
+          e.preventDefault();
+          router.push('/habits'); // Habits
+        } else if (k === 'r') {
+          e.preventDefault();
+          router.push('/review'); // Weekly Review
+        } else if (k === 'y') {
+          e.preventDefault();
+          router.push('/'); // Today Dashboard
+        }
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [mobileOpen, openSearch]);
+  }, [mobileOpen, openSearch, router]);
 
   // Draggable floating AI bubble state
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
@@ -282,6 +319,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
             onOpenNextAction={() => setNextActionOpen(true)}
           />
 
+          {/* Automatic Tasks-to-Projects Progress Cascade */}
+          <ProjectProgressCascade />
+
           <main
             className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''}`}
             id="main-content"
@@ -385,9 +425,11 @@ function withAppProviders(content: React.ReactNode) {
                                 <QuickNotesProvider>
                                   <ReminderProvider>
                                     <SearchProvider>
-                                      <ShellContent>
-                                        {content}
-                                      </ShellContent>
+                                      <UndoProvider>
+                                        <ShellContent>
+                                          {content}
+                                        </ShellContent>
+                                      </UndoProvider>
                                     </SearchProvider>
                                   </ReminderProvider>
                                 </QuickNotesProvider>

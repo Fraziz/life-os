@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Dream, DreamStatus } from '@/types';
 import { loadJsonArray } from '@/lib/localStore';
+import { notifyItemDeleted } from './UndoContext';
 
 const DREAMS_STORAGE_KEY = 'life_os_dreams_v1';
 
@@ -131,8 +132,26 @@ export function DreamProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteDream = (id: string) => {
+    const target = dreams.find((d) => d.id === id);
     const updated = dreams.filter((d) => d.id !== id);
     saveDreams(updated);
+    if (target) {
+      notifyItemDeleted({
+        type: 'Dream',
+        title: target.title,
+        restore: () => {
+          setDreams((prev) => {
+            if (prev.some((d) => d.id === target.id)) return prev;
+            const restored = [target, ...prev];
+            try { localStorage.setItem(DREAMS_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            return restored;
+          });
+        },
+        redelete: () => {
+          deleteDream(id);
+        },
+      });
+    }
   };
 
   const resetToDefaultDreams = () => {

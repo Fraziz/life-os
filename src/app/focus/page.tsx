@@ -62,6 +62,20 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = 
   orange: HIGHLIGHT_COLORS[5],
 };
 
+const FONT_COLORS = [
+  { name: 'default', label: 'Default', color: 'inherit', border: 'var(--color-border)' },
+  { name: 'white', label: 'Pure White', color: '#ffffff', border: '#e2e8f0' },
+  { name: 'emerald', label: 'Emerald Green', color: '#10b981', border: '#059669' },
+  { name: 'lime', label: 'Lime Green', color: '#84cc16', border: '#65a30d' },
+  { name: 'amber', label: 'Amber Gold', color: '#f59e0b', border: '#d97706' },
+  { name: 'orange', label: 'Coral Orange', color: '#f97316', border: '#ea580c' },
+  { name: 'rose', label: 'Rose Red', color: '#ef4444', border: '#dc2626' },
+  { name: 'pink', label: 'Neon Pink', color: '#ec4899', border: '#db2777' },
+  { name: 'purple', label: 'Royal Purple', color: '#a855f7', border: '#9333ea' },
+  { name: 'cyan', label: 'Vibrant Cyan', color: '#06b6d4', border: '#0891b2' },
+  { name: 'blue', label: 'Sky Blue', color: '#3b82f6', border: '#2563eb' },
+];
+
 const SOUNDSCAPES: { id: AmbientSoundType; title: string; subtitle: string; icon: string }[] = [
   { id: 'gamma40', title: '40Hz Gamma', subtitle: 'Hyperfocus', icon: '\u{1F9E0}' },
   { id: 'alpha10', title: '10Hz Alpha', subtitle: 'Flow State', icon: '\u{1F9D8}' },
@@ -120,8 +134,10 @@ export default function FocusPage() {
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [markDoneOnFinish, setMarkDoneOnFinish] = useState(true);
 
-  // Live Highlighter State in Focus Mode
+  // Live Highlighter & Font Color State in Focus Mode
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
+  const [annotationMode, setAnnotationMode] = useState<'highlight' | 'fontColor'>('highlight');
+  const [activeFontColor, setActiveFontColor] = useState<string>('#ffffff');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [floatingMenu, setFloatingMenu] = useState<{ x: number; y: number; targetMark?: HTMLElement | null } | null>(null);
   const bookContainerRef = useRef<HTMLDivElement>(null);
@@ -210,7 +226,7 @@ export default function FocusPage() {
         return;
       }
 
-      const clickedMark = target?.closest('mark') as HTMLElement | null;
+      const clickedMark = target?.closest('mark, .font-color-span') as HTMLElement | null;
       const sel = window.getSelection();
 
       if (
@@ -254,11 +270,16 @@ export default function FocusPage() {
 
     const c = COLOR_MAP[colorName] || HIGHLIGHT_COLORS[0];
 
-    // If explicit mark was passed and clicked
+    // If explicit mark was passed and clicked (literal highlight, zero spacing change)
     if (explicitMark && container.contains(explicitMark)) {
       explicitMark.style.background = c.bg;
-      explicitMark.style.border = `1px solid ${c.border}`;
-      explicitMark.style.color = c.text;
+      explicitMark.style.border = 'none';
+      explicitMark.style.padding = '0 1px';
+      explicitMark.style.margin = '0';
+      explicitMark.style.fontWeight = 'inherit';
+      if (!explicitMark.style.color) {
+        explicitMark.style.color = 'inherit';
+      }
       const saved = container.innerHTML;
       updateDoc(activeDoc.id, { content: saved });
       triggerSaveToast();
@@ -276,8 +297,14 @@ export default function FocusPage() {
       if (cur.nodeName === 'MARK') {
         const markEl = cur as HTMLElement;
         markEl.style.background = c.bg;
-        markEl.style.border = `1px solid ${c.border}`;
-        markEl.style.color = c.text;
+        markEl.style.border = 'none';
+        markEl.style.padding = '0';
+        markEl.style.margin = '0';
+        markEl.style.borderRadius = '0';
+        markEl.style.fontWeight = 'inherit';
+        if (!markEl.style.color) {
+          markEl.style.color = 'inherit';
+        }
         const saved = container.innerHTML;
         updateDoc(activeDoc.id, { content: saved });
         triggerSaveToast();
@@ -291,11 +318,12 @@ export default function FocusPage() {
     const mark = document.createElement('mark');
     mark.className = 'highlight-mark';
     mark.style.background = c.bg;
-    mark.style.border = `1px solid ${c.border}`;
-    mark.style.color = c.text;
-    mark.style.borderRadius = '3px';
-    mark.style.padding = '1px 5px';
-    mark.style.fontWeight = '600';
+    mark.style.color = 'inherit';
+    mark.style.border = 'none';
+    mark.style.padding = '0';
+    mark.style.margin = '0';
+    mark.style.borderRadius = '0';
+    mark.style.fontWeight = 'inherit';
     mark.style.boxDecorationBreak = 'clone';
     (mark.style as any).webkitBoxDecorationBreak = 'clone';
 
@@ -406,6 +434,74 @@ export default function FocusPage() {
       updateDoc(activeDoc.id, { content: saved });
       triggerSaveToast();
       setFloatingMenu(null);
+    }
+  };
+
+  const handleFontColorInFocus = (colorVal: string, explicitMark?: HTMLElement | null) => {
+    setActiveFontColor(colorVal);
+    const container = bookContainerRef.current;
+    if (!container || !activeDoc) return;
+
+    // 1. Direct explicit target (e.g. clicked highlight mark or span)
+    if (explicitMark && container.contains(explicitMark)) {
+      if (colorVal === 'inherit') {
+        explicitMark.style.color = '';
+      } else {
+        explicitMark.style.color = colorVal;
+      }
+      const saved = container.innerHTML;
+      updateDoc(activeDoc.id, { content: saved });
+      triggerSaveToast();
+      return;
+    }
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!container.contains(range.commonAncestorContainer) && container !== range.commonAncestorContainer) return;
+
+    // 2. Check if inside existing mark or font-span
+    let cur: Node | null = range.commonAncestorContainer;
+    while (cur && cur !== container) {
+      if (cur.nodeName === 'MARK' || (cur.nodeName === 'SPAN' && (cur as HTMLElement).style.color)) {
+        const el = cur as HTMLElement;
+        if (colorVal === 'inherit') {
+          el.style.color = '';
+        } else {
+          el.style.color = colorVal;
+        }
+        const saved = container.innerHTML;
+        updateDoc(activeDoc.id, { content: saved });
+        triggerSaveToast();
+        return;
+      }
+      cur = cur.parentNode;
+    }
+
+    if (sel.isCollapsed) return;
+
+    // 3. Wrap selection in span
+    if (colorVal !== 'inherit') {
+      const span = document.createElement('span');
+      span.className = 'font-color-span';
+      span.style.color = colorVal;
+      span.style.fontWeight = 'inherit';
+      span.style.padding = '0';
+      span.style.margin = '0';
+      span.style.border = 'none';
+      try {
+        const frag = range.extractContents();
+        span.appendChild(frag);
+        range.insertNode(span);
+        sel.removeAllRanges();
+      } catch {
+        try {
+          document.execCommand('foreColor', false, colorVal);
+        } catch {}
+      }
+      const saved = container.innerHTML;
+      updateDoc(activeDoc.id, { content: saved });
+      triggerSaveToast();
     }
   };
 
@@ -1121,34 +1217,92 @@ export default function FocusPage() {
                   />
                 </div>
 
-                {/* Highlighter Color Palette & Quick Eraser */}
-                <div className={styles.bookHighlighterRow}>
-                  <span className={styles.bookHighlighterLabel}>Highlight</span>
-                  <div className={styles.bookSwatchGroup}>
-                    {HIGHLIGHT_COLORS.map((c) => (
-                      <button
-                        key={c.name}
-                        type="button"
-                        className={`${styles.bookSwatchDot} ${activeHighlightColor === c.name ? styles.bookSwatchDotActive : ''}`}
-                        style={{
-                          backgroundColor: c.border,
-                        }}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleHighlightInFocus(c.name)}
-                        title={`Select ${c.label} highlighter`}
-                      />
-                    ))}
-                  </div>
+                {/* Annotate Mode Switch: Highlight vs Font Color */}
+                <div className={styles.annotateModeSwitch}>
                   <button
                     type="button"
-                    className={styles.bookEraserBtn}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleRemoveHighlightInFocus()}
-                    title="Clear highlight from selected text"
+                    className={`${styles.annotateModeBtn} ${annotationMode === 'highlight' ? styles.annotateModeBtnActive : ''}`}
+                    onClick={() => setAnnotationMode('highlight')}
                   >
-                    <Eraser size={12} />
+                    Highlight (BG)
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.annotateModeBtn} ${annotationMode === 'fontColor' ? styles.annotateModeBtnActive : ''}`}
+                    onClick={() => setAnnotationMode('fontColor')}
+                  >
+                    Font Color (Text)
                   </button>
                 </div>
+
+                {annotationMode === 'highlight' ? (
+                  /* Highlighter Color Palette & Quick Eraser */
+                  <div className={styles.bookHighlighterRow}>
+                    <span className={styles.bookHighlighterLabel}>Highlight</span>
+                    <div className={styles.bookSwatchGroup}>
+                      {HIGHLIGHT_COLORS.map((c) => (
+                        <button
+                          key={c.name}
+                          type="button"
+                          className={`${styles.bookSwatchDot} ${activeHighlightColor === c.name ? styles.bookSwatchDotActive : ''}`}
+                          style={{
+                            backgroundColor: c.border,
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleHighlightInFocus(c.name)}
+                          title={`Select ${c.label} highlighter`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.bookEraserBtn}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleRemoveHighlightInFocus()}
+                      title="Clear highlight from selected text"
+                    >
+                      <Eraser size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  /* Font Color Palette & Reset */
+                  <div className={styles.bookHighlighterRow}>
+                    <span className={styles.bookHighlighterLabel}>Text Color</span>
+                    <div className={styles.bookSwatchGroup}>
+                      {FONT_COLORS.map((fc) => (
+                        <button
+                          key={fc.name}
+                          type="button"
+                          className={`${styles.bookSwatchDot} ${activeFontColor === fc.color ? styles.bookSwatchDotActive : ''}`}
+                          style={{
+                            backgroundColor: fc.color === 'inherit' ? 'var(--color-surface-2)' : fc.color,
+                            borderColor: fc.border,
+                            color: fc.name === 'white' ? '#0f172a' : fc.color === 'inherit' ? 'var(--color-text)' : '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '9px',
+                            fontWeight: 700,
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleFontColorInFocus(fc.color)}
+                          title={`Font Color: ${fc.label}`}
+                        >
+                          A
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.bookEraserBtn}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleFontColorInFocus('inherit')}
+                      title="Reset font color to default"
+                    >
+                      <RotateCcw size={11} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={styles.bookPanelDivider} />
@@ -1658,6 +1812,7 @@ export default function FocusPage() {
           className={styles.floatingHighlightMenu}
           style={{ left: `${floatingMenu.x}px`, top: `${floatingMenu.y}px` }}
         >
+          {/* Highlight BG Swatches */}
           {HIGHLIGHT_COLORS.map((c) => (
             <button
               key={c.name}
@@ -1674,6 +1829,29 @@ export default function FocusPage() {
               }}
               title={`Highlight in ${c.label}`}
             />
+          ))}
+
+          <div className={styles.floatingDivider} />
+
+          {/* Font Color Swatches */}
+          {FONT_COLORS.slice(1, 8).map((fc) => (
+            <button
+              key={fc.name}
+              type="button"
+              className={styles.floatingFontSwatch}
+              style={{
+                backgroundColor: fc.color,
+                borderColor: fc.border,
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                handleFontColorInFocus(fc.color, floatingMenu.targetMark);
+                setFloatingMenu(null);
+              }}
+              title={`Font Color: ${fc.label}`}
+            >
+              A
+            </button>
           ))}
 
           <div className={styles.floatingDivider} />

@@ -13,8 +13,21 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
   if (!isOpen) return null;
 
   const shortcuts = [
+    { key: 'Alt + I', desc: 'Jump to Idea Parking (Inbox / Quick Capture)' },
+    { key: 'Alt + G', desc: 'Jump to Goals & Ambitions' },
+    { key: 'Alt + P', desc: 'Jump to Projects & Progress Cascade' },
+    { key: 'Alt + T', desc: 'Jump to Task Board & Execution' },
+    { key: 'Alt + Y', desc: 'Jump to Today Dashboard' },
+    { key: 'Alt + F', desc: 'Jump to Focus Space (Timer & Soundscape)' },
+    { key: 'Alt + B', desc: 'Jump to Habits & Streak Tracker' },
+    { key: 'Alt + R', desc: 'Jump to Weekly Review Wizard' },
+    { key: 'Alt + D', desc: 'Open / Toggle Life Domain Focus Selector' },
+    { key: 'Alt + 0', desc: 'Panoramic View (Reset to All Life Domains)' },
+    { key: 'Alt + 1..7', desc: 'Direct Switch to specific Life Domain' },
     { key: '⌘ K / Ctrl+K', desc: 'Global Full-Text Search across Sariling Mundo' },
     { key: '⌘ J / Ctrl+J', desc: 'What Should I Do Right Now? (Decision Engine)' },
+    { key: '⌘ L / Ctrl+L', desc: 'AI Assistant Companion Panel' },
+    { key: '⌘ B / Ctrl+B', desc: 'Toggle / Pin Navigation Sidebar' },
     { key: 'ESC', desc: 'Close any active modal, drawer, or search overlay' },
     { key: '?', desc: 'Open Keyboard Shortcuts Reference' },
   ];

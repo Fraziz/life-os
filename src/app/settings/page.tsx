@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLifeAreas } from '@/context/LifeAreaContext';
 import { wipeCloudKv } from '@/lib/cloudStore';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
 import {
@@ -69,6 +70,7 @@ const WEEKDAYS = [
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
+  const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
@@ -447,6 +449,293 @@ export default function SettingsPage() {
 
         </section>
 
+        {/* ── Life Domain Focus & Keyboard Shortcuts ── */}
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionIcon}>
+              <Layers size={16} />
+            </div>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Life Domain Focus &amp; Shortcuts</h2>
+              <p className={styles.sectionDesc}>
+                Filter your entire workspace (Today, Tasks, Projects, Habits, Goals) into a single life area for zero-distraction focus.
+              </p>
+            </div>
+          </div>
+
+          {/* Current Status banner */}
+          <div className={styles.domainStatusBanner}>
+            <div className={styles.domainStatusLeft}>
+              <span className={styles.domainStatusLabel}>Active Focus:</span>
+              <span className={styles.domainStatusValue}>
+                <span
+                  className={styles.domainDot}
+                  style={{
+                    backgroundColor: focusedArea?.color || '#94a3b8',
+                    boxShadow: focusedArea?.color ? `0 0 8px ${focusedArea.color}` : undefined,
+                  }}
+                />
+                {focusedArea ? focusedArea.name : 'All Domains (Panoramic View)'}
+              </span>
+            </div>
+            {focusedArea && (
+              <button
+                type="button"
+                className={styles.domainResetBtn}
+                onClick={() => setFocusedAreaId(null)}
+              >
+                Reset to All Domains (Alt+0)
+              </button>
+            )}
+          </div>
+
+          {/* Interactive Domain Quick Switch Grid */}
+          <div className={styles.formGroup} style={{ marginTop: '16px' }}>
+            <label className={styles.label}>Quick Switch Domain Focus</label>
+            <div className={styles.domainPillGrid}>
+              <button
+                type="button"
+                className={`${styles.domainPillBtn} ${!focusedAreaId ? styles.domainPillActive : ''}`}
+                onClick={() => setFocusedAreaId(null)}
+              >
+                <span className={styles.domainDot} style={{ backgroundColor: '#94a3b8' }} />
+                <span>All Domains</span>
+                <kbd className={styles.domainKbd}>Alt+0</kbd>
+              </button>
+
+              {activeAreas.map((area, index) => {
+                const isSelected = focusedAreaId === area.id;
+                return (
+                  <button
+                    key={area.id}
+                    type="button"
+                    className={`${styles.domainPillBtn} ${isSelected ? styles.domainPillActive : ''}`}
+                    onClick={() => setFocusedAreaId(isSelected ? null : area.id)}
+                    style={
+                      isSelected && area.color
+                        ? ({ '--pill-border': area.color } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
+                    <span
+                      className={styles.domainDot}
+                      style={{
+                        backgroundColor: area.color || '#94a3b8',
+                        boxShadow: isSelected ? `0 0 8px ${area.color}` : undefined,
+                      }}
+                    />
+                    <span>{area.name}</span>
+                    <kbd className={styles.domainKbd}>Alt+{index + 1}</kbd>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Complete System & Navigation Keyboard Shortcuts Reference */}
+          <div className={styles.formGroup} style={{ marginTop: '20px' }}>
+            <label className={styles.label}>Global Keyboard Shortcuts &amp; Navigation Reference</label>
+            <div className={styles.shortcutsTable}>
+              {/* Category 1: Website Quick Navigation */}
+              <div className={styles.shortcutsCategoryHeader}>
+                Website Navigation (Quick Jump)
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Idea Parking (Inbox)</span>
+                  <span className={styles.shortcutSub}>Capture new thoughts, brain dump, and park ideas</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + I</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Goals &amp; Ambitions</span>
+                  <span className={styles.shortcutSub}>View long-term targets, active goals, and progress</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + G</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Projects</span>
+                  <span className={styles.shortcutSub}>Multi-step project tracking and auto-progress cascade</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + P</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Task Board &amp; Execution</span>
+                  <span className={styles.shortcutSub}>View daily tasks, priority queues, and execution board</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + T</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Today Dashboard</span>
+                  <span className={styles.shortcutSub}>Executive briefing, top priorities, and day overview</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + Y</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Focus Space</span>
+                  <span className={styles.shortcutSub}>Pomodoro deep work timer, binaural soundscape, and reader</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + F</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Habits &amp; Routines</span>
+                  <span className={styles.shortcutSub}>Daily consistency tracker and streak maintenance</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + B</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Weekly Review</span>
+                  <span className={styles.shortcutSub}>3-step low-friction guided ADHD review and dopamine summary</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + R</kbd>
+                </div>
+              </div>
+
+              {/* Category 2: Life Domain Focus Mode */}
+              <div className={styles.shortcutsCategoryHeader}>
+                Life Domain Focus Mode
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Toggle Domain Focus Dropdown</span>
+                  <span className={styles.shortcutSub}>Open or close the domain selector popup in the sidebar</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + D</kbd>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
+                  <kbd className={styles.domainKbd}>Alt + L</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Panoramic View (All Domains)</span>
+                  <span className={styles.shortcutSub}>Reset filter to view all workspace items across all domains</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + 0</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Direct Domain Quick-Switch</span>
+                  <span className={styles.shortcutSub}>
+                    Jump directly to domains 1 through {activeAreas.length} (see domain badges in the grid above)
+                  </span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Alt + 1..{activeAreas.length}</kbd>
+                </div>
+              </div>
+
+              {/* Category 3: System & Executive Controls */}
+              <div className={styles.shortcutsCategoryHeader}>
+                System &amp; Executive Controls
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Universal Search &amp; Command Palette</span>
+                  <span className={styles.shortcutSub}>Full-text search across all notes, tasks, and system actions</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Ctrl + K</kbd>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
+                  <kbd className={styles.domainKbd}>⌘K</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Next Action Decision Engine</span>
+                  <span className={styles.shortcutSub}>Instant decision helper (&quot;What should I do right now?&quot;)</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Ctrl + J</kbd>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
+                  <kbd className={styles.domainKbd}>⌘J</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>AI Assistant Companion</span>
+                  <span className={styles.shortcutSub}>Open floating intelligence panel and conversational assistant</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Ctrl + L</kbd>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
+                  <kbd className={styles.domainKbd}>⌘L</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Toggle / Pin Navigation Sidebar</span>
+                  <span className={styles.shortcutSub}>Lock open or auto-collapse the Instagram-style hover rail</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Ctrl + B</kbd>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
+                  <kbd className={styles.domainKbd}>⌘B</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Shortcuts Quick Reference</span>
+                  <span className={styles.shortcutSub}>Open the keyboard shortcuts modal from any page</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>?</kbd>
+                </div>
+              </div>
+
+              <div className={styles.shortcutRow}>
+                <div className={styles.shortcutDesc}>
+                  <span className={styles.shortcutName}>Close Active Modal / Dropdown</span>
+                  <span className={styles.shortcutSub}>Dismiss any open dialog, drawer, or selector popover</span>
+                </div>
+                <div className={styles.shortcutKeys}>
+                  <kbd className={styles.domainKbd}>Esc</kbd>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── 2. Appearance & Color Theme ── */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
@@ -670,7 +959,7 @@ export default function SettingsPage() {
                 <option value="time-blocking">Time Blocking (Structured Calendar)</option>
                 <option value="eisenhower">Eisenhower Matrix (Urgent / Important)</option>
                 <option value="gtd">Getting Things Done (GTD Contexts)</option>
-                <option value="kanban">Kanban Boards (Visual Workflow)</option>
+                <option value="kanban">Board View (Visual Workflow)</option>
                 <option value="weekly-focus">Weekly Focus Objectives</option>
               </select>
             </div>

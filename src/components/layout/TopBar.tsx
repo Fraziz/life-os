@@ -34,14 +34,18 @@ function CloudSyncDot() {
     // Show "Saving…" when cloudStore queues a write
     const onWriting = () => {
       if (syncTimer.current) clearTimeout(syncTimer.current);
-      setStatus('syncing');
+      setTimeout(() => {
+        setStatus('syncing');
+      }, 0);
     };
 
     // Show "Saved ✓" when Firebase batch commits complete
     const onSynced = () => {
-      setStatus('synced');
-      // Fade back to idle after 3 seconds
-      syncTimer.current = setTimeout(() => setStatus('idle'), 3000);
+      setTimeout(() => {
+        setStatus('synced');
+        // Fade back to idle after 3 seconds
+        syncTimer.current = setTimeout(() => setStatus('idle'), 3000);
+      }, 0);
     };
 
     window.addEventListener('life_os_writing', onWriting);
@@ -99,7 +103,7 @@ export default function TopBar({
 
   return (
     <header className={styles.topBar} role="banner">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
         <button
           className={styles.menuButton}
           onClick={onMenuToggle}

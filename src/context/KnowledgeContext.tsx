@@ -2,9 +2,10 @@
 
 import React, {
   createContext, useContext, useState,
-  useCallback, useEffect, ReactNode,
+  useCallback, useEffect, useRef, ReactNode,
 } from 'react';
 import type { KnowledgeDocument, DocumentStatus } from '@/types';
+import { notifyItemDeleted } from './UndoContext';
 
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
 
@@ -43,7 +44,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
    - Key checkpoints (25%, 50%, 75%) along a Goal's trajectory with target dates.
 4. **PROJECT** (Execution Workstream)
    - Found under \`Organize → Projects\`
-   - Active initiatives with Kanban boards that group related tasks together.
+   - Active initiatives with visual boards that group related tasks together.
 5. **TASK** (Bite-Sized Action)
    - Found under \`Organize → Tasks\` and the \`Today\` dashboard.
    - 15–45 minute actionable next steps. Includes an **AI Breakdown** tool to slice large tasks into tiny subtasks.
@@ -150,6 +151,7 @@ interface KnowledgeContextValue {
   addDoc: (input: CreateInput) => KnowledgeDocument;
   updateDoc: (id: string, input: UpdateInput) => void;
   deleteDoc: (id: string) => void;
+  restoreDoc: (doc: KnowledgeDocument) => void;
   togglePinDoc: (id: string) => void;
   createProblemSolvingDoc: (problemTitle?: string, initialDescription?: string) => KnowledgeDocument;
   resetToDefaultDocs: () => void;
@@ -158,20 +160,26 @@ interface KnowledgeContextValue {
 const KnowledgeContext = createContext<KnowledgeContextValue | undefined>(undefined);
 
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
-  const [docs, setDocs]       = useState<KnowledgeDocument[]>([]);
+  const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const docsRef = useRef<KnowledgeDocument[]>([]);
+  docsRef.current = docs;
 
   const reloadFromStorage = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        setDocs(Array.isArray(parsed) ? parsed : []);
+        const loaded = Array.isArray(parsed) ? parsed : [];
+        setDocs(loaded);
+        docsRef.current = loaded;
       } else {
         setDocs([]);
+        docsRef.current = [];
       }
     } catch {
       setDocs([]);
+      docsRef.current = [];
     }
   };
 
@@ -184,37 +192,37 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
-  const persist = useCallback((next: KnowledgeDocument[]) => {
+  const saveDocs = useCallback((next: KnowledgeDocument[]) => {
+    docsRef.current = next;
     setDocs(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* noop */
+    }
   }, []);
+
+  const persist = useCallback((next: KnowledgeDocument[]) => {
+    saveDocs(next);
+  }, [saveDocs]);
 
   const addDoc = useCallback((input: CreateInput): KnowledgeDocument => {
     const t = now();
     const doc: KnowledgeDocument = { ...input, id: generateId(), createdAt: t, updatedAt: t };
-    setDocs((prev: KnowledgeDocument[]) => {
-      const next = [doc, ...prev];
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
-      return next;
-    });
+    const next = [doc, ...docsRef.current];
+    saveDocs(next);
     return doc;
-  }, []);
+  }, [saveDocs]);
 
   const updateDoc = useCallback((id: string, input: UpdateInput) => {
-    setDocs((prev: KnowledgeDocument[]) => {
-      const next = prev.map((d: KnowledgeDocument) => d.id === id ? { ...d, ...input, updatedAt: now() } : d);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
+    const next = docsRef.current.map((d) => d.id === id ? { ...d, ...input, updatedAt: now() } : d);
+    saveDocs(next);
+  }, [saveDocs]);
 
   const togglePinDoc = useCallback((id: string) => {
-    setDocs((prev: KnowledgeDocument[]) => {
-      const next = prev.map((d: KnowledgeDocument) => d.id === id ? { ...d, isPinned: !d.isPinned, updatedAt: now() } : d);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
+    const next = docsRef.current.map((d) => d.id === id ? { ...d, isPinned: !d.isPinned, updatedAt: now() } : d);
+    saveDocs(next);
+  }, [saveDocs]);
 
   const createProblemSolvingDoc = useCallback((problemTitle?: string, initialDescription?: string): KnowledgeDocument => {
     const title = problemTitle ? `Problem: ${problemTitle}` : 'Problem Breakdown & Analysis';
@@ -258,17 +266,35 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     });
   }, [addDoc]);
 
+  const restoreDoc = useCallback((doc: KnowledgeDocument) => {
+    if (docsRef.current.some((d) => d.id === doc.id)) return;
+    const next = [doc, ...docsRef.current];
+    saveDocs(next);
+  }, [saveDocs]);
+
   const deleteDoc = useCallback((id: string) => {
-    setDocs((prev: KnowledgeDocument[]) => {
-      const next = prev.filter((d: KnowledgeDocument) => d.id !== id);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, []);
+    const target = docsRef.current.find((d) => d.id === id);
+    const next = docsRef.current.filter((d) => d.id !== id);
+    saveDocs(next);
+
+    if (target) {
+      const docToRestore = target;
+      notifyItemDeleted({
+        type: 'Document',
+        title: docToRestore.title,
+        restore: () => {
+          restoreDoc(docToRestore);
+        },
+        redelete: () => {
+          deleteDoc(id);
+        },
+      });
+    }
+  }, [saveDocs, restoreDoc]);
 
   const resetToDefaultDocs = useCallback(() => {
-    persist(defaultDocs());
-  }, [persist]);
+    saveDocs(defaultDocs());
+  }, [saveDocs]);
 
   return (
     <KnowledgeContext.Provider value={{
@@ -277,6 +303,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
       addDoc,
       updateDoc,
       deleteDoc,
+      restoreDoc,
       togglePinDoc,
       createProblemSolvingDoc,
       resetToDefaultDocs,

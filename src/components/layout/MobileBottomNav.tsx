@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, Inbox, Headphones, CheckSquare, Compass } from 'lucide-react';
+import { Sparkles, Inbox, Headphones, CheckSquare, Compass, BookOpen } from 'lucide-react';
 import styles from './MobileBottomNav.module.css';
 
 interface MobileBottomNavProps {
@@ -17,7 +17,7 @@ export default function MobileBottomNav({ onOpenNextAction }: MobileBottomNavPro
     { label: 'Today', href: '/', icon: Sparkles },
     { label: 'Inbox', href: '/inbox', icon: Inbox },
     { label: 'Action', isCenterAction: true, icon: Compass },
-    { label: 'Focus', href: '/focus', icon: Headphones },
+    { label: 'Knowledge', href: '/knowledge', icon: BookOpen },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
   ];
 

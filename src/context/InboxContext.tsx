@@ -8,6 +8,7 @@ import { useGoals } from './GoalContext';
 import { useDreams } from './DreamContext';
 import { useKnowledge } from './KnowledgeContext';
 import { loadJsonArray } from '@/lib/localStore';
+import { notifyItemDeleted } from './UndoContext';
 
 const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
 
@@ -206,7 +207,25 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteInboxItem = (id: string) => {
+    const target = items.find((i) => i.id === id);
     saveItems(items.filter((i) => i.id !== id));
+    if (target) {
+      notifyItemDeleted({
+        type: 'Idea',
+        title: target.content,
+        restore: () => {
+          setItems((prev) => {
+            if (prev.some((i) => i.id === target.id)) return prev;
+            const restored = [target, ...prev];
+            try { localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            return restored;
+          });
+        },
+        redelete: () => {
+          deleteInboxItem(id);
+        },
+      });
+    }
   };
 
   const updateItemStatus = (id: string, status: InboxItem['status'], convertedTo?: InboxConvertedType, entityId?: string) => {
