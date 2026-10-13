@@ -98,20 +98,14 @@ export default function HabitsPage() {
   }
 
   const filteredHabits = habits.filter((habit) => {
-    if (focusedAreaId) {
-      const matchesDirect = habit.lifeAreaId === focusedAreaId;
-      const parentGoal = goals.find((g) => g.id === habit.parentGoalId);
-      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
-      if (!matchesDirect && !matchesGoal) return false;
-    }
     if (habitFilter === 'pending') {
       return !isHabitCompletedOnDate(habit.id, todayStr);
     }
     if (habitFilter === 'daily') {
-      return habit.frequency === 'daily' || habit.targetCount >= 7;
+      return habit.frequency === 'daily';
     }
     if (habitFilter === 'weekly') {
-      return habit.frequency === 'weekly' && habit.targetCount < 7;
+      return habit.frequency === 'weekly' || habit.frequency === 'custom';
     }
     return true;
   });
@@ -221,14 +215,6 @@ export default function HabitsPage() {
         </div>
       </form>
 
-      {/* ── Philosophy Banner ── */}
-      <section className={styles.philosophyBanner}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <p className={styles.bannerText}>
-            <strong>Guilt-Free Rhythm:</strong> Habits are votes for who you want to become. Showing up <span className={styles.bannerHighlight}>3 or 4 days a week</span> consistently produces massive mastery over time.
-          </p>
-        </div>
-      </section>
 
       {/* ── Habits Filter Tabs (Clean & Responsive) ── */}
       <div className={styles.filterTabsRow}>
@@ -251,14 +237,14 @@ export default function HabitsPage() {
           className={`${styles.filterTab} ${habitFilter === 'daily' ? styles.filterTabActive : ''}`}
           onClick={() => setHabitFilter('daily')}
         >
-          Daily ({habits.filter((h) => h.frequency === 'daily' || h.targetCount >= 7).length})
+          Daily ({habits.filter((h) => h.frequency === 'daily').length})
         </button>
         <button
           type="button"
           className={`${styles.filterTab} ${habitFilter === 'weekly' ? styles.filterTabActive : ''}`}
           onClick={() => setHabitFilter('weekly')}
         >
-          Weekly ({habits.filter((h) => h.frequency === 'weekly' && h.targetCount < 7).length})
+          Weekly ({habits.filter((h) => h.frequency === 'weekly' || h.frequency === 'custom').length})
         </button>
       </div>
 

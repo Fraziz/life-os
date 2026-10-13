@@ -1659,9 +1659,18 @@ export default function KnowledgePage() {
     }
   };
 
-  const handleDelete = (id: string, title: string) => {
-    if (confirm(`Delete "${title}"?`)) {
-      deleteDoc(id);
+  const handleDelete = (id: string, title: string, isArchived: boolean) => {
+    if (isArchived) {
+      if (confirm(`Permanently delete "${title}"? This cannot be undone.`)) {
+        deleteDoc(id);
+        if (selectedId === id) {
+          setSelectedId(docs.find((d) => d.id !== id)?.id || null);
+          setIsCreating(false);
+        }
+      }
+    } else {
+      // First pass: archive it
+      updateDoc(id, { status: 'archived' });
       if (selectedId === id) {
         setSelectedId(docs.find((d) => d.id !== id)?.id || null);
         setIsCreating(false);
@@ -3258,6 +3267,35 @@ export default function KnowledgePage() {
         </button>
       </div>
 
+      {/* Card 0: Delete / Archive Document */}
+      {selectedDoc && (
+        <div className={styles.companionCard}>
+          <button
+            type="button"
+            onClick={() => handleDelete(selectedDoc.id, selectedDoc.title, selectedDoc.status === 'archived')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '7px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${selectedDoc.status === 'archived' ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`,
+              background: selectedDoc.status === 'archived' ? 'rgba(239,68,68,0.06)' : 'var(--color-surface)',
+              color: selectedDoc.status === 'archived' ? '#ef4444' : 'var(--color-text-muted)',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title={selectedDoc.status === 'archived' ? 'Permanently delete this document' : 'Archive this document'}
+          >
+            <Trash2 size={12} />
+            <span>{selectedDoc.status === 'archived' ? 'Delete permanently' : 'Archive document'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Card 1: Typography & Reading View (Works in Book & Word Mode) */}
       <div className={styles.companionCard}>
         <div className={styles.companionCardHeader}>
@@ -3734,8 +3772,8 @@ export default function KnowledgePage() {
                           <button
                             type="button"
                             className={`${styles.rowActionBtn} ${styles.rowActionBtnDelete}`}
-                            onClick={() => handleDelete(doc.id, doc.title)}
-                            title="Delete Document"
+                            onClick={() => handleDelete(doc.id, doc.title, doc.status === 'archived')}
+                            title={doc.status === 'archived' ? 'Permanently delete' : 'Archive document'}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -3873,13 +3911,7 @@ export default function KnowledgePage() {
                     </button>
                   </div>
 
-                  <button
-                    className={`${styles.propertiesToggleBtn} ${showMetaSettings ? styles.propertiesToggleBtnActive : ''}`}
-                    onClick={() => setShowMetaSettings(!showMetaSettings)}
-                    title="Toggle document properties"
-                  >
-                    <Tag size={12} /> Properties {showMetaSettings ? '▴' : '▾'}
-                  </button>
+
                 </div>
 
                 <div className={styles.canvasActionsRight}>
@@ -3938,176 +3970,10 @@ export default function KnowledgePage() {
                 </div>
               </div>
 
-              {/* Collapsible Linear Properties Bar */}
-              {showMetaSettings && (
-                <div className={styles.propertiesBar}>
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Status</label>
-                    <select
-                      className={styles.propSelect}
-                      value={fStatus}
-                      onChange={(e) => setFStatus(e.target.value as DocumentStatus)}
-                    >
-                      <option value="active">Active</option>
-                      <option value="draft">Draft</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                  </div>
 
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Category</label>
-                    <select
-                      className={styles.propSelect}
-                      value={fCategory}
-                      onChange={(e) => setFCategory(e.target.value as DocumentCategory)}
-                    >
-                      <option value="general">General</option>
-                      <option value="learning">🧠 Learning &amp; Study</option>
-                      <option value="guides">📖 Guides &amp; Manuals</option>
-                      <option value="ideas">💡 Ideas &amp; Insights</option>
-                      <option value="reference">📚 Reference</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Reading Status</label>
-                    <select
-                      className={styles.propSelect}
-                      value={fReadStatus}
-                      onChange={(e) => {
-                        const next = e.target.value as DocumentReadStatus;
-                        setFReadStatus(next);
-                        if (next === 'completed') setFReadProgress(100);
-                      }}
-                    >
-                      <option value="to-read">⏳ To Read</option>
-                      <option value="reading">📖 Currently Reading</option>
-                      <option value="completed">✅ Completed</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Reading Progress ({fReadProgress}%)</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={fReadProgress}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setFReadProgress(val);
-                          if (val === 100) setFReadStatus('completed');
-                          else if (val > 0 && fReadStatus === 'to-read') setFReadStatus('reading');
-                        }}
-                        style={{ flex: 1, accentColor: 'var(--color-accent)' }}
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={fReadProgress}
-                        onChange={(e) => {
-                          const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                          setFReadProgress(val);
-                          if (val === 100) setFReadStatus('completed');
-                          else if (val > 0 && fReadStatus === 'to-read') setFReadStatus('reading');
-                        }}
-                        style={{ width: '48px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
-                      />
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>%</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Page Tracker (Optional)</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Page</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={fCurrentPage ?? ''}
-                        placeholder="Current"
-                        onChange={(e) => {
-                          const cur = e.target.value ? parseInt(e.target.value) : undefined;
-                          setFCurrentPage(cur);
-                          if (cur && fTotalPages && fTotalPages > 0) {
-                            setFReadProgress(Math.min(100, Math.round((cur / fTotalPages) * 100)));
-                          }
-                        }}
-                        style={{ width: '60px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
-                      />
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>of</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={fTotalPages ?? ''}
-                        placeholder="Total"
-                        onChange={(e) => {
-                          const tot = e.target.value ? parseInt(e.target.value) : undefined;
-                          setFTotalPages(tot);
-                          if (fCurrentPage && tot && tot > 0) {
-                            setFReadProgress(Math.min(100, Math.round((fCurrentPage / tot) * 100)));
-                          }
-                        }}
-                        style={{ width: '60px', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-text)', fontSize: '12px', padding: '2px 4px' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Pin</label>
-                    <button
-                      type="button"
-                      className={styles.propSelect}
-                      onClick={() => setFIsPinned(!fIsPinned)}
-                      style={{ cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Pin size={12} style={{ color: fIsPinned ? '#f59e0b' : 'inherit' }} />
-                      <span>{fIsPinned ? 'Pinned 📌' : 'Unpinned'}</span>
-                    </button>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Tags</label>
-                    <input
-                      type="text"
-                      className={styles.propInput}
-                      value={fTags}
-                      onChange={(e) => setFTags(e.target.value)}
-                      placeholder="design, tech..."
-                    />
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Connected Goal</label>
-                    <select
-                      className={styles.propSelect}
-                      value={fGoalId}
-                      onChange={(e) => setFGoalId(e.target.value)}
-                    >
-                      <option value="">None</option>
-                      {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-                    </select>
-                  </div>
-
-                  <div className={styles.propItem}>
-                    <label className={styles.propLabel}>Connected Project</label>
-                    <select
-                      className={styles.propSelect}
-                      value={fProjectId}
-                      onChange={(e) => setFProjectId(e.target.value)}
-                    >
-                      <option value="">None</option>
-                      {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
 
               {/* Connected Metadata Badges (Formal Linear Bar) */}
-              {(linkedDream || linkedGoal || linkedProject || linkedTask) && !showMetaSettings && (
+              {(linkedDream || linkedGoal || linkedProject || linkedTask) && (
                 <div className={styles.linkedBadgesBar}>
                   {linkedDream && (
                     <span className={styles.linkedBadge}>
@@ -4133,7 +3999,7 @@ export default function KnowledgePage() {
               )}
 
               {/* Reading Progress Strip — shown after Finish in Focus Space */}
-              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && !showMetaSettings && (
+              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && (
                 <div className={styles.docReadProgressStrip}>
                   <div className={styles.docReadProgressLeft}>
                     {selectedDoc.readStatus === 'completed' ? (
@@ -4156,7 +4022,7 @@ export default function KnowledgePage() {
                   </div>
                 </div>
               )}
-              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && !showMetaSettings && (
+              {selectedDoc && selectedDoc.readProgress != null && selectedDoc.readProgress > 0 && (
                 <div className={styles.docReadProgressBarTrack}>
                   <div
                     className={styles.docReadProgressBarFill}

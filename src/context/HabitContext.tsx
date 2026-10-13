@@ -165,10 +165,20 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsedHabits = loadJsonArray<Habit>(HABITS_STORAGE_KEY);
-      setHabits(parsedHabits || []);
 
-      const parsedCheckIns = loadJsonArray<HabitCheckIn>(CHECKINS_STORAGE_KEY);
-      setCheckIns(parsedCheckIns || []);
+      if (parsedHabits === null) {
+        // First visit — seed defaults into storage so they persist
+        localStorage.setItem(HABITS_STORAGE_KEY, JSON.stringify(DEFAULT_HABITS));
+        setHabits(DEFAULT_HABITS);
+
+        const seedCheckIns = generateSeedCheckIns();
+        localStorage.setItem(CHECKINS_STORAGE_KEY, JSON.stringify(seedCheckIns));
+        setCheckIns(seedCheckIns);
+      } else {
+        setHabits(parsedHabits);
+        const parsedCheckIns = loadJsonArray<HabitCheckIn>(CHECKINS_STORAGE_KEY);
+        setCheckIns(parsedCheckIns || []);
+      }
     } catch (err) {
       console.error('Failed to load Habits data:', err);
     }
