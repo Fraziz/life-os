@@ -703,7 +703,7 @@ export default function KnowledgePage() {
   const { tasks }    = useTasks();
 
   const [searchQ, setSearchQ]     = useState('');
-  const [tagFilter, setTagFilter]  = useState('');
+  const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; title: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -1659,23 +1659,30 @@ export default function KnowledgePage() {
     }
   };
 
-  const handleDelete = (id: string, title: string, isArchived: boolean) => {
-    if (isArchived) {
-      if (confirm(`Permanently delete "${title}"? This cannot be undone.`)) {
-        deleteDoc(id);
-        if (selectedId === id) {
-          setSelectedId(docs.find((d) => d.id !== id)?.id || null);
-          setIsCreating(false);
-        }
-      }
-    } else {
-      // First pass: archive it
-      updateDoc(id, { status: 'archived' });
-      if (selectedId === id) {
-        setSelectedId(docs.find((d) => d.id !== id)?.id || null);
-        setIsCreating(false);
-      }
+  const handleDelete = (id: string, title: string) => {
+    setDeleteDialogDoc({ id, title });
+  };
+
+  const handleArchiveDoc = (id: string) => {
+    updateDoc(id, { status: 'archived' });
+    setDeleteDialogDoc(null);
+    if (selectedId === id) {
+      setSelectedId(docs.find((d) => d.id !== id)?.id || null);
+      setIsCreating(false);
     }
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    deleteDoc(id);
+    setDeleteDialogDoc(null);
+    if (selectedId === id) {
+      setSelectedId(docs.find((d) => d.id !== id)?.id || null);
+      setIsCreating(false);
+    }
+  };
+
+  const handleRestoreDoc = (id: string) => {
+    updateDoc(id, { status: 'active' });
   };
 
   // Export as Formal Printable PDF
@@ -3226,8 +3233,7 @@ export default function KnowledgePage() {
   const filteredDocs = docs
     .filter((d) => {
       if (statusFilter !== 'all' && d.status !== statusFilter) return false;
-      if (tagFilter && !d.tags.some((t) => t.toLowerCase().includes(tagFilter.toLowerCase()))) return false;
-      if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q) && !d.tags.join(' ').toLowerCase().includes(q)) return false;
+      if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q)) return false;
       return true;
     })
     .sort((a, b) => {
@@ -3238,7 +3244,7 @@ export default function KnowledgePage() {
       return timeB - timeA;
     });
 
-  const allTags = Array.from(new Set(docs.flatMap((d) => d.tags))).sort();
+
   const hasEditor = isCreating || selectedDoc;
 
   // Connected entity labels for metadata bar
@@ -3267,31 +3273,38 @@ export default function KnowledgePage() {
         </button>
       </div>
 
-      {/* Card 0: Delete / Archive Document */}
+      {/* Card 0: Delete / Archive / Restore Document */}
       {selectedDoc && (
-        <div className={styles.companionCard}>
+        <div className={styles.companionCard} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {selectedDoc.status === 'archived' && (
+            <button
+              type="button"
+              onClick={() => handleRestoreDoc(selectedDoc.id)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '7px', padding: '8px 12px', borderRadius: '8px',
+                border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.06)',
+                color: '#10b981', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
+              }}
+              title="Restore document to Active"
+            >
+              <RotateCcw size={12} />
+              <span>Restore to Active</span>
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => handleDelete(selectedDoc.id, selectedDoc.title, selectedDoc.status === 'archived')}
+            onClick={() => handleDelete(selectedDoc.id, selectedDoc.title)}
             style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '7px',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: `1px solid ${selectedDoc.status === 'archived' ? 'rgba(239,68,68,0.35)' : 'var(--color-border)'}`,
-              background: selectedDoc.status === 'archived' ? 'rgba(239,68,68,0.06)' : 'var(--color-surface)',
-              color: selectedDoc.status === 'archived' ? '#ef4444' : 'var(--color-text-muted)',
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '7px', padding: '8px 12px', borderRadius: '8px',
+              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+              color: 'var(--color-text-muted)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
             }}
-            title={selectedDoc.status === 'archived' ? 'Permanently delete this document' : 'Archive this document'}
+            title="Archive or delete this document"
           >
             <Trash2 size={12} />
-            <span>{selectedDoc.status === 'archived' ? 'Delete permanently' : 'Archive document'}</span>
+            <span>Archive / Delete</span>
           </button>
         </div>
       )}
@@ -3717,14 +3730,6 @@ export default function KnowledgePage() {
               ))}
             </div>
 
-            {allTags.length > 0 && (
-              <select className={styles.tagDropdown} value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
-                <option value="">All Tags</option>
-                {allTags.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            )}
           </div>
 
           {/* Documents Linear List */}
@@ -3769,11 +3774,22 @@ export default function KnowledgePage() {
                           >
                             <Pin size={11} />
                           </button>
+                          {doc.status === 'archived' && (
+                            <button
+                              type="button"
+                              className={styles.rowActionBtn}
+                              onClick={(e) => { e.stopPropagation(); handleRestoreDoc(doc.id); }}
+                              title="Restore to Active"
+                              style={{ color: '#10b981' }}
+                            >
+                              <RotateCcw size={11} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             className={`${styles.rowActionBtn} ${styles.rowActionBtnDelete}`}
-                            onClick={() => handleDelete(doc.id, doc.title, doc.status === 'archived')}
-                            title={doc.status === 'archived' ? 'Permanently delete' : 'Archive document'}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(doc.id, doc.title); }}
+                            title="Archive or delete"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -3790,12 +3806,7 @@ export default function KnowledgePage() {
                         ) : (doc.readProgress != null && doc.readProgress > 0) ? (
                           <span className={styles.metaPillProgress}>{doc.readProgress}%</span>
                         ) : null}
-                        {doc.category && (
-                          <span className={styles.tagPill}>{doc.category}</span>
-                        )}
-                        {doc.tags.slice(0, 1).map((t) => (
-                          <span key={t} className={styles.tagPill}>{t}</span>
-                        ))}
+
                         <div className={styles.metaRightActions}>
                           {isFeatured && (
                             <span
@@ -4191,9 +4202,7 @@ export default function KnowledgePage() {
                                 Category: {fCategory}
                               </span>
                             )}
-                            {fTags && fTags.split(',').map((t) => t.trim()).filter(Boolean).map((t) => (
-                              <span key={t} className={styles.wordDocumentBadge}>{t}</span>
-                            ))}
+
                           </div>
                           <div>
                             {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -5036,6 +5045,80 @@ export default function KnowledgePage() {
               Undo
             </button>
           )}
+        </div>
+      )}
+
+      {/* Archive / Delete Dialog */}
+      {deleteDialogDoc && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setDeleteDialogDoc(null)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              borderRadius: '14px', padding: '24px 28px', width: '340px', maxWidth: '90vw',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)' }}>
+              Archive or Delete?
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+              &ldquo;{deleteDialogDoc.title}&rdquo;
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => handleArchiveDoc(deleteDialogDoc.id)}
+                style={{
+                  padding: '11px 16px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface-2)', color: 'var(--color-text)',
+                  fontSize: '13px', cursor: 'pointer', fontWeight: 500, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                }}
+              >
+                <RotateCcw size={14} style={{ opacity: 0.7 }} />
+                <span>
+                  <strong>Archive</strong>
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 400 }}>
+                    Move to Archived — can restore later
+                  </span>
+                </span>
+              </button>
+              <button
+                onClick={() => handlePermanentDelete(deleteDialogDoc.id)}
+                style={{
+                  padding: '11px 16px', borderRadius: '8px',
+                  border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.06)',
+                  color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontWeight: 500, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                }}
+              >
+                <Trash2 size={14} />
+                <span>
+                  <strong>Delete permanently</strong>
+                  <span style={{ display: 'block', fontSize: '11px', color: 'rgba(239,68,68,0.7)', fontWeight: 400 }}>
+                    Cannot be undone
+                  </span>
+                </span>
+              </button>
+              <button
+                onClick={() => setDeleteDialogDoc(null)}
+                style={{
+                  padding: '9px 16px', borderRadius: '8px', border: 'none',
+                  background: 'transparent', color: 'var(--color-text-muted)',
+                  fontSize: '13px', cursor: 'pointer', marginTop: '2px',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
