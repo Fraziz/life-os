@@ -383,7 +383,7 @@ export interface WeeklyReview {
 
 // ── Knowledge / Documents (Phase 23) ───────────────────────
 
-export type DocumentStatus = 'draft' | 'active' | 'archived';
+export type DocumentStatus = 'active' | 'archived';
 export type DocumentCategory = 'learning' | 'problem-solving' | 'guides' | 'ideas' | 'reference' | 'general';
 export type DocumentReadStatus = 'to-read' | 'reading' | 'completed';
 

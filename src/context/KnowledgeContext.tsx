@@ -134,7 +134,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       id: generateId(),
       title: 'Business Ideas',
       content: `# Business Ideas\n\n## Software Products\n- Personal finance tracker with envelope budgeting\n- Simple invoice generator for freelancers\n\n## Creative\n- Sell 3D assets on markets like Fab or Sketchfab\n- Commission character designs\n\n## Questions to Answer\n- What pain point am I uniquely able to solve?\n- What has the lowest startup cost?\n`,
-      status: 'draft',
+      status: 'active',
       tags: ['business', 'ideas', 'future'],
       createdAt: t,
       updatedAt: t,

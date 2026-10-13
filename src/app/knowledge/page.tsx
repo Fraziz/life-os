@@ -3719,7 +3719,7 @@ export default function KnowledgePage() {
 
           <div className={styles.filterRow}>
             <div className={styles.statusChips}>
-              {(['all', 'active', 'draft', 'archived'] as const).map((s) => (
+              {(['all', 'active', 'archived'] as const).map((s) => (
                 <button
                   key={s}
                   className={`${styles.statusChip} ${statusFilter === s ? styles.statusChipActive : ''}`}
@@ -3743,7 +3743,7 @@ export default function KnowledgePage() {
               filteredDocs.map((doc) => {
                 const isActive = doc.id === selectedId;
                 const isFeatured = featuredBookId === doc.id;
-                const statusDotColor = doc.status === 'active' ? '#10b981' : doc.status === 'draft' ? '#818cf8' : '#94a3b8';
+                const statusDotColor = doc.status === 'active' ? '#10b981' : '#94a3b8';
 
                 return (
                   <div
