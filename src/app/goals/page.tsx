@@ -19,7 +19,6 @@ import {
   Sparkles,
   CloudSun,
   CheckCircle2,
-  Search,
   X,
   RotateCcw,
   Sliders,
@@ -38,6 +37,7 @@ import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import { coachGoalWithAI } from '@/utils/aiEngine';
 import type { GoalCoachResult } from '@/utils/aiEngine';
@@ -155,7 +155,6 @@ export default function GoalsPage() {
   const [horizonFilter, setHorizonFilter] = useState<'all' | GoalHorizon>('all');
   const [dreamFilter, setDreamFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('active');
-  const [goalSearch, setGoalSearch] = useState<string>('');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -269,13 +268,6 @@ export default function GoalsPage() {
     if (statusFilter === 'completed' && g.status !== 'completed') return false;
     if (horizonFilter !== 'all' && g.horizon !== horizonFilter) return false;
     if (dreamFilter !== 'all' && g.parentDreamId !== dreamFilter) return false;
-    if (goalSearch.trim()) {
-      const q = goalSearch.toLowerCase();
-      const matchTitle = g.title.toLowerCase().includes(q);
-      const matchDesc = g.description?.toLowerCase().includes(q);
-      const matchWhy = g.why.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchWhy) return false;
-    }
     return true;
   });
 
@@ -314,16 +306,38 @@ export default function GoalsPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new goal..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span>
-            <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={openCreateModal}
+              title="Open Detailed Goal Editor"
+              aria-label="Open Detailed Goal Editor"
+            >
+              <Target size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span>
+              <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -366,26 +380,6 @@ export default function GoalsPage() {
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
-          <div className={styles.searchWrap}>
-            <Search size={14} className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search goals..."
-              value={goalSearch}
-              onChange={(e) => setGoalSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-            {goalSearch && (
-              <button
-                type="button"
-                onClick={() => setGoalSearch('')}
-                className={styles.clearSearchBtn}
-                aria-label="Clear search"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${statusFilter === 'active' ? styles.activeTab : ''}`}
@@ -520,13 +514,13 @@ export default function GoalsPage() {
                 </div>
 
                 <div>
-                  <h3 className={styles.goalTitle}>{goal.title}</h3>
-                  {goal.description && <p className={styles.goalDesc}>{goal.description}</p>}
+                  <h3 className={styles.goalTitle}><AutoLinkText text={goal.title} /></h3>
+                  {goal.description && <p className={styles.goalDesc}><AutoLinkText text={goal.description} /></p>}
                 </div>
 
                 <div className={styles.whyBanner}>
                   <span className={styles.whyLabel}>Why it matters</span>
-                  <p className={styles.whyText}>&ldquo;{goal.why}&rdquo;</p>
+                  <p className={styles.whyText}>&ldquo;<AutoLinkText text={goal.why} />&rdquo;</p>
                 </div>
 
                 {/* ── Progress Slider ── */}

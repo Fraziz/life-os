@@ -25,33 +25,101 @@
 .dailySummaryRow {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
 .summaryPill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 14px;
   border-radius: 99px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   font-size: 0.8rem;
+  font-family: inherit;
   color: var(--color-text);
   font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   text-decoration: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  cursor: default;
+  transition: all var(--transition-fast);
+}
+
+button.summaryPill {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+  margin: 0;
+  padding: 0 14px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+}
+
+.summaryPill:hover {
+  border-color: var(--color-border);
+}
+
+button.summaryPill:hover,
+a.summaryPill:hover {
+  transform: translateY(-1px);
 }
 
 .summaryPillFocus {
-  background: linear-gradient(135deg, #6366f1, #818cf8);
-  color: #fff;
-  border-color: transparent;
+  background: var(--color-pill-action-bg);
+  color: var(--color-pill-action-text);
+  border: 1px solid var(--color-pill-action-border);
+  box-shadow: var(--color-pill-action-shadow);
   cursor: pointer;
-  transition: opacity 0.15s;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+  line-height: 1;
+  padding: 0 14px;
+  transition: opacity 0.15s, transform 0.15s, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.summaryPillFocus:hover { opacity: 0.88; }
+.summaryPillFocus:hover {
+  opacity: 0.90;
+  transform: translateY(-1px);
+}
+
+.summaryPillOptimize {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(56, 189, 248, 0.14));
+  border-color: rgba(99, 102, 241, 0.35);
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.summaryPillOptimize:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.summaryPillBriefing {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(139, 92, 246, 0.16));
+  border-color: rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.summaryPillBriefing:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+}
 
 .pillIconGreen { color: #22c55e; }
 .pillIconOrange { color: #f97316; }
@@ -455,8 +523,154 @@
   line-height: 1;
 }
 
+/* ── Combined Habits & Workout Section ── */
+.sectionHeaderLinks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-/*  Hero Greeting Banner  */
+.linkDivider {
+  color: var(--color-border-subtle);
+  font-size: 0.75rem;
+}
+
+.viewAllNotesLink {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.viewAllNotesLink:hover {
+  color: var(--color-text);
+}
+
+.workoutBannerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  margin-bottom: 12px;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.workoutBannerRow:hover {
+  border-color: var(--color-border);
+}
+
+.workoutBannerDone {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+.workoutBannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.workoutIcon {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.workoutBannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workoutBannerTitle {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.workoutBannerMeta {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.workoutActionBtn {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  padding: 5px 11px;
+  border-radius: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.workoutActionBtn:hover {
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
+}
+
+.workoutStatusDoneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.workoutStatusRestBadge {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  background: var(--color-surface-2);
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.workoutStatusSchedBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+
+.workoutEmptyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.workoutEmptyChip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
 
 /*  2-Column Dashboard Subgrid  */
 .dashboardTwoColRow {
@@ -472,7 +686,7 @@
   margin: 0;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1080px) {
   .dashboardTwoColRow {
     grid-template-columns: 1fr;
   }
@@ -506,7 +720,7 @@
 .heroBanner {
   position: relative;
   width: 100%;
-  min-height: 120px;
+  min-height: clamp(96px, 12vh, 120px);
   border-radius: 18px;
   background-image: url('/hero-mountain.jpg');
   background-size: cover;
@@ -522,14 +736,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 22px;
+  padding: clamp(10px, 1.4vw, 16px) clamp(14px, 1.8vw, 22px);
   background: linear-gradient(
     90deg,
     rgba(20, 24, 30, 0.5) 0%,
     rgba(20, 24, 30, 0.3) 50%,
     rgba(20, 24, 30, 0.12) 100%
   );
-  min-height: 120px;
+  min-height: clamp(96px, 12vh, 120px);
   box-sizing: border-box;
   width: 100%;
 }
@@ -546,7 +760,7 @@
 }
 
 .heroGreeting {
-  font-size: 1.45rem;
+  font-size: clamp(1.2rem, 1.8vw, 1.45rem);
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.02em;
@@ -621,6 +835,13 @@
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 1320px) {
+  .quickActionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
 }
 
 .actionCard {
@@ -955,6 +1176,83 @@
   text-decoration: underline;
 }
 
+/* ── Combined Today's Energy Switcher in Section Header ── */
+.headerEnergyCluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+}
+
+.headerEnergyPills {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 99px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.headerEnergyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.73rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  font-family: inherit;
+  line-height: normal;
+}
+
+.headerEnergyBtn:hover {
+  color: var(--color-text);
+}
+
+.headerEnergyBtnActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .headerEnergyBtnActive,
+:global([data-theme='cyber']) .headerEnergyBtnActive {
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.12));
+  color: var(--color-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme='nature']) .headerEnergyBtnActive {
+  background: rgba(74, 222, 128, 0.2);
+  color: #f0fdf4;
+}
+
+.todayEnergyTipBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+.todayEnergyZapIcon {
+  color: #eab308;
+  flex-shrink: 0;
+}
+
 /*  Top 3 Priorities  */
 
 .subSectionWrap {
@@ -1223,13 +1521,26 @@
 }
 
 .priorityOneRow {
-  background: var(--color-accent-subtle, rgba(99, 102, 241, 0.08));
-  border: 1px solid var(--color-border);
+  background: var(--color-doitnow-bg);
+  border: 1px solid var(--color-doitnow-border);
+  box-shadow: none;
 }
 
 .priorityOneRow:hover {
-  background: var(--color-surface-3, rgba(128, 128, 128, 0.12)) !important;
-  border-color: var(--color-accent);
+  background: var(--color-surface-2) !important;
+  border-color: var(--color-doitnow-border-hover) !important;
+}
+
+.priorityOneNumBadge {
+  background-color: var(--color-doitnow-accent) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+:global([data-theme='dark']) .priorityOneNumBadge {
+  background-color: #352f2a !important;
+  color: var(--color-doitnow-accent) !important;
+  border: 1px solid var(--color-doitnow-border) !important;
 }
 
 .priorityOneBadge {
@@ -1239,13 +1550,36 @@
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-accent);
-  background: var(--color-surface-3, rgba(128, 128, 128, 0.15));
-  border: 1px solid var(--color-border-subtle);
-  padding: 2px 8px;
+  letter-spacing: 0.05em;
+  color: var(--color-doitnow-accent);
+  background: var(--color-doitnow-badge-bg);
+  border: 1px solid var(--color-doitnow-border);
+  padding: 2px 7px;
   border-radius: var(--radius-sm, 4px);
   white-space: nowrap;
+}
+
+.doItNowTagBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-doitnow-accent);
+  background: var(--color-doitnow-badge-bg);
+  border: 1px solid var(--color-doitnow-border);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
+}
+
+.tagDoitnow {
+  color: #d4a373;
+  background-color: rgba(212, 163, 115, 0.12);
+  border-color: rgba(212, 163, 115, 0.28);
+  font-weight: 600;
 }
 
 .energyNoticeCard {
@@ -1330,84 +1664,42 @@
   font-weight: 600;
 }
 
-/* ── Moving Reminders Ticker (Right to Left Marquee) — Clean & ADHD Friendly ── */
-.reminderTickerContainer {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 7px 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  position: relative;
-  margin-bottom: var(--space-2);
+/* ── Pure Text Reminders Ticker (No Box, Smooth Moving Stream) ── */
+.pureTextTickerContainer {
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.reminderTickerContainer:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.reminderTickerHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-right: 14px;
-  border-right: 1px solid var(--color-border);
-  flex-shrink: 0;
-  z-index: 2;
-  background: var(--color-surface);
-}
-
-.tickerLabel {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-
-.tickerBadgeCount {
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
-
-.reminderTickerTrackMask {
-  flex: 1;
-  min-width: 0;
-  width: 0;
   overflow: hidden;
   position: relative;
-  mask-image: linear-gradient(to right, transparent, black 25px, black calc(100% - 25px), transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 25px, black calc(100% - 25px), transparent);
+  padding: 6px 0;
+  margin: 2px 0 6px 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.reminderTickerTrack {
+.pureTextTickerMask {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%);
+}
+
+.pureTextTickerTrack {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
   white-space: nowrap;
-  animation: marqueeRightToLeft 32s linear infinite;
+  animation: marqueeDrift 28s linear infinite;
   will-change: transform;
 }
 
-.reminderTickerTrack:hover {
+.pureTextTickerTrack:hover {
   animation-play-state: paused;
 }
 
-@keyframes marqueeRightToLeft {
+@keyframes marqueeDrift {
   0% {
     transform: translateX(0%);
   }
@@ -1416,76 +1708,57 @@
   }
 }
 
-.tickerPill {
+.pureTextTickerItem {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  font-size: 0.82rem;
-  color: var(--color-text);
-  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+  gap: 10px;
+  padding: 0 16px;
+  background: transparent;
+  border: none;
 }
 
-.tickerPill:hover {
-  border-color: var(--color-accent);
-  background: var(--color-surface-hover);
-  transform: translateY(-1px);
-}
-
-.tickerPillText {
-  font-weight: 500;
-  max-width: 360px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tickerPillTime {
-  font-size: 0.72rem;
+.pureTextTickerContent {
+  font-size: 0.86rem;
   font-weight: 500;
   color: var(--color-text-muted);
-  background: var(--color-surface-3);
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-
-.tickerDismissBtn {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.tickerDismissBtn:hover {
-  background: var(--color-success);
-  color: #ffffff;
-  border-color: var(--color-success);
-}
-
-.tickerManageLink {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  padding-left: 10px;
-  flex-shrink: 0;
-  z-index: 2;
-  background: var(--color-surface);
+  letter-spacing: -0.01em;
   transition: color var(--transition-fast);
 }
 
-.tickerManageLink:hover {
+.pureTextTickerItem:hover .pureTextTickerContent {
+  color: var(--color-text);
+}
+
+.pureTextTickerTime {
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+}
+
+.pureTextTickerDoneBtn {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--color-accent);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.85;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.pureTextTickerDoneBtn:hover {
+  opacity: 1;
+  text-decoration: underline;
+  transform: scale(1.04);
+}
+
+.pureTextTickerDivider {
+  color: var(--color-text-faint);
+  font-size: 0.75rem;
+  opacity: 0.45;
+  margin-left: 8px;
+  user-select: none;
 }
 
 /*  Wrap Up Day & Shutdown Modal  */
@@ -1535,7 +1808,10 @@
   border-radius: 20px;
   max-width: 480px;
   width: 100%;
-  padding: 28px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(18px, 3vw, 28px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2252,7 +2528,7 @@
 .modalCard {
   width: 100%;
   max-width: 520px;
-  max-height: 80vh;
+  max-height: calc(100dvh - 32px);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
@@ -2555,11 +2831,28 @@
 }
 
 
-/* Nature Theme Overrides - Today Dashboard */
-:global([data-theme='nature']) .summaryPillFocus {
-  background: linear-gradient(135deg, rgba(74, 222, 128, 0.20), rgba(34, 197, 94, 0.35));
-  border: 1px solid rgba(134, 239, 172, 0.20);
+/* Short laptop viewports & Windows taskbar adaptive rules */
+@media (max-height: 750px) {
+  .dashboardContainer {
+    gap: 12px;
+  }
+  .mainColumn {
+    gap: 12px;
+  }
+  .scheduleSectionCard,
+  .tasksListCard,
+  .habitsCard,
+  .brainDumpCard {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  .actionCard {
+    padding: 10px 12px;
+  }
 }
+
+/* Nature Theme Overrides - Today Dashboard */
+/* removed summaryPillFocus nature override */
 :global([data-theme='nature']) .pillIconGreen { color: #4ade80; }
 :global([data-theme='nature']) .pillIconOrange { color: #fbbf24; }
 :global([data-theme='nature']) .scheduleSectionCard,

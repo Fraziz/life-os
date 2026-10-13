@@ -16,7 +16,7 @@ export default function AuthGate({
   children: React.ReactNode;
   shell: (content: React.ReactNode) => React.ReactNode;
 }) {
-  const { user, ready, cloudWarning, logout } = useAuth();
+  const { user, ready, cloudWarning, logout, isGuest, continueAsGuest } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [hydrateError, setHydrateError] = useState<string | null>(null);
@@ -36,9 +36,9 @@ export default function AuthGate({
     }
   }, [ready, user, isAuthRoute, router]);
 
-  // Session revocation listener (for "Log out of all devices")
+  // Session revocation listener (for "Log out of all devices" - Firebase users only)
   useEffect(() => {
-    if (!user) return;
+    if (!user || isGuest) return;
     try {
       const sessionDocRef = doc(getFirebaseDb(), 'users', user.uid, 'meta', 'session');
       const unsub = onSnapshot(sessionDocRef, (snap) => {
@@ -55,21 +55,21 @@ export default function AuthGate({
     } catch {
       // offline/firestore failsafe
     }
-  }, [user, logout]);
+  }, [user, isGuest, logout]);
 
-  // Per-device session record (shown in Settings → Active Sessions & Devices)
+  // Per-device session record (shown in Settings → Active Sessions & Devices - Firebase users only)
   useEffect(() => {
-    if (!user) return;
+    if (!user || isGuest) return;
     return startDeviceSessionTracking(user.uid, () => {
       console.warn('[SarilingMundo] This device was signed out from another device.');
       void logout();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [user?.uid, isGuest]);
 
-  // Cloud sync in background - NEVER blocks rendering
+  // Cloud sync in background - NEVER blocks rendering - Firebase users only
   useEffect(() => {
-    if (!user) {
+    if (!user || isGuest) {
       syncStarted.current = false;
       return;
     }
@@ -97,15 +97,15 @@ export default function AuthGate({
       cancelled = true;
       void stopCloudSync();
     };
-  }, [user]);
+  }, [user, isGuest]);
 
   const [takingLong, setTakingLong] = useState(false);
 
-  // Safety timer: if auth takes more than 2.5s, give user a direct responsive button
+  // Safety timer: if auth takes more than 1 second, give user responsive bypass buttons
   useEffect(() => {
     const timer = setTimeout(() => {
       setTakingLong(true);
-    }, 2500);
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -155,26 +155,40 @@ export default function AuthGate({
         </div>
 
         {takingLong && (
-          <button
-            type="button"
-            onClick={() => router.replace('/login')}
-            style={{
-              marginTop: '8px',
-              padding: '8px 20px',
-              borderRadius: '999px',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#ffffff',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.16)')}
-            onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
-          >
-            Taking longer than usual? Click to open Login →
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => router.replace('/login')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Sign In →
+            </button>
+            <button
+              type="button"
+              onClick={continueAsGuest}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '999px',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                background: 'rgba(56, 189, 248, 0.12)',
+                color: '#38bdf8',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Continue in Local Mode
+            </button>
+          </div>
         )}
       </div>
     );
@@ -185,7 +199,7 @@ export default function AuthGate({
     <AttachmentProvider>
       {shell(
         <>
-          {(cloudWarning || hydrateError) && (
+          {(cloudWarning || hydrateError) && !isGuest && (
             <div style={{ margin: '0 0 16px', padding: '12px 14px', borderRadius: 12, background: 'var(--color-warning-dim)', color: 'var(--color-warning)', fontSize: 13, lineHeight: 1.4 }}>
               {hydrateError || cloudWarning}
             </div>

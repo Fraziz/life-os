@@ -24,7 +24,7 @@
   border-radius: 20px;
   width: 100%;
   max-width: 680px;
-  max-height: 80vh;
+  max-height: min(85dvh, calc(100dvh - 40px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -278,7 +278,7 @@
 
   .modal {
     border-radius: 16px;
-    max-height: 88vh;
+    max-height: calc(100dvh - 24px);
   }
 
   .inputRow {

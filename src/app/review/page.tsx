@@ -217,25 +217,25 @@ export default function WeeklyReviewPage() {
 
       {/* ── Auto-Aggregated Dopamine Summary (Clean Formal Cards, No Icons) ── */}
       <section className={styles.summaryGrid} aria-label="Current Week Performance Summary">
-        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#34d399' }}>
+        <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Completed Tasks</span>
           <span className={styles.summaryValue}>{completedTasksThisWeek.length}</span>
           <span className={styles.summaryDetail}>Actions resolved this week</span>
         </div>
 
-        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#818cf8' }}>
+        <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Focus &amp; Reading Time</span>
           <span className={styles.summaryValue}>{formatFocusTime(focusMinutesThisWeek)}</span>
           <span className={styles.summaryDetail}>Logged in deep focus sessions</span>
         </div>
 
-        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#f59e0b' }}>
+        <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Habit Consistency</span>
           <span className={styles.summaryValue}>{habitConsistency}%</span>
           <span className={styles.summaryDetail}>Routine compliance score</span>
         </div>
 
-        <div className={styles.summaryCard} style={{ ['--card-accent' as string]: '#38bdf8' }}>
+        <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>Active Initiatives</span>
           <span className={styles.summaryValue}>{activeProjects.length} Projects</span>
           <span className={styles.summaryDetail}>Open multi-step endeavors</span>

@@ -38,6 +38,8 @@ import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
 import { PanelLeft, Bot } from 'lucide-react';
+import { useArrowKeyScroll } from '@/utils/useArrowKeyScroll';
+import { useGlobalLinkDetector } from '@/utils/useGlobalLinkDetector';
 
 /**
  * Derives a human-readable page title from the current pathname.
@@ -54,6 +56,12 @@ function getPageTitle(pathname: string): string {
 
 /** Wraps shell content to access Search and Reminders Context */
 function ShellContent({ children }: { children: React.ReactNode }) {
+  // Support natural arrow key scrolling across any scrollable container in the app
+  useArrowKeyScroll();
+
+  // Support auto-clickable links everywhere across the entire system
+  useGlobalLinkDetector();
+
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen, openSearch } = useSearch();
@@ -86,6 +94,23 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void initFirebaseAnalytics();
+  }, []);
+
+  // Safe window.confirm guard against aggressive browser locker extensions (e.g. Breaking Browser Locker Behavior)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const originalConfirm = window.confirm;
+    window.confirm = function (message?: string) {
+      try {
+        return originalConfirm.call(window, message);
+      } catch (err: unknown) {
+        console.warn('Browser extension prevented native confirm(); safely proceeding.', err);
+        return true;
+      }
+    };
+    return () => {
+      window.confirm = originalConfirm;
+    };
   }, []);
 
   // Listen for custom trigger events from anywhere in the app

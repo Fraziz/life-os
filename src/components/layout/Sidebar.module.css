@@ -648,6 +648,34 @@
   }
 }
 
+/* Short laptop displays & Windows taskbar adaptability */
+@media (max-height: 740px) {
+  .sidebar {
+    padding: 10px 14px;
+  }
+  .sidebarQuote {
+    display: none;
+  }
+  .header {
+    height: 38px;
+    margin-bottom: 6px;
+  }
+  .nav {
+    gap: 2px;
+  }
+  .sectionHeaderRow {
+    height: 16px;
+  }
+  .sidebar.isExpanded .sectionHeaderRow {
+    height: 18px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+  }
+  .footer {
+    padding-top: 6px;
+  }
+}
+
 /*  NATURE THEME OVERRIDES  */
 
 :global([data-theme='nature']) .sidebar {

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Sun,
   Brain,
   Target,
   Calendar,
@@ -19,12 +18,16 @@ import {
   Flame,
   Moon,
   Battery,
+  BatteryMedium,
+  BatteryCharging,
   Flag,
   Clock,
   CheckSquare,
   Square,
   BookOpen,
   Sparkles,
+  Bell,
+  Dumbbell,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -33,17 +36,29 @@ import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
-import { useCalendar } from '@/context/CalendarContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { formatTagLabel, getTagCategory } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
+import LifeDomainPill from '@/components/layout/LifeDomainPill';
 
 import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
+import DailyAccomplishReminder from '@/components/reminders/DailyAccomplishReminder';
 import styles from './page.module.css';
+
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DEFAULT_WORKOUT_SCHEDULE = [
+  { dayOfWeek: 0, label: 'Sunday', sessionName: 'Active Recovery', isRestDay: true },
+  { dayOfWeek: 1, label: 'Monday', sessionName: 'Upper Body', isRestDay: false },
+  { dayOfWeek: 2, label: 'Tuesday', sessionName: 'Lower Body', isRestDay: false },
+  { dayOfWeek: 3, label: 'Wednesday', sessionName: 'Rest & Stretch', isRestDay: true },
+  { dayOfWeek: 4, label: 'Thursday', sessionName: 'Push', isRestDay: false },
+  { dayOfWeek: 5, label: 'Friday', sessionName: 'Pull & Core', isRestDay: false },
+  { dayOfWeek: 6, label: 'Saturday', sessionName: 'Cardio & Mobility', isRestDay: true },
+];
 
 export default function TodayDashboardContent() {
   const { settings } = useSettings();
@@ -53,13 +68,13 @@ export default function TodayDashboardContent() {
   const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
-  const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
   const { docs, addDoc } = useKnowledge();
 
   const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
   const [bookSearchQuery, setBookSearchQuery] = useState('');
   const [newBookTitleInput, setNewBookTitleInput] = useState('');
+  const [isReminderBannerDismissed, setIsReminderBannerDismissed] = useState(false);
 
   // Load user's selected book from localStorage
   useEffect(() => {
@@ -154,10 +169,6 @@ export default function TodayDashboardContent() {
   const userName = settings?.profile?.displayName || 'Aaron';
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const todayDeadlines = getDeadlinesForDate(todayStr);
-  const todayEvents = getEventsForDate(todayStr);
-  const todayBlocks = getScheduledBlocksForDate(todayStr);
-  const totalTodayCalendarMarks = todayDeadlines.length + todayEvents.length + todayBlocks.length;
 
   // ── Energy Mode (reactive from Sidebar or localStorage) ──────
   const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high'>('normal');
@@ -179,6 +190,22 @@ export default function TodayDashboardContent() {
     window.addEventListener('life_os_energy_changed', onEnergyChange);
     return () => window.removeEventListener('life_os_energy_changed', onEnergyChange);
   }, []);
+
+  const selectEnergy = (lvl: 'low' | 'normal' | 'high') => {
+    setEnergyLevel(lvl);
+    try {
+      localStorage.setItem('life_os_energy_level', lvl);
+      window.dispatchEvent(new CustomEvent('life_os_energy_changed', { detail: lvl }));
+    } catch {
+      // ignore
+    }
+  };
+
+  const energyTips: Record<'low' | 'normal' | 'high', string> = {
+    low: 'Low Energy Mode: Pick just 1 tiny task. Momentum beats perfection today.',
+    normal: 'Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks.',
+    high: 'High Energy: Tackle your #1 hardest priority right now while focus is sharp.',
+  };
 
   // ── Domain Filter ───────────────────────────────────────────
   const domainTasks = useMemo(() => {
@@ -209,13 +236,36 @@ export default function TodayDashboardContent() {
   }, [habits, focusedAreaId]);
 
   // ── Tasks ────────────────────────────────────────────────────
-  const top3 = domainTasks
-    .filter((t) => t.status !== 'done' && (t.priority === 'urgent' || t.priority === 'high'))
-    .slice(0, 3);
+  const doItNowActive = domainTasks.filter((t) => t.status !== 'done' && t.tags?.includes('do-it-now'));
+  const otherHighPriority = domainTasks.filter(
+    (t) => t.status !== 'done' && !t.tags?.includes('do-it-now') && (t.priority === 'urgent' || t.priority === 'high')
+  );
+
+  // Guarantee that Do It Now priorities are strictly unique by id and title
+  const dedupeTasks = (items: typeof domainTasks) => {
+    const seenIds = new Set<string>();
+    const seenTitles = new Set<string>();
+    return items.filter((item) => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      const norm = item.title.trim().toLowerCase();
+      if (norm && seenTitles.has(norm)) return false;
+      seenTitles.add(norm);
+      return true;
+    });
+  };
+
+  const uniqueDoItNow = dedupeTasks(doItNowActive);
+  const uniqueOtherHigh = dedupeTasks(otherHighPriority);
+
+  // Show all unique Do It Now tasks, plus top high-priority tasks up to at least 3
+  const topPriorities = uniqueDoItNow.length > 0
+    ? [...uniqueDoItNow, ...uniqueOtherHigh.slice(0, Math.max(0, 3 - uniqueDoItNow.length))]
+    : uniqueOtherHigh.slice(0, 3);
 
   const otherTasks = domainTasks
-    .filter((t) => t.status !== 'done' && !top3.some((p) => p.id === t.id))
-    .slice(0, 6);
+    .filter((t) => t.status !== 'done' && !topPriorities.some((p) => p.id === t.id))
+    .slice(0, 8);
 
   // Filter completed tasks to show ONLY tasks completed TODAY
   const completedTasks = domainTasks
@@ -269,6 +319,68 @@ export default function TodayDashboardContent() {
     toggleHabitCheckIn(habitId, todayStr);
     playSuccessChime();
     triggerDopamineBurst(e.clientX, e.clientY);
+  };
+
+  // ── Workout State & Logic ─────────────────────────────────────
+  const [workoutSessions, setWorkoutSessions] = useState<{
+    id: string;
+    date: string;
+    name: string;
+    completed: boolean;
+    completedAt?: string;
+  }[]>([]);
+  const [workoutSchedule, setWorkoutSchedule] = useState(DEFAULT_WORKOUT_SCHEDULE);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('life-os-workouts-v1');
+      if (raw) setWorkoutSessions(JSON.parse(raw));
+      const rawSched = localStorage.getItem('life-os-workout-schedule-v1');
+      if (rawSched) setWorkoutSchedule(JSON.parse(rawSched));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const todayDow = new Date().getDay();
+  const todaySched = workoutSchedule[todayDow] || DEFAULT_WORKOUT_SCHEDULE[todayDow];
+  const todayWorkoutSession = workoutSessions.find((s) => s.date === todayStr);
+  const isWorkoutDone = Boolean(todayWorkoutSession?.completed);
+  const todayWorkoutName = todayWorkoutSession?.name || todaySched?.sessionName || (todaySched?.isRestDay ? 'Rest & Recovery' : 'Daily Workout');
+
+  const handleToggleTodayWorkout = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      let updated: typeof workoutSessions;
+      if (todayWorkoutSession) {
+        const nextCompleted = !todayWorkoutSession.completed;
+        updated = workoutSessions.map((s) =>
+          s.id === todayWorkoutSession.id
+            ? { ...s, completed: nextCompleted, completedAt: nextCompleted ? new Date().toISOString() : undefined }
+            : s
+        );
+        if (nextCompleted) {
+          playSuccessChime();
+          triggerDopamineBurst(e.clientX, e.clientY);
+        }
+      } else {
+        const newSession = {
+          id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+          name: todayWorkoutName,
+          date: todayStr,
+          dayOfWeek: todayDow,
+          completed: true,
+          completedAt: new Date().toISOString(),
+        };
+        updated = [newSession, ...workoutSessions];
+        playSuccessChime();
+        triggerDopamineBurst(e.clientX, e.clientY);
+      }
+      setWorkoutSessions(updated);
+      localStorage.setItem('life-os-workouts-v1', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
   };
 
   // ── Brain Dump (Single Unified Source of Truth) ───────────────
@@ -347,6 +459,8 @@ export default function TodayDashboardContent() {
         return styles.tagHealth;
       case 'ai':
         return styles.tagAi;
+      case 'doitnow':
+        return styles.tagDoitnow;
       default:
         return styles.tagDefault;
     }
@@ -388,56 +502,13 @@ export default function TodayDashboardContent() {
             </div>
             <div className={styles.heroQuoteCard}>
               <div className={styles.heroQuoteText}>&ldquo;Discipline today, freedom tomorrow.&rdquo;</div>
-              <div className={styles.heroQuoteAuthor}>— —</div>
+              <div className={styles.heroQuoteAuthor}>— Action Principle —</div>
             </div>
           </div>
         </div>
 
-        {/* ── Today Moving Reminders Ticker (Right to Left Marquee) ── */}
-        {activeReminders.length > 0 && (
-          <div className={styles.reminderTickerContainer}>
-            <div className={styles.reminderTickerHeader}>
-              <span className={styles.tickerLabel}>Reminders</span>
-              <span className={styles.tickerBadgeCount}>{activeReminders.length}</span>
-            </div>
-
-            <div className={styles.reminderTickerTrackMask}>
-              <div
-                className={styles.reminderTickerTrack}
-                style={{
-                  animationDuration: `${Math.max(28, activeReminders.length * 12)}s`,
-                }}
-              >
-                {/* Repeat list to guarantee a seamless, smooth infinite right-to-left loop */}
-                {[...activeReminders, ...activeReminders, ...activeReminders, ...activeReminders].map((item, idx) => (
-                  <div key={`${item.id}-${idx}`} className={styles.tickerPill}>
-                    <span className={styles.tickerPillText} title={item.content}>
-                      {item.content}
-                    </span>
-                    {item.reminderTime && (
-                      <span className={styles.tickerPillTime}>{item.reminderTime}</span>
-                    )}
-                    <button
-                      type="button"
-                      className={styles.tickerDismissBtn}
-                      onClick={() => {
-                        toggleItemApplied(item.id);
-                        playSuccessChime();
-                      }}
-                      title="Mark reminder as done"
-                    >
-                      Done
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Link href="/inbox?tab=reminders" className={styles.tickerManageLink} title="Manage all Brain Dump reminders">
-              Inbox
-            </Link>
-          </div>
-        )}
+        {/* ── Daily Accomplishment Action Reminder ── */}
+        <DailyAccomplishReminder />
 
         {/* Daily Snapshot */}
         <div className={styles.dailySummaryRow}>
@@ -451,115 +522,27 @@ export default function TodayDashboardContent() {
           </div>
           <button
             type="button"
-            className={styles.summaryPill}
-            style={{
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(56, 189, 248, 0.14))',
-              borderColor: 'rgba(99, 102, 241, 0.35)',
-              cursor: 'pointer',
-              color: 'var(--color-text)',
-            }}
+            className={`${styles.summaryPill} ${styles.summaryPillOptimize}`}
             onClick={() => setOptimizeModalOpen(true)}
             title="1-Click AI Auto Time-Blocker: Optimize hourly day schedule"
           >
-            <span><strong>Optimize Day</strong></span>
+            <span>Optimize Day</span>
           </button>
           <button
             type="button"
-            className={styles.summaryPill}
-            style={{
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(139, 92, 246, 0.16))',
-              borderColor: 'rgba(245, 158, 11, 0.35)',
-              cursor: 'pointer',
-              color: 'var(--color-text)',
-            }}
+            className={`${styles.summaryPill} ${styles.summaryPillBriefing}`}
             onClick={() => handleOpenBriefing()}
             title="Open Executive Morning Briefing / Evening Reflection"
           >
-            <span><strong>AI Briefing</strong></span>
+            <span>AI Briefing</span>
           </button>
           <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>
             <span>Focus Space</span>
           </Link>
+          <LifeDomainPill />
         </div>
 
 
-
-        {/* Today's Schedule & Deadlines */}
-        {totalTodayCalendarMarks > 0 && (
-          <div className={styles.scheduleSectionCard}>
-            <div className={styles.sectionHeaderRow}>
-              <div className={styles.sectionHeaderLeft}>
-                <Calendar size={17} style={{ color: '#0ea5e9' }} />
-                <h2 className={styles.sectionHeading}>Today&apos;s Schedule</h2>
-                <span className={styles.calendarMarksCountBadge}>
-                  {totalTodayCalendarMarks} mark{totalTodayCalendarMarks !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <Link href="/calendar" className={styles.viewAllNotesLink}>Full calendar →</Link>
-            </div>
-
-            <div className={styles.scheduleItemsGrid}>
-              {todayDeadlines.map((dl) => (
-                <div key={dl.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardDeadline}`}>
-                  <div className={styles.scheduleItemIconWrap}>
-                    <Flag size={14} style={{ color: '#ef4444' }} />
-                  </div>
-                  <div className={styles.scheduleItemBody}>
-                    <div className={styles.scheduleItemTitleRow}>
-                      <span className={styles.scheduleItemTitle}>{dl.title}</span>
-                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(239,68,68,0.3)', color: '#ef4444' }}>
-                        deadline
-                      </span>
-                    </div>
-                    <div className={styles.scheduleItemMeta}>
-                      {dl.sourceType} {dl.priority ? `· ${dl.priority} priority` : ''}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {todayEvents.map((evt) => (
-                <div key={evt.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardEvent}`}>
-                  <div className={styles.scheduleItemIconWrap}>
-                    <Calendar size={14} style={{ color: '#0ea5e9' }} />
-                  </div>
-                  <div className={styles.scheduleItemBody}>
-                    <div className={styles.scheduleItemTitleRow}>
-                      <span className={styles.scheduleItemTitle}>{evt.title}</span>
-                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(14,165,233,0.3)', color: '#0ea5e9' }}>
-                        event
-                      </span>
-                    </div>
-                    <div className={styles.scheduleItemMeta}>
-                      {evt.startTime}{evt.endTime ? ` – ${evt.endTime}` : ''}
-                      {evt.notes ? ` · ${evt.notes}` : ''}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {todayBlocks.map((blk) => (
-                <div key={blk.id} className={`${styles.scheduleCardItem} ${styles.scheduleCardBlock}`}>
-                  <div className={styles.scheduleItemIconWrap}>
-                    <Clock size={14} style={{ color: '#a855f7' }} />
-                  </div>
-                  <div className={styles.scheduleItemBody}>
-                    <div className={styles.scheduleItemTitleRow}>
-                      <span className={styles.scheduleItemTitle}>{blk.taskTitle}</span>
-                      <span className={styles.scheduleTypeBadge} style={{ borderColor: 'rgba(168,85,247,0.3)', color: '#a855f7' }}>
-                        focus
-                      </span>
-                    </div>
-                    <div className={styles.scheduleItemMeta}>
-                      {blk.startTime} · {blk.durationMinutes}m
-                      {blk.notes ? ` · ${blk.notes}` : ''}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Quick Actions */}
         <div className={styles.quickActionsGrid}>
@@ -596,7 +579,7 @@ export default function TodayDashboardContent() {
               <Link
                 href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
                 style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
-                title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
+                title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Study & Books'}
               >
                 <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', marginBottom: 0 }}>
                   <BookOpen size={19} strokeWidth={2.2} />
@@ -619,7 +602,7 @@ export default function TodayDashboardContent() {
             <Link
               href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
               style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, justifyContent: 'center' }}
-              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Knowledge Base'}
+              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Study & Books'}
             >
               <div
                 className={styles.actionCardTitle}
@@ -635,7 +618,7 @@ export default function TodayDashboardContent() {
               <div className={styles.actionCardSub}>
                 {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
                   ? `${currentReadingDoc.readProgress}% completed`
-                  : 'Knowledge Book'}
+                  : 'Study & Books'}
               </div>
             </Link>
           </div>
@@ -645,88 +628,150 @@ export default function TodayDashboardContent() {
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
             <div className={styles.sectionHeaderLeft}>
-              <Sun size={17} className={styles.sunHeaderIcon} />
               <h2 className={styles.sectionHeading}>Today</h2>
               {todayHeaderDate && (
                 <span className={styles.sectionHeaderDate}>{todayHeaderDate}</span>
               )}
+
+              {/* Combined Today's Energy Switcher */}
+              <div className={styles.headerEnergyCluster}>
+                <div className={styles.headerEnergyPills}>
+                  <button
+                    type="button"
+                    className={`${styles.headerEnergyBtn} ${energyLevel === 'low' ? styles.headerEnergyBtnActive : ''}`}
+                    onClick={() => selectEnergy('low')}
+                    title="Low Energy: Pick just 1 tiny task. Momentum beats perfection today."
+                  >
+                    <Battery size={13} />
+                    <span>Low</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.headerEnergyBtn} ${energyLevel === 'normal' ? styles.headerEnergyBtnActive : ''}`}
+                    onClick={() => selectEnergy('normal')}
+                    title="Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks."
+                  >
+                    <BatteryMedium size={13} />
+                    <span>Steady</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.headerEnergyBtn} ${energyLevel === 'high' ? styles.headerEnergyBtnActive : ''}`}
+                    onClick={() => selectEnergy('high')}
+                    title="High Energy: Tackle your #1 hardest priority right now while focus is sharp."
+                  >
+                    <BatteryCharging size={13} />
+                    <span>High</span>
+                  </button>
+                </div>
+              </div>
             </div>
+
             <Link href="/tasks" className={styles.viewAllNotesLink}>All tasks →</Link>
           </div>
 
-          {/* Top 3 Priorities */}
+          {/* Contextual Energy Tip */}
+          <div className={styles.todayEnergyTipBanner}>
+            <Zap size={14} className={styles.todayEnergyZapIcon} />
+            <span>{energyTips[energyLevel]}</span>
+          </div>
+
+          {/* Top Priorities */}
           <div className={styles.subSectionWrap}>
-            <h3 className={styles.subSectionTitle}>Top 3 Priorities</h3>
+            <h3 className={styles.subSectionTitle}>
+              {topPriorities.length > 3 ? `Top ${topPriorities.length} Priorities` : 'Top 3 Priorities'}
+            </h3>
             <div className={styles.prioritiesList}>
-              {top3.length === 0 && (
+              {topPriorities.length === 0 && (
                 <div className={styles.emptyState}>
                   No high-priority tasks.{' '}
                   <button type="button" className={styles.emptyStateLink}
                     onClick={() => setAddingTask(true)}>Add one</button>
                 </div>
               )}
-              {top3.map((item, idx) => (
-                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div
-                    className={`${styles.priorityRow} ${idx === 0 ? styles.priorityOneRow : ''} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
-                  >
-                    <div className={styles.priorityLeft}>
-                      <span className={styles.priorityNumBadge}>{idx + 1}</span>
-                      <button
-                        type="button"
-                        className={styles.checkboxBtn}
-                        onClick={(e) => handleToggleTask(item.id, e)}
-                      >
-                        {item.status === 'done' ? (
-                          <div className={styles.checkedBox}><Check size={12} strokeWidth={3} /></div>
-                        ) : (
-                          <div className={styles.emptyBox} />
-                        )}
-                      </button>
-                      <span className={styles.taskTitleText}>{item.title}</span>
-                      {idx === 0 && (
-                        <span className={styles.priorityOneBadge}>#1 The One Thing</span>
-                      )}
-                      {item.subtasks && item.subtasks.length > 0 && (
+              {topPriorities.map((item, idx) => {
+                const isDoItNow = item.tags?.includes('do-it-now');
+
+                return (
+                  <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div
+                      className={`${styles.priorityRow} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
+                      style={isDoItNow ? {
+                        background: 'rgba(212, 163, 115, 0.07)',
+                        border: '1px solid rgba(212, 163, 115, 0.28)',
+                      } : undefined}
+                    >
+                      <div className={styles.priorityLeft}>
+                        <span
+                          className={styles.priorityNumBadge}
+                          style={isDoItNow ? {
+                            backgroundColor: '#d4a373',
+                            color: '#ffffff',
+                            fontWeight: 700,
+                          } : undefined}
+                        >
+                          {idx + 1}
+                        </span>
                         <button
                           type="button"
-                          className={styles.subtaskBadgeBtn}
-                          onClick={(e) => toggleSubtasks(item.id, e)}
-                          title="Toggle subtask checklist"
+                          className={styles.checkboxBtn}
+                          onClick={(e) => handleToggleTask(item.id, e)}
                         >
-                          <span>{item.subtasks.filter((s) => s.completed).length}/{item.subtasks.length} steps</span>
-                          <span style={{ fontSize: '9px' }}>{expandedSubtasks[item.id] ? '▲' : '▼'}</span>
+                          {item.status === 'done' ? (
+                            <div className={styles.checkedBox}><Check size={12} strokeWidth={3} /></div>
+                          ) : (
+                            <div className={styles.emptyBox} style={isDoItNow ? { borderColor: '#d4a373' } : undefined} />
+                          )}
                         </button>
-                      )}
-                    </div>
-                    {item.tags && item.tags.length > 0 && (
-                      <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
-                        <span className={styles.tagDot} />
-                        {formatTagLabel(item.tags[0])}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Subtask Step Breakdown (Collapsible) */}
-                  {item.subtasks && item.subtasks.length > 0 && expandedSubtasks[item.id] && (
-                    <div style={{ marginLeft: '36px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '6px' }}>
-                      {item.subtasks.map((sub) => (
-                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
+                        <span className={styles.taskTitleText}>{item.title}</span>
+                        {item.subtasks && item.subtasks.length > 0 && (
                           <button
                             type="button"
-                            onClick={(e) => handleToggleSubtask(item.id, sub.id, e)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
-                            title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
+                            className={styles.subtaskBadgeBtn}
+                            onClick={(e) => toggleSubtasks(item.id, e)}
+                            title="Toggle subtask checklist"
                           >
-                            {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                            <span>{item.subtasks.filter((s) => s.completed).length}/{item.subtasks.length} steps</span>
+                            <span style={{ fontSize: '9px' }}>{expandedSubtasks[item.id] ? '▲' : '▼'}</span>
                           </button>
-                          <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+
+                      {/* Right-aligned Tag Badge — consistent with Project Action */}
+                      {isDoItNow ? (
+                        <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
+                          <span className={styles.tagDot} />
+                          Do It Now
+                        </span>
+                      ) : item.tags && item.tags.length > 0 ? (
+                        <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
+                          <span className={styles.tagDot} />
+                          {formatTagLabel(item.tags[0])}
+                        </span>
+                      ) : null}
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Subtask Step Breakdown (Collapsible) */}
+                    {item.subtasks && item.subtasks.length > 0 && expandedSubtasks[item.id] && (
+                      <div style={{ marginLeft: '36px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '6px' }}>
+                        {item.subtasks.map((sub) => (
+                          <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleSubtask(item.id, sub.id, e)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
+                              title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
+                            >
+                              {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                            </button>
+                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -739,41 +784,52 @@ export default function TodayDashboardContent() {
               </span>
             </div>
             <div className={styles.otherTasksList}>
-              {otherTasks.map((task) => (
-                <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div
-                    className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className={styles.checkboxBtn}
-                      onClick={(e) => handleToggleTask(task.id, e)}
+              {otherTasks.map((task) => {
+                const isDoItNow = task.tags?.includes('do-it-now');
+                return (
+                  <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div
+                      className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
+                      style={isDoItNow ? {
+                        background: 'rgba(212, 163, 115, 0.05)',
+                        border: '1px solid rgba(212, 163, 115, 0.22)',
+                      } : undefined}
                     >
-                      {task.status === 'done' ? (
-                        <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
-                      ) : (
-                        <div className={styles.emptyCircle} />
-                      )}
-                    </button>
-                    <span className={styles.otherTaskTitle}>{task.title}</span>
-                    {task.subtasks && task.subtasks.length > 0 && (
                       <button
                         type="button"
-                        className={styles.subtaskBadgeBtn}
-                        onClick={(e) => toggleSubtasks(task.id, e)}
-                        title="Toggle subtask checklist"
+                        className={styles.checkboxBtn}
+                        onClick={(e) => handleToggleTask(task.id, e)}
                       >
-                        <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps</span>
-                        <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
+                        {task.status === 'done' ? (
+                          <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
+                        ) : (
+                          <div className={styles.emptyCircle} style={isDoItNow ? { borderColor: '#d4a373' } : undefined} />
+                        )}
                       </button>
-                    )}
-                    {task.tags && task.tags.length > 0 && (
-                      <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`} style={{ marginLeft: 'auto' }}>
-                        <span className={styles.tagDot} />
-                        {formatTagLabel(task.tags[0])}
-                      </span>
-                    )}
-                  </div>
+                      <span className={styles.otherTaskTitle}>{task.title}</span>
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.subtaskBadgeBtn}
+                          onClick={(e) => toggleSubtasks(task.id, e)}
+                          title="Toggle subtask checklist"
+                        >
+                          <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps</span>
+                          <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
+                        </button>
+                      )}
+                      {isDoItNow ? (
+                        <span className={`${styles.tagBadge} ${styles.tagDoitnow}`} style={{ marginLeft: 'auto' }}>
+                          <span className={styles.tagDot} />
+                          Do It Now
+                        </span>
+                      ) : task.tags && task.tags.length > 0 ? (
+                        <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`} style={{ marginLeft: 'auto' }}>
+                          <span className={styles.tagDot} />
+                          {formatTagLabel(task.tags[0])}
+                        </span>
+                      ) : null}
+                    </div>
 
                   {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
                   {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
@@ -794,13 +850,20 @@ export default function TodayDashboardContent() {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+            })}
               {addingTask ? (
                 <form onSubmit={handleCreateTask} className={styles.addTaskForm}>
                   <input
                     type="text"
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateTask(e);
+                      }
+                    }}
                     placeholder="Task name..."
                     className={styles.addTaskInput}
                     autoFocus
@@ -866,18 +929,64 @@ export default function TodayDashboardContent() {
           )}
         </section>
 
-        {/* Habits */}
+        {/* Habits & Workout */}
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
             <div className={styles.sectionHeaderLeft}>
-              <h2 className={styles.sectionHeading}>Habits</h2>
+              <h2 className={styles.sectionHeading}>Habits &amp; Workout</h2>
               <span className={styles.sectionHeaderDate}>
-                {habitsCompletedToday}/{todayHabits.length} done
+                {habitsCompletedToday}/{todayHabits.length} habits done
               </span>
+              {isWorkoutDone ? (
+                <span className={styles.workoutStatusDoneBadge}>
+                  <Check size={10} strokeWidth={3} /> Workout done
+                </span>
+              ) : todaySched?.isRestDay ? (
+                <span className={styles.workoutStatusRestBadge}>Rest day</span>
+              ) : (
+                <span className={styles.workoutStatusSchedBadge}>{todayWorkoutName}</span>
+              )}
             </div>
-            <Link href="/habits" className={styles.viewAllNotesLink}>All habits →</Link>
+            <div className={styles.sectionHeaderLinks}>
+              <Link href="/habits" className={styles.viewAllNotesLink}>All habits →</Link>
+              <span className={styles.linkDivider}>•</span>
+              <Link href="/workout" className={styles.viewAllNotesLink}>Workout tracker →</Link>
+            </div>
           </div>
 
+          {/* Today's Workout Banner Row */}
+          <div className={`${styles.workoutBannerRow} ${isWorkoutDone ? styles.workoutBannerDone : ''}`}>
+            <div className={styles.workoutBannerLeft}>
+              <button
+                type="button"
+                className={styles.checkboxBtn}
+                onClick={handleToggleTodayWorkout}
+                title={isWorkoutDone ? 'Mark workout pending' : 'Mark workout completed'}
+              >
+                {isWorkoutDone ? (
+                  <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
+                ) : (
+                  <div className={styles.emptyCircle} />
+                )}
+              </button>
+              <Dumbbell size={16} className={styles.workoutIcon} />
+              <div className={styles.workoutBannerText}>
+                <span className={styles.workoutBannerTitle}>{todayWorkoutName}</span>
+                <span className={styles.workoutBannerMeta}>
+                  {isWorkoutDone
+                    ? 'Completed for today ✓'
+                    : todaySched?.isRestDay
+                    ? `${DAYS_OF_WEEK[todayDow]} • Scheduled recovery day`
+                    : `${DAYS_OF_WEEK[todayDow]} routine • 45 min`}
+                </span>
+              </div>
+            </div>
+            <Link href="/workout" className={styles.workoutActionBtn}>
+              {isWorkoutDone ? 'View workout' : 'Start workout'} →
+            </Link>
+          </div>
+
+          {/* Daily Habits Quick Check Grid */}
           <div className={styles.habitsGrid}>
             {todayHabits.length === 0 && (
               <div className={styles.emptyState}>

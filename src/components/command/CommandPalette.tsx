@@ -212,9 +212,9 @@ export default function CommandPalette() {
     {
       id: 'nav-knowledge',
       category: 'Navigation',
-      title: 'Knowledge Base',
+      title: 'Study & Books',
       subtitle: '/knowledge',
-      keywords: ['notes', 'documents', 'pdf', 'book'],
+      keywords: ['study', 'books', 'notes', 'documents', 'pdf', 'knowledge', 'reading'],
       onSelect: () => {
         router.push('/knowledge');
         closePalette();

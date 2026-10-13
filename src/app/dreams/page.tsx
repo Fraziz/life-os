@@ -14,7 +14,6 @@ import {
   Calendar,
   Heart,
   CheckCircle2,
-  Search,
   X,
   RotateCcw,
   CloudSun,
@@ -29,6 +28,7 @@ import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> = {
   dream: { label: 'Dream', className: styles.dream },
@@ -46,7 +46,6 @@ export default function DreamsPage() {
   const { activeAreas } = useLifeAreas();
 
   const [activeFilter, setActiveFilter] = useState<'all' | DreamStatus>('all');
-  const [dreamSearch, setDreamSearch] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDream, setEditingDream] = useState<Dream | null>(null);
 
@@ -199,13 +198,6 @@ export default function DreamsPage() {
     } else if (d.status !== activeFilter) {
       return false;
     }
-    if (dreamSearch.trim()) {
-      const q = dreamSearch.toLowerCase();
-      const matchTitle = d.title.toLowerCase().includes(q);
-      const matchDesc = d.description?.toLowerCase().includes(q);
-      const matchWhy = d.whyItMatters.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchWhy) return false;
-    }
     return true;
   });
 
@@ -244,16 +236,38 @@ export default function DreamsPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new dream or vision..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span>
-            <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={openCreateModal}
+              title="Open full dream creator"
+              aria-label="Open full dream creator"
+            >
+              <Sparkles size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span>
+              <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -284,27 +298,6 @@ export default function DreamsPage() {
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
-        <div className={styles.searchWrap}>
-          <Search size={14} className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search dreams..."
-            value={dreamSearch}
-            onChange={(e) => setDreamSearch(e.target.value)}
-            className={styles.searchInput}
-          />
-          {dreamSearch && (
-            <button
-              type="button"
-              onClick={() => setDreamSearch('')}
-              className={styles.clearSearchBtn}
-              aria-label="Clear search"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeFilter === 'all' ? styles.activeTab : ''}`}
@@ -410,20 +403,20 @@ export default function DreamsPage() {
                   </div>
 
                   <div>
-                    <h3 className={styles.dreamTitle}>{d.title}</h3>
-                    {d.description && <p className={styles.dreamDesc}>{d.description}</p>}
+                    <h3 className={styles.dreamTitle}><AutoLinkText text={d.title} /></h3>
+                    {d.description && <p className={styles.dreamDesc}><AutoLinkText text={d.description} /></p>}
                   </div>
 
                   {d.whyItMatters && (
                     <div className={styles.whyBanner}>
                       <span className={styles.whyLabel}>Why it matters</span>
-                      <p className={styles.whyText}>&ldquo;{d.whyItMatters}&rdquo;</p>
+                      <p className={styles.whyText}>&ldquo;<AutoLinkText text={d.whyItMatters} />&rdquo;</p>
                     </div>
                   )}
 
                   {d.notes && (
                     <p className={styles.notesText}>
-                      <span className={styles.notesLabel}>Notes:</span> {d.notes}
+                      <span className={styles.notesLabel}>Notes:</span> <AutoLinkText text={d.notes} />
                     </p>
                   )}
 

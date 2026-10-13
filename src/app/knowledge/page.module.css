@@ -1,24 +1,26 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  height: calc(100dvh - 48px);
-  max-height: calc(100dvh - 48px);
+  gap: clamp(8px, 1.5vh, 16px);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   animation: fadeIn 0.3s ease forwards;
 }
 
 @media (max-width: 1024px) {
   .page {
-    height: calc(100dvh - var(--topbar-height, 54px) - 36px);
-    max-height: calc(100dvh - var(--topbar-height, 54px) - 36px);
+    height: 100%;
+    max-height: 100%;
   }
 }
 
 @media (max-width: 768px) {
   .page {
-    height: calc(100dvh - var(--topbar-height, 54px) - 92px);
-    max-height: calc(100dvh - var(--topbar-height, 54px) - 92px);
+    height: 100%;
+    max-height: 100%;
   }
 }
 
@@ -132,7 +134,7 @@
   overflow: hidden;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1240px) {
   .workbench {
     grid-template-columns: 240px 1fr;
   }
@@ -460,8 +462,7 @@
 
 .docRowActive {
   background: var(--color-surface-2);
-  border-left: 2px solid var(--color-accent);
-  padding-left: 8px;
+  border-color: var(--color-border);
 }
 
 .docRowContent {
@@ -1436,7 +1437,6 @@
 :global(.callout-important) {
   background: rgba(245, 158, 11, 0.06);
   border: 1px solid rgba(245, 158, 11, 0.25);
-  border-left: 4px solid #f59e0b;
 }
 
 .richEditor :global(.callout-important .callout-badge),
@@ -1461,7 +1461,6 @@
 :global(.callout-key-idea) {
   background: rgba(14, 165, 233, 0.06);
   border: 1px solid rgba(14, 165, 233, 0.25);
-  border-left: 4px solid #0284c7;
 }
 
 .richEditor :global(.callout-key-idea .callout-badge),
@@ -2287,8 +2286,10 @@
 
 .bookContent :global(.key-idea) {
   display: block;
-  border-left: 3px solid var(--color-accent);
-  padding: 8px 0 8px 16px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  padding: 10px 14px;
   margin: 18px 0;
   font-weight: 500;
   color: var(--color-text);

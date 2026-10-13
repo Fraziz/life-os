@@ -145,6 +145,18 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key === '0') {
+        e.preventDefault();
+        setFocusedAreaId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Save to localStorage whenever areas change
   const saveAreas = (newAreas: LifeArea[]) => {
     // Sort by sortOrder

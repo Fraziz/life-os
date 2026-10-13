@@ -43,7 +43,7 @@ export default function FilesPage() {
   }, [files]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 900 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 900, width: '100%' }}>
       <header>
         <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, margin: 0 }}>All files</h1>
         <p style={{ color: 'var(--color-text-muted)', marginTop: 8, lineHeight: 1.5 }}>

@@ -1,0 +1,273 @@
+/* ============================================================
+   DO IT NOW — Formal Minimalist Action Directive Card
+   Clean, executive, distraction-free aesthetic matching Life OS.
+   No glowing effects, no loud neons.
+   Subtle warm bronze accent that fits seamlessly into the design
+   while remaining distinct from standard top priorities.
+   ============================================================ */
+
+.reminderCard {
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+
+  background: var(--color-doitnow-bg, rgba(212, 163, 115, 0.04));
+  border: 1px solid var(--color-doitnow-border, rgba(212, 163, 115, 0.18));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.reminderCard:hover {
+  border-color: var(--color-doitnow-border-hover, rgba(212, 163, 115, 0.32));
+}
+
+/* ── Top Header Row ── */
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.badgeGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--color-doitnow-accent, #d4a373);
+  flex-shrink: 0;
+}
+
+.doItNowBadge {
+  font-size: 0.70rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--color-doitnow-badge-bg, rgba(212, 163, 115, 0.10));
+  border: 1px solid var(--color-doitnow-border, rgba(212, 163, 115, 0.20));
+  color: var(--color-doitnow-accent, #d4a373);
+  line-height: 1.2;
+}
+
+.directiveSub {
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+}
+
+/* Minimalist Icon Button for Collapse & Expand */
+.iconBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.iconBtn:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover, var(--color-surface-2));
+}
+
+.iconBtn:focus-visible {
+  outline: 2px solid var(--color-doitnow-accent, #d4a373);
+  outline-offset: 2px;
+}
+
+/* ── Heading & Message ── */
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mainHeading {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.subText {
+  font-size: 0.80rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ── Input Form ── */
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.textInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast);
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.textInput::placeholder {
+  color: var(--color-text-faint);
+}
+
+.textInput:focus {
+  border-color: var(--color-doitnow-accent, #d4a373);
+}
+
+/* Priority Button */
+.priorityToggleBtn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 0.77rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+  min-height: 36px;
+}
+
+.priorityToggleBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-doitnow-border, rgba(212, 163, 115, 0.25));
+}
+
+.priorityToggleBtnActive {
+  background: var(--color-doitnow-badge-bg, rgba(212, 163, 115, 0.10));
+  border-color: var(--color-doitnow-accent, #d4a373);
+  color: var(--color-doitnow-accent, #d4a373);
+  font-weight: 600;
+}
+
+/* Submit "Do It Now" Button */
+.submitBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-doitnow-border, rgba(212, 163, 115, 0.25));
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+
+  background: var(--color-doitnow-accent, #d4a373);
+  color: #ffffff;
+}
+
+:global([data-theme='dark']) .submitBtn {
+  color: #1e1e24;
+  font-weight: 700;
+}
+
+.submitBtn:hover {
+  background: var(--color-doitnow-accent-hover, #e0b589);
+}
+
+.submitBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Feedback message */
+.feedbackToast {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-doitnow-accent, #d4a373);
+  padding: 2px 0;
+}
+
+/* ── Minimized Card Layout ── */
+.reminderCardMinimized {
+  display: flex;
+  padding: 9px 16px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  transition: border-color var(--transition-fast);
+
+  background: var(--color-doitnow-bg, rgba(212, 163, 115, 0.04));
+  border: 1px solid var(--color-doitnow-border, rgba(212, 163, 115, 0.18));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.reminderCardMinimized:hover {
+  border-color: var(--color-doitnow-border-hover, rgba(212, 163, 115, 0.30));
+}
+
+.minimizedContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.minimizedText {
+  font-size: 0.81rem;
+  font-weight: 400;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .inputGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .submitBtn {
+    width: 100%;
+  }
+}

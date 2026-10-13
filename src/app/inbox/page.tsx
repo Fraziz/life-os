@@ -42,6 +42,7 @@ import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 export default function InboxPage() {
   const {
@@ -332,7 +333,7 @@ export default function InboxPage() {
               type="button"
               className={`${styles.typeToggleBtn} ${dumpType === 'reminder' ? styles.typeToggleActiveReminder : ''}`}
               onClick={() => setDumpType('reminder')}
-              title="Set as Reminder (pops up on Today moving ticker)"
+              title="Set as Reminder (shows in system reminders and Today dashboard)"
             >
               Reminder
             </button>
@@ -343,11 +344,17 @@ export default function InboxPage() {
             className={styles.quickAddInput}
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickSubmit(e);
+              }
+            }}
             placeholder={
               isListening
                 ? 'Listening to voice...'
                 : dumpType === 'reminder'
-                ? 'Set a reminder (will scroll on Today screen)...'
+                ? 'Set a reminder for today...'
                 : 'Dump a thought, task, idea, or worry...'
             }
             autoFocus
@@ -364,33 +371,40 @@ export default function InboxPage() {
             />
           )}
 
-          {speechSupported && (
+          <div className={styles.quickAddActions}>
+            {speechSupported && (
+              <button
+                type="button"
+                className={styles.pillSelect}
+                onClick={handleToggleListening}
+                style={{
+                  background: isListening ? 'var(--color-danger, #ef4444)' : 'transparent',
+                  color: isListening ? '#ffffff' : 'var(--color-text-muted)',
+                  padding: '2px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+                aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+              >
+                {isListening ? <MicOff size={13} /> : <Mic size={13} />}
+                <span style={{ fontSize: '11px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
+              </button>
+            )}
             <button
-              type="button"
-              className={styles.pillSelect}
-              onClick={handleToggleListening}
-              style={{
-                background: isListening ? 'var(--color-danger, #ef4444)' : 'transparent',
-                color: isListening ? '#ffffff' : 'var(--color-text-muted)',
-                padding: '2px 8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
-              aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickSubmit}
+              aria-disabled={!quickInput.trim()}
             >
-              {isListening ? <MicOff size={13} /> : <Mic size={13} />}
-              <span style={{ fontSize: '11px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
+              <span>{dumpType === 'reminder' ? 'Reminder' : 'Add'}</span> <kbd className={styles.quickAddKbd}>↵</kbd>
             </button>
-          )}
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickInput.trim()}>
-            <span>{dumpType === 'reminder' ? 'Reminder' : 'Add'}</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          </div>
         </div>
 
         {/* Quick Add Meta Row */}
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickInput.trim() || isBulkOpen ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <button
               type="button"
@@ -568,7 +582,7 @@ export default function InboxPage() {
                       opacity: item.isApplied ? 0.65 : 1,
                     }}
                   >
-                    {item.content}
+                    <AutoLinkText text={item.content} />
                   </p>
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -665,7 +679,7 @@ export default function InboxPage() {
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                Convert: &ldquo;{convertModalItem.content}&rdquo;
+                Convert: &ldquo;<AutoLinkText text={convertModalItem.content} />&rdquo;
               </h3>
               <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setConvertModalItem(null)}>
                 <X size={18} />
@@ -782,7 +796,7 @@ export default function InboxPage() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: '2px', flexShrink: 0 }}>{renderTypeIcon(r.suggestedType)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', color: 'var(--color-text)', marginBottom: '5px', wordBreak: 'break-word' }}>{r.text}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--color-text)', marginBottom: '5px', wordBreak: 'break-word' }}><AutoLinkText text={r.text} /></div>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${TYPE_COLORS[r.suggestedType]}20`, color: TYPE_COLORS[r.suggestedType] }}>
                           {r.suggestedType}
@@ -850,7 +864,7 @@ export default function InboxPage() {
                 Original Thought
               </div>
               <div style={{ fontSize: '14px', color: 'var(--color-text)', fontWeight: 500 }}>
-                &ldquo;{aiBreakdownModal.item.content}&rdquo;
+                &ldquo;<AutoLinkText text={aiBreakdownModal.item.content} />&rdquo;
               </div>
             </div>
 

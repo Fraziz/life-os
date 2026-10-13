@@ -42,11 +42,11 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {/* PWA Service Worker Registration */}
         <PwaRegister />
 

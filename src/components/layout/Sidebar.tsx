@@ -34,7 +34,6 @@ import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import Logo from '@/components/ui/Logo';
-import LifeDomainBar from './LifeDomainBar';
 import styles from './Sidebar.module.css';
 
 // Mapping of navigation icon identifiers to Lucide icons
@@ -195,10 +194,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Life Domain Focus Selector */}
-        <div className={styles.domainBarWrap}>
-          <LifeDomainBar isExpanded={isExpanded} />
-        </div>
+
 
         {/* Navigation Sections */}
         <nav className={styles.nav}>

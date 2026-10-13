@@ -32,7 +32,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { login, signInWithGoogle, error, clearError } = useAuth();
+  const { login, signInWithGoogle, continueAsGuest, error, clearError } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -168,6 +168,19 @@ export default function LoginPage() {
             Create one
           </Link>
         </div>
+
+        <button
+          type="button"
+          className={styles.guestBtn}
+          onClick={() => {
+            continueAsGuest();
+            router.replace('/');
+          }}
+          aria-label="Continue to Local Workspace without an account"
+        >
+          <span>Continue in Local Mode (Offline)</span>
+          <ArrowRight size={14} />
+        </button>
       </div>
 
       <div className={styles.footerTrust}>

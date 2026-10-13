@@ -24,6 +24,7 @@ import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import EntityFiles from '@/components/files/EntityFiles';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 export default function HabitsPage() {
   const {
@@ -156,15 +157,37 @@ export default function HabitsPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new habit..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={() => setAddModalOpen(true)}
+              title="Open full habit creator"
+              aria-label="Open full habit creator"
+            >
+              <Repeat size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -271,9 +294,9 @@ export default function HabitsPage() {
               <div className={styles.cardTop}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                   <div className={styles.habitTitleRow}>
-                    <h2 className={styles.habitTitle}>{habit.title}</h2>
+                    <h2 className={styles.habitTitle}><AutoLinkText text={habit.title} /></h2>
                   </div>
-                  {habit.description && <p className={styles.habitDesc}>{habit.description}</p>}
+                  {habit.description && <p className={styles.habitDesc}><AutoLinkText text={habit.description} /></p>}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

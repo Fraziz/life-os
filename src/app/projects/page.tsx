@@ -21,6 +21,7 @@ import {
   X,
   RotateCcw,
   LayoutList,
+  LayoutGrid,
   Columns,
   CalendarDays,
   ChevronLeft,
@@ -33,6 +34,7 @@ import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   active:    { label: 'Active',       color: '#3b82f6' },
@@ -44,7 +46,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
 
 const BOARD_COLS: ProjectStatus[] = ['planning', 'active', 'on-hold', 'completed'];
 
-type ViewMode = 'list' | 'board' | 'calendar';
+type ViewMode = 'notes' | 'list' | 'board' | 'calendar';
 
 function ProgressBar({ value, color }: { value: number; color?: string }) {
   return (
@@ -106,7 +108,7 @@ function ProjectRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700, fontSize: compact ? '13px' : '14px', color: 'var(--color-text)' }}>
-            {project.title}
+            <AutoLinkText text={project.title} />
           </span>
           <span style={{
             fontSize: '10px', fontWeight: 700, padding: '1px 8px', borderRadius: '99px',
@@ -124,7 +126,7 @@ function ProjectRow({
 
         {!compact && project.description && (
           <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px', lineHeight: 1.5 }}>
-            {project.description}
+            <AutoLinkText text={project.description} />
           </p>
         )}
 
@@ -227,7 +229,144 @@ const btnStyle: React.CSSProperties = {
   padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center',
 };
 
-/** ── List View ── */
+/** ── Notes / Masonry Grid View (Google Keep-style, auto-adjusting rows & columns) ── */
+function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
+  projects: Project[];
+  goals: { id: string; title: string }[];
+  onEdit: (p: Project) => void;
+  onDelete: (id: string) => void;
+  onProgressChange: (id: string, v: number) => void;
+  highlightId?: string | null;
+  onAddBridgeTask?: (p: Project) => void;
+}) {
+  if (projects.length === 0) return <EmptyState />;
+  return (
+    <div className={styles.projectsGrid}>
+      {projects.map((p) => {
+        const cfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.active;
+        const accent = p.color || cfg.color;
+        const parentGoal = goals.find((g) => g.id === p.goalId);
+        const isHighlighted = highlightId === p.id;
+        return (
+          <article
+            key={p.id}
+            id={`project-card-${p.id}`}
+            className={styles.projectCard}
+            style={{
+              boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+              borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+            }}
+          >
+            {/* Top row: title + actions */}
+            <div className={styles.cardTopRow}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className={styles.tagsRow}>
+                  <span
+                    className={`${styles.statusBadge} ${styles[p.status === 'on-hold' ? 'onHold' : p.status] || ''}`}
+                    style={{ background: `${cfg.color}20`, color: cfg.color, border: `1px solid ${cfg.color}40` }}
+                  >
+                    {cfg.label}
+                  </span>
+                  <span
+                    className={`${styles.priorityBadge} ${styles[p.priority] || ''}`}
+                  >
+                    {p.priority}
+                  </span>
+                </div>
+                <p className={styles.projectTitle} style={{ marginTop: '6px' }}>
+                  <AutoLinkText text={p.title} />
+                </p>
+              </div>
+              <div className={styles.cardActions}>
+                <EntityFiles variant="icon" entityType="project" entityId={p.id} title={p.title} />
+                {onAddBridgeTask && (
+                  <button
+                    type="button"
+                    className={styles.actionBtn}
+                    onClick={() => onAddBridgeTask(p)}
+                    title="Create a 15-minute action task"
+                    aria-label="Add bridge task"
+                    style={{ color: '#34d399', fontSize: '11px', fontWeight: 600, width: 'auto', padding: '2px 6px', gap: '3px' }}
+                  >
+                    + Task
+                  </button>
+                )}
+                <button className={styles.actionBtn} onClick={() => onEdit(p)} title="Edit" aria-label="Edit project">
+                  <Edit2 size={13} />
+                </button>
+                <button
+                  className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                  onClick={() => { if (confirm(`Delete "${p.title}"?`)) onDelete(p.id); }}
+                  title="Delete"
+                  aria-label="Delete project"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Hierarchy chain (parent goal) */}
+            {parentGoal && (
+              <div className={styles.hierarchyChain}>
+                <div className={styles.chainRow}>
+                  <span className={styles.chainLabel}>Goal</span>
+                  <span className={styles.chainVal}>{parentGoal.title}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {p.description && (
+              <p className={styles.projectDesc}>
+                <AutoLinkText text={p.description} />
+              </p>
+            )}
+
+            {/* Notes */}
+            {p.notes && (
+              <div className={styles.notesBox}>
+                <AutoLinkText text={p.notes} />
+              </div>
+            )}
+
+            {/* Progress */}
+            <div className={styles.progressSection}>
+              <div className={styles.progressHeader}>
+                <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>Progress</span>
+                <span style={{ color: accent, fontWeight: 700, fontSize: '11px' }}>{p.progress}%</span>
+              </div>
+              <div className={styles.progressBarContainer}>
+                <div
+                  className={styles.progressBarFill}
+                  style={{ width: `${p.progress}%`, background: `linear-gradient(90deg, ${accent}, ${accent}aa)` }}
+                />
+              </div>
+              <input
+                type="range" min="0" max="100" step="5"
+                value={p.progress}
+                className={styles.sliderInput}
+                style={{ accentColor: accent }}
+                onChange={(e) => onProgressChange(p.id, parseInt(e.target.value))}
+                title="Update progress"
+              />
+            </div>
+
+            {/* Footer: dates */}
+            <div className={styles.cardFooter}>
+              <span className={styles.dateRange}>
+                <Calendar size={11} />
+                {p.startDate ? p.startDate : 'No start'}
+                {p.dueDate && <> → {p.dueDate}</>}
+              </span>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/** ── List View (flat rows fallback) ── */
 function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
   projects: Project[];
   goals: { id: string; title: string }[];
@@ -581,7 +720,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'planning' | 'completed'>('active');
   const [goalFilter, setGoalFilter]     = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('notes');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -724,15 +863,37 @@ export default function ProjectsPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new project..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={openCreateModal}
+              title="Open Detailed Project Editor"
+              aria-label="Open Detailed Project Editor"
+            >
+              <Folder size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -812,6 +973,7 @@ export default function ProjectsPage() {
             borderRadius: '10px',
           }}>
             {([
+              { mode: 'notes' as ViewMode, icon: <LayoutGrid size={15} />, label: 'Notes' },
               { mode: 'list' as ViewMode, icon: <LayoutList size={15} />, label: 'List' },
               { mode: 'board' as ViewMode, icon: <Columns size={15} />, label: 'Board' },
               { mode: 'calendar' as ViewMode, icon: <CalendarDays size={15} />, label: 'Calendar' },
@@ -837,6 +999,18 @@ export default function ProjectsPage() {
       </div>
 
       {/* ── View Body ── */}
+      {viewMode === 'notes' && (
+        <NotesView
+          projects={filteredProjects}
+          goals={goalList}
+          onEdit={openEditModal}
+          onDelete={deleteProject}
+          onProgressChange={updateProjectProgress}
+          highlightId={highlightId}
+          onAddBridgeTask={openBridgeTask}
+        />
+      )}
+
       {viewMode === 'list' && (
         <ListView
           projects={filteredProjects}

@@ -59,6 +59,22 @@
   --color-mint-card:      #effaf3;
   --color-mint-border:    #d3f2e0;
 
+  /* Action Pill (Focus Space & Life Domain) */
+  --color-pill-action-bg:     linear-gradient(135deg, rgba(45, 55, 72, 0.08), rgba(74, 85, 104, 0.12));
+  --color-pill-action-text:   #2d3748;
+  --color-pill-action-border: rgba(45, 55, 72, 0.28);
+  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
+  --color-doitnow-accent:        #8d5b34;
+  --color-doitnow-accent-hover:  #784a28;
+  --color-doitnow-bg:            rgba(141, 91, 52, 0.035);
+  --color-doitnow-border:        rgba(141, 91, 52, 0.18);
+  --color-doitnow-border-hover:  rgba(141, 91, 52, 0.32);
+  --color-doitnow-text:          #784a28;
+  --color-doitnow-badge-bg:      rgba(141, 91, 52, 0.08);
+  --color-doitnow-glow:          transparent;
+
   /* Typography */
   --font-sans:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif:           'Playfair Display', Georgia, serif;
@@ -121,9 +137,21 @@
   --content-max-width:      100%;
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1366px) {
   :root {
-    --sidebar-width: 218px;
+    --sidebar-width: 220px;
+    --sidebar-collapsed-width: 64px;
+  }
+}
+
+/* Adaptive vertical spacing for short laptop viewports & Windows taskbars */
+@media (max-height: 760px) {
+  :root {
+    --space-4: clamp(0.75rem, 2vh, 1rem);
+    --space-5: clamp(0.85rem, 2.3vh, 1.15rem);
+    --space-6: clamp(1rem, 2.6vh, 1.35rem);
+    --space-8: clamp(1.2rem, 3.2vh, 1.75rem);
+    --space-10: clamp(1.5rem, 3.8vh, 2.25rem);
   }
 }
 
@@ -187,6 +215,22 @@
   --shadow-xl:            0 20px 40px -6px rgba(0, 0, 0, 0.08);
   --shadow-glow:          none;
   --shadow-glow-sm:       none;
+
+  /* Action Pill (Focus Space & Life Domain) */
+  --color-pill-action-bg:     linear-gradient(135deg, rgba(79, 70, 229, 0.10), rgba(99, 102, 241, 0.14));
+  --color-pill-action-text:   #4338ca;
+  --color-pill-action-border: rgba(99, 102, 241, 0.32);
+  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
+  --color-doitnow-accent:        #925f38;
+  --color-doitnow-accent-hover:  #7a4d2b;
+  --color-doitnow-bg:            rgba(146, 95, 56, 0.035);
+  --color-doitnow-border:        rgba(146, 95, 56, 0.18);
+  --color-doitnow-border-hover:  rgba(146, 95, 56, 0.32);
+  --color-doitnow-text:          #7a4d2b;
+  --color-doitnow-badge-bg:      rgba(146, 95, 56, 0.08);
+  --color-doitnow-glow:          transparent;
 }
 
 /*  Dark Theme (Google Keep Neutral Charcoal & Warm Amber)  */
@@ -238,6 +282,22 @@
   --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.7);
   --shadow-glow:          none;
   --shadow-glow-sm:       none;
+
+  /* Action Pill (Focus Space & Life Domain) */
+  --color-pill-action-bg:     linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(139, 92, 246, 0.18));
+  --color-pill-action-text:   #c7d2fe;
+  --color-pill-action-border: rgba(99, 102, 241, 0.35);
+  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+
+  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
+  --color-doitnow-accent:        #d4a373;
+  --color-doitnow-accent-hover:  #e0b589;
+  --color-doitnow-bg:            rgba(212, 163, 115, 0.04);
+  --color-doitnow-border:        rgba(212, 163, 115, 0.18);
+  --color-doitnow-border-hover:  rgba(212, 163, 115, 0.32);
+  --color-doitnow-text:          #d4a373;
+  --color-doitnow-badge-bg:      rgba(212, 163, 115, 0.10);
+  --color-doitnow-glow:          transparent;
 }
 
 /*  Nature Theme (Organic Forest & Parchment)  */
@@ -313,6 +373,22 @@
   --nature-deep:          #1b3a27;
   --nature-surface-card:  #f0edd8;
   --nature-hero-overlay:  linear-gradient(to bottom, rgba(28, 43, 30, 0.18) 0%, rgba(28, 43, 30, 0.52) 100%);
+
+  /* Action Pill (Focus Space & Life Domain) */
+  --color-pill-action-bg:     linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(74, 222, 128, 0.18));
+  --color-pill-action-text:   #4ade80;
+  --color-pill-action-border: rgba(74, 222, 128, 0.32);
+  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+
+  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
+  --color-doitnow-accent:        #c89f6d;
+  --color-doitnow-accent-hover:  #d6b080;
+  --color-doitnow-bg:            rgba(200, 159, 109, 0.04);
+  --color-doitnow-border:        rgba(200, 159, 109, 0.18);
+  --color-doitnow-border-hover:  rgba(200, 159, 109, 0.30);
+  --color-doitnow-text:          #d6b080;
+  --color-doitnow-badge-bg:      rgba(200, 159, 109, 0.10);
+  --color-doitnow-glow:          transparent;
 }
 
 /*  Cyber Glow / Neon Deck Theme (Vibrant Glowing Midnight Sapphire from Reference)  */
@@ -364,6 +440,22 @@
   --shadow-xl:            0 24px 60px rgba(0, 0, 0, 0.8);
   --shadow-glow:          none;
   --shadow-glow-sm:       none;
+
+  /* Action Pill (Focus Space & Life Domain) */
+  --color-pill-action-bg:     linear-gradient(135deg, rgba(6, 182, 212, 0.16), rgba(99, 102, 241, 0.18));
+  --color-pill-action-text:   #38bdf8;
+  --color-pill-action-border: rgba(6, 182, 212, 0.38);
+  --color-pill-action-shadow: 0 1px 6px rgba(6, 182, 212, 0.2);
+
+  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
+  --color-doitnow-accent:        #d4a373;
+  --color-doitnow-accent-hover:  #e2b485;
+  --color-doitnow-bg:            rgba(212, 163, 115, 0.05);
+  --color-doitnow-border:        rgba(212, 163, 115, 0.20);
+  --color-doitnow-border-hover:  rgba(212, 163, 115, 0.35);
+  --color-doitnow-text:          #e2b485;
+  --color-doitnow-badge-bg:      rgba(212, 163, 115, 0.10);
+  --color-doitnow-glow:          transparent;
 }
 
 /*  System preference fallback  */
@@ -402,6 +494,8 @@ html {
   scroll-behavior: smooth;
   overflow-x: clip;
   width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 body {
@@ -414,6 +508,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   overflow-x: clip;
   overflow-wrap: break-word;
@@ -790,3 +885,18 @@ mark:hover {
   text-decoration-thickness: 1.5px;
   text-underline-offset: 2px;
 }
+
+/* ── Seamless Input Focus Reset (Eliminates harsh browser outline lines on typing) ── */
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+}
+

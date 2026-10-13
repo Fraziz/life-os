@@ -30,6 +30,7 @@ import {
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 // Available icon options for custom Life Areas
 const ICON_OPTIONS: Record<string, LucideIcon> = {
@@ -262,8 +263,8 @@ export default function LifeAreasPage() {
               </div>
 
               <div>
-                <h3 className={styles.areaName}>{area.name}</h3>
-                {area.description && <p className={styles.areaDesc}>{area.description}</p>}
+                <h3 className={styles.areaName}><AutoLinkText text={area.name} /></h3>
+                {area.description && <p className={styles.areaDesc}><AutoLinkText text={area.description} /></p>}
               </div>
 
               <div className={styles.areaMeta}>

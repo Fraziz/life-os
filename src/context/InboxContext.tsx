@@ -7,7 +7,7 @@ import { useProjects } from './ProjectContext';
 import { useGoals } from './GoalContext';
 import { useDreams } from './DreamContext';
 import { useKnowledge } from './KnowledgeContext';
-import { loadJsonArray } from '@/lib/localStore';
+import { loadJsonArray, saveJson } from '@/lib/localStore';
 import { notifyItemDeleted } from './UndoContext';
 
 const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
@@ -120,7 +120,19 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<InboxItem>(INBOX_STORAGE_KEY);
-      setItems(normalizeItems(parsed || []));
+      const list = parsed && parsed.length > 0 ? parsed : DEFAULT_INBOX_ITEMS;
+      const cleaned = list.filter(
+        (i) =>
+          i.id !== 'inbox-accomplish-now' &&
+          i.id !== 'daily-mandate-ticker' &&
+          !i.content.toLowerCase().includes('what you need to accomplish today') &&
+          !i.content.toLowerCase().includes('accomplish it now')
+      );
+      const finalList = normalizeItems(cleaned.length > 0 ? cleaned : DEFAULT_INBOX_ITEMS);
+      setItems(finalList);
+      if (parsed && parsed.length !== finalList.length) {
+        saveJson(INBOX_STORAGE_KEY, finalList);
+      }
     } catch (err) {
       console.error('Failed to load inbox items:', err);
     }

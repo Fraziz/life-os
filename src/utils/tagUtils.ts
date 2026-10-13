@@ -55,7 +55,7 @@ export function formatTagLabel(tag: string): string {
     .join(' ');
 }
 
-export type TagCategory = 'project' | 'goal' | 'dream' | 'school' | 'health' | 'ai' | 'default';
+export type TagCategory = 'project' | 'goal' | 'dream' | 'school' | 'health' | 'ai' | 'doitnow' | 'default';
 
 /**
  * Returns the semantic category of a tag for consistent styling across themes.
@@ -64,6 +64,9 @@ export function getTagCategory(tag: string): TagCategory {
   if (!tag) return 'default';
   const t = tag.toLowerCase();
 
+  if (/do-it-now|doitnow|^now$/i.test(t)) {
+    return 'doitnow';
+  }
   if (/project|action|task|build|dev|feature|work|code|pipeline/i.test(t)) {
     return 'project';
   }

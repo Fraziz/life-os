@@ -23,6 +23,7 @@ import {
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import AutoLinkText from '@/components/ui/AutoLinkText';
 
 const STATUS_CONFIG: Record<MilestoneStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: styles.upcoming },
@@ -178,15 +179,37 @@ export default function MilestonesPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new milestone checkpoint..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={openCreateModal}
+              title="Open full milestone creator"
+              aria-label="Open full milestone creator"
+            >
+              <Flag size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -345,8 +368,8 @@ export default function MilestonesPage() {
                 </div>
 
                 <div>
-                  <h3 className={styles.milestoneTitle}>{milestone.title}</h3>
-                  {milestone.description && <p className={styles.milestoneDesc}>{milestone.description}</p>}
+                  <h3 className={styles.milestoneTitle}><AutoLinkText text={milestone.title} /></h3>
+                  {milestone.description && <p className={styles.milestoneDesc}><AutoLinkText text={milestone.description} /></p>}
                 </div>
 
                 {/* ── Progress Section ── */}

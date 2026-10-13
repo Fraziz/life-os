@@ -1,0 +1,149 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.domainPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 14px;
+  border-radius: 99px;
+  background: var(--color-pill-action-bg);
+  border: 1px solid var(--color-pill-action-border);
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--color-pill-action-text);
+  font-weight: 500;
+  box-shadow: var(--color-pill-action-shadow);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+  box-sizing: border-box;
+  vertical-align: middle;
+  margin: 0;
+  outline: none;
+  transition: opacity 0.15s, transform 0.15s, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.domainPill:hover {
+  opacity: 0.90;
+  transform: translateY(-1px);
+}
+
+.domainPillActive {
+  font-weight: 600;
+  border-color: var(--color-pill-action-border);
+  box-shadow: var(--color-pill-action-shadow);
+}
+
+.domainText {
+  white-space: nowrap;
+}
+
+/* ── Popover Dropdown (Pure Typography, Zero Icons, Zero Dots) ── */
+.popover {
+  position: fixed;
+  width: 240px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 9999;
+  backdrop-filter: blur(16px);
+  animation: popoverFade 0.12s ease forwards;
+}
+
+@keyframes popoverFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popoverHeader {
+  padding: 8px 10px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popoverDivider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 4px 6px;
+}
+
+.popoverItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+  width: 100%;
+}
+
+.popoverItem:hover {
+  background: var(--color-surface-hover, var(--color-surface-2));
+  color: var(--color-text);
+}
+
+.popoverItemActive {
+  background: var(--color-pill-action-bg);
+  color: var(--color-pill-action-text);
+  font-weight: 600;
+}
+
+.popoverItemActive .hotkeyBadge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.itemName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hotkeyBadge {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}

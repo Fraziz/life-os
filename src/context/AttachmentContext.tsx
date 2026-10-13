@@ -71,7 +71,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   const [uploads, setUploads] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (!user) {
+    if (!user || (user as { isGuest?: boolean }).isGuest) {
       setFiles([]);
       setIsLoaded(true);
       return;
@@ -131,7 +131,9 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
       entityTitle: string;
       folder?: string;
     }) => {
-      if (!user) throw new Error('Log in first.');
+      if (!user || (user as { isGuest?: boolean }).isGuest) {
+        throw new Error('Sign in with an account to upload files to cloud storage.');
+      }
       const list = Array.from(incoming);
       setError(null);
 

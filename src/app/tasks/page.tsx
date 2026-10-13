@@ -22,7 +22,6 @@ import {
   X,
   RotateCcw,
   Sparkles,
-  Search,
   ChevronRight,
   ChevronDown,
   ListTodo,
@@ -33,6 +32,8 @@ import {
   Layers,
   LayoutList,
   Archive,
+  Columns,
+  LayoutGrid,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { formatTagLabel } from '@/utils/tagUtils';
@@ -40,6 +41,8 @@ import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+import AutoLinkText from '@/components/ui/AutoLinkText';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'backlog', label: 'Backlog' },
@@ -93,7 +96,6 @@ export default function TasksPage() {
   // Filters & Views
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [taskSearch, setTaskSearch] = useState<string>('');
   const [hideDone, setHideDone] = useState<boolean>(false);
   const [doneTimeframe, setDoneTimeframe] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
@@ -101,6 +103,9 @@ export default function TasksPage() {
   const [doneViewMode, setDoneViewMode] = useState<'grouped' | 'compact' | 'all'>('grouped');
   const [doneDisplayLimit, setDoneDisplayLimit] = useState<number>(10);
   const [isOlderDoneExpanded, setIsOlderDoneExpanded] = useState<boolean>(false);
+
+  // View mode switcher: 'board' (Kanban) vs 'notes' (Google Keep / Notes masonry)
+  const [taskLayout, setTaskLayout] = useState<'board' | 'notes'>('board');
 
   // Mobile View Switcher & Column Collapse (for managing large task lists)
   const [mobileColFilter, setMobileColFilter] = useState<'all' | TaskStatus>('all');
@@ -122,6 +127,15 @@ export default function TasksPage() {
     e?.stopPropagation();
     setExpandedTasksMap((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
   };
+
+  // Safe in-app confirmation modal (eliminates browser-blocking confirm() calls)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Inline Subtask Adder states (taskId -> newSubtaskTitle)
   const [activeSubtaskTaskId, setActiveSubtaskTaskId] = useState<string | null>(null);
@@ -148,8 +162,8 @@ export default function TasksPage() {
     return <PageSkeleton variant="tasks" cardsCount={6} showMetrics={true} showControls={true} />;
   }
 
-  const handleQuickAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleQuickAddSubmit = (e?: React.FormEvent | React.KeyboardEvent) => {
+    e?.preventDefault();
     if (!quickTitle.trim()) return;
 
     quickAddTask(quickTitle.trim(), {
@@ -158,6 +172,8 @@ export default function TasksPage() {
       projectId: quickProjectId || undefined,
     });
     setQuickTitle('');
+    playSuccessChime();
+    triggerDopamineBurst();
   };
 
   const openCreateModal = () => {
@@ -273,12 +289,28 @@ export default function TasksPage() {
     setModalOpen(false);
   };
 
-  const handleAddSubtaskSubmit = (taskId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
-    addSubtask(taskId, newSubtaskTitle.trim());
+  const handleAddSubtaskSubmit = (taskId: string, e?: React.FormEvent, keepOpen = false) => {
+    e?.preventDefault();
+    if (!newSubtaskTitle.trim()) {
+      setActiveSubtaskTaskId(null);
+      return;
+    }
+
+    if (newSubtaskTitle.includes('\n')) {
+      const lines = newSubtaskTitle
+        .split('\n')
+        .map((l) => l.trim().replace(/^[-*•]\s*/, ''))
+        .filter((l) => l.length > 0 && !l.startsWith('#'));
+      lines.forEach((line) => addSubtask(taskId, line));
+    } else {
+      addSubtask(taskId, newSubtaskTitle.trim());
+    }
+    playSubtaskTick();
+    setExpandedTasksMap((prev) => ({ ...prev, [taskId]: true }));
     setNewSubtaskTitle('');
-    setActiveSubtaskTaskId(null);
+    if (!keepOpen) {
+      setActiveSubtaskTaskId(null);
+    }
   };
 
   const isDateToday = (dateStr?: string) => {
@@ -344,13 +376,6 @@ export default function TasksPage() {
     }
     if (projectFilter !== 'all' && t.projectId !== projectFilter) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
-    if (taskSearch.trim()) {
-      const q = taskSearch.toLowerCase();
-      const matchTitle = t.title.toLowerCase().includes(q);
-      const matchDesc = t.description?.toLowerCase().includes(q);
-      const matchTags = t.tags.some((tag) => tag.toLowerCase().includes(q));
-      if (!matchTitle && !matchDesc && !matchTags) return false;
-    }
     return true;
   });
 
@@ -413,7 +438,13 @@ export default function TasksPage() {
           <button
             className={`${styles.compactActionBtn} ${styles.deleteBtn}`}
             onClick={() => {
-              if (confirm(`Delete "${task.title}"?`)) deleteTask(task.id);
+              setConfirmDialog({
+                isOpen: true,
+                title: 'Delete Task',
+                message: `Are you sure you want to delete "${task.title}"? This cannot be undone.`,
+                confirmLabel: 'Delete Task',
+                onConfirm: () => deleteTask(task.id),
+              });
             }}
             title="Delete task"
           >
@@ -471,7 +502,7 @@ export default function TasksPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
                 <h3 className={`${styles.taskTitle} ${isDone ? styles.strikethrough : ''}`}>
-                  {task.title}
+                  <AutoLinkText text={task.title} />
                 </h3>
                 {isCompound && (
                   <span className={styles.compoundBadge}>
@@ -491,7 +522,7 @@ export default function TasksPage() {
                 )}
               </div>
               {task.description && (
-                <p className={styles.taskDesc}>{task.description}</p>
+                <p className={styles.taskDesc}><AutoLinkText text={task.description} /></p>
               )}
             </div>
           </div>
@@ -512,7 +543,7 @@ export default function TasksPage() {
             <div className={styles.subtaskProgressHeader}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <ListTree size={11} style={{ color: 'var(--color-accent)' }} />
-                <span>Steps Breakdown</span>
+                <span>Subtasks</span>
               </span>
               <span style={{ fontWeight: 600 }}>
                 {completedSubs}/{task.subtasks.length} ({subPercent}%) {expandedTasksMap[task.id] ? '▲' : '▼'}
@@ -541,16 +572,12 @@ export default function TasksPage() {
                 >
                   {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
                 </button>
-                <span style={{ flex: 1 }}>{sub.title}</span>
+                <span style={{ flex: 1 }}><AutoLinkText text={sub.title} /></span>
 
                 {/* Promote subtask to standalone task */}
                 <button
                   className={styles.actionBtn}
-                  onClick={() => {
-                    if (confirm(`Promote "${sub.title}" to a standalone task?`)) {
-                      promoteSubtaskToTask(task.id, sub.id);
-                    }
-                  }}
+                  onClick={() => promoteSubtaskToTask(task.id, sub.id)}
                   title="Promote to standalone task"
                 >
                   <ExternalLink size={12} />
@@ -568,29 +595,38 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* ── Inline Subtask & Breakdown Buttons ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+        {/* ── Inline Subtask Adder ── */}
+        <div className={styles.subtaskActionsRow}>
           {activeSubtaskTaskId === task.id ? (
             <form
-              onSubmit={(e) => handleAddSubtaskSubmit(task.id, e)}
+              onSubmit={(e) => handleAddSubtaskSubmit(task.id, e, true)}
               className={styles.subtaskAddForm}
-              style={{ flex: 1 }}
             >
               <input
                 type="text"
                 className={styles.subtaskAddInput}
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                placeholder="New subtask..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtaskSubmit(task.id, e, true);
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setActiveSubtaskTaskId(null);
+                  }
+                }}
+                placeholder="Add subtask... (Enter to add more)"
                 autoFocus
               />
-              <button type="submit" className={styles.actionBtn} title="Save subtask">
+              <button type="submit" className={styles.subtaskInlineActionBtn} title="Save (Enter)">
                 <Check size={13} />
               </button>
               <button
                 type="button"
-                className={styles.actionBtn}
+                className={styles.subtaskInlineActionBtn}
                 onClick={() => setActiveSubtaskTaskId(null)}
+                title="Done (Esc)"
               >
                 <X size={13} />
               </button>
@@ -598,33 +634,17 @@ export default function TasksPage() {
           ) : (
             <button
               type="button"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--color-text-faint)',
-                fontSize: '11px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
+              className={styles.addSubtaskBtn}
               onClick={() => {
                 setActiveSubtaskTaskId(task.id);
                 setNewSubtaskTitle('');
+                setExpandedTasksMap((prev) => ({ ...prev, [task.id]: true }));
               }}
+              title="Add a subtask to this task"
             >
-              <Plus size={12} /> Add Step
+              <Plus size={12} /> Add subtask
             </button>
           )}
-
-          <button
-            type="button"
-            className={styles.btnBreakdown}
-            onClick={() => openBreakdownModal(task)}
-            title="Quick multi-line task breakdown"
-          >
-            <GitFork size={12} /> Breakdown
-          </button>
         </div>
 
         {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
@@ -751,9 +771,13 @@ export default function TasksPage() {
             <button
               className={`${styles.actionBtn} ${styles.deleteBtn}`}
               onClick={() => {
-                if (confirm(`Delete Task "${task.title}"?`)) {
-                  deleteTask(task.id);
-                }
+                setConfirmDialog({
+                  isOpen: true,
+                  title: 'Delete Task',
+                  message: `Are you sure you want to delete "${task.title}"? This cannot be undone.`,
+                  confirmLabel: 'Delete Task',
+                  onConfirm: () => deleteTask(task.id),
+                });
               }}
               title="Delete Task"
             >
@@ -800,16 +824,38 @@ export default function TasksPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuickAddSubmit(e);
+              }
+            }}
             placeholder="Add a new task..."
             autoFocus
           />
-          <button type="submit" className={styles.quickAddBtn} disabled={!quickTitle.trim()}>
-            <span>Add</span>
-            <kbd className={styles.quickAddKbd}>↵</kbd>
-          </button>
+          <div className={styles.quickAddActions}>
+            <button
+              type="button"
+              className={styles.quickAddIconBtn}
+              onClick={openCreateModal}
+              title="Open Detailed Task Editor"
+              aria-label="Open Detailed Task Editor"
+            >
+              <ListTodo size={15} />
+            </button>
+            <button
+              type="submit"
+              className={styles.quickAddBtn}
+              onClick={handleQuickAddSubmit}
+              aria-disabled={!quickTitle.trim()}
+            >
+              <span>Add</span>
+              <kbd className={styles.quickAddKbd}>↵</kbd>
+            </button>
+          </div>
         </div>
 
-        <div className={styles.quickAddMetaRow}>
+        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
           <div className={styles.quickAddPills}>
             <select
               className={styles.pillSelect}
@@ -852,27 +898,6 @@ export default function TasksPage() {
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.filtersGroup}>
-          <div className={styles.searchWrap}>
-            <Search size={14} className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={taskSearch}
-              onChange={(e) => setTaskSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-            {taskSearch && (
-              <button
-                type="button"
-                onClick={() => setTaskSearch('')}
-                className={styles.clearSearchBtn}
-                aria-label="Clear search"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
           <select
             className={styles.selectFilter}
             value={projectFilter}
@@ -924,46 +949,88 @@ export default function TasksPage() {
       </div>
 
       {/* ── Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) ── */}
-      <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mobileColFilter === 'all'}
-          className={`${styles.taskTabBtn} ${mobileColFilter === 'all' ? styles.taskTabBtnActive : ''}`}
-          onClick={() => setMobileColFilter('all')}
-        >
-          <span>All</span>
-          <span className={styles.tabBadge}>{filteredTasks.length}</span>
-        </button>
-        {STATUS_COLUMNS.map((col) => {
-          const count = filteredTasks.filter((t) => t.status === col.id).length;
-          const columnAccents: Record<string, string> = {
-            backlog: '#64748b',
-            todo: '#38bdf8',
-            doing: '#f59e0b',
-            done: '#22d3a5',
-          };
-          const dotColor = columnAccents[col.id] || 'var(--color-accent)';
+      <div className={styles.taskTabsSwitcherRow}>
+        <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobileColFilter === 'all'}
+            className={`${styles.taskTabBtn} ${mobileColFilter === 'all' ? styles.taskTabBtnActive : ''}`}
+            onClick={() => setMobileColFilter('all')}
+          >
+            <span>All</span>
+            <span className={styles.tabBadge}>{filteredTasks.length}</span>
+          </button>
+          {STATUS_COLUMNS.map((col) => {
+            const count = filteredTasks.filter((t) => t.status === col.id).length;
+            const columnAccents: Record<string, string> = {
+              backlog: '#64748b',
+              todo: '#38bdf8',
+              doing: '#f59e0b',
+              done: '#22d3a5',
+            };
+            const dotColor = columnAccents[col.id] || 'var(--color-accent)';
 
-          return (
-            <button
-              key={col.id}
-              type="button"
-              role="tab"
-              aria-selected={mobileColFilter === col.id}
-              className={`${styles.taskTabBtn} ${mobileColFilter === col.id ? styles.taskTabBtnActive : ''}`}
-              onClick={() => setMobileColFilter(col.id)}
-            >
-              <span className={styles.tabDot} style={{ background: dotColor }} />
-              <span>{col.label}</span>
-              <span className={styles.tabBadge}>{count}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={col.id}
+                type="button"
+                role="tab"
+                aria-selected={mobileColFilter === col.id}
+                className={`${styles.taskTabBtn} ${mobileColFilter === col.id ? styles.taskTabBtnActive : ''}`}
+                onClick={() => setMobileColFilter(col.id)}
+              >
+                <span className={styles.tabDot} style={{ background: dotColor }} />
+                <span>{col.label}</span>
+                <span className={styles.tabBadge}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* View Mode Switcher: Board vs Google Notes Masonry */}
+        <div className={styles.viewModeToggleGroup}>
+          <button
+            type="button"
+            className={`${styles.viewModeBtn} ${taskLayout === 'board' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => setTaskLayout('board')}
+            title="Kanban Board View"
+            aria-label="Kanban Board View"
+          >
+            <Columns size={13} />
+            <span>Board</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewModeBtn} ${taskLayout === 'notes' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => setTaskLayout('notes')}
+            title="Google Notes View (Auto-adjusting cards)"
+            aria-label="Google Notes View"
+          >
+            <LayoutGrid size={13} />
+            <span>Notes</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Board Grid: Backlog | To Do | Doing | Done ── */}
-      <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
+      {taskLayout === 'notes' ? (
+        <div className={styles.notesMasonryGrid}>
+          {filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter).length === 0 ? (
+            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%' }}>
+              No tasks match current filter
+            </p>
+          ) : (
+            filteredTasks
+              .filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter)
+              .map((task) => {
+                const col = STATUS_COLUMNS.find((c) => c.id === task.status) || STATUS_COLUMNS[0];
+                return renderTaskCard(task, col);
+              })
+          )}
+        </div>
+      ) : (
+        /* ── Board Grid: Backlog | To Do | Doing | Done ── */
+        <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
           const isCollapsed = Boolean(collapsedCols[col.id]);
@@ -1022,9 +1089,13 @@ export default function TasksPage() {
                         type="button"
                         className={`${styles.doneHeaderBtn} ${styles.doneClearBtn}`}
                         onClick={() => {
-                          if (confirm(`Clear all ${colTasks.length} completed tasks from this board?`)) {
-                            colTasks.forEach((t) => deleteTask(t.id));
-                          }
+                          setConfirmDialog({
+                            isOpen: true,
+                            title: 'Clear Completed Tasks',
+                            message: `Clear all ${colTasks.length} completed tasks from this board?`,
+                            confirmLabel: 'Clear Completed',
+                            onConfirm: () => colTasks.forEach((t) => deleteTask(t.id)),
+                          });
                         }}
                         title="Clear completed tasks"
                       >
@@ -1245,6 +1316,7 @@ export default function TasksPage() {
           );
         })}
       </div>
+      )}
 
       {/* ── Modal Dialog for Full Edit / Create ── */}
       {modalOpen && (
@@ -1506,6 +1578,23 @@ export default function TasksPage() {
         isOpen={adhdGuideOpen}
         onClose={() => setAdhdGuideOpen(false)}
       />
+
+      {/* ── Safe In-App Confirmation Modal ── */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          cancelLabel="Cancel"
+          isDestructive={true}
+          onConfirm={() => {
+            confirmDialog.onConfirm();
+            setConfirmDialog(null);
+          }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

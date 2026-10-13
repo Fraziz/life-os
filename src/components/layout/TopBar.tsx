@@ -100,6 +100,10 @@ export default function TopBar({
   onOpenNextAction,
 }: TopBarProps) {
   const { unreadCount } = useReminders();
+  const hasNotifications = unreadCount > 0;
+  const bellTooltip = hasNotifications
+    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+    : 'Notifications';
 
   return (
     <header className={styles.topBar} role="banner">
@@ -134,12 +138,15 @@ export default function TopBar({
           <button
             className={styles.iconBtn}
             onClick={onOpenReminders}
-            title={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
-            aria-label="Notifications"
+            title={bellTooltip}
+            aria-label={bellTooltip}
           >
             <Bell size={18} />
-            {unreadCount > 0 && (
-              <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+
+            {hasNotifications && (
+              <span className={styles.badge} aria-label={`${unreadCount} unread notifications`}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </button>
         )}

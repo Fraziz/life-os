@@ -18,13 +18,22 @@
   border-radius: var(--radius-xl, 16px);
   width: 100%;
   max-width: 640px;
-  max-height: 85vh;
+  max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+@media (max-height: 720px) {
+  .header {
+    padding: 10px 16px;
+  }
+  .content {
+    padding: 12px 16px;
+  }
 }
 
 .header {

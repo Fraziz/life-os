@@ -1,0 +1,29 @@
+.container {
+  display: inline;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.autoLink {
+  color: var(--color-accent, #818cf8);
+  text-decoration: underline;
+  text-decoration-thickness: 1.2px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(129, 140, 248, 0.45);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease, opacity 0.15s ease;
+}
+
+.autoLink:hover {
+  color: var(--color-accent-light, #a5b4fc);
+  text-decoration-color: currentColor;
+  opacity: 0.95;
+}
+
+.autoLink:focus-visible {
+  outline: 2px solid var(--color-accent, #818cf8);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

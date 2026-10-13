@@ -3571,9 +3571,9 @@ export default function KnowledgePage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Knowledge Base</h1>
+          <h1 className={styles.title}>Study &amp; Books</h1>
           <p className={styles.subtitle}>
-            {filteredDocs.length} {filteredDocs.length === 1 ? 'document' : 'documents'}
+            {filteredDocs.length} {filteredDocs.length === 1 ? 'study guide or book' : 'study guides & books'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>

@@ -17,21 +17,40 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { explainFirebaseError, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { removeCurrentDeviceSession, revokeAllOtherDeviceSessions } from '@/lib/deviceSessions';
 
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL?: string | null;
+  isGuest?: boolean;
+  providerData?: Array<{ providerId: string }>;
+}
+
+export const GUEST_USER: AppUser = {
+  uid: 'local-guest-user',
+  email: 'guest@sarilingmundo.local',
+  displayName: 'Local Workspace',
+  photoURL: null,
+  isGuest: true,
+};
+
 interface OwnerRecord {
   uid: string;
   email: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: (User | AppUser) | null;
   owner: OwnerRecord | null;
   ready: boolean;
+  isGuest: boolean;
   ownerExists: boolean;
   error: string | null;
   cloudWarning: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  continueAsGuest: () => void;
   logout: () => Promise<void>;
   logoutAllDevices: () => Promise<void>;
   clearError: () => void;
@@ -62,7 +81,7 @@ async function readOwner(): Promise<OwnerRecord | null> {
   }
 }
 
-async function claimOrVerifyOwner(user: User): Promise<OwnerRecord> {
+async function claimOrVerifyOwner(user: User | AppUser): Promise<OwnerRecord> {
   const email = user.email || '';
   const existing = await readOwner();
   if (!existing || existing.uid !== user.uid) {
@@ -82,20 +101,38 @@ async function claimOrVerifyOwner(user: User): Promise<OwnerRecord> {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<(User | AppUser) | null>(null);
   const [owner, setOwner] = useState<OwnerRecord | null>(null);
   const [ready, setReady] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [ownerExists, setOwnerExists] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cloudWarning, setCloudWarning] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if user previously selected local/guest workspace mode
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('life_os_guest_mode') === 'true') {
+        setUser(GUEST_USER);
+        setIsGuest(true);
+        setReady(true);
+        return;
+      }
+    } catch {}
+
     let unsub = () => {};
+    // Safety fallback: ensure ready is set within 700ms so localhost dev mode or
+    // adblockers/network delays never freeze the app on an infinite loading spinner
+    const fallbackTimer = setTimeout(() => {
+      setReady(true);
+    }, 700);
+
     try {
       const auth = getFirebaseAuth();
-      void setPersistence(auth, browserLocalPersistence);
       unsub = onAuthStateChanged(auth, async (next) => {
+        clearTimeout(fallbackTimer);
         setUser(next);
+        setIsGuest(false);
         setReady(true);
         if (next) {
           try {
@@ -115,11 +152,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
     } catch (err) {
+      clearTimeout(fallbackTimer);
       setError(explainFirebaseError(err));
       setReady(true);
     }
-    return () => unsub();
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      unsub();
+    };
   }, []);
+
+  const continueAsGuest = () => {
+    try {
+      localStorage.setItem('life_os_guest_mode', 'true');
+    } catch {}
+    setUser(GUEST_USER);
+    setIsGuest(true);
+    setReady(true);
+  };
 
   const login = async (email: string, password: string) => {
     setError(null);
@@ -129,6 +180,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error('Connection timed out. Check your internet connection or Firebase setup.')), 10000)
       );
       const cred = await Promise.race([authPromise, timeoutPromise]);
+      try {
+        localStorage.removeItem('life_os_guest_mode');
+      } catch {}
+      setIsGuest(false);
       setUser(cred.user);
       try {
         const record = await claimOrVerifyOwner(cred.user);
@@ -159,6 +214,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // ignore profile update error
         }
       }
+      try {
+        localStorage.removeItem('life_os_guest_mode');
+      } catch {}
+      setIsGuest(false);
       setUser(cred.user);
       try {
         const record = await claimOrVerifyOwner(cred.user);
@@ -181,6 +240,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const cred = await signInWithPopup(auth, provider);
+      try {
+        localStorage.removeItem('life_os_guest_mode');
+      } catch {}
+      setIsGuest(false);
       setUser(cred.user);
       try {
         const record = await claimOrVerifyOwner(cred.user);
@@ -227,13 +290,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setError(null);
     try {
-      const current = getFirebaseAuth().currentUser;
-      // Remove this device from the account's device list while still authenticated
-      if (current) await removeCurrentDeviceSession(current.uid);
-      await signOut(getFirebaseAuth());
+      if (!isGuest) {
+        const current = getFirebaseAuth().currentUser;
+        if (current) await removeCurrentDeviceSession(current.uid);
+        await signOut(getFirebaseAuth());
+      }
+    } catch {
+      // ignore
     } finally {
+      try {
+        localStorage.removeItem('life_os_guest_mode');
+      } catch {}
       clearUserLocalStorage();
       setUser(null);
+      setIsGuest(false);
       setOwner(null);
     }
   };
@@ -241,26 +311,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logoutAllDevices = async () => {
     setError(null);
     try {
-      const current = getFirebaseAuth().currentUser;
-      if (current) {
-        const now = Date.now();
-        try {
-          await setDoc(
-            doc(getFirebaseDb(), 'users', current.uid, 'meta', 'session'),
-            {
-              lastRevocation: now,
-              revokedAt: new Date().toISOString(),
-              revokedBy: 'user_action_settings',
-            },
-            { merge: true }
-          );
-        } catch {
-          // ignore firestore error
-        }
-        try {
-          await revokeAllOtherDeviceSessions(current.uid);
-        } catch {
-          // ignore firestore error
+      if (!isGuest) {
+        const current = getFirebaseAuth().currentUser;
+        if (current) {
+          const now = Date.now();
+          try {
+            await setDoc(
+              doc(getFirebaseDb(), 'users', current.uid, 'meta', 'session'),
+              {
+                lastRevocation: now,
+                revokedAt: new Date().toISOString(),
+                revokedBy: 'user_action_settings',
+              },
+              { merge: true }
+            );
+          } catch {
+            // ignore firestore error
+          }
+          try {
+            await revokeAllOtherDeviceSessions(current.uid);
+          } catch {
+            // ignore firestore error
+          }
         }
       }
     } finally {
@@ -273,17 +345,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       owner,
       ready,
+      isGuest,
       ownerExists,
       error,
       cloudWarning,
       login,
       signup,
       signInWithGoogle,
+      continueAsGuest,
       logout,
       logoutAllDevices,
       clearError: () => setError(null),
     }),
-    [user, owner, ready, ownerExists, error, cloudWarning]
+    [user, owner, ready, isGuest, ownerExists, error, cloudWarning]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -340,7 +340,11 @@ export default function SettingsPage() {
                       {user?.displayName || user?.email?.split('@')[0] || 'Personal User'}
                     </strong>
                     <span style={{ fontSize: '0.68rem', padding: '1px 7px', borderRadius: '99px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
-                      {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google Account' : 'Email Account'}
+                      {(user as { isGuest?: boolean })?.isGuest
+                        ? 'Local Workspace'
+                        : user?.providerData?.[0]?.providerId === 'google.com'
+                        ? 'Google Account'
+                        : 'Email Account'}
                     </span>
                   </div>
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
@@ -441,7 +445,7 @@ export default function SettingsPage() {
                 {!formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
               </div>
               <p className={styles.modeCardDesc}>
-                Complete architecture: Dreams, Goals, Milestones, Projects, Roadmap, and Knowledge Base.
+                Complete architecture: Dreams, Goals, Milestones, Projects, Roadmap, and Study &amp; Books.
               </p>
             </div>
           </div>

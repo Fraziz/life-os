@@ -711,7 +711,7 @@ export default function FocusPage() {
                   type="button"
                   className={`${styles.zenSaveBtn} ${showSaveToast ? styles.zenSaveBtnSuccess : ''}`}
                   onClick={handleManualSave}
-                  title="Save highlights to Knowledge Base"
+                  title="Save highlights to Study & Books"
                 >
                   {showSaveToast ? 'Saved' : 'Save'}
                 </button>
@@ -1195,16 +1195,16 @@ export default function FocusPage() {
                       type="button"
                       className={`${styles.bookSaveBtn} ${showSaveToast ? styles.bookSaveBtnSuccess : ''}`}
                       onClick={handleManualSave}
-                      title="Save highlights to Knowledge Base"
+                      title="Save highlights to Study & Books"
                     >
                       <span>{showSaveToast ? 'Saved' : 'Save'}</span>
                     </button>
                     <Link
                       href="/knowledge"
                       className={styles.bookExtLink}
-                      title="Open in Knowledge Base"
+                      title="Open in Study & Books"
                     >
-                      Knowledge
+                      Study &amp; Books
                     </Link>
                   </div>
                 </div>

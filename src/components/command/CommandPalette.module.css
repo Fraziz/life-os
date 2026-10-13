@@ -188,7 +188,7 @@
 
   .paletteCard {
     border-radius: 16px;
-    max-height: 85vh;
+    max-height: calc(100dvh - 32px);
   }
 
   .searchHeader {
@@ -201,7 +201,7 @@
   }
 
   .resultsList {
-    max-height: 50vh;
+    max-height: calc(100dvh - 160px);
     padding: 4px;
   }
 

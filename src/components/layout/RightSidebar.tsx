@@ -15,12 +15,10 @@ import {
   TrendingUp,
   Zap,
   CheckCircle2,
+  Check,
   Repeat,
   ArrowRight,
   Flame,
-  BatteryCharging,
-  BatteryMedium,
-  Battery,
   Flag,
   Clock,
 } from 'lucide-react';
@@ -33,6 +31,8 @@ import { useHabits } from '@/context/HabitContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useCalendar } from '@/context/CalendarContext';
+import { useInbox } from '@/context/InboxContext';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './RightSidebar.module.css';
 
 export default function RightSidebar() {
@@ -44,6 +44,16 @@ export default function RightSidebar() {
   const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
+  const { activeReminders: inboxReminders, toggleItemApplied } = useInbox();
+
+  const activeInboxReminders = React.useMemo(() => {
+    return inboxReminders.filter(
+      (r) =>
+        r.id !== 'daily-mandate-ticker' &&
+        r.id !== 'inbox-accomplish-now' &&
+        !r.content.toLowerCase().includes('what you need to accomplish today')
+    );
+  }, [inboxReminders]);
 
   // ── Theme toggle (cycles: light → dark → nature → cyber → light) ────
   const currentTheme = settings.theme;
@@ -135,35 +145,11 @@ export default function RightSidebar() {
   const completedActions = tasksDone + habitsDone;
   const momentumPercent = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
 
-  // ── ADHD Energy Check-In ──────────────────────────────────────
-  const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high'>('normal');
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('life_os_energy_level');
-      if (saved === 'low' || saved === 'normal' || saved === 'high') {
-        setEnergyLevel(saved);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const selectEnergy = (lvl: 'low' | 'normal' | 'high') => {
-    setEnergyLevel(lvl);
-    try {
-      localStorage.setItem('life_os_energy_level', lvl);
-      window.dispatchEvent(new CustomEvent('life_os_energy_changed', { detail: lvl }));
-    } catch {
-      // ignore
-    }
-  };
-
-  const energyTips = {
-    low: 'Low Energy Mode: Pick just 1 tiny task. Momentum beats perfection today.',
-    normal: 'Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks.',
-    high: 'High Energy: Tackle your #1 hardest priority right now while focus is sharp.',
-  };
+  // ── Notification State (Strictly focused on notifications, not reminders) ──
+  const hasNotifications = unreadCount > 0;
+  const bellTooltip = hasNotifications
+    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+    : 'Notifications';
 
   return (
     <aside className={styles.rightSidebar} aria-label="Secondary widgets">
@@ -189,54 +175,74 @@ export default function RightSidebar() {
             type="button"
             className={styles.iconBtn}
             onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
-            title="Notifications"
-            aria-label="Notifications"
+            title={bellTooltip}
+            aria-label={bellTooltip}
           >
             <Bell size={17} />
-            {unreadCount > 0 && <span className={styles.notificationDot} />}
+
+            {hasNotifications && (
+              <span className={styles.notificationBadge} aria-label={`${unreadCount} unread notifications`}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      {/* ── ADHD Energy Check-In (Top of Calendar) ───────────── */}
-      <div className={styles.energyCard}>
-        <div className={styles.momentumHeader}>
-          <div className={styles.momentumTitle}>
-            <Zap size={16} style={{ color: '#eab308' }} />
-            <span>Today&apos;s Energy</span>
+      {/* ── Active Reminders Card (On Top of Calendar) ── */}
+      <div className={styles.widgetCard}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderLeft}>
+            <Bell size={15} style={{ color: '#f59e0b' }} />
+            <span className={styles.cardTitle}>Reminders</span>
+            {activeInboxReminders.length > 0 && (
+              <span className={styles.reminderBadgeCount}>{activeInboxReminders.length}</span>
+            )}
           </div>
-        </div>
-
-        <div className={styles.energyBtnRow}>
           <button
             type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'low' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('low')}
+            className={styles.viewAllBtn}
+            onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
+            title="Open full notifications and reminders drawer"
           >
-            <Battery size={16} />
-            <span>Low</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'normal' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('normal')}
-          >
-            <BatteryMedium size={16} />
-            <span>Steady</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.energyBtn} ${energyLevel === 'high' ? styles.energyBtnActive : ''}`}
-            onClick={() => selectEnergy('high')}
-          >
-            <BatteryCharging size={16} />
-            <span>High</span>
+            Drawer →
           </button>
         </div>
 
-        <div className={styles.energyTipText}>
-          {energyTips[energyLevel]}
-        </div>
+        {activeInboxReminders.length > 0 ? (
+          <div className={styles.sidebarRemindersList}>
+            {activeInboxReminders.map((r) => (
+              <div key={r.id} className={styles.sidebarReminderItem}>
+                <div className={styles.sidebarReminderBody}>
+                  <span className={styles.sidebarReminderText} title={r.content}>
+                    {r.content}
+                  </span>
+                  {r.reminderTime && (
+                    <span className={styles.sidebarReminderTime}>{r.reminderTime}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={styles.sidebarReminderDoneBtn}
+                  onClick={() => {
+                    toggleItemApplied(r.id);
+                    playSuccessChime();
+                  }}
+                  title="Mark reminder as done"
+                  aria-label="Mark reminder done"
+                >
+                  <Check size={12} />
+                  <span>Done</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.sidebarRemindersEmpty}>
+            <span className={styles.emptyCheckDot}>✓</span>
+            <span>All reminders clear</span>
+          </div>
+        )}
       </div>
 
       {/* ── Mini Calendar Card ─────────────────────────────────── */}

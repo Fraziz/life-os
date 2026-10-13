@@ -17,11 +17,21 @@
   border-radius: var(--radius-2xl, 20px);
   width: 100%;
   max-width: 720px;
-  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
   overflow: hidden;
+}
+
+@media (max-height: 720px) {
+  .header {
+    padding: 12px 18px;
+  }
+  .body {
+    padding: 14px 18px;
+    gap: 12px;
+  }
 }
 
 .header {
@@ -204,7 +214,7 @@
 
 .adhdRuleBox {
   background: rgba(0, 0, 0, 0.3);
-  border-left: 3px solid var(--level-color, #a855f7);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
   padding: 6px 10px;
   border-radius: 4px;
   font-size: 11px;
