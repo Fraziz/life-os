@@ -16,6 +16,7 @@ import {
   Clock,
   RotateCcw,
   Sparkles,
+  Zap,
   Layers,
   ArrowRight,
   X,
@@ -57,8 +58,10 @@ export default function InboxPage() {
     deleteInboxItem,
     toggleItemApplied,
     toggleItemReminder,
+    toggleItemImportant,
     setReminderTime,
     convertToTask,
+    convertToImportant,
     convertToProject,
     convertToGoal,
     convertToDream,
@@ -109,6 +112,17 @@ export default function InboxPage() {
       showToast('✓ Placed in Already Done tab & added to Completed Tasks in Tasks!');
     } else {
       showToast('✓ Converted to Task!');
+    }
+  };
+
+  const handleConvertToImportant = (item: InboxItem) => {
+    const isDone = item.isApplied;
+    convertToImportant(item.id);
+    playSuccessChime();
+    if (isDone) {
+      showToast('✓ Placed in Already Done & added to Completed Tasks in Tasks!');
+    } else {
+      showToast('⚡ Converted to Important Task! Added to Today\'s Top Priorities.');
     }
   };
 
@@ -548,18 +562,37 @@ export default function InboxPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                     {item.status === 'inbox' && (
-                      <button
-                        type="button"
-                        onClick={() => toggleItemReminder(item.id)}
-                        className={item.isReminder ? styles.reminderBadge : styles.dumpBadge}
-                        title={
-                          item.isReminder
-                            ? 'Reminder: active on Today dashboard (click to convert to thought)'
-                            : 'Thought (click to convert to Reminder)'
-                        }
-                      >
-                        {item.isReminder ? 'Reminder' : 'Thought'}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleItemReminder(item.id)}
+                          className={item.isReminder ? styles.reminderBadge : styles.dumpBadge}
+                          title={
+                            item.isReminder
+                              ? 'Reminder: active on Today dashboard (click to convert to thought)'
+                              : 'Thought (click to convert to Reminder)'
+                          }
+                        >
+                          {item.isReminder ? 'Reminder' : 'Thought'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleItemImportant(item.id);
+                            showToast(!item.isImportant ? '★ Marked idea as Important' : 'Unmarked as Important');
+                          }}
+                          className={item.isImportant ? styles.importantBadge : styles.dumpBadge}
+                          title={
+                            item.isImportant
+                              ? 'Marked as Important (click to toggle)'
+                              : 'Click to mark as Important idea'
+                          }
+                        >
+                          <Zap size={10} />
+                          {item.isImportant ? 'Important' : 'Normal'}
+                        </button>
+                      </>
                     )}
                     {item.reminderTime && (
                       <span
@@ -587,7 +620,7 @@ export default function InboxPage() {
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {item.isApplied && ' • Applied / Done'}
-                    {item.convertedTo && ` • Converted to ${item.convertedTo.toUpperCase()}${item.isApplied ? ' (Done in Tasks)' : ''}`}
+                    {item.convertedTo && ` • Converted to ${(item.convertedPriority === 'urgent' || item.convertedPriority === 'high') ? 'IMPORTANT ' : ''}${item.convertedTo.toUpperCase()}${item.isApplied ? ' (Done in Tasks)' : ''}`}
                     {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today Ticker'}
                   </span>
                 </div>
@@ -619,6 +652,14 @@ export default function InboxPage() {
                       title="Break down this thought into action steps with Groq AI"
                     >
                       AI Breakdown
+                    </button>
+
+                    <button
+                      className={`${styles.btnConvert} ${styles.btnConvertImportant}`}
+                      onClick={() => handleConvertToImportant(item)}
+                      title="Convert to Important Task (adds to Today's Top Priorities with Urgent/High priority and Gold flag)"
+                    >
+                      <Zap size={11} /> + Important
                     </button>
 
                     <button
@@ -691,6 +732,23 @@ export default function InboxPage() {
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+              <button
+                className={styles.dumpBtn}
+                style={{
+                  background: 'rgba(212, 163, 115, 0.12)',
+                  color: 'var(--color-text)',
+                  border: '1px solid rgba(212, 163, 115, 0.4)',
+                  justifyContent: 'flex-start',
+                  padding: 'var(--space-3)',
+                }}
+                onClick={() => {
+                  handleConvertToImportant(convertModalItem);
+                  setConvertModalItem(null);
+                }}
+              >
+                <Zap size={16} style={{ color: '#d4a373' }} /> Convert to Important <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 600, color: '#d4a373' }}>Top Priority</span>
+              </button>
+
               <button
                 className={styles.dumpBtn}
                 style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
@@ -766,6 +824,19 @@ export default function InboxPage() {
                 }}
               >
                 {convertModalItem.isReminder ? 'Convert to Normal Thought' : 'Set as Active Reminder'}
+              </button>
+
+              <button
+                className={styles.dumpBtn}
+                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
+                onClick={() => {
+                  toggleItemImportant(convertModalItem.id);
+                  setConvertModalItem(null);
+                  showToast(!convertModalItem.isImportant ? '★ Marked Idea as Important' : 'Unmarked as Important');
+                }}
+              >
+                <Zap size={16} style={{ color: convertModalItem.isImportant ? '#d4a373' : 'var(--color-text-faint)' }} />
+                {convertModalItem.isImportant ? 'Unmark as Important Idea' : 'Mark Idea as Important'}
               </button>
             </div>
           </div>

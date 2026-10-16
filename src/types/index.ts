@@ -290,10 +290,12 @@ export interface InboxItem {
   content: string;
   status: InboxItemStatus;
   isReminder?: boolean;
+  isImportant?: boolean;
   itemType?: BrainDumpItemType;
   reminderTime?: string;
   dueDate?: string;
   convertedTo?: InboxConvertedType;
+  convertedPriority?: 'urgent' | 'high' | 'medium' | 'low';
   convertedEntityId?: string;
   isApplied?: boolean;
   appliedAt?: string;

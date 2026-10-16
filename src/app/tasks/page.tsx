@@ -963,13 +963,6 @@ export default function TasksPage() {
           </button>
           {STATUS_COLUMNS.map((col) => {
             const count = filteredTasks.filter((t) => t.status === col.id).length;
-            const columnAccents: Record<string, string> = {
-              backlog: '#64748b',
-              todo: '#38bdf8',
-              doing: '#f59e0b',
-              done: '#22d3a5',
-            };
-            const dotColor = columnAccents[col.id] || 'var(--color-accent)';
 
             return (
               <button
@@ -980,7 +973,6 @@ export default function TasksPage() {
                 className={`${styles.taskTabBtn} ${mobileColFilter === col.id ? styles.taskTabBtnActive : ''}`}
                 onClick={() => setMobileColFilter(col.id)}
               >
-                <span className={styles.tabDot} style={{ background: dotColor }} />
                 <span>{col.label}</span>
                 <span className={styles.tabBadge}>{count}</span>
               </button>

@@ -77,8 +77,10 @@ interface InboxContextType {
   deleteInboxItem: (id: string) => void;
   toggleItemApplied: (id: string) => void;
   toggleItemReminder: (id: string) => void;
+  toggleItemImportant: (id: string) => void;
   setReminderTime: (id: string, reminderTime?: string) => void;
   convertToTask: (id: string, overrides?: { priority?: 'urgent' | 'high' | 'medium' | 'low'; projectId?: string; status?: TaskStatus }) => void;
+  convertToImportant: (id: string, overrides?: { projectId?: string }) => void;
   convertToProject: (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => void;
   convertToGoal: (id: string, overrides?: { horizon?: 'yearly' | '90-day' | 'monthly'; dreamId?: string }) => void;
   convertToDream: (id: string, overrides?: { lifeAreaId?: string; whyItMatters?: string }) => void;
@@ -240,13 +242,32 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateItemStatus = (id: string, status: InboxItem['status'], convertedTo?: InboxConvertedType, entityId?: string) => {
+  const toggleItemImportant = (id: string) => {
+    const updated = items.map((item) => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        isImportant: !item.isImportant,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveItems(updated);
+  };
+
+  const updateItemStatus = (
+    id: string,
+    status: InboxItem['status'],
+    convertedTo?: InboxConvertedType,
+    entityId?: string,
+    convertedPriority?: 'urgent' | 'high' | 'medium' | 'low'
+  ) => {
     const updated = items.map((item) => {
       if (item.id !== id) return item;
       return {
         ...item,
         status,
         convertedTo,
+        convertedPriority: convertedPriority || item.convertedPriority,
         convertedEntityId: entityId,
         updatedAt: new Date().toISOString(),
       };
@@ -260,18 +281,44 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
 
     const isAlreadyDone = !!item.isApplied;
     const taskStatus: TaskStatus = overrides?.status || (isAlreadyDone ? 'done' : 'todo');
+    const priority = overrides?.priority || (item.isImportant ? 'urgent' : 'medium');
+    const tags = [
+      'from-inbox',
+      ...(item.isImportant || priority === 'urgent' || priority === 'high' ? ['important', 'do-it-now'] : []),
+      ...(isAlreadyDone ? ['completed-idea'] : [])
+    ];
 
     const createdTask = addTask({
       title: item.content,
       status: taskStatus,
       completedAt: taskStatus === 'done' ? new Date().toISOString() : undefined,
-      priority: overrides?.priority || 'medium',
+      priority,
       projectId: overrides?.projectId,
-      tags: ['from-inbox', ...(isAlreadyDone ? ['completed-idea'] : [])],
+      tags,
       subtasks: [],
     });
 
-    updateItemStatus(id, 'converted', 'task', createdTask?.id);
+    updateItemStatus(id, 'converted', 'task', createdTask?.id, priority);
+  };
+
+  const convertToImportant = (id: string, overrides?: { projectId?: string }) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
+    const isAlreadyDone = !!item.isApplied;
+    const taskStatus: TaskStatus = isAlreadyDone ? 'done' : 'todo';
+
+    const createdTask = addTask({
+      title: item.content,
+      status: taskStatus,
+      completedAt: taskStatus === 'done' ? new Date().toISOString() : undefined,
+      priority: 'urgent',
+      projectId: overrides?.projectId,
+      tags: ['from-inbox', 'important', 'do-it-now', ...(isAlreadyDone ? ['completed-idea'] : [])],
+      subtasks: [],
+    });
+
+    updateItemStatus(id, 'converted', 'task', createdTask?.id, 'urgent');
   };
 
   const convertToProject = (id: string, overrides?: { lifeAreaId?: string; goalId?: string }) => {
@@ -401,8 +448,10 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         deleteInboxItem,
         toggleItemApplied,
         toggleItemReminder,
+        toggleItemImportant,
         setReminderTime,
         convertToTask,
+        convertToImportant,
         convertToProject,
         convertToGoal,
         convertToDream,

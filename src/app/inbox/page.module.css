@@ -379,6 +379,18 @@
   color: var(--color-success, #22c55e);
 }
 
+.btnConvertImportant {
+  background: rgba(212, 163, 115, 0.12);
+  border-color: rgba(212, 163, 115, 0.38);
+  color: #d4a373;
+}
+
+.btnConvertImportant:hover {
+  background: rgba(212, 163, 115, 0.24);
+  border-color: #d4a373;
+  color: #e6c4a3;
+}
+
 .btnDelete {
   background: transparent;
   border: none;
@@ -543,6 +555,27 @@
 .dumpBadge:hover {
   color: var(--color-text);
   border-color: var(--color-border);
+}
+
+.importantBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(212, 163, 115, 0.15);
+  color: #d4a373;
+  border: 1px solid rgba(212, 163, 115, 0.4);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.importantBadge:hover {
+  background: rgba(212, 163, 115, 0.28);
+  transform: translateY(-1px);
 }
 
 .btnAi {

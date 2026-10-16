@@ -463,13 +463,11 @@ export default function GoalsPage() {
                   borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
-                {/* ── Hierarchy Banner (Dream -> Goal) ── */}
+                {/* ── Hierarchy Eyebrow (Dream -> Goal) ── */}
                 {parentDream && (
-                  <div className={styles.dreamConnector}>
-                    <span className={styles.dreamConnectorLabel}>
-                      <CloudSun size={12} /> Dream:
-                    </span>
-                    <span className={styles.dreamConnectorTitle}>{parentDream.title}</span>
+                  <div className={styles.dreamEyebrow} title={`Dream: ${parentDream.title}`}>
+                    <CloudSun size={12} className={styles.dreamIcon} />
+                    <span className={styles.dreamEyebrowText}>{parentDream.title}</span>
                   </div>
                 )}
 
@@ -496,7 +494,7 @@ export default function GoalsPage() {
                       onClick={() => openEditModal(goal)}
                       title="Edit Goal"
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={13} />
                     </button>
 
                     <button
@@ -508,96 +506,49 @@ export default function GoalsPage() {
                       }}
                       title="Delete Goal"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
 
-                <div>
+                <div className={styles.goalMain}>
                   <h3 className={styles.goalTitle}><AutoLinkText text={goal.title} /></h3>
                   {goal.description && <p className={styles.goalDesc}><AutoLinkText text={goal.description} /></p>}
+                  {goal.why && (
+                    <p className={styles.goalWhy} title="Why it matters">
+                      &ldquo;<AutoLinkText text={goal.why} />&rdquo;
+                    </p>
+                  )}
                 </div>
 
-                <div className={styles.whyBanner}>
-                  <span className={styles.whyLabel}>Why it matters</span>
-                  <p className={styles.whyText}>&ldquo;<AutoLinkText text={goal.why} />&rdquo;</p>
-                </div>
-
-                {/* ── Progress Slider ── */}
+                {/* ── Single Interactive Progress Slider ── */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
                     <span className={styles.progressLabel}>Progress</span>
                     <span className={styles.progressValue}>{goal.progress}%</span>
                   </div>
-
-                  <div className={styles.progressBarContainer}>
-                    <div
-                      className={styles.progressBarFill}
-                      style={{ width: `${goal.progress}%` }}
+                  <div className={styles.sliderWrap}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      className={styles.progressSlider}
+                      style={{
+                        background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${goal.progress}%, var(--color-surface-2) ${goal.progress}%, var(--color-surface-2) 100%)`,
+                      }}
+                      value={goal.progress}
+                      onChange={(e) => updateGoalProgress(goal.id, parseInt(e.target.value))}
+                      title="Slide to update progress"
                     />
                   </div>
-
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    className={styles.sliderInput}
-                    value={goal.progress}
-                    onChange={(e) => updateGoalProgress(goal.id, parseInt(e.target.value))}
-                    title="Slide to update progress"
-                  />
                 </div>
 
-                <div className={styles.cardFooter}>
-                  {area ? (
-                    <span
-                      className={styles.lifeAreaChip}
-                      style={{
-                        backgroundColor: `${area.color}15`,
-                        color: area.color,
-                        border: `1px solid ${area.color}40`,
-                      }}
-                    >
-                      <AreaIcon name={area.icon} size={14} /> {area.name}
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--color-text-faint)' }}>General Life</span>
-                  )}
-
-                  {goal.targetDate ? (
-                    <span className={styles.targetDate}>
-                      <Calendar size={13} /> {goal.targetDate}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(goal)}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '6px',
-                        padding: '2px 6px',
-                        color: 'var(--color-text-faint)',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title="Add to Calendar"
-                      aria-label="Add to Calendar"
-                    >
-                      <Calendar size={12} />
-                    </button>
-                  )}
-                </div>
-
-
-                {/* ── AI Coach Panel ── */}
+                {/* ── AI Coach Panel (if active) ── */}
                 {coachState[goal.id]?.loading && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', color: 'var(--color-accent)', fontSize: '12px' }}>
-                    <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                    Analysing your goal...
+                  <div className={styles.coachLoading}>
+                    <Loader2 size={13} className={styles.spinner} />
+                    <span>Analyzing your goal...</span>
                   </div>
                 )}
 
@@ -606,68 +557,110 @@ export default function GoalsPage() {
                   const statusColor = r.status === 'ahead' ? 'var(--color-success)' : r.status === 'behind' || r.status === 'stalled' ? '#ef4444' : 'var(--color-accent)';
                   const StatusIcon = r.status === 'ahead' ? TrendingUp : r.status === 'stalled' || r.status === 'behind' ? AlertTriangle : CheckCircle;
                   return (
-                    <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px', marginTop: '8px', fontSize: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <StatusIcon size={14} style={{ color: statusColor }} />
-                        <strong style={{ color: statusColor, textTransform: 'capitalize' }}>{r.status.replace('-', ' ')}</strong>
-                        <span style={{ color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{r.assessment}</span>
+                    <div className={styles.coachPanel}>
+                      <div className={styles.coachPanelHeader}>
+                        <div className={styles.coachStatus} style={{ color: statusColor }}>
+                          <StatusIcon size={13} />
+                          <strong style={{ textTransform: 'capitalize' }}>{r.status.replace('-', ' ')}</strong>
+                        </div>
+                        <span className={styles.coachAssessment}>{r.assessment}</span>
                       </div>
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-text)' }}>Next Steps</div>
+                      <div className={styles.coachSteps}>
+                        <div className={styles.coachStepsTitle}>Next Steps</div>
                         {r.nextSteps.map((step, i) => (
-                          <div key={i} style={{ color: 'var(--color-text-muted)', marginBottom: '3px' }}>• {step}</div>
+                          <div key={i} className={styles.coachStepItem}>• {step}</div>
                         ))}
                       </div>
-                      <div style={{ fontStyle: 'italic', color: 'var(--color-accent)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                        {r.motivation}
-                      </div>
+                      {r.motivation && (
+                        <div className={styles.coachMotivation}>
+                          &ldquo;{r.motivation}&rdquo;
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
 
-                {/* Coach Me button row */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                  {coachState[goal.id]?.result ? (
-                    <button
-                      onClick={() => toggleCoach(goal.id)}
-                      style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      {coachState[goal.id]?.open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                      {coachState[goal.id]?.open ? 'Hide Coach' : 'Show Coach'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleCoachGoal(goal)}
-                      disabled={coachState[goal.id]?.loading}
-                      id={`coach-goal-btn-${goal.id}`}
-                      style={{ background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)', border: 'none', borderRadius: '8px', padding: '5px 12px', fontSize: '11px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
-                    >
-                      <Bot size={13} /> Coach Me
-                    </button>
-                  )}
-                </div>
+                {/* ── Consolidated Card Footer ── */}
+                <div className={styles.cardFooter}>
+                  <div className={styles.footerLeft}>
+                    {area ? (
+                      <span
+                        className={styles.lifeAreaChip}
+                        style={{
+                          backgroundColor: `${area.color}15`,
+                          color: area.color,
+                          border: `1px solid ${area.color}35`,
+                        }}
+                      >
+                        <AreaIcon name={area.icon} size={12} />
+                        <span>{area.name}</span>
+                      </span>
+                    ) : (
+                      <span className={styles.lifeAreaChipGeneral}>General Life</span>
+                    )}
 
-                {/* ── 1-Click ADHD Bridge (Goal ➔ Project or Task) ── */}
-                <div className={styles.bridgeGroup}>
-                  <span className={styles.bridgeLabel}>
-                    Next step
-                  </span>
-                  <button
-                    type="button"
-                    className={`${styles.bridgeBtn} ${styles.bridgeBtnProject}`}
-                    onClick={() => openBridge('project', goal)}
-                    title="Create a Project folder for this Goal"
-                  >
-                    + Project
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.bridgeBtn} ${styles.bridgeBtnTask}`}
-                    onClick={() => openBridge('task', goal)}
-                    title="Create a 15-minute action step for this Goal"
-                  >
-                    + Task
-                  </button>
+                    {goal.targetDate ? (
+                      <span className={styles.targetDate} title={`Target: ${goal.targetDate}`}>
+                        <Calendar size={12} />
+                        <span>{goal.targetDate}</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.targetDateBtn}
+                        onClick={() => openEditModal(goal)}
+                        title="Set Target Date"
+                        aria-label="Set Target Date"
+                      >
+                        <Calendar size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className={styles.footerRight}>
+                    <button
+                      type="button"
+                      className={styles.bridgeBtn}
+                      onClick={() => openBridge('project', goal)}
+                      title="Create a Project for this Goal"
+                    >
+                      <Folder size={11} />
+                      <span>+ Project</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.bridgeBtn}
+                      onClick={() => openBridge('task', goal)}
+                      title="Create a 15-minute action step for this Goal"
+                    >
+                      <CheckSquare size={11} />
+                      <span>+ Task</span>
+                    </button>
+
+                    {coachState[goal.id]?.result ? (
+                      <button
+                        type="button"
+                        className={styles.coachToggleBtn}
+                        onClick={() => toggleCoach(goal.id)}
+                        title={coachState[goal.id]?.open ? 'Hide Coach' : 'Show Coach'}
+                      >
+                        <Bot size={11} />
+                        {coachState[goal.id]?.open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.coachTriggerBtn}
+                        onClick={() => handleCoachGoal(goal)}
+                        disabled={coachState[goal.id]?.loading}
+                        id={`coach-goal-btn-${goal.id}`}
+                        title="AI Coach this Goal"
+                      >
+                        <Bot size={11} />
+                        <span>Coach</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </article>
             );
