@@ -391,6 +391,24 @@
   color: #e6c4a3;
 }
 
+.btnCopy {
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.btnCopy:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover, var(--color-surface-2));
+}
+
 .btnDelete {
   background: transparent;
   border: none;

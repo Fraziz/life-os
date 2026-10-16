@@ -7,7 +7,7 @@ import { useProjects } from './ProjectContext';
 import { useGoals } from './GoalContext';
 import { useDreams } from './DreamContext';
 import { useKnowledge } from './KnowledgeContext';
-import { loadJsonArray, saveJson } from '@/lib/localStore';
+import { loadJsonArray, saveJson, touchUpdateMeta } from '@/lib/localStore';
 import { notifyItemDeleted } from './UndoContext';
 
 const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
@@ -68,11 +68,12 @@ export const DEFAULT_INBOX_ITEMS: InboxItem[] = [
 interface InboxContextType {
   items: InboxItem[];
   activeItems: InboxItem[];
+  importantItems: InboxItem[];
   doneItems: InboxItem[];
   activeReminders: InboxItem[];
   convertedItems: InboxItem[];
   somedayItems: InboxItem[];
-  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string }) => void;
+  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean }) => void;
   bulkDump: (lines: string[], defaultIsReminder?: boolean) => void;
   deleteInboxItem: (id: string) => void;
   toggleItemApplied: (id: string) => void;
@@ -153,19 +154,22 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     setItems(newItems);
     try {
       localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(newItems));
+      touchUpdateMeta(INBOX_STORAGE_KEY);
     } catch (err) {
       console.error('Failed to save inbox items:', err);
     }
   };
 
-  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string }) => {
+  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean }) => {
     if (!content.trim()) return;
     const isReminder = options?.isReminder ?? false;
+    const isImportant = options?.isImportant ?? false;
     const newItem: InboxItem = {
       id: `inbox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       content: content.trim(),
       status: 'inbox',
       isReminder,
+      isImportant,
       itemType: isReminder ? 'reminder' : 'thought',
       reminderTime: options?.reminderTime,
       createdAt: new Date().toISOString(),
@@ -428,10 +432,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     saveItems(DEFAULT_INBOX_ITEMS);
   };
 
-  const activeItems = items.filter((i) => i.status === 'inbox');
+  const importantItems = items.filter((i) => i.isImportant && !i.isApplied && i.status !== 'archived');
+  const activeItems = items.filter((i) => i.status === 'inbox' && !i.isImportant);
   const doneItems = items.filter((i) => i.isApplied || i.status === 'archived');
   const activeReminders = items.filter((i) => i.status === 'inbox' && i.isReminder && !i.isApplied);
-  const convertedItems = items.filter((i) => i.status === 'converted' && !i.isApplied);
+  const convertedItems = items.filter((i) => i.status === 'converted' && !i.isApplied && !i.isImportant);
   const somedayItems = items.filter((i) => i.status === 'someday');
 
   return (
@@ -439,6 +444,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         activeItems,
+        importantItems,
         doneItems,
         activeReminders,
         convertedItems,

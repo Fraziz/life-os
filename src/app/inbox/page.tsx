@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Mic,
   MicOff,
+  Copy,
 } from 'lucide-react';
 import { useSpeechToText } from '@/utils/useSpeechToText';
 import { useInbox } from '@/context/InboxContext';
@@ -49,6 +50,7 @@ export default function InboxPage() {
   const {
     items,
     activeItems,
+    importantItems,
     doneItems,
     activeReminders,
     convertedItems,
@@ -262,7 +264,7 @@ export default function InboxPage() {
   };
 
   // Active filter tab
-  const [filterTab, setFilterTab] = useState<'inbox' | 'reminders' | 'done' | 'converted' | 'someday'>('inbox');
+  const [filterTab, setFilterTab] = useState<'inbox' | 'important' | 'reminders' | 'done' | 'converted' | 'someday'>('inbox');
 
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
@@ -290,6 +292,7 @@ export default function InboxPage() {
     quickDump(quickInput.trim(), {
       isReminder: dumpType === 'reminder',
       reminderTime: dumpType === 'reminder' && reminderTime.trim() ? reminderTime.trim() : undefined,
+      isImportant: filterTab === 'important',
     });
     setQuickInput('');
     setReminderTimeInput('');
@@ -311,6 +314,8 @@ export default function InboxPage() {
   const currentList =
     filterTab === 'inbox'
       ? activeItems
+      : filterTab === 'important'
+      ? importantItems
       : filterTab === 'reminders'
       ? activeReminders
       : filterTab === 'done'
@@ -462,6 +467,13 @@ export default function InboxPage() {
             Inbox ({activeItems.length})
           </button>
           <button
+            className={`${styles.tab} ${filterTab === 'important' ? styles.activeTab : ''}`}
+            onClick={() => setFilterTab('important')}
+            style={filterTab === 'important' ? undefined : { color: '#d4a373' }}
+          >
+            Important ({importantItems.length})
+          </button>
+          <button
             className={`${styles.tab} ${filterTab === 'reminders' ? styles.activeTab : ''}`}
             onClick={() => setFilterTab('reminders')}
           >
@@ -530,6 +542,8 @@ export default function InboxPage() {
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
               {filterTab === 'inbox'
                 ? 'Your head is completely clear! Nothing in the inbox.'
+                : filterTab === 'important'
+                ? 'No important notes yet. Click "Normal" on any note or idea to move it here (IDs, phone numbers, LRN, credentials, files).'
                 : filterTab === 'done'
                 ? 'No already done ideas yet. Check any idea to mark it applied/done.'
                 : filterTab === 'reminders'
@@ -579,17 +593,23 @@ export default function InboxPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            const willBeImportant = !item.isImportant;
                             toggleItemImportant(item.id);
-                            showToast(!item.isImportant ? '★ Marked idea as Important' : 'Unmarked as Important');
+                            if (willBeImportant) {
+                              setFilterTab('important');
+                              playSuccessChime();
+                              showToast('★ Note moved to Important Notes!');
+                            } else {
+                              showToast('Unmarked as Important');
+                            }
                           }}
                           className={item.isImportant ? styles.importantBadge : styles.dumpBadge}
                           title={
                             item.isImportant
-                              ? 'Marked as Important (click to toggle)'
-                              : 'Click to mark as Important idea'
+                              ? 'Important Note (click to unmark)'
+                              : 'Click to move to Important Notes (IDs, phone, LRN, files)'
                           }
                         >
-                          <Zap size={10} />
                           {item.isImportant ? 'Important' : 'Normal'}
                         </button>
                       </>
@@ -627,87 +647,121 @@ export default function InboxPage() {
               </div>
 
               <div className={styles.convertButtonGroup}>
-                <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
-                {item.status === 'inbox' ? (
+                {item.isImportant || filterTab === 'important' ? (
                   <>
-                    {/* Groq Key auto-detector */}
-                    {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
-                      <button
-                        type="button"
-                        className={styles.groqKeyBadge}
-                        onClick={() => handleActivateGroqKey(item.content)}
-                        title="Set this Groq API Key as the active key in your Sariling Mundo"
-                      >
-                        <Sparkles size={11} />
-                        {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
-                          ? '✓ Active Groq Key'
-                          : '⚡ Set as Groq Key'}
-                      </button>
-                    )}
-
                     <button
                       type="button"
-                      className={styles.btnAi}
-                      onClick={() => handleAiBreakdown(item)}
-                      title="Break down this thought into action steps with Groq AI"
+                      className={styles.btnCopy}
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.content);
+                        playSuccessChime();
+                        showToast('✓ Copied note to clipboard!');
+                      }}
+                      title="Copy note text to clipboard"
+                      aria-label="Copy note text to clipboard"
                     >
-                      AI Breakdown
+                      <Copy size={13} />
                     </button>
 
                     <button
-                      className={`${styles.btnConvert} ${styles.btnConvertImportant}`}
-                      onClick={() => handleConvertToImportant(item)}
-                      title="Convert to Important Task (adds to Today's Top Priorities with Urgent/High priority and Gold flag)"
+                      className={styles.btnDelete}
+                      onClick={() => deleteInboxItem(item.id)}
+                      title="Delete item"
                     >
-                      <Zap size={11} /> + Important
-                    </button>
-
-                    <button
-                      className={`${styles.btnConvert} ${item.isApplied ? styles.btnConvertDone : ''}`}
-                      onClick={() => handleConvertToTask(item)}
-                      title={item.isApplied ? 'Convert to Completed Task in Tasks (moves to Already Done tab)' : 'Convert to actionable Task'}
-                    >
-                      {item.isApplied ? <Check size={12} /> : null} + Task
-                    </button>
-                    <button
-                      className={styles.btnConvert}
-                      onClick={() => setConvertModalItem(item)}
-                      title="More conversion options"
-                    >
-                      More ▾
+                      <Trash2 size={14} />
                     </button>
                   </>
                 ) : (
                   <>
-                    {item.convertedTo === 'task' && (
-                      <Link
-                        href={item.convertedEntityId ? `/tasks?highlight=${item.convertedEntityId}` : '/tasks'}
-                        className={`${styles.btnConvert} ${styles.btnConvertDone}`}
-                        title="View completed task in Tasks"
-                      >
-                        <Check size={12} /> View in Tasks
-                      </Link>
+                    <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
+                    {item.status === 'inbox' ? (
+                      <>
+                        {/* Groq Key auto-detector */}
+                        {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
+                          <button
+                            type="button"
+                            className={styles.groqKeyBadge}
+                            onClick={() => handleActivateGroqKey(item.content)}
+                            title="Set this Groq API Key as the active key in your Sariling Mundo"
+                          >
+                            <Sparkles size={11} />
+                            {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
+                              ? '✓ Active Groq Key'
+                              : '⚡ Set as Groq Key'}
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          className={styles.btnAi}
+                          onClick={() => handleAiBreakdown(item)}
+                          title="Break down this thought into action steps with Groq AI"
+                        >
+                          AI Breakdown
+                        </button>
+
+                        <button
+                          className={`${styles.btnConvert} ${item.isApplied ? styles.btnConvertDone : ''}`}
+                          onClick={() => handleConvertToTask(item)}
+                          title={item.isApplied ? 'Convert to Completed Task in Tasks (moves to Already Done tab)' : 'Convert to actionable Task'}
+                        >
+                          {item.isApplied ? <Check size={12} /> : null} + Task
+                        </button>
+                        <button
+                          className={styles.btnConvert}
+                          onClick={() => setConvertModalItem(item)}
+                          title="More conversion options"
+                        >
+                          More ▾
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {item.convertedTo === 'task' && (
+                          <Link
+                            href={item.convertedEntityId ? `/tasks?highlight=${item.convertedEntityId}` : '/tasks'}
+                            className={`${styles.btnConvert} ${styles.btnConvertDone}`}
+                            title="View completed task in Tasks"
+                          >
+                            <Check size={12} /> View in Tasks
+                          </Link>
+                        )}
+                        <button
+                          className={styles.btnConvert}
+                          onClick={() => {
+                            restoreToInbox(item.id);
+                            showToast('✓ Restored idea back to Inbox');
+                          }}
+                          title="Restore item back to Inbox"
+                        >
+                          Restore to Inbox
+                        </button>
+                      </>
                     )}
+
                     <button
-                      className={styles.btnConvert}
+                      type="button"
+                      className={styles.btnCopy}
                       onClick={() => {
-                        restoreToInbox(item.id);
-                        showToast('✓ Restored idea back to Inbox');
+                        navigator.clipboard.writeText(item.content);
+                        playSuccessChime();
+                        showToast('✓ Copied note to clipboard!');
                       }}
-                      title="Restore item back to Inbox"
+                      title="Copy note text to clipboard"
+                      aria-label="Copy note text to clipboard"
                     >
-                      Restore to Inbox
+                      <Copy size={13} />
+                    </button>
+
+                    <button
+                      className={styles.btnDelete}
+                      onClick={() => deleteInboxItem(item.id)}
+                      title="Delete item"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </>
                 )}
-
-                <button
-                  className={styles.btnDelete}
-                  onClick={() => deleteInboxItem(item.id)}
-                  title="Delete item"
-                >
-                  <Trash2 size={14} />
-                </button>
               </div>
             </article>
           ))
@@ -742,11 +796,16 @@ export default function InboxPage() {
                   padding: 'var(--space-3)',
                 }}
                 onClick={() => {
-                  handleConvertToImportant(convertModalItem);
+                  if (!convertModalItem.isImportant) {
+                    toggleItemImportant(convertModalItem.id);
+                  }
                   setConvertModalItem(null);
+                  setFilterTab('important');
+                  playSuccessChime();
+                  showToast('★ Moved to Important Notes!');
                 }}
               >
-                <Zap size={16} style={{ color: '#d4a373' }} /> Convert to Important <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 600, color: '#d4a373' }}>Top Priority</span>
+                <Zap size={16} style={{ color: '#d4a373' }} /> Move to Important Notes <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 600, color: '#d4a373' }}>IDs, Phone, LRN, Files</span>
               </button>
 
               <button
@@ -824,19 +883,6 @@ export default function InboxPage() {
                 }}
               >
                 {convertModalItem.isReminder ? 'Convert to Normal Thought' : 'Set as Active Reminder'}
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  toggleItemImportant(convertModalItem.id);
-                  setConvertModalItem(null);
-                  showToast(!convertModalItem.isImportant ? '★ Marked Idea as Important' : 'Unmarked as Important');
-                }}
-              >
-                <Zap size={16} style={{ color: convertModalItem.isImportant ? '#d4a373' : 'var(--color-text-faint)' }} />
-                {convertModalItem.isImportant ? 'Unmark as Important Idea' : 'Mark Idea as Important'}
               </button>
             </div>
           </div>
