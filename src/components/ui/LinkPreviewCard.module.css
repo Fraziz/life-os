@@ -1,0 +1,309 @@
+/* ==========================================================================
+   EXECUTIVE LINK PREVIEW CARD DESIGN SYSTEM
+   Calm, high-craft visual design with uniform hairline borders,
+   subtle elevation, and rich metadata presentation.
+   ========================================================================== */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  box-sizing: border-box;
+  animation: cardFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  font-family: var(--font-sans);
+}
+
+:global([data-theme='light']) .card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+:global([data-theme='dark']) .card {
+  background: #202124;
+  border-color: #3c4043;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+:global([data-theme='nature']) .card {
+  background: #122117;
+  border-color: rgba(74, 124, 89, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+:global([data-theme='cyber']) .card {
+  background: #0e1326;
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/*  Header Bar  */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  gap: 8px;
+}
+
+.siteInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.faviconFallback {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent-light);
+  flex-shrink: 0;
+}
+
+.siteBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sslBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-full, 999px);
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.headerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.headerBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/*  Cover / OpenGraph Image  */
+.coverImageContainer {
+  width: 100%;
+  height: 130px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  position: relative;
+}
+
+.coverImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.card:hover .coverImage {
+  transform: scale(1.03);
+}
+
+/*  Body Content  */
+.body {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  gap: 6px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.urlBreadcrumb {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/*  Footer Actions  */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  gap: 6px;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.actionBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-accent-light);
+  transform: translateY(-1px);
+}
+
+.actionBtnPrimary {
+  background: var(--color-accent, #2d3748);
+  color: #ffffff !important;
+  border: 1px solid var(--color-accent);
+}
+
+.actionBtnPrimary:hover {
+  background: var(--color-accent-hover, #1a202c);
+  border-color: var(--color-accent-hover);
+}
+
+:global([data-theme='nature']) .actionBtnPrimary {
+  background: #2d5a3c;
+  border-color: #3b734d;
+}
+
+:global([data-theme='cyber']) .actionBtnPrimary {
+  background: #6366f1;
+  border-color: #4f46e5;
+}
+
+.actionBtnDanger {
+  color: #ef4444 !important;
+}
+
+.actionBtnDanger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/*  Loading Skeleton  */
+.skeletonContainer {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonLine {
+  height: 12px;
+  background: var(--color-surface-2);
+  border-radius: 4px;
+  animation: pulseShimmer 1.4s infinite ease-in-out;
+}
+
+.skeletonBanner {
+  height: 90px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md, 6px);
+  animation: pulseShimmer 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseShimmer {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}

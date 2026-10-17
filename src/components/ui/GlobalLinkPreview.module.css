@@ -1,0 +1,22 @@
+/* ==========================================================================
+   GLOBAL LINK PREVIEW OVERLAY
+   Anchored floating preview popover with backdrop elevation and smooth transit
+   ========================================================================== */
+
+.overlay {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: auto;
+  animation: floatPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes floatPop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

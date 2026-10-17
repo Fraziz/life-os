@@ -84,6 +84,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import styles from './page.module.css';
+import LinkPreviewCard from '@/components/ui/LinkPreviewCard';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import { useSettings } from '@/context/SettingsContext';
@@ -203,14 +204,14 @@ function renderMarkdown(md: string): string {
   const htmlLinks: string[] = [];
   html = html.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, linkText) => {
     const idx = htmlLinks.length;
-    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${linkText}</a>`);
+    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${linkText}</a>`);
     return `<!--HTML_LINK_${idx}-->`;
   });
 
   // 5. Convert Markdown Links: [Link Text](https://example.com)
   html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)/g, (_, label, url) => {
     const idx = htmlLinks.length;
-    htmlLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="doc-link">${label}</a>`);
+    htmlLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${url}">${label}</a>`);
     return `<!--HTML_LINK_${idx}-->`;
   });
 
@@ -226,7 +227,7 @@ function renderMarkdown(md: string): string {
     if (!url.includes('.') || url.endsWith('.')) return match;
     const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
     const idx = htmlLinks.length;
-    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${url}</a>`);
+    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${url}</a>`);
     return `${prefix}<!--HTML_LINK_${idx}-->${trailing}`;
   });
 
@@ -748,8 +749,31 @@ export default function KnowledgePage() {
     targetEl: HTMLAnchorElement;
   } | null>(null);
 
-  // Minimized by default reader companion (typography, highlights, timer)
+  // Reading tools companion (typography, highlights, timer)
   const [isCompanionOpen, setIsCompanionOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('life_os_reading_tools_open');
+      if (saved !== null) {
+        setIsCompanionOpen(saved === 'true');
+      } else if (typeof window !== 'undefined' && window.innerWidth >= 1100) {
+        setIsCompanionOpen(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleCompanion = () => {
+    setIsCompanionOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('life_os_reading_tools_open', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const importFileRef = useRef<HTMLInputElement>(null);
   const hasHandledInitialUrlDoc = useRef(false);
@@ -1061,15 +1085,24 @@ export default function KnowledgePage() {
     setManualReadTime('');
   };
 
-  // Ensure all links in document are clickable
   // Ensure all links in document are clickable & clicking a highlight mark or font-span opens the format toolbar
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     const anchor = target.closest('a');
     if (anchor && anchor.href) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        window.open(anchor.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
       e.preventDefault();
-      e.stopPropagation();
-      window.open(anchor.href, '_blank', 'noopener,noreferrer');
+      const rect = anchor.getBoundingClientRect();
+      setLinkPopover({
+        x: rect.left,
+        y: rect.bottom + 6,
+        url: anchor.href,
+        targetEl: anchor,
+      });
       return;
     }
 
@@ -1373,7 +1406,7 @@ export default function KnowledgePage() {
       // Convert Markdown links: [label](url)
       html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|www\.[^\s\)]+)\)/g, (_, label, url) => {
         const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${label}</a>`;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${label}</a>`;
       });
 
       // Convert standalone URLs
@@ -1387,7 +1420,7 @@ export default function KnowledgePage() {
         }
         if (!url.includes('.') || url.endsWith('.')) return match;
         const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-        return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${url}</a>${trailing}`;
+        return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${url}</a>${trailing}`;
       });
 
       // Convert line breaks to preserve spacing
@@ -2219,6 +2252,7 @@ export default function KnowledgePage() {
       linkEl.target = '_blank';
       linkEl.rel = 'noopener noreferrer';
       linkEl.className = 'doc-link';
+      linkEl.setAttribute('data-preview-url', href);
       linkEl.textContent = rawUrl;
 
       const afterNode = document.createTextNode(afterUrl);
@@ -2522,9 +2556,10 @@ export default function KnowledgePage() {
         const href = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
         if (existingAnchor) {
           existingAnchor.href = href;
+          existingAnchor.setAttribute('data-preview-url', href);
         } else {
           const displayText = initialText || cleanUrl;
-          document.execCommand('insertHTML', false, `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link">${displayText}</a>&nbsp;`);
+          document.execCommand('insertHTML', false, `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${displayText}</a>&nbsp;`);
         }
       }
     } else if (cmd === 'important') {
@@ -3265,7 +3300,12 @@ export default function KnowledgePage() {
         <button
           type="button"
           className={styles.companionMinimizeBtn}
-          onClick={() => setIsCompanionOpen(false)}
+          onClick={() => {
+            setIsCompanionOpen(false);
+            try {
+              localStorage.setItem('life_os_reading_tools_open', 'false');
+            } catch {}
+          }}
           title="Minimize Reading Tools panel"
         >
           <Minimize2 size={12} />
@@ -3273,43 +3313,135 @@ export default function KnowledgePage() {
         </button>
       </div>
 
-      {/* Card 0: Delete / Archive / Restore Document */}
-      {selectedDoc && (
-        <div className={styles.companionCard} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {selectedDoc.status === 'archived' && (
-            <button
-              type="button"
-              onClick={() => handleRestoreDoc(selectedDoc.id)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: '7px', padding: '8px 12px', borderRadius: '8px',
-                border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.06)',
-                color: '#10b981', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
-              }}
-              title="Restore document to Active"
-            >
-              <RotateCcw size={12} />
-              <span>Restore to Active</span>
-            </button>
-          )}
+      {/* Card 1: Reading Session & Digital Clock (First in Reading Tools) */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <span className={styles.companionCardTitle}>
+            <Clock size={12} style={{ color: 'var(--color-accent-light)' }} /> Reading Session
+          </span>
+          <span className={styles.companionCardBadge} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Lock size={9} style={{ color: '#10b981' }} />
+            Book Reader (Locked)
+          </span>
+        </div>
+
+        <div className={styles.companionTimerBox}>
+          <div className={styles.companionTimerDigits}>
+            <span className={`${styles.companionTimerDot} ${!isReadingTimerRunning ? styles.companionTimerDotPaused : ''}`} />
+            {String(Math.floor(readingSeconds / 60)).padStart(2, '0')}:{String(readingSeconds % 60).padStart(2, '0')}
+          </div>
+          <span className={styles.companionTimerMeta}>
+            {!isReadingTimerRunning && readingSeconds === 0
+              ? 'Ready • Tap Start to track time'
+              : !isReadingTimerRunning
+              ? `Paused • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : `Reading • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+          </span>
+        </div>
+
+        <div className={styles.companionTimerControlsRow}>
           <button
             type="button"
-            onClick={() => handleDelete(selectedDoc.id, selectedDoc.title)}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '7px', padding: '8px 12px', borderRadius: '8px',
-              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
-              color: 'var(--color-text-muted)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
-            }}
-            title="Archive or delete this document"
+            className={`${styles.companionTimerToggleBtn} ${isReadingTimerRunning ? styles.companionTimerToggleRunning : ''}`}
+            onClick={handleToggleReadingTimer}
+            title={isReadingTimerRunning ? 'Pause reading timer' : readingSeconds > 0 ? 'Resume reading session' : 'Start reading session'}
           >
-            <Trash2 size={12} />
-            <span>Archive / Delete</span>
+            {isReadingTimerRunning ? (
+              <>
+                <Pause size={12} />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <Play size={12} />
+                <span>{readingSeconds > 0 ? 'Resume' : 'Start'}</span>
+              </>
+            )}
+          </button>
+          {readingSeconds > 0 && (
+            <button
+              type="button"
+              className={styles.companionTimerResetBtn}
+              onClick={handleResetReadingTimer}
+              title="Reset reading timer to 00:00"
+            >
+              <RotateCcw size={12} />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className={styles.companionLogActionBtn}
+          onClick={() => setReadingLogsModalOpen(true)}
+          title="View Reading History Logs & Schedule"
+        >
+          <History size={12} />
+          <span>Reading Logs &amp; Stats</span>
+        </button>
+      </div>
+
+      {/* Card 2: Smooth Auto-Scroll Controller */}
+      <div className={styles.companionCard}>
+        <div className={styles.companionCardHeader}>
+          <span className={styles.companionCardTitle}>
+            <Play size={12} style={{ color: 'var(--color-accent-light)' }} /> Auto-Scroll
+          </span>
+          <span className={styles.companionCardBadge}>
+            {(autoScrollSpeed / 30).toFixed(1)}x speed
+          </span>
+        </div>
+
+        <div className={styles.companionScrollRow}>
+          <button
+            type="button"
+            className={`${styles.companionAutoScrollBtn} ${isAutoScrolling ? styles.companionAutoScrollActive : ''}`}
+            onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+            title={isAutoScrolling ? 'Pause Auto-Scroll' : 'Start Smooth Auto-Scroll'}
+          >
+            {isAutoScrolling ? <Pause size={13} style={{ color: 'var(--color-accent)' }} /> : <Play size={13} />}
+            <span>{isAutoScrolling ? 'Pause' : 'Auto Scroll'}</span>
+          </button>
+
+          <div className={styles.companionSpeedBox} title="Adjust scroll speed">
+            <button
+              type="button"
+              className={styles.companionSpeedBtn}
+              onClick={() => setAutoScrollSpeed((prev) => Math.max(10, prev - 10))}
+              title="Slower"
+            >
+              -
+            </button>
+            <span className={styles.companionSpeedValue}>
+              {(autoScrollSpeed / 30).toFixed(1)}x
+            </span>
+            <button
+              type="button"
+              className={styles.companionSpeedBtn}
+              onClick={() => setAutoScrollSpeed((prev) => Math.min(150, prev + 10))}
+              title="Faster"
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className={styles.companionScrollTopBtn}
+            onClick={() => {
+              const el = document.querySelector(`.${styles.editorCanvas}`) as HTMLElement | null;
+              if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+              else window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            title="Scroll to Top"
+          >
+            <ArrowUp size={13} />
           </button>
         </div>
-      )}
+      </div>
 
-      {/* Card 1: Typography & Reading View (Works in Book & Word Mode) */}
+      {/* Card 3: Typography & Reading View (Works in Book & Word Mode) */}
       <div className={styles.companionCard}>
         <div className={styles.companionCardHeader}>
           <span className={styles.companionCardTitle}>
@@ -3385,7 +3517,7 @@ export default function KnowledgePage() {
         </div>
       </div>
 
-      {/* Card 2: Highlighters & Font Colors (Works in Book & Word Mode) */}
+      {/* Card 4: Highlighters & Font Colors (Works in Book & Word Mode) */}
       <div className={styles.companionCard}>
         <div className={styles.companionCardHeader}>
           <div className={styles.companionAnnotateTabs}>
@@ -3483,133 +3615,41 @@ export default function KnowledgePage() {
         )}
       </div>
 
-      {/* Card 3: Reading Session & Digital Clock */}
-      <div className={styles.companionCard}>
-        <div className={styles.companionCardHeader}>
-          <span className={styles.companionCardTitle}>
-            <Clock size={12} style={{ color: 'var(--color-accent-light)' }} /> Reading Session
-          </span>
-          <span className={styles.companionCardBadge} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Lock size={9} style={{ color: '#10b981' }} />
-            Book Reader (Locked)
-          </span>
-        </div>
-
-        <div className={styles.companionTimerBox}>
-          <div className={styles.companionTimerDigits}>
-            <span className={`${styles.companionTimerDot} ${!isReadingTimerRunning ? styles.companionTimerDotPaused : ''}`} />
-            {String(Math.floor(readingSeconds / 60)).padStart(2, '0')}:{String(readingSeconds % 60).padStart(2, '0')}
-          </div>
-          <span className={styles.companionTimerMeta}>
-            {!isReadingTimerRunning && readingSeconds === 0
-              ? 'Ready • Tap Start to track time'
-              : !isReadingTimerRunning
-              ? `Paused • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : `Reading • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-          </span>
-        </div>
-
-        <div className={styles.companionTimerControlsRow}>
-          <button
-            type="button"
-            className={`${styles.companionTimerToggleBtn} ${isReadingTimerRunning ? styles.companionTimerToggleRunning : ''}`}
-            onClick={handleToggleReadingTimer}
-            title={isReadingTimerRunning ? 'Pause reading timer' : readingSeconds > 0 ? 'Resume reading session' : 'Start reading session'}
-          >
-            {isReadingTimerRunning ? (
-              <>
-                <Pause size={12} />
-                <span>Pause</span>
-              </>
-            ) : (
-              <>
-                <Play size={12} />
-                <span>{readingSeconds > 0 ? 'Resume' : 'Start'}</span>
-              </>
-            )}
-          </button>
-          {readingSeconds > 0 && (
+      {/* Card 5: Delete / Archive / Restore Document */}
+      {selectedDoc && (
+        <div className={styles.companionCard} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {selectedDoc.status === 'archived' && (
             <button
               type="button"
-              className={styles.companionTimerResetBtn}
-              onClick={handleResetReadingTimer}
-              title="Reset reading timer to 00:00"
+              onClick={() => handleRestoreDoc(selectedDoc.id)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '7px', padding: '8px 12px', borderRadius: '8px',
+                border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.06)',
+                color: '#10b981', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
+              }}
+              title="Restore document to Active"
             >
               <RotateCcw size={12} />
-              <span>Reset</span>
+              <span>Restore to Active</span>
             </button>
           )}
-        </div>
-
-        <button
-          type="button"
-          className={styles.companionLogActionBtn}
-          onClick={() => setReadingLogsModalOpen(true)}
-          title="View Reading History Logs & Schedule"
-        >
-          <History size={12} />
-          <span>Reading Logs &amp; Stats</span>
-        </button>
-      </div>
-
-      {/* Card 4: Smooth Auto-Scroll Controller */}
-      <div className={styles.companionCard}>
-        <div className={styles.companionCardHeader}>
-          <span className={styles.companionCardTitle}>
-            <Play size={12} style={{ color: 'var(--color-accent-light)' }} /> Auto-Scroll
-          </span>
-          <span className={styles.companionCardBadge}>
-            {(autoScrollSpeed / 30).toFixed(1)}x speed
-          </span>
-        </div>
-
-        <div className={styles.companionScrollRow}>
           <button
             type="button"
-            className={`${styles.companionAutoScrollBtn} ${isAutoScrolling ? styles.companionAutoScrollActive : ''}`}
-            onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-            title={isAutoScrolling ? 'Pause Auto-Scroll' : 'Start Smooth Auto-Scroll'}
-          >
-            {isAutoScrolling ? <Pause size={13} style={{ color: 'var(--color-accent)' }} /> : <Play size={13} />}
-            <span>{isAutoScrolling ? 'Pause' : 'Auto Scroll'}</span>
-          </button>
-
-          <div className={styles.companionSpeedBox} title="Adjust scroll speed">
-            <button
-              type="button"
-              className={styles.companionSpeedBtn}
-              onClick={() => setAutoScrollSpeed((prev) => Math.max(10, prev - 10))}
-              title="Slower"
-            >
-              -
-            </button>
-            <span className={styles.companionSpeedValue}>
-              {(autoScrollSpeed / 30).toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              className={styles.companionSpeedBtn}
-              onClick={() => setAutoScrollSpeed((prev) => Math.min(150, prev + 10))}
-              title="Faster"
-            >
-              +
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className={styles.companionScrollTopBtn}
-            onClick={() => {
-              const el = document.querySelector(`.${styles.editorCanvas}`) as HTMLElement | null;
-              if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-              else window.scrollTo({ top: 0, behavior: 'smooth' });
+            onClick={() => handleDelete(selectedDoc.id, selectedDoc.title)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '7px', padding: '8px 12px', borderRadius: '8px',
+              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+              color: 'var(--color-text-muted)', fontSize: '12px', cursor: 'pointer', transition: 'all 0.15s ease',
             }}
-            title="Scroll to Top"
+            title="Archive or delete this document"
           >
-            <ArrowUp size={13} />
+            <Trash2 size={12} />
+            <span>Archive / Delete</span>
           </button>
         </div>
-      </div>
+      )}
     </aside>
   );
 
@@ -3654,7 +3694,7 @@ export default function KnowledgePage() {
                 setEditorMode('book');
               }
               setMobileTab('editor');
-              setIsCompanionOpen((prev) => !prev);
+              handleToggleCompanion();
             }}
             title={isCompanionOpen ? "Minimize Reading Tools (Typography & Highlights)" : "Show Reading Tools (Typography, Highlights & Timer)"}
           >
@@ -4106,68 +4146,6 @@ export default function KnowledgePage() {
                       }
                     }}
                   />
-
-                  {/* Sleek Floating Link Popover in Edit Mode */}
-                  {linkPopover && (
-                    <div
-                      className={styles.linkPopover}
-                      style={{ top: linkPopover.y, left: linkPopover.x }}
-                    >
-                      <a
-                        href={linkPopover.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.linkPopoverUrl}
-                        title={linkPopover.url}
-                      >
-                        {linkPopover.url}
-                      </a>
-                      <button
-                        type="button"
-                        className={styles.linkPopoverBtn}
-                        onClick={() => window.open(linkPopover.url, '_blank', 'noopener,noreferrer')}
-                        title="Open link in new tab (Ctrl+Click)"
-                      >
-                        <ExternalLink size={12} />
-                        <span>Open</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.linkPopoverBtn}
-                        onClick={() => {
-                          const newUrl = prompt('Edit link destination:', linkPopover.url);
-                          if (newUrl && newUrl.trim()) {
-                            const clean = newUrl.trim();
-                            const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-                            linkPopover.targetEl.href = href;
-                            setLinkPopover((prev) => prev ? { ...prev, url: href } : null);
-                            if (editorRef.current) setFContent(editorRef.current.innerHTML);
-                          }
-                        }}
-                        title="Edit link destination"
-                      >
-                        <Edit2 size={12} />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.linkPopoverBtn} ${styles.linkPopoverRemove}`}
-                        onClick={() => {
-                          const parent = linkPopover.targetEl.parentNode;
-                          while (linkPopover.targetEl.firstChild) {
-                            parent?.insertBefore(linkPopover.targetEl.firstChild, linkPopover.targetEl);
-                          }
-                          parent?.removeChild(linkPopover.targetEl);
-                          setLinkPopover(null);
-                          if (editorRef.current) setFContent(editorRef.current.innerHTML);
-                        }}
-                        title="Remove link"
-                      >
-                        <X size={12} />
-                        <span>Unlink</span>
-                      </button>
-                    </div>
-                  )}
                 </>
               ) : editorMode === 'preview' ? (
                 <div
@@ -4380,6 +4358,52 @@ export default function KnowledgePage() {
           )}
         </main>
       </div>
+
+      {/* Rich Executive Link Preview Popover */}
+      {linkPopover && (
+        <div
+          style={{
+            position: 'fixed',
+            top: `${Math.min(typeof window !== 'undefined' ? window.innerHeight - 300 : 300, Math.max(12, linkPopover.y))}px`,
+            left: `${Math.min(typeof window !== 'undefined' ? window.innerWidth - 345 : 345, Math.max(12, linkPopover.x))}px`,
+            zIndex: 1000,
+            pointerEvents: 'auto',
+          }}
+        >
+          <LinkPreviewCard
+            url={linkPopover.url}
+            onClose={() => setLinkPopover(null)}
+            onEdit={
+              editorMode === 'edit'
+                ? () => {
+                    const newUrl = prompt('Edit link destination:', linkPopover.url);
+                    if (newUrl && newUrl.trim()) {
+                      const clean = newUrl.trim();
+                      const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
+                      linkPopover.targetEl.href = href;
+                      linkPopover.targetEl.setAttribute('data-preview-url', href);
+                      setLinkPopover((prev) => prev ? { ...prev, url: href } : null);
+                      if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                    }
+                  }
+                : undefined
+            }
+            onUnlink={
+              editorMode === 'edit'
+                ? () => {
+                    const parent = linkPopover.targetEl.parentNode;
+                    while (linkPopover.targetEl.firstChild) {
+                      parent?.insertBefore(linkPopover.targetEl.firstChild, linkPopover.targetEl);
+                    }
+                    parent?.removeChild(linkPopover.targetEl);
+                    setLinkPopover(null);
+                    if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                  }
+                : undefined
+            }
+          />
+        </div>
+      )}
 
       {/* Floating Selection Highlight Toolbar — highlight colors & font colors */}
       {floatingMenu && (
@@ -5032,8 +5056,7 @@ export default function KnowledgePage() {
 
       {/* Floating Toast Notification for Smart Paste & Book Operations */}
       {pasteToast && (
-        <div className={styles.pasteToast}>
-          <Check size={16} style={{ color: 'var(--color-accent)' }} />
+        <div className={styles.pasteToast} role="status" aria-live="polite">
           <span>{pasteToast}</span>
           {previousContentBeforeFormatRef.current !== null && (
             <button

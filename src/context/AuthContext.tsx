@@ -11,6 +11,9 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -53,6 +56,7 @@ interface AuthContextType {
   continueAsGuest: () => void;
   logout: () => Promise<void>;
   logoutAllDevices: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -182,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const cred = await Promise.race([authPromise, timeoutPromise]);
       try {
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
       setUser(cred.user);
@@ -216,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       try {
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
       setUser(cred.user);
@@ -340,6 +346,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    setError(null);
+    if (!newPassword || newPassword.length < 6) {
+      const msg = 'New password must be at least 6 characters long.';
+      setError(msg);
+      throw new Error(msg);
+    }
+
+    try {
+      const auth = getFirebaseAuth();
+      const currentUser = auth.currentUser;
+
+      if (currentUser && currentUser.email && !isGuest) {
+        // Reauthenticate with current password first
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword.trim());
+        await reauthenticateWithCredential(currentUser, credential);
+        // Update Firebase Auth password
+        await updatePassword(currentUser, newPassword.trim());
+        // Also keep local fallback pin in sync
+        try {
+          localStorage.setItem('life_os_guest_vault_pin', newPassword.trim());
+        } catch {}
+        return;
+      }
+
+      // Guest / Offline Mode Password
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('life_os_guest_vault_pin') : null;
+      if (stored && stored !== currentPassword.trim()) {
+        const msg = 'Current password is incorrect.';
+        setError(msg);
+        throw new Error(msg);
+      }
+
+      localStorage.setItem('life_os_guest_vault_pin', newPassword.trim());
+    } catch (err: unknown) {
+      const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
+      let message = explainFirebaseError(err);
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        message = 'Current password is incorrect.';
+      } else if (code === 'auth/weak-password') {
+        message = 'Password is too weak. Please use at least 6 characters.';
+      }
+      setError(message);
+      throw new Error(message);
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -355,6 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       continueAsGuest,
       logout,
       logoutAllDevices,
+      changePassword,
       clearError: () => setError(null),
     }),
     [user, owner, ready, isGuest, ownerExists, error, cloudWarning]

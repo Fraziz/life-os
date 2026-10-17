@@ -89,6 +89,7 @@ interface InboxContextType {
   convertToProblemSolver: (id: string) => void;
   convertToSomeday: (id: string) => void;
   restoreToInbox: (id: string) => void;
+  updateInboxItem: (id: string, updates: Partial<InboxItem>) => void;
   clearInbox: () => void;
   resetToDefaultInbox: () => void;
   isLoaded: boolean;
@@ -252,6 +253,18 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       return {
         ...item,
         isImportant: !item.isImportant,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    saveItems(updated);
+  };
+
+  const updateInboxItem = (id: string, updates: Partial<InboxItem>) => {
+    const updated = items.map((item) => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        ...updates,
         updatedAt: new Date().toISOString(),
       };
     });
@@ -465,6 +478,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         convertToProblemSolver,
         convertToSomeday,
         restoreToInbox,
+        updateInboxItem,
         clearInbox,
         resetToDefaultInbox,
         isLoaded,

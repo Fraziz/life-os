@@ -86,6 +86,7 @@ export function parseTextWithLinks(text: string): React.ReactNode[] {
         target="_blank"
         rel="noopener noreferrer"
         className={styles.autoLink}
+        data-preview-url={href}
         onClick={(e) => e.stopPropagation()}
         title={`Open ${cleanUrl} in a new tab`}
       >

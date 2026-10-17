@@ -508,6 +508,19 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.goalCard:hover .cardActions,
+.goalCard:focus-within .cardActions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .cardActions {
+    opacity: 1;
+  }
 }
 
 .fileActionBtn {
@@ -749,8 +762,7 @@
   justify-content: space-between;
   gap: 8px;
   margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 4px;
   flex-wrap: wrap;
 }
 
@@ -768,6 +780,20 @@
   gap: 5px;
   flex-wrap: wrap;
   margin-left: auto;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.goalCard:hover .footerRight,
+.goalCard:focus-within .footerRight,
+.footerRightActive {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .footerRight {
+    opacity: 1;
+  }
 }
 
 .lifeAreaChip {

@@ -332,8 +332,7 @@
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--color-border-subtle);
+  padding-top: 2px;
   flex-wrap: wrap;
 }
 
@@ -393,11 +392,11 @@
 .projectCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md, 8px);
-  padding: 12px 14px;
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
   break-inside: avoid;
@@ -412,66 +411,103 @@
   box-shadow: var(--shadow-md);
 }
 
-/*  Full Hierarchy Chain Banner  */
+/*  Full Hierarchy Chain (Parent Goal Context)  */
 .hierarchyChain {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: var(--radius-md, 7px);
+  font-size: 11.5px;
+  transition: border-color var(--transition-fast, 0.15s ease), background var(--transition-fast, 0.15s ease);
+}
+
+.hierarchyChain:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-hover, var(--color-surface-2));
 }
 
 .chainRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
   min-width: 0;
 }
 
-.chainLabel {
-  font-size: 10px;
-  font-weight: var(--weight-bold);
+.chainBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4.5px;
+  font-size: 9.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--color-text-faint);
-  min-width: 55px;
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--color-border-subtle);
+  padding: 1.5px 6px;
+  border-radius: 4px;
   flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.chainIcon {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .chainVal {
-  color: var(--color-accent-light);
+  color: var(--color-text-muted);
   font-weight: 500;
+  font-size: 11.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  transition: color var(--transition-fast, 0.15s ease);
 }
 
+.hierarchyChain:hover .chainVal {
+  color: var(--color-text);
+}
+
+.cardHeader,
 .cardTopRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-2, 8px);
 }
 
 .tagsRow {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .statusBadge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px var(--space-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
   border-radius: var(--radius-full);
   text-transform: capitalize;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.01em;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .statusBadge.active {
@@ -500,11 +536,11 @@
 
 .priorityBadge {
   font-size: 10px;
-  font-weight: var(--weight-bold);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-md);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .priorityBadge.urgent {
@@ -534,24 +570,82 @@
 .cardActions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.projectCard:hover .cardActions,
+.projectCard:focus-within .cardActions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .cardActions {
+    opacity: 1;
+  }
+}
+
+.taskBridgeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.taskBridgeBtn:hover {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.fileActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  border-radius: var(--radius-md, 6px);
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.75;
+}
+
+.fileActionBtn:hover {
+  opacity: 1;
+  color: var(--color-text);
+  background: var(--color-surface-hover);
 }
 
 .actionBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-md, 6px);
   background: transparent;
   border: none;
   color: var(--color-text-faint);
   cursor: pointer;
   transition: all var(--transition-fast);
+  opacity: 0.75;
 }
 
 .actionBtn:hover {
+  opacity: 1;
   color: var(--color-text);
   background: var(--color-surface-hover);
 }
@@ -562,30 +656,33 @@
 }
 
 .projectTitle {
-  font-size: 14px;
-  font-weight: var(--weight-semibold);
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: 1.42;
+  letter-spacing: -0.012em;
   word-break: break-word;
   overflow-wrap: anywhere;
+  margin: 0;
 }
 
 .projectDesc {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.5;
   word-break: break-word;
   overflow-wrap: anywhere;
+  margin: 0;
 }
 
 .notesBox {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 11.5px;
   color: var(--color-text-muted);
-  line-height: 1.35;
+  line-height: 1.45;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -594,7 +691,7 @@
 .progressSection {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .progressHeader {
@@ -602,6 +699,63 @@
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
+}
+
+.progressLabel {
+  color: var(--color-text-faint);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.progressValue {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sliderWrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.progressSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  outline: none;
+  cursor: pointer;
+  border: 1px solid var(--color-border-subtle);
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.progressSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.progressSlider:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.progressSlider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
 
 .progressBarContainer {
@@ -618,10 +772,38 @@
 }
 
 .sliderInput {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  accent-color: var(--color-accent);
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  outline: none;
   cursor: pointer;
-  margin-top: 2px;
+  border: 1px solid var(--color-border-subtle);
+  margin-top: 6px;
+}
+
+.sliderInput::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.sliderInput::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
 
 .cardFooter {
@@ -629,8 +811,7 @@
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 6px;
-  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 4px;
   font-size: 11px;
 }
 
@@ -638,7 +819,12 @@
   color: var(--color-text-faint);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.dateIcon {
+  opacity: 0.7;
 }
 
 /*  Modal Overlay & Card  */

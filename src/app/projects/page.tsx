@@ -257,36 +257,31 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
               borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
             }}
           >
-            {/* Top row: title + actions */}
-            <div className={styles.cardTopRow}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className={styles.tagsRow}>
-                  <span
-                    className={`${styles.statusBadge} ${styles[p.status === 'on-hold' ? 'onHold' : p.status] || ''}`}
-                    style={{ background: `${cfg.color}20`, color: cfg.color, border: `1px solid ${cfg.color}40` }}
-                  >
-                    {cfg.label}
-                  </span>
-                  <span
-                    className={`${styles.priorityBadge} ${styles[p.priority] || ''}`}
-                  >
-                    {p.priority}
-                  </span>
-                </div>
-                <p className={styles.projectTitle} style={{ marginTop: '6px' }}>
-                  <AutoLinkText text={p.title} />
-                </p>
+            {/* Top header row: tags + actions */}
+            <div className={styles.cardHeader}>
+              <div className={styles.tagsRow}>
+                <span
+                  className={`${styles.statusBadge} ${styles[p.status === 'on-hold' ? 'onHold' : p.status] || ''}`}
+                  style={{ background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}35` }}
+                >
+                  <span className={styles.statusDot} style={{ background: cfg.color }} />
+                  {cfg.label}
+                </span>
+                <span
+                  className={`${styles.priorityBadge} ${styles[p.priority] || ''}`}
+                >
+                  {p.priority}
+                </span>
               </div>
               <div className={styles.cardActions}>
-                <EntityFiles variant="icon" entityType="project" entityId={p.id} title={p.title} />
+                <EntityFiles variant="icon" entityType="project" entityId={p.id} title={p.title} className={styles.fileActionBtn} />
                 {onAddBridgeTask && (
                   <button
                     type="button"
-                    className={styles.actionBtn}
+                    className={styles.taskBridgeBtn}
                     onClick={() => onAddBridgeTask(p)}
                     title="Create a 15-minute action task"
                     aria-label="Add bridge task"
-                    style={{ color: '#34d399', fontSize: '11px', fontWeight: 600, width: 'auto', padding: '2px 6px', gap: '3px' }}
                   >
                     + Task
                   </button>
@@ -305,11 +300,19 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
               </div>
             </div>
 
+            {/* Title (full card width) */}
+            <h3 className={styles.projectTitle}>
+              <AutoLinkText text={p.title} />
+            </h3>
+
             {/* Hierarchy chain (parent goal) */}
             {parentGoal && (
-              <div className={styles.hierarchyChain}>
+              <div className={styles.hierarchyChain} title={`Parent Goal: ${parentGoal.title}`}>
                 <div className={styles.chainRow}>
-                  <span className={styles.chainLabel}>Goal</span>
+                  <span className={styles.chainBadge}>
+                    <Target size={11} className={styles.chainIcon} />
+                    Goal
+                  </span>
                   <span className={styles.chainVal}>{parentGoal.title}</span>
                 </div>
               </div>
@@ -329,32 +332,34 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
               </div>
             )}
 
-            {/* Progress */}
+            {/* Single Interactive Progress Slider */}
             <div className={styles.progressSection}>
               <div className={styles.progressHeader}>
-                <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>Progress</span>
-                <span style={{ color: accent, fontWeight: 700, fontSize: '11px' }}>{p.progress}%</span>
+                <span className={styles.progressLabel}>Progress</span>
+                <span className={styles.progressValue} style={{ color: accent }}>{p.progress}%</span>
               </div>
-              <div className={styles.progressBarContainer}>
-                <div
-                  className={styles.progressBarFill}
-                  style={{ width: `${p.progress}%`, background: `linear-gradient(90deg, ${accent}, ${accent}aa)` }}
+              <div className={styles.sliderWrap}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={p.progress}
+                  className={styles.progressSlider}
+                  style={{
+                    background: `linear-gradient(to right, ${accent} 0%, ${accent} ${p.progress}%, var(--color-surface-2) ${p.progress}%, var(--color-surface-2) 100%)`,
+                  }}
+                  onChange={(e) => onProgressChange(p.id, parseInt(e.target.value))}
+                  title="Slide to update progress"
+                  aria-label="Update project progress"
                 />
               </div>
-              <input
-                type="range" min="0" max="100" step="5"
-                value={p.progress}
-                className={styles.sliderInput}
-                style={{ accentColor: accent }}
-                onChange={(e) => onProgressChange(p.id, parseInt(e.target.value))}
-                title="Update progress"
-              />
             </div>
 
             {/* Footer: dates */}
             <div className={styles.cardFooter}>
               <span className={styles.dateRange}>
-                <Calendar size={11} />
+                <Calendar size={11} className={styles.dateIcon} />
                 {p.startDate ? p.startDate : 'No start'}
                 {p.dueDate && <> → {p.dueDate}</>}
               </span>
@@ -1248,27 +1253,8 @@ export default function ProjectsPage() {
 
       {/* ── Toast Notification ── */}
       {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-accent)',
-            borderRadius: '12px',
-            padding: '12px 18px',
-            color: 'var(--color-text)',
-            fontSize: '13px',
-            fontWeight: 600,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            animation: 'fadeInFast 0.2s ease forwards',
-          }}
-        >
-          {toastMessage}
+        <div className="chatgptToast" role="status" aria-live="polite">
+          <span>{toastMessage}</span>
         </div>
       )}
 

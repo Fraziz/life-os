@@ -69,11 +69,55 @@ const WEEKDAYS = [
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
-  const { user, logout, logoutAllDevices } = useAuth();
+  const { user, isGuest, logout, logoutAllDevices, changePassword } = useAuth();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
+  const [toastText, setToastText] = useState('Preferences saved successfully');
+
+  // Password Change state
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [passwordChangeBusy, setPasswordChangeBusy] = useState(false);
+  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeError(null);
+    setPasswordChangeSuccess(false);
+
+    if (newPasswordInput.length < 6) {
+      setPasswordChangeError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordChangeError('New passwords do not match.');
+      return;
+    }
+
+    setPasswordChangeBusy(true);
+    try {
+      await changePassword(currentPasswordInput, newPasswordInput);
+      setPasswordChangeSuccess(true);
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+      setToastText('Password updated and synced');
+      setShowSavedToast(true);
+      setTimeout(() => setShowSavedToast(false), 3000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update password. Try again.';
+      setPasswordChangeError(msg);
+    } finally {
+      setPasswordChangeBusy(false);
+    }
+  };
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
@@ -274,6 +318,7 @@ export default function SettingsPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings(formData);
+    setToastText('Preferences saved successfully');
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 3000);
   };
@@ -303,10 +348,8 @@ export default function SettingsPage() {
       </header>
 
       {showSavedToast && (
-        <div className={styles.saveBanner} role="status">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle size={16} /> Preferences saved successfully.
-          </span>
+        <div className="chatgptToast" role="status" aria-live="polite">
+          <span>{toastText}</span>
         </div>
       )}
 
@@ -372,32 +415,145 @@ export default function SettingsPage() {
               </div>
 
               {user?.uid && <ActiveDevices uid={user.uid} />}
+            </div>
 
-              {/* Action Buttons Row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  onClick={handleLogout}
-                  disabled={loggingOut || loggingOutAll}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <LogOut size={13} />
-                  {loggingOut ? 'Signing out…' : 'Sign Out This Device'}
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.btnDanger}
-                  onClick={handleLogoutAllDevices}
-                  disabled={loggingOut || loggingOutAll}
-                  title="Revoke and log out of all active sessions on all phones, tablets, and PCs"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <ShieldAlert size={14} />
-                  {loggingOutAll ? 'Logging out all devices…' : 'Log Out of All Devices'}
-                </button>
+            {/* ── Security & Change Password ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-lg, 10px)', border: '1px solid var(--color-border)' }}>
+              <div>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                  Security &amp; Password
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
+                  Changing your password syncs directly with your account login and your Important Notes Vault.
+                </span>
               </div>
+
+              {passwordChangeError && (
+                <div style={{ background: 'var(--color-danger-dim, rgba(239, 68, 68, 0.1))', color: 'var(--color-danger, #ef4444)', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem' }}>
+                  {passwordChangeError}
+                </div>
+              )}
+
+              {passwordChangeSuccess && (
+                <div style={{ background: 'var(--color-success-dim, rgba(16, 185, 129, 0.1))', color: 'var(--color-success, #10b981)', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem' }}>
+                  Password updated and synced with Important Notes Vault successfully.
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                      Current Password {isGuest && '(or Passcode)'}
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        value={currentPasswordInput}
+                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                        placeholder="Enter current password"
+                        disabled={passwordChangeBusy}
+                        style={{ width: '100%', padding: '8px 34px 8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '0.84rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        tabIndex={-1}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: '2px' }}
+                      >
+                        {showCurrentPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                      New Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showNewPass ? 'text' : 'password'}
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        placeholder="At least 6 characters"
+                        minLength={6}
+                        disabled={passwordChangeBusy}
+                        style={{ width: '100%', padding: '8px 34px 8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '0.84rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        tabIndex={-1}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: '2px' }}
+                      >
+                        {showNewPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPasswordInput}
+                      onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                      placeholder="Re-enter new password"
+                      minLength={6}
+                      disabled={passwordChangeBusy}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '0.84rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <button
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={passwordChangeBusy || !newPasswordInput || !confirmPasswordInput}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'var(--color-accent)',
+                      color: 'var(--color-text-inverse)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      opacity: passwordChangeBusy || !newPasswordInput || !confirmPasswordInput ? 0.6 : 1,
+                    }}
+                  >
+                    {passwordChangeBusy ? 'Updating Password…' : 'Update & Sync Password'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={handleLogout}
+                disabled={loggingOut || loggingOutAll}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <LogOut size={13} />
+                {loggingOut ? 'Signing out…' : 'Sign Out This Device'}
+              </button>
+
+              <button
+                type="button"
+                className={styles.btnDanger}
+                onClick={handleLogoutAllDevices}
+                disabled={loggingOut || loggingOutAll}
+                title="Revoke and log out of all active sessions on all phones, tablets, and PCs"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <ShieldAlert size={14} />
+                {loggingOutAll ? 'Logging out all devices…' : 'Log Out of All Devices'}
+              </button>
             </div>
           </div>
         </section>

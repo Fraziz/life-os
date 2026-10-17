@@ -694,17 +694,7 @@ export default function TasksPage() {
             ) : (
               <button
                 type="button"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '2px 6px',
-                  color: 'var(--color-text-faint)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className={styles.calendarAddBtn}
                 onClick={() => openEditModal(task)}
                 title="Add to Calendar"
                 aria-label="Add to Calendar"
@@ -1225,7 +1215,7 @@ export default function TasksPage() {
                           {weekDoneTasks.length > 0 && (
                             <>
                               <div className={`${styles.doneGroupHeader} ${styles.doneGroupHeaderSubtle}`}>
-                                <span>📅 Earlier This Week ({weekDoneTasks.length})</span>
+                                <span>Earlier This Week ({weekDoneTasks.length})</span>
                               </div>
                               {weekDoneTasks.map((task) => renderTaskCard(task, col))}
                             </>

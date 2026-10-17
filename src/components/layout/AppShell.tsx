@@ -34,6 +34,7 @@ import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import CommandPalette from '@/components/command/CommandPalette';
 import ProjectProgressCascade from './ProjectProgressCascade';
 import GrammarAssist from '@/components/ui/GrammarAssist';
+import GlobalLinkPreview from '@/components/ui/GlobalLinkPreview';
 import { initFirebaseAnalytics } from '@/lib/firebase';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
@@ -320,6 +321,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const mainClass = [
     styles.main,
     isPinned ? styles.sidebarPinned : '',
+    pathname === '/knowledge' ? styles.knowledgeMain : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -348,7 +350,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           <ProjectProgressCascade />
 
           <main
-            className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''}`}
+            className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''} ${pathname === '/knowledge' ? styles.knowledgeContent : ''}`}
             id="main-content"
             tabIndex={-1}
           >
@@ -419,6 +421,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       </button>
 
       <GrammarAssist />
+      <GlobalLinkPreview />
     </>
   );
 }

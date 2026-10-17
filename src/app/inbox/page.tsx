@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Inbox,
@@ -19,6 +19,7 @@ import {
   Zap,
   Layers,
   ArrowRight,
+  ArrowLeft,
   X,
   ChevronDown,
   ChevronUp,
@@ -28,6 +29,13 @@ import {
   Mic,
   MicOff,
   Copy,
+  Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Mail,
+  AlertCircle,
+  Pencil,
 } from 'lucide-react';
 import { useSpeechToText } from '@/utils/useSpeechToText';
 import { useInbox } from '@/context/InboxContext';
@@ -37,6 +45,14 @@ import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
+import { useAuth } from '@/context/AuthContext';
+import { getFirebaseAuth, explainFirebaseError } from '@/lib/firebase';
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import type { InboxItem, InboxConvertedType } from '@/types';
 import { processBrainDumpWithAI, breakdownThoughtWithAI, type ThoughtBreakdownResult } from '@/utils/aiEngine';
 import type { BrainDumpClassification } from '@/utils/aiEngine';
@@ -71,6 +87,7 @@ export default function InboxPage() {
     convertToProblemSolver,
     convertToSomeday,
     restoreToInbox,
+    updateInboxItem,
     clearInbox,
     resetToDefaultInbox,
     isLoaded,
@@ -98,11 +115,34 @@ export default function InboxPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Inline Editing State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemText, setEditingItemText] = useState<string>('');
+
+  const handleStartEdit = (item: InboxItem) => {
+    setEditingItemId(item.id);
+    setEditingItemText(item.content);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    const trimmed = editingItemText.trim();
+    if (!trimmed) return;
+    updateInboxItem(id, { content: trimmed });
+    setEditingItemId(null);
+    playSuccessChime();
+    showToast('Note updated');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditingItemText('');
+  };
+
   const handleToggleItemApplied = (item: InboxItem) => {
     toggleItemApplied(item.id);
     if (!item.isApplied) {
       playSuccessChime();
-      showToast('✓ Marked idea as done! Click "+ Task" to send to Completed Tasks in Tasks.');
+      showToast('Marked idea as done');
     }
   };
 
@@ -111,9 +151,9 @@ export default function InboxPage() {
     convertToTask(item.id);
     if (isDone) {
       playSuccessChime();
-      showToast('✓ Placed in Already Done tab & added to Completed Tasks in Tasks!');
+      showToast('Placed in Already Done & added to Tasks');
     } else {
-      showToast('✓ Converted to Task!');
+      showToast('Converted to Task');
     }
   };
 
@@ -122,9 +162,9 @@ export default function InboxPage() {
     convertToImportant(item.id);
     playSuccessChime();
     if (isDone) {
-      showToast('✓ Placed in Already Done & added to Completed Tasks in Tasks!');
+      showToast('Placed in Already Done & added to Tasks');
     } else {
-      showToast('⚡ Converted to Important Task! Added to Today\'s Top Priorities.');
+      showToast('Converted to Important Task');
     }
   };
 
@@ -170,7 +210,7 @@ export default function InboxPage() {
     });
 
     playSuccessChime();
-    showToast(`✓ Groq API Key Activated! Model: openai/gpt-oss-120b`);
+    showToast('Groq API Key Activated');
   };
 
   const handleAiBreakdown = async (item: InboxItem) => {
@@ -197,7 +237,7 @@ export default function InboxPage() {
         });
       });
       convertToTask(item.id);
-      showToast(`✓ Created ${result.steps.length} tasks from Thought!`);
+      showToast(`Created ${result.steps.length} tasks from Thought`);
     } else {
       addTask({
         title: result.title || item.content,
@@ -213,7 +253,7 @@ export default function InboxPage() {
         })),
       });
       convertToTask(item.id);
-      showToast(`✓ Converted Thought to Task with actionable checklist!`);
+      showToast('Converted Thought to Task');
     }
     setAiBreakdownModal(null);
     playSuccessChime();
@@ -265,6 +305,159 @@ export default function InboxPage() {
 
   // Active filter tab
   const [filterTab, setFilterTab] = useState<'inbox' | 'important' | 'reminders' | 'done' | 'converted' | 'someday'>('inbox');
+
+  // Confidential Vault State for Important Notes
+  const { user, isGuest, changePassword } = useAuth();
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
+  const [vaultPassword, setVaultPassword] = useState('');
+  const [showVaultPassword, setShowVaultPassword] = useState(false);
+  const [vaultError, setVaultError] = useState<string | null>(null);
+  const [vaultLoading, setVaultLoading] = useState(false);
+
+  // Change Password Modal State
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [changePassCurrent, setChangePassCurrent] = useState('');
+  const [changePassNew, setChangePassNew] = useState('');
+  const [changePassConfirm, setChangePassConfirm] = useState('');
+  const [changePassError, setChangePassError] = useState<string | null>(null);
+  const [changePassBusy, setChangePassBusy] = useState(false);
+
+  const handleModalChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePassError(null);
+
+    if (changePassNew.length < 6) {
+      setChangePassError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (changePassNew !== changePassConfirm) {
+      setChangePassError('New passwords do not match.');
+      return;
+    }
+
+    setChangePassBusy(true);
+    try {
+      await changePassword(changePassCurrent, changePassNew);
+      setShowChangePasswordModal(false);
+      setChangePassCurrent('');
+      setChangePassNew('');
+      setChangePassConfirm('');
+      playSuccessChime();
+      showToast('Password updated and synced');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update password. Try again.';
+      setChangePassError(msg);
+    } finally {
+      setChangePassBusy(false);
+    }
+  };
+
+  // Guest Mode Local PIN Setup
+  const [guestPinSetup, setGuestPinSetup] = useState(false);
+  const [guestPinConfirm, setGuestPinConfirm] = useState('');
+
+  // Lock Important Vault whenever user navigates away or switches tabs
+  useEffect(() => {
+    if (filterTab !== 'important') {
+      setIsVaultUnlocked(false);
+      setVaultPassword('');
+      setVaultError(null);
+    } else {
+      if (isGuest || !user?.email) {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('life_os_guest_vault_pin') : null;
+        setGuestPinSetup(!stored);
+      }
+    }
+  }, [filterTab, user, isGuest]);
+
+  const handleUnlockVault = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!vaultPassword.trim()) {
+      setVaultError('Please enter your password.');
+      return;
+    }
+
+    setVaultLoading(true);
+    setVaultError(null);
+
+    try {
+      // 1. Account Password Verification (Firebase Auth)
+      if (user?.email && !isGuest) {
+        const auth = getFirebaseAuth();
+        let verified = false;
+
+        // Check active session reauthentication
+        if (auth.currentUser && auth.currentUser.email) {
+          try {
+            const credential = EmailAuthProvider.credential(auth.currentUser.email, vaultPassword.trim());
+            await reauthenticateWithCredential(auth.currentUser, credential);
+            verified = true;
+          } catch (reauthErr: unknown) {
+            const code = typeof reauthErr === 'object' && reauthErr && 'code' in reauthErr ? String((reauthErr as { code: string }).code) : '';
+            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+              throw new Error('Incorrect password. Try again.');
+            }
+            // If reauthentication fails due to provider mismatch or edge condition, fall back to signInWithEmailAndPassword
+          }
+        }
+
+        if (!verified) {
+          try {
+            await signInWithEmailAndPassword(auth, user.email, vaultPassword.trim());
+            verified = true;
+          } catch (signInErr: unknown) {
+            const code = typeof signInErr === 'object' && signInErr && 'code' in signInErr ? String((signInErr as { code: string }).code) : '';
+            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+              throw new Error('Incorrect password. Try again.');
+            }
+            throw new Error(explainFirebaseError(signInErr));
+          }
+        }
+
+        setIsVaultUnlocked(true);
+        setVaultPassword('');
+        setVaultError(null);
+        playSuccessChime();
+        showToast('Important notes unlocked');
+        return;
+      }
+
+      // 2. Local Guest Mode / Offline Workspace Passcode
+      const storedPin = typeof window !== 'undefined' ? localStorage.getItem('life_os_guest_vault_pin') : null;
+      if (!storedPin) {
+        if (vaultPassword.trim().length < 4) {
+          throw new Error('Passcode must be at least 4 characters long.');
+        }
+        if (guestPinConfirm.trim() !== vaultPassword.trim()) {
+          throw new Error('Passcodes do not match. Please re-enter to confirm.');
+        }
+        localStorage.setItem('life_os_guest_vault_pin', vaultPassword.trim());
+        setIsVaultUnlocked(true);
+        setVaultPassword('');
+        setGuestPinConfirm('');
+        setGuestPinSetup(false);
+        playSuccessChime();
+        showToast('Vault passcode set and unlocked');
+        return;
+      }
+
+      if (vaultPassword.trim() === storedPin) {
+        setIsVaultUnlocked(true);
+        setVaultPassword('');
+        setVaultError(null);
+        playSuccessChime();
+        showToast('Important notes unlocked');
+      } else {
+        throw new Error('Incorrect password. Try again.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Verification failed. Try again.';
+      setVaultError(msg);
+    } finally {
+      setVaultLoading(false);
+    }
+  };
 
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
@@ -337,125 +530,127 @@ export default function InboxPage() {
       </header>
 
       {/* ── Fast Idea Parking Capture Bar ── */}
-      <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
-        <div className={styles.quickAddRow}>
-          <div className={styles.typeToggle}>
-            <button
-              type="button"
-              className={`${styles.typeToggleBtn} ${dumpType === 'thought' ? styles.typeToggleActive : ''}`}
-              onClick={() => setDumpType('thought')}
-              title="Park Idea / Thought"
-            >
-              Idea
-            </button>
-            <button
-              type="button"
-              className={`${styles.typeToggleBtn} ${dumpType === 'reminder' ? styles.typeToggleActiveReminder : ''}`}
-              onClick={() => setDumpType('reminder')}
-              title="Set as Reminder (shows in system reminders and Today dashboard)"
-            >
-              Reminder
-            </button>
-          </div>
+      {!(filterTab === 'important' && !isVaultUnlocked) && (
+        <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
+          <div className={styles.quickAddRow}>
+            <div className={styles.typeToggle}>
+              <button
+                type="button"
+                className={`${styles.typeToggleBtn} ${dumpType === 'thought' ? styles.typeToggleActive : ''}`}
+                onClick={() => setDumpType('thought')}
+                title="Park Idea / Thought"
+              >
+                Idea
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeToggleBtn} ${dumpType === 'reminder' ? styles.typeToggleActiveReminder : ''}`}
+                onClick={() => setDumpType('reminder')}
+                title="Set as Reminder (shows in system reminders and Today dashboard)"
+              >
+                Reminder
+              </button>
+            </div>
 
-          <input
-            type="text"
-            className={styles.quickAddInput}
-            value={quickInput}
-            onChange={(e) => setQuickInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleQuickSubmit(e);
-              }
-            }}
-            placeholder={
-              isListening
-                ? 'Listening to voice...'
-                : dumpType === 'reminder'
-                ? 'Set a reminder for today...'
-                : 'Dump a thought, task, idea, or worry...'
-            }
-            autoFocus
-          />
-
-          {dumpType === 'reminder' && (
             <input
               type="text"
-              className={styles.reminderTimeInput}
-              value={reminderTime}
-              onChange={(e) => setReminderTimeInput(e.target.value)}
-              placeholder="Time note (e.g. 3:00 PM)"
-              title="Optional reminder time note"
+              className={styles.quickAddInput}
+              value={quickInput}
+              onChange={(e) => setQuickInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleQuickSubmit(e);
+                }
+              }}
+              placeholder={
+                isListening
+                  ? 'Listening to voice...'
+                  : dumpType === 'reminder'
+                  ? 'Set a reminder for today...'
+                  : 'Dump a thought, task, idea, or worry...'
+              }
+              autoFocus
             />
-          )}
 
-          <div className={styles.quickAddActions}>
-            {speechSupported && (
+            {dumpType === 'reminder' && (
+              <input
+                type="text"
+                className={styles.reminderTimeInput}
+                value={reminderTime}
+                onChange={(e) => setReminderTimeInput(e.target.value)}
+                placeholder="Time note (e.g. 3:00 PM)"
+                title="Optional reminder time note"
+              />
+            )}
+
+            <div className={styles.quickAddActions}>
+              {speechSupported && (
+                <button
+                  type="button"
+                  className={styles.pillSelect}
+                  onClick={handleToggleListening}
+                  style={{
+                    background: isListening ? 'var(--color-danger, #ef4444)' : 'transparent',
+                    color: isListening ? '#ffffff' : 'var(--color-text-muted)',
+                    padding: '2px 8px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+                  aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+                >
+                  {isListening ? <MicOff size={13} /> : <Mic size={13} />}
+                  <span style={{ fontSize: '11px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
+                </button>
+              )}
+              <button
+                type="submit"
+                className={styles.quickAddBtn}
+                onClick={handleQuickSubmit}
+                aria-disabled={!quickInput.trim()}
+              >
+                <span>{dumpType === 'reminder' ? 'Reminder' : 'Add'}</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Add Meta Row */}
+          <div className={`${styles.quickAddMetaRow} ${quickInput.trim() || isBulkOpen ? styles.quickAddMetaRowOpen : ''}`}>
+            <div className={styles.quickAddPills}>
               <button
                 type="button"
                 className={styles.pillSelect}
-                onClick={handleToggleListening}
-                style={{
-                  background: isListening ? 'var(--color-danger, #ef4444)' : 'transparent',
-                  color: isListening ? '#ffffff' : 'var(--color-text-muted)',
-                  padding: '2px 8px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-                title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
-                aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+                onClick={() => setIsBulkOpen(!isBulkOpen)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
-                {isListening ? <MicOff size={13} /> : <Mic size={13} />}
-                <span style={{ fontSize: '11px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
+                {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
               </button>
-            )}
-            <button
-              type="submit"
-              className={styles.quickAddBtn}
-              onClick={handleQuickSubmit}
-              aria-disabled={!quickInput.trim()}
-            >
-              <span>{dumpType === 'reminder' ? 'Reminder' : 'Add'}</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-            </button>
+            </div>
           </div>
-        </div>
 
-        {/* Quick Add Meta Row */}
-        <div className={`${styles.quickAddMetaRow} ${quickInput.trim() || isBulkOpen ? styles.quickAddMetaRowOpen : ''}`}>
-          <div className={styles.quickAddPills}>
-            <button
-              type="button"
-              className={styles.pillSelect}
-              onClick={() => setIsBulkOpen(!isBulkOpen)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-            >
-              {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
-            </button>
-          </div>
-        </div>
-
-        {isBulkOpen && (
-          <div className={styles.bulkArea}>
-            <textarea
-              className={styles.bulkTextarea}
-              value={bulkInput}
-              onChange={(e) => setBulkInput(e.target.value)}
-              placeholder="Paste or type multiple thoughts (one item per line)..."
-            />
-            <button
-              type="button"
-              className={styles.quickAddBtn}
-              style={{ alignSelf: 'flex-end' }}
-              onClick={handleBulkSubmit}
-              disabled={!bulkInput.trim()}
-            >
-              <span>Add {bulkInput.split('\n').filter((l) => l.trim().length > 0).length || 0} Items</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-            </button>
-          </div>
-        )}
-      </form>
+          {isBulkOpen && (
+            <div className={styles.bulkArea}>
+              <textarea
+                className={styles.bulkTextarea}
+                value={bulkInput}
+                onChange={(e) => setBulkInput(e.target.value)}
+                placeholder="Paste or type multiple thoughts (one item per line)..."
+              />
+              <button
+                type="button"
+                className={styles.quickAddBtn}
+                style={{ alignSelf: 'flex-end' }}
+                onClick={handleBulkSubmit}
+                disabled={!bulkInput.trim()}
+              >
+                <span>Add {bulkInput.split('\n').filter((l) => l.trim().length > 0).length || 0} Items</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+              </button>
+            </div>
+          )}
+        </form>
+      )}
 
       {/* ── Controls Bar & Filter Tabs ── */}
       <div className={styles.controlsBar}>
@@ -468,8 +663,20 @@ export default function InboxPage() {
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'important' ? styles.activeTab : ''}`}
-            onClick={() => setFilterTab('important')}
+            onClick={() => {
+              if (filterTab === 'important' && isVaultUnlocked) {
+                setIsVaultUnlocked(false);
+                setVaultPassword('');
+                showToast('Important notes locked');
+              } else {
+                setIsVaultUnlocked(false);
+                setFilterTab('important');
+                setVaultPassword('');
+                setVaultError(null);
+              }
+            }}
             style={filterTab === 'important' ? undefined : { color: '#d4a373' }}
+            title={filterTab === 'important' && isVaultUnlocked ? 'Click to lock Important vault' : 'Confidential Important Notes (requires password)'}
           >
             Important ({importantItems.length})
           </button>
@@ -498,6 +705,40 @@ export default function InboxPage() {
             Someday / Maybe ({somedayItems.length})
           </button>
         </div>
+
+        {filterTab === 'important' && isVaultUnlocked && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className={styles.lockVaultBtn}
+              onClick={() => {
+                setShowChangePasswordModal(true);
+                setChangePassError(null);
+                setChangePassCurrent('');
+                setChangePassNew('');
+                setChangePassConfirm('');
+              }}
+              title="Change Password (syncs with account and Important vault)"
+            >
+              <KeyRound size={12} />
+              <span>Change Password</span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.lockVaultBtn}
+              onClick={() => {
+                setIsVaultUnlocked(false);
+                setVaultPassword('');
+                showToast('Important notes locked');
+              }}
+              title="Lock Important Vault"
+            >
+              <Lock size={12} />
+              <span>Lock Vault</span>
+            </button>
+          </div>
+        )}
 
         {currentList.length > 0 && filterTab === 'inbox' && (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -534,8 +775,99 @@ export default function InboxPage() {
         )}
       </div>
 
-      {/* ── Stream List of Inbox Items ── */}
-      <div className={styles.inboxList}>
+      {/* ── Main Content Area: Minimalist Mobile-App Vault Lock Screen OR Stream List ── */}
+      {filterTab === 'important' && !isVaultUnlocked ? (
+        <section className={styles.vaultSection}>
+          <div className={styles.vaultCard}>
+            <div className={styles.vaultHeader}>
+              <div className={styles.vaultBadgeIcon}>
+                <Lock size={18} className={styles.vaultLockIcon} />
+              </div>
+              <h2 className={styles.vaultTitle}>Important Notes</h2>
+              <p className={styles.vaultDesc}>
+                {user?.email && !isGuest
+                  ? 'Enter account password to unlock'
+                  : guestPinSetup
+                  ? 'Set a passcode to unlock'
+                  : 'Enter passcode to unlock'}
+              </p>
+            </div>
+
+            <form onSubmit={handleUnlockVault} className={styles.vaultForm}>
+              {vaultError && (
+                <div className={styles.vaultAlertError} role="alert">
+                  <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                  <span>{vaultError}</span>
+                </div>
+              )}
+
+              <div className={styles.vaultInputWrap}>
+                <input
+                  id="vault-password-input"
+                  type={showVaultPassword ? 'text' : 'password'}
+                  className={styles.vaultInput}
+                  value={vaultPassword}
+                  onChange={(e) => {
+                    setVaultPassword(e.target.value);
+                    if (vaultError) setVaultError(null);
+                  }}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  autoFocus
+                  disabled={vaultLoading}
+                />
+                <button
+                  type="button"
+                  className={styles.vaultEyeBtn}
+                  onClick={() => setShowVaultPassword((prev) => !prev)}
+                  aria-label={showVaultPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showVaultPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+
+              {guestPinSetup && (
+                <div className={styles.vaultInputWrap}>
+                  <input
+                    id="vault-confirm-input"
+                    type={showVaultPassword ? 'text' : 'password'}
+                    className={styles.vaultInput}
+                    value={guestPinConfirm}
+                    onChange={(e) => setGuestPinConfirm(e.target.value)}
+                    placeholder="Confirm passcode"
+                    disabled={vaultLoading}
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className={styles.vaultSubmitBtn}
+                disabled={vaultLoading || !vaultPassword.trim()}
+              >
+                {vaultLoading ? (
+                  <>
+                    <Loader2 size={14} className={styles.spin} />
+                    <span>Verifying…</span>
+                  </>
+                ) : (
+                  <span>{guestPinSetup ? 'Set & Unlock' : 'Unlock'}</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={styles.vaultBackBtn}
+                onClick={() => setFilterTab('inbox')}
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </section>
+      ) : (
+        <div className={styles.inboxList}>
         {currentList.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)' }}>
             <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
@@ -574,7 +906,7 @@ export default function InboxPage() {
                 </button>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <div className={styles.itemBadgeRow}>
                     {item.status === 'inbox' && (
                       <>
                         <button
@@ -598,7 +930,7 @@ export default function InboxPage() {
                             if (willBeImportant) {
                               setFilterTab('important');
                               playSuccessChime();
-                              showToast('★ Note moved to Important Notes!');
+                              showToast('Moved to Important Notes');
                             } else {
                               showToast('Unmarked as Important');
                             }
@@ -628,15 +960,53 @@ export default function InboxPage() {
                       </span>
                     )}
                   </div>
-                  <p
-                    className={styles.itemContent}
-                    style={{
-                      textDecoration: item.isApplied ? 'line-through' : 'none',
-                      opacity: item.isApplied ? 0.65 : 1,
-                    }}
-                  >
-                    <AutoLinkText text={item.content} />
-                  </p>
+                  {editingItemId === item.id ? (
+                    <div className={styles.editContainer}>
+                      <textarea
+                        className={styles.editTextarea}
+                        value={editingItemText}
+                        onChange={(e) => setEditingItemText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveEdit(item.id);
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancelEdit();
+                          }
+                        }}
+                        rows={Math.max(2, editingItemText.split('\n').length)}
+                        autoFocus
+                      />
+                      <div className={styles.editActions}>
+                        <button
+                          type="button"
+                          className={styles.btnSaveEdit}
+                          onClick={() => handleSaveEdit(item.id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnCancelEdit}
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel
+                        </button>
+                        <span className={styles.editHint}>Ctrl+Enter to save, Esc to cancel</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p
+                      className={styles.itemContent}
+                      style={{
+                        textDecoration: item.isApplied ? 'line-through' : 'none',
+                        opacity: item.isApplied ? 0.65 : 1,
+                      }}
+                    >
+                      <AutoLinkText text={item.content} />
+                    </p>
+                  )}
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {item.isApplied && ' • Applied / Done'}
@@ -646,127 +1016,172 @@ export default function InboxPage() {
                 </div>
               </div>
 
-              <div className={styles.convertButtonGroup}>
+              <div
+                className={`${styles.convertButtonGroup} ${
+                  editingItemId === item.id || convertModalItem?.id === item.id
+                    ? styles.convertButtonGroupActive
+                    : ''
+                }`}
+              >
                 {item.isImportant || filterTab === 'important' ? (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.btnCopy}
-                      onClick={() => {
-                        navigator.clipboard.writeText(item.content);
-                        playSuccessChime();
-                        showToast('✓ Copied note to clipboard!');
-                      }}
-                      title="Copy note text to clipboard"
-                      aria-label="Copy note text to clipboard"
-                    >
-                      <Copy size={13} />
-                    </button>
+                  <div className={styles.convertButtonRow}>
+                    <div className={styles.convertRightActions}>
+                      <button
+                        type="button"
+                        className={styles.btnCopy}
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.content);
+                          playSuccessChime();
+                          showToast('Copied to clipboard');
+                        }}
+                        title="Copy note text to clipboard"
+                        aria-label="Copy note text to clipboard"
+                      >
+                        <Copy size={13} />
+                      </button>
 
-                    <button
-                      className={styles.btnDelete}
-                      onClick={() => deleteInboxItem(item.id)}
-                      title="Delete item"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </>
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${editingItemId === item.id ? styles.btnCopyActive : ''}`}
+                        onClick={() => {
+                          if (editingItemId === item.id) {
+                            handleCancelEdit();
+                          } else {
+                            handleStartEdit(item);
+                          }
+                        }}
+                        title={editingItemId === item.id ? 'Cancel editing' : 'Edit note'}
+                        aria-label="Edit note"
+                      >
+                        <Pencil size={13} />
+                      </button>
+
+                      <button
+                        className={styles.btnDelete}
+                        onClick={() => deleteInboxItem(item.id)}
+                        title="Delete item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
-                    {item.status === 'inbox' ? (
-                      <>
-                        {/* Groq Key auto-detector */}
-                        {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
+                  <div className={styles.convertButtonRow}>
+                    <div className={styles.convertLeftActions}>
+                      <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
+                      {item.status === 'inbox' ? (
+                        <>
+                          {/* Groq Key auto-detector */}
+                          {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
+                            <button
+                              type="button"
+                              className={styles.groqKeyBadge}
+                              onClick={() => handleActivateGroqKey(item.content)}
+                              title="Set this Groq API Key as the active key in your Sariling Mundo"
+                            >
+                              <Sparkles size={11} />
+                              {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
+                                ? '✓ Active Groq Key'
+                                : '⚡ Set as Groq Key'}
+                            </button>
+                          )}
+
                           <button
                             type="button"
-                            className={styles.groqKeyBadge}
-                            onClick={() => handleActivateGroqKey(item.content)}
-                            title="Set this Groq API Key as the active key in your Sariling Mundo"
+                            className={styles.btnAi}
+                            onClick={() => handleAiBreakdown(item)}
+                            title="Break down this thought into action steps with Groq AI"
                           >
-                            <Sparkles size={11} />
-                            {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
-                              ? '✓ Active Groq Key'
-                              : '⚡ Set as Groq Key'}
+                            AI Breakdown
                           </button>
-                        )}
 
-                        <button
-                          type="button"
-                          className={styles.btnAi}
-                          onClick={() => handleAiBreakdown(item)}
-                          title="Break down this thought into action steps with Groq AI"
-                        >
-                          AI Breakdown
-                        </button>
-
-                        <button
-                          className={`${styles.btnConvert} ${item.isApplied ? styles.btnConvertDone : ''}`}
-                          onClick={() => handleConvertToTask(item)}
-                          title={item.isApplied ? 'Convert to Completed Task in Tasks (moves to Already Done tab)' : 'Convert to actionable Task'}
-                        >
-                          {item.isApplied ? <Check size={12} /> : null} + Task
-                        </button>
-                        <button
-                          className={styles.btnConvert}
-                          onClick={() => setConvertModalItem(item)}
-                          title="More conversion options"
-                        >
-                          More ▾
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {item.convertedTo === 'task' && (
-                          <Link
-                            href={item.convertedEntityId ? `/tasks?highlight=${item.convertedEntityId}` : '/tasks'}
-                            className={`${styles.btnConvert} ${styles.btnConvertDone}`}
-                            title="View completed task in Tasks"
+                          <button
+                            className={`${styles.btnConvert} ${item.isApplied ? styles.btnConvertDone : ''}`}
+                            onClick={() => handleConvertToTask(item)}
+                            title={item.isApplied ? 'Convert to Completed Task in Tasks (moves to Already Done tab)' : 'Convert to actionable Task'}
                           >
-                            <Check size={12} /> View in Tasks
-                          </Link>
-                        )}
-                        <button
-                          className={styles.btnConvert}
-                          onClick={() => {
-                            restoreToInbox(item.id);
-                            showToast('✓ Restored idea back to Inbox');
-                          }}
-                          title="Restore item back to Inbox"
-                        >
-                          Restore to Inbox
-                        </button>
-                      </>
-                    )}
+                            {item.isApplied ? <Check size={12} /> : '+'} Task
+                          </button>
+                          <button
+                            className={styles.btnConvert}
+                            onClick={() => setConvertModalItem(item)}
+                            title="More conversion options"
+                          >
+                            More ▾
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {item.convertedTo === 'task' && (
+                            <Link
+                              href={item.convertedEntityId ? `/tasks?highlight=${item.convertedEntityId}` : '/tasks'}
+                              className={`${styles.btnConvert} ${styles.btnConvertDone}`}
+                              title="View completed task in Tasks"
+                            >
+                              <Check size={12} /> View in Tasks
+                            </Link>
+                          )}
+                          <button
+                            className={styles.btnConvert}
+                            onClick={() => {
+                              restoreToInbox(item.id);
+                              showToast('Restored idea back to Inbox');
+                            }}
+                            title="Restore item back to Inbox"
+                          >
+                            Restore to Inbox
+                          </button>
+                        </>
+                      )}
+                    </div>
 
-                    <button
-                      type="button"
-                      className={styles.btnCopy}
-                      onClick={() => {
-                        navigator.clipboard.writeText(item.content);
-                        playSuccessChime();
-                        showToast('✓ Copied note to clipboard!');
-                      }}
-                      title="Copy note text to clipboard"
-                      aria-label="Copy note text to clipboard"
-                    >
-                      <Copy size={13} />
-                    </button>
+                    <div className={styles.convertRightActions}>
+                      <button
+                        type="button"
+                        className={styles.btnCopy}
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.content);
+                          playSuccessChime();
+                          showToast('Copied to clipboard');
+                        }}
+                        title="Copy note text to clipboard"
+                        aria-label="Copy note text to clipboard"
+                      >
+                        <Copy size={13} />
+                      </button>
 
-                    <button
-                      className={styles.btnDelete}
-                      onClick={() => deleteInboxItem(item.id)}
-                      title="Delete item"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </>
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${editingItemId === item.id ? styles.btnCopyActive : ''}`}
+                        onClick={() => {
+                          if (editingItemId === item.id) {
+                            handleCancelEdit();
+                          } else {
+                            handleStartEdit(item);
+                          }
+                        }}
+                        title={editingItemId === item.id ? 'Cancel editing' : 'Edit note'}
+                        aria-label="Edit note"
+                      >
+                        <Pencil size={13} />
+                      </button>
+
+                      <button
+                        className={styles.btnDelete}
+                        onClick={() => deleteInboxItem(item.id)}
+                        title="Delete item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </article>
           ))
         )}
       </div>
+    )}
 
       {/* ── Conversion Modal ── */}
       {convertModalItem && (
@@ -802,7 +1217,7 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                   setFilterTab('important');
                   playSuccessChime();
-                  showToast('★ Moved to Important Notes!');
+                  showToast('Moved to Important Notes');
                 }}
               >
                 <Zap size={16} style={{ color: '#d4a373' }} /> Move to Important Notes <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 600, color: '#d4a373' }}>IDs, Phone, LRN, Files</span>
@@ -1074,10 +1489,112 @@ export default function InboxPage() {
         </div>
       )}
 
+      {/* ── Change Password Modal ── */}
+      {showChangePasswordModal && (
+        <div className={styles.modalOverlay} onClick={() => !changePassBusy && setShowChangePasswordModal(false)}>
+          <div
+            className={styles.modalCard}
+            style={{ maxWidth: '380px', width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <KeyRound size={16} style={{ color: 'var(--color-accent)' }} />
+                <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'var(--color-text)' }}>Change Password</h3>
+              </div>
+              <button
+                type="button"
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: '4px' }}
+                onClick={() => !changePassBusy && setShowChangePasswordModal(false)}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+              Your new password automatically syncs with your account login and this Important Notes Vault.
+            </p>
+
+            {changePassError && (
+              <div style={{ background: 'var(--color-danger-dim, rgba(239, 68, 68, 0.1))', color: 'var(--color-danger, #ef4444)', padding: '8px 10px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>
+                {changePassError}
+              </div>
+            )}
+
+            <form onSubmit={handleModalChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                  Current Password {isGuest && '(or Passcode)'}
+                </label>
+                <input
+                  type="password"
+                  value={changePassCurrent}
+                  onChange={(e) => setChangePassCurrent(e.target.value)}
+                  placeholder="Enter current password"
+                  required
+                  disabled={changePassBusy}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '13px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={changePassNew}
+                  onChange={(e) => setChangePassNew(e.target.value)}
+                  placeholder="At least 6 characters"
+                  required
+                  minLength={6}
+                  disabled={changePassBusy}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '13px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={changePassConfirm}
+                  onChange={(e) => setChangePassConfirm(e.target.value)}
+                  placeholder="Re-enter new password"
+                  required
+                  minLength={6}
+                  disabled={changePassBusy}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', color: 'var(--color-text)', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className={styles.dumpBtn}
+                  style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '6px 14px', fontSize: '12px' }}
+                  onClick={() => !changePassBusy && setShowChangePasswordModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.dumpBtn}
+                  style={{ background: 'var(--color-accent)', color: 'var(--color-text-inverse, #ffffff)', border: 'none', padding: '6px 16px', fontSize: '12px', fontWeight: 600 }}
+                  disabled={changePassBusy || !changePassNew || !changePassConfirm}
+                >
+                  {changePassBusy ? 'Updating…' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Toast Notification ── */}
       {toastMessage && (
-        <div className={styles.toastBanner}>
-          <CheckCircle2 size={16} />
+        <div className={styles.toastBanner} role="status" aria-live="polite">
           <span>{toastMessage}</span>
         </div>
       )}

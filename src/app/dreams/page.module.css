@@ -354,10 +354,22 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--color-border-subtle);
+  margin-top: 6px;
+  padding-top: 2px;
   flex-wrap: wrap;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.dreamCard:hover .bridgeGroup,
+.dreamCard:focus-within .bridgeGroup {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .bridgeGroup {
+    opacity: 1;
+  }
 }
 
 .bridgeLabel {
@@ -525,6 +537,19 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.15s ease);
+}
+
+.dreamCard:hover .cardActions,
+.dreamCard:focus-within .cardActions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .cardActions {
+    opacity: 1;
+  }
 }
 
 .fileActionBtn {
@@ -647,8 +672,7 @@
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 4px;
   font-size: 11px;
 }
 

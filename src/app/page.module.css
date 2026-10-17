@@ -661,7 +661,7 @@ a.summaryPill:hover {
   padding: 6px 12px;
   border-radius: 8px;
   background: var(--color-surface-2);
-  border: 1px dashed var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   font-size: 0.78rem;
   color: var(--color-text-muted);
   text-decoration: none;

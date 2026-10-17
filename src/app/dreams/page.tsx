@@ -694,27 +694,8 @@ export default function DreamsPage() {
 
       {/* ── Toast Notification ── */}
       {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-accent)',
-            borderRadius: '12px',
-            padding: '12px 18px',
-            color: 'var(--color-text)',
-            fontSize: '13px',
-            fontWeight: 600,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            animation: 'fadeInFast 0.2s ease forwards',
-          }}
-        >
-          {toastMessage}
+        <div className="chatgptToast" role="status" aria-live="polite">
+          <span>{toastMessage}</span>
         </div>
       )}
 

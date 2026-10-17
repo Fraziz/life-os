@@ -84,6 +84,24 @@
   max-height: 100dvh;
 }
 
+/*  Knowledge Page Workbench Viewport Lock (Pins sidebar and reading tools while scrolling)  */
+.main.knowledgeMain {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.content.knowledgeContent {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: clamp(10px, 1.2vw, 16px) clamp(14px, 1.8vw, 22px);
+}
+
 /*  Intermediate laptop screen & zoom adjustments (1025px - 1366px)  */
 @media (min-width: 1025px) and (max-width: 1366px) {
   .content {
@@ -121,6 +139,18 @@
 
   .content {
     padding: 16px 14px;
+  }
+
+  .main.knowledgeMain {
+    padding-top: calc(52px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content.knowledgeContent {
+    height: calc(100vh - 116px);
+    height: calc(100dvh - 116px);
+    max-height: calc(100dvh - 116px);
+    padding: 8px 12px;
   }
 }
 
