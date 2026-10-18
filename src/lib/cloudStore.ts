@@ -54,7 +54,28 @@ export async function flushCloudNow(): Promise<void> {
       const batch = writeBatch(db);
       chunk.forEach(([key, value]) => {
         const updatedAt = Date.now();
-        batch.set(kvRef(uid, key), { v: value, updatedAt });
+        let safeValue = value;
+        // Guard against Firestore 1MB single-document quota limit
+        if (typeof value === 'string' && value.length > 900000) {
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+              const pruned = parsed.map((item) => {
+                if (typeof item === 'object' && item && item.content && typeof item.content === 'string' && item.content.length > 30000) {
+                  return {
+                    ...item,
+                    content: item.content.slice(0, 30000) + '\n\n[...Full book content preserved in local device storage...]',
+                  };
+                }
+                return item;
+              });
+              safeValue = JSON.stringify(pruned);
+            }
+          } catch {
+            safeValue = value.slice(0, 900000);
+          }
+        }
+        batch.set(kvRef(uid, key), { v: safeValue, updatedAt });
       });
       await batch.commit();
     }

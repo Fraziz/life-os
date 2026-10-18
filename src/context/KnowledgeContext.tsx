@@ -7,7 +7,10 @@ import React, {
 import type { KnowledgeDocument, DocumentStatus } from '@/types';
 import { notifyItemDeleted } from './UndoContext';
 
+import { idbGet, idbSet } from '@/lib/idbStore';
+
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
+const INITIALIZED_KEY = 'life_os_knowledge_initialized_v1';
 
 function generateId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -165,40 +168,110 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const docsRef = useRef<KnowledgeDocument[]>([]);
   docsRef.current = docs;
 
-  const reloadFromStorage = () => {
+  const reloadFromStorage = useCallback(async () => {
+    let localDocs: KnowledgeDocument[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const loaded = Array.isArray(parsed) ? parsed : [];
-        setDocs(loaded);
-        docsRef.current = loaded;
+        if (Array.isArray(parsed)) localDocs = parsed;
+      }
+    } catch {
+      // ignore
+    }
+
+    // Check IndexedDB (which holds large docs and books without 5MB quota limit)
+    try {
+      const idbDocs = await idbGet<KnowledgeDocument[]>(STORAGE_KEY);
+      if (Array.isArray(idbDocs) && idbDocs.length > 0) {
+        // Merge with localDocs, prioritizing IndexedDB's full content for large books
+        const map = new Map<string, KnowledgeDocument>();
+        localDocs.forEach((d) => map.set(d.id, d));
+        idbDocs.forEach((d) => {
+          const existing = map.get(d.id);
+          if (!existing) {
+            map.set(d.id, d);
+          } else {
+            const idbLen = (d.content || '').length;
+            const locLen = (existing.content || '').length;
+            if (idbLen >= locLen || new Date(d.updatedAt || 0) >= new Date(existing.updatedAt || 0)) {
+              map.set(d.id, d);
+            }
+          }
+        });
+        const merged = Array.from(map.values());
+        setDocs(merged);
+        docsRef.current = merged;
+        setIsLoaded(true);
+        return;
+      }
+    } catch (idbErr) {
+      console.warn('[KnowledgeContext] IDB read error:', idbErr);
+    }
+
+    // Fallback if IDB was empty but localDocs exists
+    if (localDocs.length > 0) {
+      setDocs(localDocs);
+      docsRef.current = localDocs;
+      void idbSet(STORAGE_KEY, localDocs);
+    } else {
+      const isInit = typeof window !== 'undefined' ? localStorage.getItem(INITIALIZED_KEY) : 'true';
+      if (!isInit) {
+        const defaults = defaultDocs();
+        setDocs(defaults);
+        docsRef.current = defaults;
+        void idbSet(STORAGE_KEY, defaults);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
+          localStorage.setItem(INITIALIZED_KEY, 'true');
+        } catch {}
       } else {
         setDocs([]);
         docsRef.current = [];
       }
-    } catch {
-      setDocs([]);
-      docsRef.current = [];
     }
-  };
+    setIsLoaded(true);
+  }, []);
 
   useEffect(() => {
     reloadFromStorage();
-    setIsLoaded(true);
 
     const handleSync = () => reloadFromStorage();
     window.addEventListener('life_os_cloud_synced', handleSync);
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
-  }, []);
+  }, [reloadFromStorage]);
 
   const saveDocs = useCallback((next: KnowledgeDocument[]) => {
     docsRef.current = next;
     setDocs(next);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(INITIALIZED_KEY, 'true');
+      } catch {}
+    }
+
+    // 1. Immediately persist full documents & books into IndexedDB (unlimited quota)
+    void idbSet(STORAGE_KEY, next);
+
+    // 2. Also save to localStorage for fast initial paint / cloud sync
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* noop */
+    } catch (quotaErr) {
+      console.warn('[KnowledgeContext] localStorage quota exceeded, saving lightweight index while IndexedDB retains full content:', quotaErr);
+      try {
+        const lightDocs = next.map((d) => {
+          if ((d.content || '').length > 40000) {
+            return {
+              ...d,
+              content: d.content.slice(0, 10000) + '\n\n[...Full document saved in local high-capacity storage...]',
+            };
+          }
+          return d;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
+      } catch {
+        /* noop */
+      }
     }
   }, []);
 
