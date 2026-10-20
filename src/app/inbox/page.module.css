@@ -303,11 +303,11 @@
   background: var(--color-surface-2);
 }
 
-/*  Inbox Stream List (Responsive Fluid Grid)  */
+/*  Inbox Stream List (Responsive Fluid Grid — Stretches full container width)  */
 .inboxList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 16px;
+  gap: 14px;
   width: 100%;
   align-items: start;
 }
@@ -321,6 +321,7 @@
   flex-direction: column;
   gap: 0;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  margin: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1147,8 +1148,7 @@
   }
 
   .inboxList {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr !important;
   }
 
   .quickAddRow,

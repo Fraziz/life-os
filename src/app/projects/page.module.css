@@ -538,11 +538,11 @@
 }
 
 
-/*  Projects Grid (Responsive Fluid Grid)  */
+/*  Projects Grid (Responsive Fluid Grid — Stretches full container width)  */
 .projectsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
   width: 100%;
   align-items: start;
 }
@@ -557,6 +557,7 @@
   gap: 10px;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
+  margin: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1148,8 +1149,7 @@
   }
 
   .projectsGrid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr !important;
   }
 
   .quickAddMetaRow {
@@ -1211,7 +1211,7 @@
   }
 
   .projectsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 10px;
   }
 

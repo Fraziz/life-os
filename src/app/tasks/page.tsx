@@ -1091,7 +1091,7 @@ export default function TasksPage() {
       {taskLayout === 'notes' ? (
         <div className={styles.notesMasonryGrid}>
           {filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter).length === 0 ? (
-            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%' }}>
+            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%', gridColumn: '1 / -1' }}>
               No tasks match current filter
             </p>
           ) : (

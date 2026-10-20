@@ -958,7 +958,7 @@ export default function InboxPage() {
       ) : (
         <div className={styles.inboxList}>
         {currentList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', gridColumn: '1 / -1', width: '100%' }}>
             <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
               {filterTab === 'inbox'
