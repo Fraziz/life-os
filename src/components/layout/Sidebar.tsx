@@ -33,6 +33,7 @@ import { NAV_SECTIONS } from '@/config/navigation';
 import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTour } from '@/context/TourContext';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
 
@@ -80,6 +81,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { settings } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
+  const { startTour } = useTour();
 
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
   const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
@@ -283,7 +285,12 @@ export default function Sidebar({
         <div className={styles.footer}>
           <div
             className={styles.userCard}
-            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            onClick={() => {
+              if (!isExpanded && onPinToggle) {
+                onPinToggle(true);
+              }
+              setProfileMenuOpen(!profileMenuOpen);
+            }}
             role="button"
             tabIndex={0}
             data-tour="user-profile"
@@ -325,6 +332,17 @@ export default function Sidebar({
                 <Settings size={14} />
                 <span>Settings</span>
               </Link>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  startTour();
+                }}
+              >
+                <Compass size={14} />
+                <span>Interactive Tour</span>
+              </button>
               <button
                 type="button"
                 className={styles.dropdownItem}

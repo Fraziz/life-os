@@ -36,6 +36,7 @@ import {
   Zap,
   Check,
   Compass,
+  ChevronDown,
 } from 'lucide-react';
 
 import ActiveDevices from '@/components/settings/ActiveDevices';
@@ -340,6 +341,106 @@ export default function SettingsPage() {
     });
   };
 
+  type SectionKey =
+    | 'account'
+    | 'experience'
+    | 'areas'
+    | 'appearance'
+    | 'tour'
+    | 'profile'
+    | 'workingHours'
+    | 'planning'
+    | 'focus'
+    | 'notifications'
+    | 'ai'
+    | 'data';
+
+  type SettingsCategory = 'all' | 'account' | 'appearance' | 'ai' | 'areas' | 'focus' | 'workflow' | 'data';
+
+  const [activeCategory, setActiveCategory] = useState<SettingsCategory>('all');
+
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+    account: true,
+    experience: false,
+    areas: false,
+    appearance: true,
+    tour: false,
+    profile: false,
+    workingHours: false,
+    planning: false,
+    focus: false,
+    notifications: false,
+    ai: true,
+    data: false,
+  });
+
+  const toggleSection = (key: SectionKey) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const expandAll = () => {
+    setOpenSections({
+      account: true,
+      experience: true,
+      areas: true,
+      appearance: true,
+      tour: true,
+      profile: true,
+      workingHours: true,
+      planning: true,
+      focus: true,
+      notifications: true,
+      ai: true,
+      data: true,
+    });
+  };
+
+  const collapseAll = () => {
+    setOpenSections({
+      account: false,
+      experience: false,
+      areas: false,
+      appearance: false,
+      tour: false,
+      profile: false,
+      workingHours: false,
+      planning: false,
+      focus: false,
+      notifications: false,
+      ai: false,
+      data: false,
+    });
+  };
+
+  const handleCategorySelect = (cat: SettingsCategory) => {
+    setActiveCategory(cat);
+    if (cat === 'all') return;
+    setOpenSections((prev) => {
+      const next = { ...prev };
+      if (cat === 'account') {
+        next.account = true;
+        next.profile = true;
+      } else if (cat === 'appearance') {
+        next.appearance = true;
+        next.experience = true;
+        next.tour = true;
+      } else if (cat === 'ai') {
+        next.ai = true;
+      } else if (cat === 'areas') {
+        next.areas = true;
+      } else if (cat === 'focus') {
+        next.focus = true;
+        next.notifications = true;
+      } else if (cat === 'workflow') {
+        next.workingHours = true;
+        next.planning = true;
+      } else if (cat === 'data') {
+        next.data = true;
+      }
+      return next;
+    });
+  };
+
   return (
     <div className={styles.page}>
       {/* ── Formal Header ── */}
@@ -350,26 +451,81 @@ export default function SettingsPage() {
         </p>
       </header>
 
+      {/* ── Minimalist Navigation Toolbar & Category Pills ── */}
+      <div className={styles.toolbar}>
+        <div className={styles.categoryPills} role="tablist" aria-label="Settings categories">
+          {[
+            { id: 'all', label: 'All Settings' },
+            { id: 'account', label: 'Account & Security' },
+            { id: 'appearance', label: 'Visual & Themes' },
+            { id: 'ai', label: 'AI Intelligence' },
+            { id: 'areas', label: 'Life Domains' },
+            { id: 'focus', label: 'Focus & Sound' },
+            { id: 'workflow', label: 'Schedule & Tasks' },
+            { id: 'data', label: 'Data & Backup' },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              className={`${styles.pillBtn} ${activeCategory === cat.id ? styles.pillBtnActive : ''}`}
+              onClick={() => handleCategorySelect(cat.id as SettingsCategory)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.toggleAllBtns}>
+          <button type="button" className={styles.textActionBtn} onClick={expandAll} title="Expand all sections">
+            Expand All
+          </button>
+          <span style={{ color: 'var(--color-border)', fontSize: '11px' }}>•</span>
+          <button type="button" className={styles.textActionBtn} onClick={collapseAll} title="Collapse all sections">
+            Collapse All
+          </button>
+        </div>
+      </div>
+
       {showSavedToast && (
         <div className="chatgptToast" role="status" aria-live="polite">
           <span>{toastText}</span>
         </div>
       )}
 
-      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {/* ── 0. Account & Session ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Lock size={16} />
+        {(activeCategory === 'all' || activeCategory === 'account') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('account')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.account}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Lock size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Account &amp; Session</h2>
+                  <p className={styles.sectionDesc}>Authenticated access, security, and multi-device session management.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.account ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.account ? styles.chevronOpen : ''}`}
+                />
+              </div>
             </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Account &amp; Session</h2>
-              <p className={styles.sectionDesc}>Authenticated access, security, and multi-device session management.</p>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {openSections.account && (
+              <div className={styles.sectionBody}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Account Details Row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', background: 'var(--color-surface-2)', padding: '14px 16px', borderRadius: 'var(--radius-lg, 10px)', border: '1px solid var(--color-border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -559,75 +715,119 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
-        </section>
+        </div>
+      )}
+    </section>
+  )}
 
         {/* ── 1. Interface & Presets ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Sliders size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Interface Mode</h2>
-              <p className={styles.sectionDesc}>Select your preferred workspace density and complexity level.</p>
-            </div>
-          </div>
-
-          <div className={styles.modeGrid}>
+        {(activeCategory === 'all' || activeCategory === 'appearance') && (
+          <section className={styles.sectionCard}>
             <div
-              className={`${styles.modeCard} ${formData.simpleMode ? styles.modeCardActive : ''}`}
-              onClick={() => {
-                const updated = { ...formData, simpleMode: true };
-                setFormData(updated);
-                updateSettings(updated);
-              }}
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('experience')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.experience}
             >
-              <div className={styles.modeCardHeader}>
-                <span className={styles.modeCardTitle}>Simple Mode</span>
-                {formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Sliders size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Interface Mode</h2>
+                  <p className={styles.sectionDesc}>Select your preferred workspace density and complexity level.</p>
+                </div>
               </div>
-              <p className={styles.modeCardDesc}>
-                Focused 4-view setup: Today Dashboard, Focus Timer, Tasks, and Calendar.
-              </p>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.experience ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.experience ? styles.chevronOpen : ''}`}
+                />
+              </div>
             </div>
 
-            <div
-              className={`${styles.modeCard} ${!formData.simpleMode ? styles.modeCardActive : ''}`}
-              onClick={() => {
-                const updated = { ...formData, simpleMode: false };
-                setFormData(updated);
-                updateSettings(updated);
-              }}
-            >
-              <div className={styles.modeCardHeader}>
-                <span className={styles.modeCardTitle}>Full Sariling Mundo</span>
-                {!formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
+            {openSections.experience && (
+              <div className={styles.sectionBody}>
+                <div className={styles.modeGrid}>
+                  <div
+                    className={`${styles.modeCard} ${formData.simpleMode ? styles.modeCardActive : ''}`}
+                    onClick={() => {
+                      const updated = { ...formData, simpleMode: true };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <div className={styles.modeCardHeader}>
+                      <span className={styles.modeCardTitle}>Simple Mode</span>
+                      {formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
+                    </div>
+                    <p className={styles.modeCardDesc}>
+                      Focused 4-view setup: Today Dashboard, Focus Timer, Tasks, and Calendar.
+                    </p>
+                  </div>
+
+                  <div
+                    className={`${styles.modeCard} ${!formData.simpleMode ? styles.modeCardActive : ''}`}
+                    onClick={() => {
+                      const updated = { ...formData, simpleMode: false };
+                      setFormData(updated);
+                      updateSettings(updated);
+                    }}
+                  >
+                    <div className={styles.modeCardHeader}>
+                      <span className={styles.modeCardTitle}>Full Sariling Mundo</span>
+                      {!formData.simpleMode && <span className={styles.modeBadge}>Active</span>}
+                    </div>
+                    <p className={styles.modeCardDesc}>
+                      Complete architecture: Dreams, Goals, Milestones, Projects, Roadmap, and Study &amp; Books.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className={styles.modeCardDesc}>
-                Complete architecture: Dreams, Goals, Milestones, Projects, Roadmap, and Study &amp; Books.
-              </p>
-            </div>
-          </div>
-
-
-        </section>
+            )}
+          </section>
+        )}
 
         {/* ── Life Domain Focus & Keyboard Shortcuts ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Layers size={16} />
+        {(activeCategory === 'all' || activeCategory === 'areas') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('areas')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.areas}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Layers size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Life Domain Focus &amp; Shortcuts</h2>
+                  <p className={styles.sectionDesc}>
+                    Filter your entire workspace (Today, Tasks, Projects, Habits, Goals) into a single life area for zero-distraction focus.
+                  </p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.areas ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.areas ? styles.chevronOpen : ''}`}
+                />
+              </div>
             </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Life Domain Focus &amp; Shortcuts</h2>
-              <p className={styles.sectionDesc}>
-                Filter your entire workspace (Today, Tasks, Projects, Habits, Goals) into a single life area for zero-distraction focus.
-              </p>
-            </div>
-          </div>
 
-          {/* Current Status banner */}
-          <div className={styles.domainStatusBanner}>
+            {openSections.areas && (
+              <div className={styles.sectionBody}>
+                {/* Current Status banner */}
+                <div className={styles.domainStatusBanner}>
             <div className={styles.domainStatusLeft}>
               <span className={styles.domainStatusLabel}>Active Focus:</span>
               <span className={styles.domainStatusValue}>
@@ -896,705 +1096,890 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── 2. Appearance & Color Theme ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Sun size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Visual Theme</h2>
-              <p className={styles.sectionDesc}>Customize the interface appearance across all devices.</p>
-            </div>
-          </div>
-
-          <div className={styles.themeGrid}>
-            {([
-              { id: 'cyber', label: 'Cyber Glow', desc: 'Neon Violet & Electric Cyan', icon: <Sparkles size={14} /> },
-              { id: 'nature', label: 'Nature Forest', desc: 'Organic Sage Glass & Timber', icon: <Leaf size={14} /> },
-              { id: 'dark', label: 'Sleek Dark', desc: 'Refined Charcoal & Slate', icon: <Moon size={14} /> },
-              { id: 'light', label: 'Clean Light', desc: 'Luminous Paper & Indigo', icon: <Sun size={14} /> },
-              { id: 'system', label: 'System Sync', desc: 'Match Operating System', icon: <Sliders size={14} /> },
-            ] as const).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`${styles.themeBtn} ${formData.theme === item.id ? styles.themeBtnActive : ''}`}
-                onClick={() => {
-                  const newTheme = item.id as AppTheme;
-                  const updated = { ...formData, theme: newTheme };
-                  setFormData(updated);
-                  updateSettings(updated);
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {item.icon}
-                  <span style={{ fontWeight: 600 }}>{item.label}</span>
+        {(activeCategory === 'all' || activeCategory === 'appearance') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('appearance')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.appearance}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Sun size={16} />
                 </div>
-                <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Visual Theme</h2>
+                  <p className={styles.sectionDesc}>Customize the interface appearance across all devices.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.appearance ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.appearance ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.appearance && (
+              <div className={styles.sectionBody}>
+                <div className={styles.themeGrid}>
+                  {([
+                    { id: 'cyber', label: 'Cyber Glow', desc: 'Neon Violet & Electric Cyan', icon: <Sparkles size={14} /> },
+                    { id: 'nature', label: 'Nature Forest', desc: 'Organic Sage Glass & Timber', icon: <Leaf size={14} /> },
+                    { id: 'dark', label: 'Sleek Dark', desc: 'Refined Charcoal & Slate', icon: <Moon size={14} /> },
+                    { id: 'light', label: 'Clean Light', desc: 'Luminous Paper & Indigo', icon: <Sun size={14} /> },
+                    { id: 'system', label: 'System Sync', desc: 'Match Operating System', icon: <Sliders size={14} /> },
+                  ] as const).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`${styles.themeBtn} ${formData.theme === item.id ? styles.themeBtnActive : ''}`}
+                      onClick={() => {
+                        const newTheme = item.id as AppTheme;
+                        const updated = { ...formData, theme: newTheme };
+                        setFormData(updated);
+                        updateSettings(updated);
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {item.icon}
+                        <span style={{ fontWeight: 600 }}>{item.label}</span>
+                      </div>
+                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── Guided Tours & Onboarding ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Compass size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Guided Tours &amp; Onboarding</h2>
-              <p className={styles.sectionDesc}>Interactive walkthroughs and step-by-step guidance across system features.</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-            <div style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-lg, 10px)',
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '12px',
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
-                  <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Main System Tour</strong>
+        {(activeCategory === 'all' || activeCategory === 'appearance') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('tour')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.tour}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Compass size={16} />
                 </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
-                  Take a guided walkthrough of the core cockpit, Idea Parking, Tasks Kanban, Planning hierarchy, and AI Assistant.
-                </p>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Guided Tours &amp; Onboarding</h2>
+                  <p className={styles.sectionDesc}>Interactive walkthroughs and step-by-step guidance across system features.</p>
+                </div>
               </div>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
-                onClick={() => {
-                  startTour('main-tour');
-                  setToastText('Starting System Tour…');
-                  setShowSavedToast(true);
-                  setTimeout(() => setShowSavedToast(false), 2000);
-                }}
-              >
-                <Compass size={14} />
-                Restart System Tour
-              </button>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.tour ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.tour ? styles.chevronOpen : ''}`}
+                />
+              </div>
             </div>
 
-            <div style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-lg, 10px)',
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '12px',
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <RotateCcw size={16} style={{ color: 'var(--color-text-muted)' }} />
-                  <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Feature Tips &amp; Guides</strong>
+            {openSections.tour && (
+              <div className={styles.sectionBody}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+                  <div style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-lg, 10px)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Main System Tour</strong>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
+                        Take a guided walkthrough of the core cockpit, Idea Parking, Tasks Kanban, Planning hierarchy, and AI Assistant.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        startTour('main-tour');
+                        setToastText('Starting System Tour…');
+                        setShowSavedToast(true);
+                        setTimeout(() => setShowSavedToast(false), 2000);
+                      }}
+                    >
+                      <Compass size={14} />
+                      Restart System Tour
+                    </button>
+                  </div>
+
+                  <div style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-lg, 10px)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <RotateCcw size={16} style={{ color: 'var(--color-text-muted)' }} />
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Feature Tips &amp; Guides</strong>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
+                        Reset contextual tutorial banners (such as Focus Space and Idea Parking guides) so they appear again when visiting those pages.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        resetAllTours();
+                        setToastText('All tour progress and contextual tips reset');
+                        setShowSavedToast(true);
+                        setTimeout(() => setShowSavedToast(false), 2500);
+                      }}
+                    >
+                      <RotateCcw size={14} />
+                      Reset All Guides
+                    </button>
+                  </div>
                 </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
-                  Reset contextual tutorial banners (such as Focus Space and Idea Parking guides) so they appear again when visiting those pages.
-                </p>
               </div>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
-                onClick={() => {
-                  resetAllTours();
-                  setToastText('All tour progress and contextual tips reset');
-                  setShowSavedToast(true);
-                  setTimeout(() => setShowSavedToast(false), 2500);
-                }}
-              >
-                <RotateCcw size={14} />
-                Reset All Guides
-              </button>
-            </div>
-          </div>
-        </section>
+            )}
+          </section>
+        )}
 
         {/* ── 3. Identity & Profile ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <User size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Identity &amp; Profile</h2>
-              <p className={styles.sectionDesc}>Personalization details used in daily briefings and headings.</p>
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="name-input">Full Name</label>
-              <input
-                id="name-input"
-                type="text"
-                className={styles.input}
-                value={formData.profile.name}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    profile: { ...formData.profile, name: e.target.value },
-                  })
-                }
-                placeholder="e.g. Alex Rivera"
-                required
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="display-name-input">Display Name</label>
-              <input
-                id="display-name-input"
-                type="text"
-                className={styles.input}
-                value={formData.profile.displayName}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    profile: { ...formData.profile, displayName: e.target.value },
-                  })
-                }
-                placeholder="e.g. Alex"
-                required
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ── 4. Time & Schedule Capacity ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Clock size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Schedule &amp; Capacity</h2>
-              <p className={styles.sectionDesc}>Define your timezone, daily working hours, and standard schedule.</p>
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="timezone-select">Time Zone</label>
-              <select
-                id="timezone-select"
-                className={styles.select}
-                value={formData.timeZone}
-                onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="capacity-input">Available Hours / Day</label>
-              <input
-                id="capacity-input"
-                type="number"
-                min="1"
-                max="24"
-                className={styles.input}
-                value={formData.availableHoursPerDay}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    availableHoursPerDay: Math.max(1, Math.min(24, parseInt(e.target.value) || 1)),
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="work-start">Work Start Time</label>
-              <input
-                id="work-start"
-                type="time"
-                className={styles.input}
-                value={formData.workingHours.start}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    workingHours: { ...formData.workingHours, start: e.target.value },
-                  })
-                }
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="work-end">Work End Time</label>
-              <input
-                id="work-end"
-                type="time"
-                className={styles.input}
-                value={formData.workingHours.end}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    workingHours: { ...formData.workingHours, end: e.target.value },
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Working Days</label>
-            <div className={styles.daysGrid}>
-              {WEEKDAYS.map((day) => {
-                const isActive = formData.workingHours.workDays.includes(day.id);
-                return (
-                  <button
-                    key={day.id}
-                    type="button"
-                    className={`${styles.dayChip} ${isActive ? styles.activeDay : ''}`}
-                    onClick={() => toggleWorkDay(day.id)}
-                  >
-                    {day.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 5. Planning & Task Execution ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Sliders size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Planning &amp; Task Defaults</h2>
-              <p className={styles.sectionDesc}>Configure time estimates and task organization frameworks.</p>
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="planning-style-select">Planning Methodology</label>
-              <select
-                id="planning-style-select"
-                className={styles.select}
-                value={formData.planningStyle}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    planningStyle: e.target.value as PlanningStyle,
-                  })
-                }
-              >
-                <option value="time-blocking">Time Blocking (Structured Calendar)</option>
-                <option value="eisenhower">Eisenhower Matrix (Urgent / Important)</option>
-                <option value="gtd">Getting Things Done (GTD Contexts)</option>
-                <option value="kanban">Board View (Visual Workflow)</option>
-                <option value="weekly-focus">Weekly Focus Objectives</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="task-duration-select">Default Task Duration</label>
-              <select
-                id="task-duration-select"
-                className={styles.select}
-                value={formData.defaultTaskDuration}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    defaultTaskDuration: parseInt(e.target.value),
-                  })
-                }
-              >
-                <option value={15}>15 Minutes</option>
-                <option value={30}>30 Minutes</option>
-                <option value={45}>45 Minutes</option>
-                <option value={60}>60 Minutes (1 Hour)</option>
-                <option value={90}>90 Minutes (Deep Block)</option>
-                <option value={120}>120 Minutes (2 Hours)</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 6. Focus & Deep Work Timer ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Headphones size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Focus &amp; Pomodoro Protocols</h2>
-              <p className={styles.sectionDesc}>Configure interval timers for undistracted deep work sessions.</p>
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="pomodoro-duration">Focus Duration (Minutes)</label>
-              <input
-                id="pomodoro-duration"
-                type="number"
-                min="5"
-                max="120"
-                className={styles.input}
-                value={formData.focusPreferences.pomodoroDuration}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    focusPreferences: {
-                      ...formData.focusPreferences,
-                      pomodoroDuration: parseInt(e.target.value) || 25,
-                    },
-                  })
-                }
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="short-break-duration">Short Break (Minutes)</label>
-              <input
-                id="short-break-duration"
-                type="number"
-                min="1"
-                max="30"
-                className={styles.input}
-                value={formData.focusPreferences.shortBreakDuration}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    focusPreferences: {
-                      ...formData.focusPreferences,
-                      shortBreakDuration: parseInt(e.target.value) || 5,
-                    },
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className={styles.gridTwo}>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="long-break-duration">Long Break (Minutes)</label>
-              <input
-                id="long-break-duration"
-                type="number"
-                min="5"
-                max="60"
-                className={styles.input}
-                value={formData.focusPreferences.longBreakDuration}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    focusPreferences: {
-                      ...formData.focusPreferences,
-                      longBreakDuration: parseInt(e.target.value) || 15,
-                    },
-                  })
-                }
-              />
-            </div>
-
-            <div className={styles.toggleRow} style={{ borderBottom: 'none' }}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Auto-Start Breaks</span>
-                <span className={styles.toggleDesc}>Automatically begin rest timer upon focus completion</span>
-              </div>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={formData.focusPreferences.autoStartBreaks}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    focusPreferences: {
-                      ...formData.focusPreferences,
-                      autoStartBreaks: e.target.checked,
-                    },
-                  })
-                }
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ── 7. Notifications & Quiet Hours ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Bell size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Notifications &amp; Quiet Hours</h2>
-              <p className={styles.sectionDesc}>Granular notification controls for deadlines, blocks, and quiet time.</p>
-            </div>
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>System Notifications</span>
-              <span className={styles.toggleDesc}>Master switch for all task and milestone alerts</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.enabled}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    enabled: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Quiet Hours Filter</span>
-              <span className={styles.toggleDesc}>Silence non-essential alerts during focus or rest periods</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.quietHours?.enabled}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    quietHours: {
-                      ...formData.notifications.quietHours,
-                      enabled: e.target.checked,
-                      start: formData.notifications.quietHours?.start || '22:00',
-                      end: formData.notifications.quietHours?.end || '08:00',
-                    },
-                  },
-                })
-              }
-            />
-          </div>
-
-          {formData.notifications.quietHours?.enabled && (
-            <div className={styles.gridTwo}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Quiet Hours Start</label>
-                <input
-                  type="time"
-                  className={styles.input}
-                  value={formData.notifications.quietHours?.start || '22:00'}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      notifications: {
-                        ...formData.notifications,
-                        quietHours: {
-                          ...formData.notifications.quietHours,
-                          start: e.target.value,
-                          enabled: true,
-                          end: formData.notifications.quietHours?.end || '08:00',
-                        },
-                      },
-                    })
-                  }
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Quiet Hours End</label>
-                <input
-                  type="time"
-                  className={styles.input}
-                  value={formData.notifications.quietHours?.end || '08:00'}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      notifications: {
-                        ...formData.notifications,
-                        quietHours: {
-                          ...formData.notifications.quietHours,
-                          end: e.target.value,
-                          enabled: true,
-                          start: formData.notifications.quietHours?.start || '22:00',
-                        },
-                      },
-                    })
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Task Due Date Notifications</span>
-              <span className={styles.toggleDesc}>Notify when scheduled tasks reach their deadline</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.taskReminders}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    taskReminders: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Milestone &amp; Goal Target Notifications</span>
-              <span className={styles.toggleDesc}>Notify on upcoming project and milestone target dates</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.deadlineAlerts}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    deadlineAlerts: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Focus Block &amp; Calendar Notifications</span>
-              <span className={styles.toggleDesc}>Notify when scheduled calendar focus sessions are approaching</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.scheduledWorkAlerts}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    scheduledWorkAlerts: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Daily Habit Practice Cues</span>
-              <span className={styles.toggleDesc}>Remind on uncompleted habits at their configured reminder times</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.habitReminders}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    habitReminders: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Weekly Reflection Cues</span>
-              <span className={styles.toggleDesc}>Reminder to complete weekly progress and review reflections</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.weeklyReviewReminders}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    weeklyReviewReminders: e.target.checked,
-                  },
-                })
-              }
-            />
-          </div>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Desktop Operating System Notifications</span>
-              <span className={styles.toggleDesc}>Send system-level browser push notifications for critical alarms</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.notifications.browserNotifications}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                if (checked && typeof window !== 'undefined' && 'Notification' in window) {
-                  void Notification.requestPermission();
-                }
-                setFormData({
-                  ...formData,
-                  notifications: {
-                    ...formData.notifications,
-                    browserNotifications: checked,
-                  },
-                });
-              }}
-            />
-          </div>
-        </section>
-
-        {/* ── 8. AI Engine & API Key Setup ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Bot size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                <h2 className={styles.sectionTitle}>AI Integration &amp; API Key</h2>
-                <div className={`${styles.aiStatusBadge} ${formData.aiSettings?.enabled && formData.aiSettings?.apiKey ? styles.active : styles.inactive}`}>
-                  <span className={styles.statusDot} />
-                  {formData.aiSettings?.enabled && formData.aiSettings?.apiKey
-                    ? `Active: ${formData.aiSettings?.model || 'Gemini'}`
-                    : 'Offline Deterministic Mode'}
+        {(activeCategory === 'all' || activeCategory === 'account') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('profile')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.profile}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <User size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Identity &amp; Profile</h2>
+                  <p className={styles.sectionDesc}>Personalization details used in daily briefings and headings.</p>
                 </div>
               </div>
-              <p className={styles.sectionDesc}>Optional bring-your-own-key intelligence layer for task breakdown and planning.</p>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.profile ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.profile ? styles.chevronOpen : ''}`}
+                />
+              </div>
             </div>
-          </div>
+
+            {openSections.profile && (
+              <div className={styles.sectionBody}>
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="name-input">Full Name</label>
+                    <input
+                      id="name-input"
+                      type="text"
+                      className={styles.input}
+                      value={formData.profile.name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          profile: { ...formData.profile, name: e.target.value },
+                        })
+                      }
+                      placeholder="e.g. Alex Rivera"
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="display-name-input">Display Name</label>
+                    <input
+                      id="display-name-input"
+                      type="text"
+                      className={styles.input}
+                      value={formData.profile.displayName}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          profile: { ...formData.profile, displayName: e.target.value },
+                        })
+                      }
+                      placeholder="e.g. Alex"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 4. Time & Schedule Capacity ── */}
+        {(activeCategory === 'all' || activeCategory === 'workflow') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('workingHours')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.workingHours}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Clock size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Schedule &amp; Capacity</h2>
+                  <p className={styles.sectionDesc}>Define your timezone, daily working hours, and standard schedule.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.workingHours ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.workingHours ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.workingHours && (
+              <div className={styles.sectionBody}>
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="timezone-select">Time Zone</label>
+                    <select
+                      id="timezone-select"
+                      className={styles.select}
+                      value={formData.timeZone}
+                      onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
+                    >
+                      {TIMEZONES.map((tz) => (
+                        <option key={tz} value={tz}>
+                          {tz}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="capacity-input">Available Hours / Day</label>
+                    <input
+                      id="capacity-input"
+                      type="number"
+                      min="1"
+                      max="24"
+                      className={styles.input}
+                      value={formData.availableHoursPerDay}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          availableHoursPerDay: Math.max(1, Math.min(24, parseInt(e.target.value) || 1)),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="work-start">Work Start Time</label>
+                    <input
+                      id="work-start"
+                      type="time"
+                      className={styles.input}
+                      value={formData.workingHours.start}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          workingHours: { ...formData.workingHours, start: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="work-end">Work End Time</label>
+                    <input
+                      id="work-end"
+                      type="time"
+                      className={styles.input}
+                      value={formData.workingHours.end}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          workingHours: { ...formData.workingHours, end: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Working Days</label>
+                  <div className={styles.daysGrid}>
+                    {WEEKDAYS.map((day) => {
+                      const isActive = formData.workingHours.workDays.includes(day.id);
+                      return (
+                        <button
+                          key={day.id}
+                          type="button"
+                          className={`${styles.dayChip} ${isActive ? styles.activeDay : ''}`}
+                          onClick={() => toggleWorkDay(day.id)}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 5. Planning & Task Execution ── */}
+        {(activeCategory === 'all' || activeCategory === 'workflow') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('planning')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.planning}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Sliders size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Planning &amp; Task Defaults</h2>
+                  <p className={styles.sectionDesc}>Configure time estimates and task organization frameworks.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.planning ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.planning ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.planning && (
+              <div className={styles.sectionBody}>
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="planning-style-select">Planning Methodology</label>
+                    <select
+                      id="planning-style-select"
+                      className={styles.select}
+                      value={formData.planningStyle}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          planningStyle: e.target.value as PlanningStyle,
+                        })
+                      }
+                    >
+                      <option value="time-blocking">Time Blocking (Structured Calendar)</option>
+                      <option value="eisenhower">Eisenhower Matrix (Urgent / Important)</option>
+                      <option value="gtd">Getting Things Done (GTD Contexts)</option>
+                      <option value="kanban">Board View (Visual Workflow)</option>
+                      <option value="weekly-focus">Weekly Focus Objectives</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="task-duration-select">Default Task Duration</label>
+                    <select
+                      id="task-duration-select"
+                      className={styles.select}
+                      value={formData.defaultTaskDuration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          defaultTaskDuration: parseInt(e.target.value),
+                        })
+                      }
+                    >
+                      <option value={15}>15 Minutes</option>
+                      <option value={30}>30 Minutes</option>
+                      <option value={45}>45 Minutes</option>
+                      <option value={60}>60 Minutes (1 Hour)</option>
+                      <option value={90}>90 Minutes (Deep Block)</option>
+                      <option value={120}>120 Minutes (2 Hours)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 6. Focus & Deep Work Timer ── */}
+        {(activeCategory === 'all' || activeCategory === 'focus') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('focus')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.focus}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Headphones size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Focus &amp; Pomodoro Protocols</h2>
+                  <p className={styles.sectionDesc}>Configure interval timers for undistracted deep work sessions.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.focus ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.focus ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.focus && (
+              <div className={styles.sectionBody}>
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="pomodoro-duration">Focus Duration (Minutes)</label>
+                    <input
+                      id="pomodoro-duration"
+                      type="number"
+                      min="5"
+                      max="120"
+                      className={styles.input}
+                      value={formData.focusPreferences.pomodoroDuration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          focusPreferences: {
+                            ...formData.focusPreferences,
+                            pomodoroDuration: parseInt(e.target.value) || 25,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="short-break-duration">Short Break (Minutes)</label>
+                    <input
+                      id="short-break-duration"
+                      type="number"
+                      min="1"
+                      max="30"
+                      className={styles.input}
+                      value={formData.focusPreferences.shortBreakDuration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          focusPreferences: {
+                            ...formData.focusPreferences,
+                            shortBreakDuration: parseInt(e.target.value) || 5,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.gridTwo}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="long-break-duration">Long Break (Minutes)</label>
+                    <input
+                      id="long-break-duration"
+                      type="number"
+                      min="5"
+                      max="60"
+                      className={styles.input}
+                      value={formData.focusPreferences.longBreakDuration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          focusPreferences: {
+                            ...formData.focusPreferences,
+                            longBreakDuration: parseInt(e.target.value) || 15,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.toggleRow} style={{ borderBottom: 'none' }}>
+                    <div className={styles.toggleLabel}>
+                      <span className={styles.toggleTitle}>Auto-Start Breaks</span>
+                      <span className={styles.toggleDesc}>Automatically begin rest timer upon focus completion</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={formData.focusPreferences.autoStartBreaks}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          focusPreferences: {
+                            ...formData.focusPreferences,
+                            autoStartBreaks: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 7. Notifications & Quiet Hours ── */}
+        {(activeCategory === 'all' || activeCategory === 'focus') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('notifications')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.notifications}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Bell size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Notifications &amp; Quiet Hours</h2>
+                  <p className={styles.sectionDesc}>Granular notification controls for deadlines, blocks, and quiet time.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.notifications ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.notifications ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.notifications && (
+              <div className={styles.sectionBody}>
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>System Notifications</span>
+                    <span className={styles.toggleDesc}>Master switch for all task and milestone alerts</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.enabled}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          enabled: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Quiet Hours Filter</span>
+                    <span className={styles.toggleDesc}>Silence non-essential alerts during focus or rest periods</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.quietHours?.enabled}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          quietHours: {
+                            ...formData.notifications.quietHours,
+                            enabled: e.target.checked,
+                            start: formData.notifications.quietHours?.start || '22:00',
+                            end: formData.notifications.quietHours?.end || '08:00',
+                          },
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                {formData.notifications.quietHours?.enabled && (
+                  <div className={styles.gridTwo}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Quiet Hours Start</label>
+                      <input
+                        type="time"
+                        className={styles.input}
+                        value={formData.notifications.quietHours?.start || '22:00'}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            notifications: {
+                              ...formData.notifications,
+                              quietHours: {
+                                ...formData.notifications.quietHours,
+                                start: e.target.value,
+                                enabled: true,
+                                end: formData.notifications.quietHours?.end || '08:00',
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Quiet Hours End</label>
+                      <input
+                        type="time"
+                        className={styles.input}
+                        value={formData.notifications.quietHours?.end || '08:00'}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            notifications: {
+                              ...formData.notifications,
+                              quietHours: {
+                                ...formData.notifications.quietHours,
+                                end: e.target.value,
+                                enabled: true,
+                                start: formData.notifications.quietHours?.start || '22:00',
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Task Due Date Notifications</span>
+                    <span className={styles.toggleDesc}>Notify when scheduled tasks reach their deadline</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.taskReminders}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          taskReminders: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Milestone &amp; Goal Target Notifications</span>
+                    <span className={styles.toggleDesc}>Notify on upcoming project and milestone target dates</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.deadlineAlerts}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          deadlineAlerts: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Focus Block &amp; Calendar Notifications</span>
+                    <span className={styles.toggleDesc}>Notify when scheduled calendar focus sessions are approaching</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.scheduledWorkAlerts}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          scheduledWorkAlerts: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Daily Habit Practice Cues</span>
+                    <span className={styles.toggleDesc}>Remind on uncompleted habits at their configured reminder times</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.habitReminders}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          habitReminders: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Weekly Reflection Cues</span>
+                    <span className={styles.toggleDesc}>Reminder to complete weekly progress and review reflections</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.weeklyReviewReminders}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          weeklyReviewReminders: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Desktop Operating System Notifications</span>
+                    <span className={styles.toggleDesc}>Send system-level browser push notifications for critical alarms</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={formData.notifications.browserNotifications}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (checked && typeof window !== 'undefined' && 'Notification' in window) {
+                        void Notification.requestPermission();
+                      }
+                      setFormData({
+                        ...formData,
+                        notifications: {
+                          ...formData.notifications,
+                          browserNotifications: checked,
+                        },
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 8. AI Engine & API Key Setup ── */}
+        {(activeCategory === 'all' || activeCategory === 'ai') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('ai')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.ai}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Bot size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <h2 className={styles.sectionTitle}>AI Integration &amp; API Key</h2>
+                    <div className={`${styles.aiStatusBadge} ${formData.aiSettings?.enabled && formData.aiSettings?.apiKey ? styles.active : styles.inactive}`}>
+                      <span className={styles.statusDot} />
+                      {formData.aiSettings?.enabled && formData.aiSettings?.apiKey
+                        ? `Active: ${formData.aiSettings?.model || 'Gemini'}`
+                        : 'Offline Deterministic Mode'}
+                    </div>
+                  </div>
+                  <p className={styles.sectionDesc}>Optional bring-your-own-key intelligence layer for task breakdown and planning.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.ai ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.ai ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
+
+            {openSections.ai && (
+              <div className={styles.sectionBody}>
 
           <div className={styles.toggleRow}>
             <div className={styles.toggleLabel}>
@@ -2393,94 +2778,120 @@ export default function SettingsPage() {
               </div>
             </>
           )}
-        </section>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── 9. Data Backup & Storage Management ── */}
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}>
-              <Download size={16} />
-            </div>
-            <div className={styles.sectionHeaderContent}>
-              <h2 className={styles.sectionTitle}>Data Backup &amp; Portability</h2>
-              <p className={styles.sectionDesc}>Export a full JSON snapshot of your data or perform maintenance.</p>
-            </div>
-          </div>
-
-          <div className={styles.backupCard}>
-            <div>
-              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
-                Complete Snapshot Export (.json)
-              </span>
-              <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                Download all Dreams, Goals, Projects, Tasks, Notes, and Settings in a portable standard format.
-              </span>
-            </div>
-
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={() => {
-                if (typeof window === 'undefined') return;
-                const backup: Record<string, any> = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                  const key = localStorage.key(i);
-                  if (key && (key.startsWith('life_os_') || key.startsWith('lifeos_'))) {
-                    try {
-                      backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
-                    } catch {
-                      backup[key] = localStorage.getItem(key);
-                    }
-                  }
-                }
-                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
+        {(activeCategory === 'all' || activeCategory === 'data') && (
+          <section className={styles.sectionCard}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('data')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.data}
             >
-              <Download size={13} style={{ marginRight: 6 }} />
-              Export Data
-            </button>
-          </div>
+              <div className={styles.sectionHeaderLeft}>
+                <div className={styles.sectionIcon}>
+                  <Download size={16} />
+                </div>
+                <div className={styles.sectionHeaderContent}>
+                  <h2 className={styles.sectionTitle}>Data Backup &amp; Portability</h2>
+                  <p className={styles.sectionDesc}>Export a full JSON snapshot of your data or perform maintenance.</p>
+                </div>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                <span className={styles.collapseIndicator}>
+                  {openSections.data ? 'Collapse' : 'Expand'}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`${styles.chevron} ${openSections.data ? styles.chevronOpen : ''}`}
+                />
+              </div>
+            </div>
 
-          <div className={styles.dangerCard}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertOctagon size={16} style={{ color: 'var(--color-danger, #ef4444)' }} />
-              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)' }}>
-                Factory Reset / Erase Local Data
-              </span>
-            </div>
-            <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-              Permanently wipes all local browser storage, tasks, projects, notes, and local credentials.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
-              <button
-                type="button"
-                className={styles.btnDangerSolid}
-                onClick={async () => {
-                  const phrase = prompt('To confirm erasure of all data, type "DELETE ALL MY DATA" below:');
-                  if (phrase === 'DELETE ALL MY DATA') {
-                    if (user) {
-                      try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
-                    }
-                    localStorage.clear();
-                    alert('Sariling Mundo data has been erased.');
-                    window.location.href = '/';
-                  } else if (phrase !== null) {
-                    alert('Confirmation phrase did not match. Action cancelled.');
-                  }
-                }}
-              >
-                <Trash2 size={13} />
-                Erase Data &amp; Reset
-              </button>
-            </div>
-          </div>
-        </section>
+            {openSections.data && (
+              <div className={styles.sectionBody}>
+                <div className={styles.backupCard}>
+                  <div>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                      Complete Snapshot Export (.json)
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                      Download all Dreams, Goals, Projects, Tasks, Notes, and Settings in a portable standard format.
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={() => {
+                      if (typeof window === 'undefined') return;
+                      const backup: Record<string, any> = {};
+                      for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && (key.startsWith('life_os_') || key.startsWith('lifeos_'))) {
+                          try {
+                            backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
+                          } catch {
+                            backup[key] = localStorage.getItem(key);
+                          }
+                        }
+                      }
+                      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    <Download size={13} style={{ marginRight: 6 }} />
+                    Export Data
+                  </button>
+                </div>
+
+                <div className={styles.dangerCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertOctagon size={16} style={{ color: 'var(--color-danger, #ef4444)' }} />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)' }}>
+                      Factory Reset / Erase Local Data
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    Permanently wipes all local browser storage, tasks, projects, notes, and local credentials.
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      className={styles.btnDangerSolid}
+                      onClick={async () => {
+                        const phrase = prompt('To confirm erasure of all data, type "DELETE ALL MY DATA" below:');
+                        if (phrase === 'DELETE ALL MY DATA') {
+                          if (user) {
+                            try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
+                          }
+                          localStorage.clear();
+                          alert('Sariling Mundo data has been erased.');
+                          window.location.href = '/';
+                        } else if (phrase !== null) {
+                          alert('Confirmation phrase did not match. Action cancelled.');
+                        }
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      Erase Data &amp; Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── Privacy & Security Statement ── */}
         <div className={styles.privacyNotice}>

@@ -138,9 +138,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Task>(TASKS_STORAGE_KEY);
-      setTasks(parsed || []);
+      if (parsed && parsed.length > 0) {
+        setTasks(parsed);
+      } else {
+        setTasks(DEFAULT_TASKS);
+        try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(DEFAULT_TASKS)); } catch {}
+      }
     } catch (err) {
       console.error('Failed to load Life OS tasks:', err);
+      setTasks(DEFAULT_TASKS);
     }
   };
 

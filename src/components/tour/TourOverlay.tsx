@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { X } from 'lucide-react';
 import { useTour } from '@/context/TourContext';
-import { X, ArrowRight, ArrowLeft, Check, Sparkles } from 'lucide-react';
 import styles from './TourOverlay.module.css';
 
 interface TargetRect {
@@ -285,7 +285,6 @@ export default function TourOverlay() {
 
         {currentStep.isAction && (
           <div className={styles.actionHint}>
-            <Sparkles size={12} />
             <span>{currentStep.actionHint || 'Click the highlighted feature or press Next'}</span>
           </div>
         )}
@@ -320,8 +319,7 @@ export default function TourOverlay() {
               disabled={stepIndex === 0}
               title="Previous step (ArrowLeft)"
             >
-              <ArrowLeft size={13} />
-              <span>Back</span>
+              Back
             </button>
 
             <button
@@ -330,8 +328,7 @@ export default function TourOverlay() {
               onClick={nextStep}
               title={isLastStep ? 'Finish Tour' : 'Next step (ArrowRight / Enter)'}
             >
-              <span>{isLastStep ? 'Finish' : 'Next'}</span>
-              {isLastStep ? <Check size={13} /> : <ArrowRight size={13} />}
+              {isLastStep ? 'Finish' : 'Next'}
             </button>
           </div>
         </div>

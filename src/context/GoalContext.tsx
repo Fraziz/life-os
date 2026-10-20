@@ -92,9 +92,15 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Goal>(GOALS_STORAGE_KEY);
-      setGoals(parsed || []);
+      if (parsed && parsed.length > 0) {
+        setGoals(parsed);
+      } else {
+        setGoals(DEFAULT_GOALS);
+        try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(DEFAULT_GOALS)); } catch {}
+      }
     } catch (err) {
       console.error('Failed to load Life OS goals:', err);
+      setGoals(DEFAULT_GOALS);
     }
   };
 

@@ -47,7 +47,22 @@
 .titleArea {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .modalTitle {

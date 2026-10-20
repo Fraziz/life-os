@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useTour } from '@/context/TourContext';
-import { Play, Clock, Sparkles } from 'lucide-react';
 import styles from './TourModals.module.css';
 
 export default function TourWelcomeModal() {
@@ -18,27 +17,20 @@ export default function TourWelcomeModal() {
       aria-labelledby="welcome-modal-title"
     >
       <div className={styles.modalCard}>
-        <div className={styles.iconWrapper} aria-hidden="true">
-          <span>👋</span>
-        </div>
-
         <div className={styles.titleArea}>
+          <div className={styles.modalBadge}>Guided Tour</div>
           <h2 id="welcome-modal-title" className={styles.modalTitle}>
-            Welcome!
+            Welcome to Sariling Mundo
           </h2>
           <p className={styles.modalDescription}>
-            Would you like a quick tour? We&apos;ll show you how to use the main features of this system.
+            Would you like a quick interactive tour? We&apos;ll introduce you to the core structure and everyday tools of your system.
           </p>
         </div>
 
         <div className={styles.featuresPills} aria-hidden="true">
-          <span className={styles.pill}>
-            <Sparkles size={11} /> ADHD-Friendly
-          </span>
-          <span className={styles.pill}>
-            <Clock size={11} /> 2 Minutes
-          </span>
-          <span className={styles.pill}>8 Simple Steps</span>
+          <span className={styles.pill}>ADHD-Optimized</span>
+          <span className={styles.pill}>2 Minutes</span>
+          <span className={styles.pill}>8 Steps</span>
         </div>
 
         <div className={styles.actionsColumn}>
@@ -48,8 +40,7 @@ export default function TourWelcomeModal() {
             onClick={() => startTour()}
             autoFocus
           >
-            <Play size={14} fill="currentColor" />
-            <span>Start Tour</span>
+            Start Tour
           </button>
 
           <button
