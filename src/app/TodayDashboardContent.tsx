@@ -892,13 +892,11 @@ export default function TodayDashboardContent() {
                       <div className={styles.taskMetaRight}>
                         {itemHier.parentGoal && (
                           <span className={styles.taskGoalPill} title={`Goal: ${itemHier.parentGoal.title}`}>
-                            <Target size={10} style={{ flexShrink: 0 }} />
                             <span>Goal: {itemHier.parentGoal.title}</span>
                           </span>
                         )}
                         {itemHier.parentProject && (
                           <span className={styles.taskProjectPill} title={`Project: ${itemHier.parentProject.title}`}>
-                            <Folder size={10} style={{ flexShrink: 0 }} />
                             <span>Project: {itemHier.parentProject.title}</span>
                           </span>
                         )}
@@ -987,13 +985,11 @@ export default function TodayDashboardContent() {
                       <div className={styles.taskMetaRight} style={{ marginLeft: 'auto' }}>
                         {otherHier.parentGoal && (
                           <span className={styles.taskGoalPill} title={`Goal: ${otherHier.parentGoal.title}`}>
-                            <Target size={10} style={{ flexShrink: 0 }} />
                             <span>Goal: {otherHier.parentGoal.title}</span>
                           </span>
                         )}
                         {otherHier.parentProject && (
                           <span className={styles.taskProjectPill} title={`Project: ${otherHier.parentProject.title}`}>
-                            <Folder size={10} style={{ flexShrink: 0 }} />
                             <span>Project: {otherHier.parentProject.title}</span>
                           </span>
                         )}

@@ -37,9 +37,6 @@ import {
   Bell,
   Eye,
   EyeOff,
-  Target,
-  Folder,
-  Flag,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { formatTagLabel } from '@/utils/tagUtils';
@@ -442,13 +439,11 @@ export default function TasksPage() {
           </span>
           {parentGoal && (
             <span className={styles.compactGoalChip} title={`Goal: ${parentGoal.title}`}>
-              <Target size={10} />
               Goal: {parentGoal.title}
             </span>
           )}
           {parentProject && (
             <span className={styles.compactProjectChip} title={`Project: ${parentProject.title}`}>
-              <Folder size={10} />
               Project: {parentProject.title}
             </span>
           )}
@@ -685,7 +680,6 @@ export default function TasksPage() {
             <span className={styles.breadcrumbChain}>
               {parentGoal && (
                 <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
-                  <Target size={11} style={{ flexShrink: 0 }} />
                   <span style={{ opacity: 0.85, fontWeight: 700 }}>Goal:</span>
                   <span>{parentGoal.title}</span>
                 </span>
@@ -695,7 +689,6 @@ export default function TasksPage() {
               )}
               {parentMilestone && (
                 <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
-                  <Flag size={11} style={{ flexShrink: 0 }} />
                   <span style={{ opacity: 0.85, fontWeight: 700 }}>Milestone:</span>
                   <span>{parentMilestone.title}</span>
                 </span>
@@ -705,7 +698,6 @@ export default function TasksPage() {
               )}
               {parentProject && (
                 <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
-                  <Folder size={11} style={{ flexShrink: 0 }} />
                   <span style={{ opacity: 0.85, fontWeight: 700 }}>Project:</span>
                   <span>{parentProject.title}</span>
                 </span>
