@@ -511,21 +511,18 @@
   transition: all var(--transition-normal);
 }
 
-/* Google Notes / Masonry Multi-Column Grid (Auto-adjusting rows & columns) */
+/* Fluid Responsive Grid for Notes and Single-Column View */
 .notesMasonryGrid {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .notesMasonryGrid > * {
-  break-inside: avoid;
-  margin-bottom: 14px;
-  display: inline-block;
   width: 100%;
   box-sizing: border-box;
-  vertical-align: top;
 }
 
 .kanbanGridSingleCol {
@@ -541,22 +538,19 @@
 }
 
 .kanbanGridSingleCol .taskList {
-  display: block !important;
-  columns: 320px !important;
-  column-gap: 14px !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)) !important;
+  gap: 16px !important;
   max-height: none !important;
   overflow: visible !important;
   padding-right: 0 !important;
   width: 100%;
+  align-items: start;
 }
 
 .kanbanGridSingleCol .taskList > * {
-  break-inside: avoid;
-  margin-bottom: 14px;
-  display: inline-block;
   width: 100%;
   box-sizing: border-box;
-  vertical-align: top;
 }
 
 @media (max-width: 1360px) {
@@ -1653,7 +1647,8 @@
 
   .kanbanGridSingleCol .taskList,
   .notesMasonryGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
 
   .gridTwo {

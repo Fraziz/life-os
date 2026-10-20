@@ -303,12 +303,13 @@
   background: var(--color-surface-2);
 }
 
-/*  Inbox Stream List (Google Notes Auto-Adjusting Masonry Grid)  */
+/*  Inbox Stream List (Responsive Fluid Grid)  */
 .inboxList {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .inboxItemCard {
@@ -320,8 +321,6 @@
   flex-direction: column;
   gap: 0;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
-  break-inside: avoid;
-  margin-bottom: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1148,7 +1147,8 @@
   }
 
   .inboxList {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .quickAddRow,

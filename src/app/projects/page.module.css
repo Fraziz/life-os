@@ -538,12 +538,13 @@
 }
 
 
-/*  Projects Grid (Google Notes Auto-Adjusting Masonry Grid)  */
+/*  Projects Grid (Responsive Fluid Grid)  */
 .projectsGrid {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .projectCard {
@@ -556,8 +557,6 @@
   gap: 10px;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
-  break-inside: avoid;
-  margin-bottom: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1149,7 +1148,8 @@
   }
 
   .projectsGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .quickAddMetaRow {
@@ -1211,7 +1211,7 @@
   }
 
   .projectsGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 

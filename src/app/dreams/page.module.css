@@ -429,12 +429,13 @@
 }
 
 
-/*  Dreams Grid (Google Notes Auto-Adjusting Masonry Grid)  */
+/*  Dreams Grid (Responsive Fluid Grid)  */
 .dreamsGrid {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .dreamCard {
@@ -447,8 +448,6 @@
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  break-inside: avoid;
-  margin-bottom: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -908,7 +907,8 @@
   }
 
   .dreamsGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .quickAddMetaRow {

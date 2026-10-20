@@ -336,12 +336,13 @@
   font-size: var(--text-sm);
 }
 
-/*  Habits Grid (Google Notes Auto-Adjusting Masonry Grid)  */
+/*  Habits Grid (Responsive Fluid Grid)  */
 .habitsGrid {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .habitCard {
@@ -355,8 +356,6 @@
   gap: var(--space-4);
   transition: all var(--transition-fast);
   position: relative;
-  break-inside: avoid;
-  margin-bottom: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -621,7 +620,8 @@
   }
 
   .habitsGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .quickAddMetaRow {

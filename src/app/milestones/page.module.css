@@ -291,12 +291,13 @@
   background: #6a5cff;
 }
 
-/*  Milestones Grid (Google Notes Auto-Adjusting Masonry Grid)  */
+/*  Milestones Grid (Responsive Fluid Grid)  */
 .milestonesGrid {
-  display: block;
-  columns: 320px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
   width: 100%;
+  align-items: start;
 }
 
 .milestoneCard {
@@ -309,8 +310,6 @@
   gap: var(--space-4);
   transition: border-color var(--transition-fast), transform var(--transition-fast);
   position: relative;
-  break-inside: avoid;
-  margin-bottom: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -615,7 +614,8 @@
   }
 
   .milestonesGrid {
-    columns: 1 !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .quickAddRow {
