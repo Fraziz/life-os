@@ -1,0 +1,474 @@
+/* ============================================================
+   STUDY SESSION CARD — EXECUTIVE MINIMALIST DESIGN SYSTEM
+   Matches approved preview: calm, distraction-free, 1px hairline
+   borders, violet circular progress ring, tabular numerals.
+   ============================================================ */
+
+.studyCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  position: relative;
+  transition: border-color var(--transition-fast);
+}
+
+/* 1. Local Time Bar */
+.localTimeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.localTimeBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.localTimeClock {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.bookLockedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  color: #10b981;
+  letter-spacing: 0.02em;
+}
+
+/* 2. Timer Type Switch (Pomodoro | Stopwatch) */
+.timerTypeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--color-surface-2);
+  padding: 3px;
+  border-radius: 7px;
+  border: 1px solid var(--color-border-subtle);
+  gap: 2px;
+}
+
+.typeSwitchBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.typeSwitchBtn:hover {
+  color: var(--color-text);
+}
+
+.typeSwitchBtnActive {
+  background: var(--color-surface);
+  color: var(--color-accent-light, var(--color-text));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* Pomodoro Sub-State Pills (Focus | Short Break | Long Break) */
+.pomoStateTabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pomoStateBtn {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pomoStateBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.pomoStateBtnActive {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-subtle);
+  color: var(--color-accent-light, var(--color-text));
+}
+
+/* 3. Timer Display Centerpiece */
+.displayContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  position: relative;
+}
+
+/* Circular Progress Ring for Pomodoro */
+.progressRingWrapper {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressRingSvg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progressRingTrack {
+  stroke: var(--color-surface-2);
+  stroke-width: 7;
+  fill: none;
+}
+
+.progressRingIndicator {
+  stroke: var(--color-accent, #6962f4);
+  stroke-width: 7;
+  stroke-linecap: round;
+  fill: none;
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.progressRingContent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pomoStateLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-light, var(--color-text-muted));
+  margin-bottom: 2px;
+}
+
+.timerDigits {
+  font-family: var(--font-mono, monospace);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.timerDigitsSm {
+  font-size: 1.85rem;
+}
+
+.timerStatusSub {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* Stopwatch Linear Box */
+.stopwatchBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
+  width: 100%;
+}
+
+.stopwatchDigitsRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusIndicatorDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent, #6962f4);
+  box-shadow: 0 0 8px var(--color-accent, #6962f4);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.statusIndicatorDotPaused {
+  background: var(--color-text-faint);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Completion Banner */
+.completionBanner {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.completionBannerClose {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.875rem;
+}
+
+/* 4. Main Controls (Start, Pause, Reset, Skip) */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primaryControlBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--color-accent, #6962f4);
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+
+.primaryControlBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.primaryControlBtn:active {
+  transform: translateY(0);
+}
+
+.primaryControlBtnRunning {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.primaryControlBtnRunning:hover {
+  background: var(--color-surface-hover);
+}
+
+.secondaryControlBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.secondaryControlBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* 5. Session Information */
+.sessionInfoBox {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sessionInfoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+}
+
+.sessionInfoLabel {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.sessionInfoValue {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.sessionBookTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 6. Reading Logs & Stats Action */
+.readingLogsBtn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px dashed var(--color-border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.readingLogsBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border-style: solid;
+}
+
+/* 7. Collapsible Timer Settings */
+.settingsToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 4px 2px;
+  transition: color var(--transition-fast);
+}
+
+.settingsToggleBtn:hover {
+  color: var(--color-text-muted);
+}
+
+.settingsAccordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.settingLabel {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.settingInput {
+  width: 58px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.testAlarmBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.testAlarmBtn:hover {
+  color: var(--color-accent-light);
+  border-color: var(--color-accent);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

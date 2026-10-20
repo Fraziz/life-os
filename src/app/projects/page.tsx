@@ -26,8 +26,10 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Zap,
   CheckSquare,
+  Bell,
 } from 'lucide-react';
 import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
@@ -76,6 +78,7 @@ function ProjectRow({
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
 }) {
+  const { toggleProjectReminder } = useProjects();
   const { tasks } = useTasks();
   const linkedTasks = tasks.filter(
     (t) =>
@@ -144,16 +147,25 @@ function ProjectRow({
             {project.progress}%
           </span>
           {linkedTasks.length > 0 && (
-            <span style={{ fontSize: '10.5px', color: 'var(--color-text-faint)', whiteSpace: 'nowrap' }}>
-              ({doneTasksCount}/{linkedTasks.length} tasks)
+            <span
+              className={styles.autoBadge}
+              title={`Auto-synced: ${doneTasksCount}/${linkedTasks.length} tasks completed`}
+            >
+              Auto ({doneTasksCount}/{linkedTasks.length})
             </span>
           )}
           <input
             type="range" min="0" max="100" step="5"
             value={project.progress}
+            disabled={linkedTasks.length > 0}
             onChange={(e) => onProgressChange(project.id, parseInt(e.target.value))}
-            style={{ width: '60px', accentColor: accent, cursor: 'pointer' }}
-            title="Update progress"
+            style={{
+              width: '60px',
+              accentColor: accent,
+              cursor: linkedTasks.length > 0 ? 'not-allowed' : 'pointer',
+              opacity: linkedTasks.length > 0 ? 0.45 : 1,
+            }}
+            title={linkedTasks.length > 0 ? `Auto-calculated from ${doneTasksCount}/${linkedTasks.length} tasks` : "Update progress"}
           />
         </div>
 
@@ -212,6 +224,18 @@ function ProjectRow({
             + Task
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => toggleProjectReminder(project.id)}
+          title={project.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+          style={{
+            ...btnStyle,
+            color: project.isReminder ? 'var(--color-warning, #f59e0b)' : 'var(--color-text-faint)',
+            background: project.isReminder ? 'var(--color-surface-2)' : 'transparent',
+          }}
+        >
+          <Bell size={13} style={project.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+        </button>
         <button onClick={() => onEdit(project)} title="Edit" style={btnStyle}>
           <Edit2 size={13} />
         </button>
@@ -239,10 +263,19 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
 }) {
+  const { toggleProjectReminder } = useProjects();
+  const { tasks } = useTasks();
   if (projects.length === 0) return <EmptyState />;
   return (
     <div className={styles.projectsGrid}>
       {projects.map((p) => {
+        const linkedTasks = tasks.filter(
+          (t) =>
+            t.projectId === p.id ||
+            (t.tags && t.tags.some((tag) => tag.trim().toLowerCase() === p.title.trim().toLowerCase()))
+        );
+        const doneTasksCount = linkedTasks.filter((t) => t.status === 'done').length;
+        const isAutomated = linkedTasks.length > 0;
         const cfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.active;
         const accent = p.color || cfg.color;
         const parentGoal = goals.find((g) => g.id === p.goalId);
@@ -286,6 +319,14 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                     + Task
                   </button>
                 )}
+                <button
+                  className={`${styles.actionBtn} ${p.isReminder ? styles.actionBtnActive : ''}`}
+                  onClick={() => toggleProjectReminder(p.id)}
+                  title={p.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+                  style={p.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined}
+                >
+                  <Bell size={13} style={p.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+                </button>
                 <button className={styles.actionBtn} onClick={() => onEdit(p)} title="Edit" aria-label="Edit project">
                   <Edit2 size={13} />
                 </button>
@@ -335,7 +376,17 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
             {/* Single Interactive Progress Slider */}
             <div className={styles.progressSection}>
               <div className={styles.progressHeader}>
-                <span className={styles.progressLabel}>Progress</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.progressLabel}>Progress</span>
+                  {isAutomated && (
+                    <span
+                      className={styles.autoBadge}
+                      title={`Auto-synced: ${doneTasksCount}/${linkedTasks.length} tasks completed`}
+                    >
+                      Auto ({doneTasksCount}/{linkedTasks.length})
+                    </span>
+                  )}
+                </div>
                 <span className={styles.progressValue} style={{ color: accent }}>{p.progress}%</span>
               </div>
               <div className={styles.sliderWrap}>
@@ -345,12 +396,15 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   max="100"
                   step="5"
                   value={p.progress}
+                  disabled={isAutomated}
                   className={styles.progressSlider}
                   style={{
                     background: `linear-gradient(to right, ${accent} 0%, ${accent} ${p.progress}%, var(--color-surface-2) ${p.progress}%, var(--color-surface-2) 100%)`,
+                    cursor: isAutomated ? 'not-allowed' : 'pointer',
+                    opacity: isAutomated ? 0.75 : 1,
                   }}
                   onChange={(e) => onProgressChange(p.id, parseInt(e.target.value))}
-                  title="Slide to update progress"
+                  title={isAutomated ? `Auto-calculated from ${doneTasksCount}/${linkedTasks.length} tasks` : "Slide to update progress"}
                   aria-label="Update project progress"
                 />
               </div>
@@ -743,11 +797,6 @@ export default function ProjectsPage() {
   const [notes, setNotes]           = useState('');
   const [projectColor, setProjectColor] = useState('');
 
-  // Quick Add State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickStatus, setQuickStatus] = useState<ProjectStatus>('active');
-  const [quickPriority, setQuickPriority] = useState<ProjectPriority>('high');
-  const [quickGoalId, setQuickGoalId] = useState<string>('');
 
   if (!isLoaded) {
     return <PageSkeleton variant="cards" cardsCount={4} showMetrics={true} showControls={true} />;
@@ -798,23 +847,6 @@ export default function ProjectsPage() {
     setModalOpen(false);
   };
 
-  const handleQuickAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickTitle.trim()) return;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const defaultDue = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-    addProject({
-      title: quickTitle.trim(),
-      status: quickStatus,
-      priority: quickPriority,
-      goalId: quickGoalId || undefined,
-      startDate: todayStr,
-      dueDate: defaultDue,
-      progress: 0,
-    });
-    setQuickTitle('');
-  };
-
   const filteredProjects = projects.filter((p) => {
     if (focusedAreaId) {
       const parentGoal = goals.find((g) => g.id === p.goalId);
@@ -859,144 +891,90 @@ export default function ProjectsPage() {
         </div>
       </header>
 
-      {/* ── Quick Add Bar ── */}
-      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
-        <div className={styles.quickAddRow}>
-          <Folder size={16} className={styles.quickAddIcon} />
-          <input
-            type="text"
-            className={styles.quickAddInput}
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleQuickAddSubmit(e);
-              }
-            }}
-            placeholder="Add a new project..."
-            autoFocus
-          />
-          <div className={styles.quickAddActions}>
-            <button
-              type="button"
-              className={styles.quickAddIconBtn}
-              onClick={openCreateModal}
-              title="Open Detailed Project Editor"
-              aria-label="Open Detailed Project Editor"
-            >
-              <Folder size={15} />
-            </button>
-            <button
-              type="submit"
-              className={styles.quickAddBtn}
-              onClick={handleQuickAddSubmit}
-              aria-disabled={!quickTitle.trim()}
-            >
-              <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
-            </button>
-          </div>
-        </div>
-
-        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
-          <div className={styles.quickAddPills}>
-            <select
-              className={styles.pillSelect}
-              value={quickStatus}
-              onChange={(e) => setQuickStatus(e.target.value as ProjectStatus)}
-            >
-              <option value="active">Status: Active</option>
-              <option value="planning">Status: Planning</option>
-              <option value="on-hold">Status: On Hold</option>
-              <option value="completed">Status: Completed</option>
-            </select>
-
-            <select
-              className={styles.pillSelect}
-              value={quickPriority}
-              onChange={(e) => setQuickPriority(e.target.value as ProjectPriority)}
-            >
-              <option value="high">Priority: High</option>
-              <option value="urgent">Priority: Urgent</option>
-              <option value="medium">Priority: Medium</option>
-              <option value="low">Priority: Low</option>
-            </select>
-
-            <select
-              className={styles.pillSelect}
-              value={quickGoalId}
-              onChange={(e) => setQuickGoalId(e.target.value)}
-            >
-              <option value="">No Linked Goal (General)</option>
-              {goals.map((g) => (
-                <option key={g.id} value={g.id}>
-                  Goal: {g.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </form>
-
-      {/* ── Controls Bar ── */}
+      {/* ── Minimalist Unified Project Controls Bar ── */}
       <div className={styles.controlsBar}>
-        <div className={styles.filtersGroup}>
-          {/* Status Tabs */}
-          <div className={styles.tabs}>
-            {(['active', 'planning', 'completed', 'all'] as const).map((f) => (
-              <button
-                key={f}
-                className={`${styles.tab} ${statusFilter === f ? styles.activeTab : ''}`}
-                onClick={() => setStatusFilter(f)}
-              >
-                {f === 'active' ? `Active (${projects.filter((p) => p.status === 'active' || p.status === 'on-hold').length})` :
-                 f === 'completed' ? `Completed (${projects.filter((p) => p.status === 'completed').length})` :
-                 f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          <select className={styles.selectFilter} value={goalFilter} onChange={(e) => setGoalFilter(e.target.value)}>
-            <option value="all">All Goals</option>
-            {goals.map((g) => <option key={g.id} value={g.id}>Goal: {g.title}</option>)}
-          </select>
-
-          <select className={styles.selectFilter} value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-            <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+        {/* Left: Status Column Tabs */}
+        <div className={styles.tabs} role="tablist" aria-label="Project status tabs">
+          {([
+            { id: 'active', label: 'Active', count: projects.filter((p) => p.status === 'active' || p.status === 'on-hold').length },
+            { id: 'planning', label: 'Planning', count: projects.filter((p) => p.status === 'planning').length },
+            { id: 'completed', label: 'Completed', count: projects.filter((p) => p.status === 'completed').length },
+            { id: 'all', label: 'All', count: projects.length },
+          ] as const).map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={statusFilter === tab.id}
+              className={`${styles.tab} ${statusFilter === tab.id ? styles.activeTab : ''}`}
+              onClick={() => setStatusFilter(tab.id)}
+            >
+              <span>{tab.label}</span>
+              <span className={styles.tabBadge}>{tab.count}</span>
+            </button>
+          ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* View Mode Toggle */}
-          <div style={{
-            display: 'flex', gap: '2px', padding: '3px',
-            background: 'var(--color-surface)', border: '1px solid var(--color-border-subtle)',
-            borderRadius: '10px',
-          }}>
+        {/* Right: Compact Filter Pills & View Switcher */}
+        <div className={styles.controlsRightGroup}>
+          <div className={styles.filtersGroup}>
+            {/* Goal Filter Pill */}
+            <div className={styles.selectFilterWrap}>
+              <select
+                className={`${styles.selectFilter} ${goalFilter !== 'all' ? styles.selectFilterActive : ''}`}
+                value={goalFilter}
+                onChange={(e) => setGoalFilter(e.target.value)}
+                title="Filter by Linked Goal"
+                aria-label="Filter by Linked Goal"
+              >
+                <option value="all">All Goals</option>
+                {goals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    Goal: {g.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={11} className={styles.selectFilterChevron} />
+            </div>
+
+            {/* Priority Filter Pill */}
+            <div className={styles.selectFilterWrap}>
+              <select
+                className={`${styles.selectFilter} ${priorityFilter !== 'all' ? styles.selectFilterActive : ''}`}
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                title="Filter by Priority"
+                aria-label="Filter by Priority"
+              >
+                <option value="all">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <ChevronDown size={11} className={styles.selectFilterChevron} />
+            </div>
+          </div>
+
+          <div className={styles.toolbarDivider} />
+
+          {/* View Mode Switcher */}
+          <div className={styles.viewModeToggleGroup} role="group" aria-label="View Mode">
             {([
-              { mode: 'notes' as ViewMode, icon: <LayoutGrid size={15} />, label: 'Notes' },
-              { mode: 'list' as ViewMode, icon: <LayoutList size={15} />, label: 'List' },
-              { mode: 'board' as ViewMode, icon: <Columns size={15} />, label: 'Board' },
-              { mode: 'calendar' as ViewMode, icon: <CalendarDays size={15} />, label: 'Calendar' },
+              { mode: 'notes' as ViewMode, icon: <LayoutGrid size={13} />, label: 'Notes' },
+              { mode: 'list' as ViewMode, icon: <LayoutList size={13} />, label: 'List' },
+              { mode: 'board' as ViewMode, icon: <Columns size={13} />, label: 'Board' },
+              { mode: 'calendar' as ViewMode, icon: <CalendarDays size={13} />, label: 'Calendar' },
             ]).map(({ mode, icon, label }) => (
               <button
                 key={mode}
-                title={label}
+                type="button"
+                className={`${styles.viewModeBtn} ${viewMode === mode ? styles.viewModeBtnActive : ''}`}
                 onClick={() => setViewMode(mode)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  padding: '5px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                  fontSize: '12px', fontWeight: 600,
-                  background: viewMode === mode ? 'var(--color-accent)' : 'transparent',
-                  color: viewMode === mode ? 'white' : 'var(--color-text-muted)',
-                  transition: 'all 0.15s',
-                }}
+                title={`${label} View`}
+                aria-label={`${label} View`}
               >
-                {icon} {label}
+                {icon}
+                <span>{label}</span>
               </button>
             ))}
           </div>

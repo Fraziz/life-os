@@ -34,6 +34,9 @@ import {
   Archive,
   Columns,
   LayoutGrid,
+  Bell,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { formatTagLabel } from '@/utils/tagUtils';
@@ -43,6 +46,7 @@ import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
 
 const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'backlog', label: 'Backlog' },
@@ -59,6 +63,7 @@ export default function TasksPage() {
     updateTask,
     updateTaskStatus,
     toggleTaskDone,
+    toggleTaskReminder,
     addSubtask,
     breakdownTask,
     promoteSubtaskToTask,
@@ -164,9 +169,10 @@ export default function TasksPage() {
 
   const handleQuickAddSubmit = (e?: React.FormEvent | React.KeyboardEvent) => {
     e?.preventDefault();
-    if (!quickTitle.trim()) return;
+    const cleaned = cleanMarkdownText(quickTitle);
+    if (!cleaned) return;
 
-    quickAddTask(quickTitle.trim(), {
+    quickAddTask(cleaned, {
       priority: quickPriority,
       status: quickStatus,
       projectId: quickProjectId || undefined,
@@ -234,8 +240,8 @@ export default function TasksPage() {
 
     const lines = breakdownStepsText
       .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0 && !l.startsWith('#'));
+      .map((l) => cleanMarkdownText(l))
+      .filter((l) => l.length > 0);
 
     breakdownTask(breakdownTargetTask.id, lines);
     playSuccessChime();
@@ -247,17 +253,20 @@ export default function TasksPage() {
 
   const handleModalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalTitle.trim()) return;
+    const cleanedTitle = cleanMarkdownText(modalTitle);
+    if (!cleanedTitle) return;
 
     const parsedTags = modalTags
       .split(',')
-      .map((tag) => tag.trim())
+      .map((tag) => cleanMarkdownText(tag))
       .filter(Boolean);
+
+    const cleanedDesc = modalDesc.trim() ? cleanMarkdownText(modalDesc) : undefined;
 
     if (editingTask) {
       updateTask(editingTask.id, {
-        title: modalTitle.trim(),
-        description: modalDesc.trim() || undefined,
+        title: cleanedTitle,
+        description: cleanedDesc,
         status: modalStatus,
         priority: modalPriority,
         dueDate: modalDueDate || undefined,
@@ -271,8 +280,8 @@ export default function TasksPage() {
       });
     } else {
       addTask({
-        title: modalTitle.trim(),
-        description: modalDesc.trim() || undefined,
+        title: cleanedTitle,
+        description: cleanedDesc,
         status: modalStatus,
         priority: modalPriority,
         dueDate: modalDueDate || undefined,
@@ -748,6 +757,15 @@ export default function TasksPage() {
               </button>
             )}
 
+            <button
+              className={`${styles.actionBtn} ${task.isReminder ? styles.actionBtnActive : ''}`}
+              onClick={() => toggleTaskReminder(task.id)}
+              title={task.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+              style={task.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined}
+            >
+              <Bell size={13} style={task.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+            </button>
+
             <EntityFiles variant="icon" entityType="task" entityId={task.id} title={task.title} />
 
             <button
@@ -814,6 +832,7 @@ export default function TasksPage() {
             className={styles.quickAddInput}
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
+            onPaste={(e) => handleCleanPasteEvent(e, setQuickTitle)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -885,61 +904,9 @@ export default function TasksPage() {
         </div>
       </form>
 
-      {/* ── Controls Bar ── */}
+      {/* ── Minimalist Unified Task Controls Bar ── */}
       <div className={styles.controlsBar}>
-        <div className={styles.filtersGroup}>
-          <select
-            className={styles.selectFilter}
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-          >
-            <option value="all">All Projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className={styles.selectFilter}
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-          >
-            <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-
-          {!hideDone && (
-            <select
-              className={styles.selectFilter}
-              value={doneTimeframe}
-              onChange={(e) => setDoneTimeframe(e.target.value as any)}
-              title="Filter completed tasks by completion date"
-            >
-              <option value="all">Done: All Time</option>
-              <option value="today">Done: Today only</option>
-              <option value="week">Done: This Week</option>
-              <option value="month">Done: This Month</option>
-            </select>
-          )}
-
-          <button
-            type="button"
-            className={`${styles.tab} ${hideDone ? styles.activeTab : ''}`}
-            onClick={() => setHideDone(!hideDone)}
-            title="Toggle completed tasks"
-          >
-            {hideDone ? 'Show Done' : 'Hide Done'}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Task View & Column Tabs (Responsive on PC, Tablet, Fold, Mobile) ── */}
-      <div className={styles.taskTabsSwitcherRow}>
+        {/* Left: Status Column Tabs */}
         <div className={styles.taskTabsSwitcher} role="tablist" aria-label="Task status tabs">
           <button
             type="button"
@@ -970,28 +937,103 @@ export default function TasksPage() {
           })}
         </div>
 
-        {/* View Mode Switcher: Board vs Google Notes Masonry */}
-        <div className={styles.viewModeToggleGroup}>
-          <button
-            type="button"
-            className={`${styles.viewModeBtn} ${taskLayout === 'board' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => setTaskLayout('board')}
-            title="Kanban Board View"
-            aria-label="Kanban Board View"
-          >
-            <Columns size={13} />
-            <span>Board</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.viewModeBtn} ${taskLayout === 'notes' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => setTaskLayout('notes')}
-            title="Google Notes View (Auto-adjusting cards)"
-            aria-label="Google Notes View"
-          >
-            <LayoutGrid size={13} />
-            <span>Notes</span>
-          </button>
+        {/* Right: Compact Filter Pills & View Switcher */}
+        <div className={styles.controlsRightGroup}>
+          <div className={styles.filtersGroup}>
+            {/* Project Filter Pill */}
+            <div className={styles.selectFilterWrap}>
+              <select
+                className={`${styles.selectFilter} ${projectFilter !== 'all' ? styles.selectFilterActive : ''}`}
+                value={projectFilter}
+                onChange={(e) => setProjectFilter(e.target.value)}
+                title="Filter by Project"
+                aria-label="Filter by Project"
+              >
+                <option value="all">All Projects</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={11} className={styles.selectFilterChevron} />
+            </div>
+
+            {/* Priority Filter Pill */}
+            <div className={styles.selectFilterWrap}>
+              <select
+                className={`${styles.selectFilter} ${priorityFilter !== 'all' ? styles.selectFilterActive : ''}`}
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                title="Filter by Priority"
+                aria-label="Filter by Priority"
+              >
+                <option value="all">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <ChevronDown size={11} className={styles.selectFilterChevron} />
+            </div>
+
+            {/* Done Timeframe Filter Pill */}
+            {!hideDone && (
+              <div className={styles.selectFilterWrap}>
+                <select
+                  className={`${styles.selectFilter} ${doneTimeframe !== 'all' ? styles.selectFilterActive : ''}`}
+                  value={doneTimeframe}
+                  onChange={(e) => setDoneTimeframe(e.target.value as any)}
+                  title="Filter completed tasks by completion date"
+                  aria-label="Filter completed tasks timeframe"
+                >
+                  <option value="all">Done: All Time</option>
+                  <option value="today">Done: Today only</option>
+                  <option value="week">Done: This Week</option>
+                  <option value="month">Done: This Month</option>
+                </select>
+                <ChevronDown size={11} className={styles.selectFilterChevron} />
+              </div>
+            )}
+
+            {/* Hide Done Toggle Pill */}
+            <button
+              type="button"
+              className={`${styles.filterPillBtn} ${hideDone ? styles.filterPillBtnActive : ''}`}
+              onClick={() => setHideDone(!hideDone)}
+              title={hideDone ? 'Show completed tasks' : 'Hide completed tasks'}
+              aria-label={hideDone ? 'Show completed tasks' : 'Hide completed tasks'}
+            >
+              {hideDone ? <EyeOff size={12} /> : <Eye size={12} />}
+              <span>{hideDone ? 'Done Hidden' : 'Hide Done'}</span>
+            </button>
+          </div>
+
+          <div className={styles.toolbarDivider} />
+
+          {/* View Mode Switcher: Board vs Google Notes Masonry */}
+          <div className={styles.viewModeToggleGroup}>
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${taskLayout === 'board' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => setTaskLayout('board')}
+              title="Kanban Board View"
+              aria-label="Kanban Board View"
+            >
+              <Columns size={13} />
+              <span>Board</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${taskLayout === 'notes' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => setTaskLayout('notes')}
+              title="Google Notes View (Auto-adjusting cards)"
+              aria-label="Google Notes View"
+            >
+              <LayoutGrid size={13} />
+              <span>Notes</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1322,6 +1364,7 @@ export default function TasksPage() {
                   className={styles.input}
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
+                  onPaste={(e) => handleCleanPasteEvent(e, setModalTitle)}
                   placeholder="Task title..."
                   required
                   autoFocus
@@ -1335,6 +1378,7 @@ export default function TasksPage() {
                   className={styles.textarea}
                   value={modalDesc}
                   onChange={(e) => setModalDesc(e.target.value)}
+                  onPaste={(e) => handleCleanPasteEvent(e, setModalDesc)}
                   placeholder="Additional context or details..."
                 />
               </div>

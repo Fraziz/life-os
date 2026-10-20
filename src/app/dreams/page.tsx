@@ -41,7 +41,7 @@ const STATUS_CONFIG: Record<DreamStatus, { label: string; className: string }> =
 
 export default function DreamsPage() {
   const { dreams, addDream, updateDream, updateDreamStatus, deleteDream, resetToDefaultDreams, isLoaded } = useDreams();
-  const { addGoal } = useGoals();
+  const { goals, addGoal } = useGoals();
   const { addTask } = useTasks();
   const { activeAreas } = useLifeAreas();
 
@@ -115,10 +115,6 @@ export default function DreamsPage() {
   const [notes, setNotes] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  // Quick Add State (must be declared before any conditional return)
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickAreaId, setQuickAreaId] = useState<string>('');
-  const [quickStatus, setQuickStatus] = useState<DreamStatus>('dream');
 
   const openCreateModal = () => {
     setEditingDream(null);
@@ -180,17 +176,6 @@ export default function DreamsPage() {
     return <PageSkeleton variant="cards" cardsCount={6} showMetrics={false} showControls={true} />;
   }
 
-  const handleQuickAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickTitle.trim()) return;
-    addDream({
-      title: quickTitle.trim(),
-      whyItMatters: 'A core aspirational vision for life',
-      lifeAreaId: quickAreaId || activeAreas[0]?.id || undefined,
-      status: quickStatus,
-    });
-    setQuickTitle('');
-  };
 
   const filteredDreams = dreams.filter((d) => {
     if (activeFilter === 'all') {
@@ -226,75 +211,6 @@ export default function DreamsPage() {
           </button>
         </div>
       </header>
-
-      {/* ── Quick Add Bar ── */}
-      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
-        <div className={styles.quickAddRow}>
-          <Plus size={16} className={styles.quickAddIcon} />
-          <input
-            type="text"
-            className={styles.quickAddInput}
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleQuickAddSubmit(e);
-              }
-            }}
-            placeholder="Add a new dream or vision..."
-            autoFocus
-          />
-          <div className={styles.quickAddActions}>
-            <button
-              type="button"
-              className={styles.quickAddIconBtn}
-              onClick={openCreateModal}
-              title="Open full dream creator"
-              aria-label="Open full dream creator"
-            >
-              <Sparkles size={15} />
-            </button>
-            <button
-              type="submit"
-              className={styles.quickAddBtn}
-              onClick={handleQuickAddSubmit}
-              aria-disabled={!quickTitle.trim()}
-            >
-              <span>Add</span>
-              <kbd className={styles.quickAddKbd}>↵</kbd>
-            </button>
-          </div>
-        </div>
-
-        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
-          <div className={styles.quickAddPills}>
-            <select
-              className={styles.pillSelect}
-              value={quickStatus}
-              onChange={(e) => setQuickStatus(e.target.value as DreamStatus)}
-            >
-              <option value="dream">Status: Dream</option>
-              <option value="planning">Status: Planning</option>
-              <option value="active">Status: Active</option>
-              <option value="achieved">Status: Achieved</option>
-            </select>
-
-            <select
-              className={styles.pillSelect}
-              value={quickAreaId}
-              onChange={(e) => setQuickAreaId(e.target.value)}
-            >
-              <option value="">Default Area</option>
-              {activeAreas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
@@ -419,6 +335,41 @@ export default function DreamsPage() {
                       <span className={styles.notesLabel}>Notes:</span> <AutoLinkText text={d.notes} />
                     </p>
                   )}
+
+                  {/* ── Momentum / Progress Section ── */}
+                  {(() => {
+                    const linkedGoals = goals.filter((g) => g.parentDreamId === d.id);
+                    const completedGoals = linkedGoals.filter((g) => g.status === 'completed' || g.progress === 100);
+                    const isAutomated = linkedGoals.length > 0;
+                    const computedMomentum = isAutomated
+                      ? Math.round(linkedGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / linkedGoals.length)
+                      : (d.progress ?? (d.status === 'achieved' ? 100 : 0));
+
+                    return (
+                      <div className={styles.progressSection}>
+                        <div className={styles.progressHeader}>
+                          <div className={styles.progressLabelRow}>
+                            <span className={styles.progressLabel}>Momentum</span>
+                            {isAutomated && (
+                              <span
+                                className={styles.autoBadge}
+                                title={`Auto-synced: ${completedGoals.length}/${linkedGoals.length} goals achieved`}
+                              >
+                                Auto ({completedGoals.length}/${linkedGoals.length} goals)
+                              </span>
+                            )}
+                          </div>
+                          <span className={styles.progressValue}>{computedMomentum}%</span>
+                        </div>
+                        <div className={styles.progressBarTrack}>
+                          <div
+                            className={styles.progressBarFill}
+                            style={{ width: `${computedMomentum}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className={styles.cardFooter}>
                     {area ? (

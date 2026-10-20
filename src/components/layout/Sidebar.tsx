@@ -64,7 +64,6 @@ interface SidebarProps {
   onCollapse?: (v: boolean) => void;
   onPinToggle?: (v: boolean) => void;
   onMobileClose: () => void;
-  onOpenReminders?: () => void;
   onOpenAssistant?: () => void;
   onOpenNextAction?: () => void;
 }
@@ -81,6 +80,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { settings } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
+
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
   const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
   const userInitials = (userDisplayName || 'U').slice(0, 2).toUpperCase();
@@ -169,7 +169,7 @@ export default function Sidebar({
       >
         {/* Brand Header */}
         <div className={styles.header}>
-          <Link href="/" className={styles.brand} title="Sariling Mundo" onClick={handleNavClick}>
+          <Link href="/" className={styles.brand} title="Sariling Mundo" onClick={handleNavClick} data-tour="brand">
             <Logo
               iconOnly={!isExpanded}
               size={22}
@@ -178,20 +178,22 @@ export default function Sidebar({
             />
           </Link>
 
-          <button
-            type="button"
-            className={`${styles.pinSidebarBtn} ${isPinned ? styles.pinActive : ''}`}
-            onClick={handlePinClick}
-            title={
-              isPinned
-                ? 'Unpin sidebar (Auto-collapse on mouse leave)'
-                : 'Pin sidebar open (Ctrl+B)'
-            }
-            aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-            tabIndex={isExpanded ? 0 : -1}
-          >
-            {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
-          </button>
+          <div className={styles.headerBtnGroup}>
+            <button
+              type="button"
+              className={`${styles.pinSidebarBtn} ${isPinned ? styles.pinActive : ''}`}
+              onClick={handlePinClick}
+              title={
+                isPinned
+                  ? 'Unpin sidebar (Auto-collapse on mouse leave)'
+                  : 'Pin sidebar open (Ctrl+B)'
+              }
+              aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+              tabIndex={isExpanded ? 0 : -1}
+            >
+              {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
+            </button>
+          </div>
         </div>
 
 
@@ -202,7 +204,7 @@ export default function Sidebar({
             const isMore = section.id === 'more';
 
             return (
-              <div key={section.id} className={styles.sectionGroup}>
+              <div key={section.id} className={styles.sectionGroup} data-tour={`nav-section-${section.id}`}>
                 <div className={styles.sectionHeaderRow}>
                   {isMore ? (
                     <button
@@ -242,6 +244,7 @@ export default function Sidebar({
                             href={item.href}
                             prefetch={true}
                             onClick={handleNavClick}
+                            data-tour={`nav-${item.id}`}
                             className={`${styles.navItem} ${
                               isActive ? styles.activeItem : ''
                             }`}
@@ -283,6 +286,7 @@ export default function Sidebar({
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             role="button"
             tabIndex={0}
+            data-tour="user-profile"
             title={!isExpanded ? userDisplayName : undefined}
           >
             <div className={styles.userAvatar}>
@@ -315,6 +319,7 @@ export default function Sidebar({
               <Link
                 href="/settings"
                 className={styles.dropdownItem}
+                data-tour="nav-settings"
                 onClick={() => setProfileMenuOpen(false)}
               >
                 <Settings size={14} />

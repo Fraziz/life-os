@@ -115,6 +115,113 @@ export function playTimerCompleteFanfare() {
   });
 }
 
+let activeTimerAlarmStopFn: (() => void) | null = null;
+
+/**
+ * Stop any active timer countdown alarm sound immediately.
+ */
+export function stopTimerAlarm() {
+  if (activeTimerAlarmStopFn) {
+    try {
+      activeTimerAlarmStopFn();
+    } catch {}
+    activeTimerAlarmStopFn = null;
+  }
+}
+
+/**
+ * Authentic professional digital timer / clock countdown alarm sound.
+ * Synthesizes an unmistakable digital clock / timer alarm (4 bursts of 4 rapid crisp piezo beeps)
+ * with precise quartz resonance (~2048 Hz + metallic buzzer overtone + sub-octave body)
+ * so the user knows with 100% certainty when their session ends.
+ */
+export function playTimerAlarmSound(): () => void {
+  stopTimerAlarm();
+
+  const ctx = getAudioContext();
+  if (!ctx) return () => {};
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+
+  const now = ctx.currentTime;
+  const activeNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
+  const timeouts: NodeJS.Timeout[] = [];
+
+  // Authentic 4-burst digital clock alarm pattern:
+  // 4 bursts spaced 0.65s apart.
+  // Each burst has 4 rapid beeps (65ms tone + 45ms pause = 110ms per beep).
+  // Total duration ~2.55s.
+  const bursts = [0, 0.65, 1.30, 1.95];
+  const beepsPerBurst = 4;
+  const beepToneDuration = 0.065;
+  const beepStep = 0.11;
+
+  bursts.forEach((burstOffset) => {
+    for (let b = 0; b < beepsPerBurst; b++) {
+      const startTime = now + burstOffset + b * beepStep;
+
+      // Layer 1: Quartz Piezo Fundamental (2048 Hz sine - clean digital core)
+      // Layer 2: Piezo Housing Resonance (2048 Hz triangle - realistic physical buzzer texture)
+      // Layer 3: Sub-octave Body (1024 Hz sine - fullness and acoustic depth)
+      const layers = [
+        { type: 'sine' as OscillatorType, freq: 2048, peakGain: 0.28 },
+        { type: 'triangle' as OscillatorType, freq: 2048, peakGain: 0.14 },
+        { type: 'sine' as OscillatorType, freq: 1024, peakGain: 0.10 },
+      ];
+
+      layers.forEach(({ type, freq, peakGain }) => {
+        try {
+          const osc = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          // Digital envelope with ultra-clean click-free ramps
+          gainNode.gain.setValueAtTime(0.0001, startTime);
+          gainNode.gain.linearRampToValueAtTime(peakGain, startTime + 0.004);
+          gainNode.gain.setValueAtTime(peakGain, startTime + beepToneDuration - 0.012);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + beepToneDuration);
+
+          osc.connect(gainNode);
+          gainNode.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + beepToneDuration + 0.02);
+
+          activeNodes.push({ osc, gain: gainNode });
+        } catch {}
+      });
+    }
+  });
+
+  const stop = () => {
+    timeouts.forEach((t) => clearTimeout(t));
+    activeNodes.forEach(({ osc, gain }) => {
+      try {
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        osc.stop();
+        osc.disconnect();
+        gain.disconnect();
+      } catch {}
+    });
+    activeNodes.length = 0;
+  };
+
+  activeTimerAlarmStopFn = stop;
+
+  const cleanupTimer = setTimeout(() => {
+    if (activeTimerAlarmStopFn === stop) {
+      activeTimerAlarmStopFn = null;
+    }
+  }, 2750);
+  timeouts.push(cleanupTimer);
+
+  return stop;
+}
+
 
 
 // ============================================================

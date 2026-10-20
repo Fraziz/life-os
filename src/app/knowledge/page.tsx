@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { useKnowledge } from '@/context/KnowledgeContext';
+import { useFocus } from '@/context/FocusContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -82,15 +84,23 @@ import {
   ArrowUp,
   SlidersHorizontal,
   Minimize2,
+  Video,
+  Bell,
 } from 'lucide-react';
 import styles from './page.module.css';
 import LinkPreviewCard from '@/components/ui/LinkPreviewCard';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import { useSettings } from '@/context/SettingsContext';
+import { useStudySession } from '@/context/StudySessionContext';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
 import { formatDocumentWithAI, formatDocumentLocally, type FormatResult } from '@/utils/smartDocumentFormatter';
+import { parseYouTubeUrl, isStandaloneYouTubeUrl } from '@/utils/youtube';
+import { generateVideoBlockHtml, transformVideoLessonsInHtml, isDocVideoLesson } from '@/utils/videoLesson';
+import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
+import FocusViewWorkspace from '@/components/study/FocusViewWorkspace';
+import StudySessionCard from '@/components/study/StudySessionCard';
 
 // ── Color Highlight Palette (Literal Translucent Highlighter Marker) ──
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
@@ -234,6 +244,13 @@ function renderMarkdown(md: string): string {
   // 7. Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
+  // Clean up any stray video timestamp chip tags or buttons
+  html = html
+    .replace(/<button[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/button>/gi, '')
+    .replace(/<span[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
+    .replace(/\[00:00\]/g, '')
+    .replace(/(?:--\s*){3,}/g, '');
+
   // 8. Key Ideas & Callouts
   html = html.replace(/>>>(.+?)<<</g, '<blockquote class="callout">$1</blockquote>');
   html = html.replace(/!!(.+?)!!/g, '<strong style="color:var(--color-accent-light)">$1</strong>');
@@ -312,6 +329,7 @@ function MarkdownToolbar({
   onApplyFontColor,
   activeFontColor,
   activeFormats,
+  onAddVideo,
 }: {
   onFormat: (cmd: string, value?: string) => void;
   onHighlight: (colorName: string, forceApply?: boolean) => void;
@@ -322,6 +340,7 @@ function MarkdownToolbar({
   isAutoFormatting: boolean;
   onApplyFontColor?: (color: string) => void;
   activeFontColor?: string;
+  onAddVideo?: () => void;
   activeFormats?: {
     bold?: boolean;
     italic?: boolean;
@@ -577,6 +596,14 @@ function MarkdownToolbar({
         >
           <Link2 size={12} style={{ marginRight: 3 }} /> Link
         </button>
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          onClick={onAddVideo}
+          title="Add YouTube Video Lesson"
+        >
+          <Video size={12} style={{ marginRight: 3, color: 'var(--color-accent-light)' }} /> Video Lesson
+        </button>
 
         <span className={styles.toolbarDivider} />
 
@@ -696,7 +723,9 @@ function MarkdownToolbar({
 
 
 export default function KnowledgePage() {
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, resetToDefaultDocs } = useKnowledge();
+  const router = useRouter();
+  const { selectFocusDoc } = useFocus();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -706,11 +735,32 @@ export default function KnowledgePage() {
   const [searchQ, setSearchQ]     = useState('');
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; title: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'documents' | 'videos'>('all');
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [isAiFormatting, setIsAiFormatting] = useState(false);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isActionMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setIsActionMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsActionMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isActionMenuOpen]);
   
   // Dedicated history stack for robust Ctrl+Z (Undo) and Ctrl+Y (Redo)
   const historyStackRef = useRef<string[]>([]);
@@ -859,6 +909,8 @@ export default function KnowledgePage() {
   const [fProjectId, setFProjectId]   = useState('');
   const [fTaskId, setFTaskId]         = useState('');
 
+  const isCurrentVideo = Boolean(selectedDoc ? isDocVideoLesson(selectedDoc) : isDocVideoLesson({ content: fContent, title: fTitle }));
+
   const editorRef = useRef<HTMLDivElement>(null);
   const bookEditorRef = useRef<HTMLDivElement>(null);
   const wordEditorRef = useRef<HTMLDivElement>(null);
@@ -900,57 +952,60 @@ export default function KnowledgePage() {
   const lastScrollTimeRef = useRef<number | null>(null);
   const autoScrollRafRef = useRef<number | null>(null);
 
-  // ── Reading Time Tracker State ("what time i use to read") ──────────
-  const [readingSeconds, setReadingSeconds] = useState<number>(0);
-  const [isReadingTimerRunning, setIsReadingTimerRunning] = useState<boolean>(false);
-  const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
+  // ── Study Session & Video Lessons Integration ──────────
+  const {
+    setAssociatedBook,
+    stopwatchSeconds,
+    mode: studyMode,
+    pomoSecondsLeft,
+    pomoDuration,
+    saveActiveStopwatchSession,
+  } = useStudySession();
+
+  // Video Lessons & Expanded Focus View states
+  const [activeFocusLesson, setActiveFocusLesson] = useState<{
+    videoId: string;
+    lessonTitle: string;
+    startTime: number;
+    bookId?: string;
+    bookTitle?: string;
+  } | null>(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoModalMode, setVideoModalMode] = useState<'insert' | 'create'>('insert');
+
+  const handleOpenVideoLessonModal = (mode: 'insert' | 'create' = 'insert') => {
+    setVideoModalMode(mode);
+    setEditingVideoBlockTarget(null);
+    setVideoModalOpen(true);
+  };
+  const [editingVideoBlockTarget, setEditingVideoBlockTarget] = useState<{
+    element: HTMLElement;
+    initialUrl: string;
+    initialTitle: string;
+  } | null>(null);
+  const [detectedPastedYouTube, setDetectedPastedYouTube] = useState<{
+    parsed: NonNullable<ReturnType<typeof parseYouTubeUrl>>;
+    rawUrl: string;
+  } | null>(null);
+
+  // Sync active book with study session
+  useEffect(() => {
+    if (selectedDoc) {
+      setAssociatedBook(selectedDoc.id, selectedDoc.title);
+    } else {
+      setAssociatedBook(null, null);
+    }
+  }, [selectedDoc?.id, selectedDoc?.title, setAssociatedBook]);
+
+  // Reading Logs & Manual Log state
   const [readingLogsModalOpen, setReadingLogsModalOpen] = useState(false);
   const [manualReadMinutes, setManualReadMinutes] = useState('20');
   const [manualReadTime, setManualReadTime] = useState('');
 
-  // Reset reading timer & autoscroll on doc switch (starts paused, does not auto-start)
+  // Reset autoscroll on doc switch
   useEffect(() => {
-    setReadingSeconds(0);
-    setIsReadingTimerRunning(false);
-    setSessionStartTime(new Date());
     setIsAutoScrolling(false);
   }, [selectedId]);
-
-  // Pause reading timer if leaving reader modes
-  useEffect(() => {
-    if (editorMode !== 'book' && editorMode !== 'word') {
-      setIsReadingTimerRunning(false);
-    }
-  }, [editorMode]);
-
-  // Live timer tick when reading in Book mode (only when user starts it)
-  useEffect(() => {
-    if (!selectedId || !isReadingTimerRunning || (editorMode !== 'book' && editorMode !== 'word')) return;
-    const interval = setInterval(() => {
-      setReadingSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [selectedId, isReadingTimerRunning, editorMode]);
-
-  // Toggle Reading Timer (Start / Pause)
-  const handleToggleReadingTimer = () => {
-    if (!isReadingTimerRunning) {
-      if (readingSeconds === 0) {
-        setSessionStartTime(new Date());
-      }
-      setIsReadingTimerRunning(true);
-    } else {
-      setIsReadingTimerRunning(false);
-    }
-  };
-
-  // Reset Reading Timer to 00:00
-  const handleResetReadingTimer = () => {
-    setIsReadingTimerRunning(false);
-    setReadingSeconds(0);
-    setSessionStartTime(new Date());
-  };
-
   // Guard against any typing or deletion keystrokes in locked Book/Word modes
   const handleLockedKeyDown = (e: React.KeyboardEvent) => {
     // Allow copy, select-all, search
@@ -1023,37 +1078,221 @@ export default function KnowledgePage() {
     };
   }, [isAutoScrolling, autoScrollSpeed]);
 
-  // Save active reading session to document
-  const handleSaveReadingSession = () => {
-    if (!selectedDoc || readingSeconds < 30) return;
-    const durationMin = Math.max(1, Math.round(readingSeconds / 60));
-    const timeStr = sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const logItem: ReadingLogItem = {
-      id: `read_${Date.now()}`,
-      startedAt: sessionStartTime.toISOString(),
-      endedAt: new Date().toISOString(),
-      durationMinutes: durationMin,
-      timeOfDay: timeStr,
-      notes: `Read: ${selectedDoc.title}`,
-    };
+  // Video Lesson Block Actions Handler (delegated click for Focus View, Move Up, Move Down, Edit, Delete)
+  const handleCommonDocumentClick = (e: React.MouseEvent<HTMLDivElement>): boolean => {
+    const target = e.target as HTMLElement;
 
-    const currentLogs = selectedDoc.readingLogs || [];
-    const nextLogs = [logItem, ...currentLogs].slice(0, 50);
-    const total = (selectedDoc.totalReadMinutes || 0) + durationMin;
+    // Instant removal of stray timestamp chips or stuck buttons in edit mode
+    const chip = target.closest('.video-timestamp-chip, [data-timestamp]') as HTMLElement | null;
+    if (chip && editorMode === 'edit') {
+      e.preventDefault();
+      e.stopPropagation();
+      chip.remove();
+      const editor = editorRef.current;
+      if (editor) {
+        setFContent(editor.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
+      return true;
+    }
 
-    updateDoc(selectedDoc.id, {
-      readingLogs: nextLogs,
-      totalReadMinutes: total,
-      lastReadAt: new Date().toISOString(),
-      preferredReadingTime: timeStr,
+    // 1. Focus View action button -> Navigate to Focus Space
+    const focusBtn = target.closest('[data-action="focus-view"]') as HTMLElement | null;
+    if (focusBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = focusBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const videoId = focusBtn.getAttribute('data-video-id') || card?.getAttribute('data-video-id') || '';
+      const lessonTitle = focusBtn.getAttribute('data-title') || card?.getAttribute('data-title') || 'Video Lesson';
+      const start = Number(focusBtn.getAttribute('data-start') || card?.getAttribute('data-start') || '0');
+
+      const targetDoc = selectedDoc || (videoId ? docs.find((d) => d.content?.includes(videoId)) : null);
+      if (targetDoc) {
+        selectFocusDoc(targetDoc);
+      }
+      router.push('/focus');
+      return true;
+    }
+
+    // 2. Move Up action button (Edit mode)
+    const moveUpBtn = target.closest('[data-action="move-up-video"]') as HTMLElement | null;
+    if (moveUpBtn && editorMode === 'edit') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = moveUpBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const editor = editorRef.current;
+      if (card && editor && card.previousElementSibling) {
+        card.parentNode?.insertBefore(card, card.previousElementSibling);
+        setFContent(editor.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
+      return true;
+    }
+
+    // 3. Move Down action button (Edit mode)
+    const moveDownBtn = target.closest('[data-action="move-down-video"]') as HTMLElement | null;
+    if (moveDownBtn && editorMode === 'edit') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = moveDownBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const editor = editorRef.current;
+      if (card && editor && card.nextElementSibling) {
+        card.parentNode?.insertBefore(card.nextElementSibling, card);
+        setFContent(editor.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
+      return true;
+    }
+
+    // 4. Edit Video action button (Edit mode)
+    const editBtn = target.closest('[data-action="edit-video"]') as HTMLElement | null;
+    if (editBtn && editorMode === 'edit') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = editBtn.closest('.video-lesson-block') as HTMLElement | null;
+      if (card) {
+        const videoId = card.getAttribute('data-video-id') || '';
+        const url = card.getAttribute('data-url') || `https://www.youtube.com/watch?v=${videoId}`;
+        const title = card.getAttribute('data-title') || '';
+        setEditingVideoBlockTarget({ element: card, initialUrl: url, initialTitle: title });
+        setVideoModalOpen(true);
+      }
+      return true;
+    }
+
+    // 5. Delete Video action button (Edit mode)
+    const deleteBtn = target.closest('[data-action="delete-video"]') as HTMLElement | null;
+    if (deleteBtn && editorMode === 'edit') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = deleteBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const editor = editorRef.current;
+      if (card && editor) {
+        card.remove();
+        setFContent(editor.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+      }
+      return true;
+    }
+
+    return false;
+  };
+
+  // Insert or update video lesson block inside document OR create dedicated Video Lesson
+  const handleInsertVideoLesson = ({
+    videoId,
+    url,
+    title,
+    startTime,
+  }: {
+    videoId: string;
+    url: string;
+    title: string;
+    startTime: number;
+  }) => {
+    if (videoModalMode === 'create') {
+      const lessonTitle = title.trim() || 'Video Lesson';
+      const blockHtml = generateVideoBlockHtml({
+        videoId,
+        url,
+        title: lessonTitle,
+        startTime,
+        isEditMode: false,
+      });
+      const newDoc = addDoc({
+        title: lessonTitle,
+        content: `${blockHtml}\n\n## Practice & Study Notes\n- Key chords, tabs, and insights...\n`,
+        status: 'active',
+        category: 'learning',
+        tags: ['video-lesson'],
+        docType: 'video-lesson',
+        isPinned: false,
+        readStatus: 'reading',
+        readProgress: 0,
+      });
+      setSelectedId(newDoc.id);
+      setIsCreating(false);
+      setTypeFilter('videos');
+      setEditorMode('book');
+      setMobileTab('editor');
+      setPasteToast('New Video Lesson created & saved!');
+      setTimeout(() => setPasteToast(null), 3000);
+      return;
+    }
+
+    const isEdit = editorMode === 'edit';
+    const blockHtml = generateVideoBlockHtml({
+      videoId,
+      url,
+      title,
+      startTime,
+      isEditMode: isEdit,
+    });
+    const editor = editorRef.current;
+
+    if (editingVideoBlockTarget?.element && editor?.contains(editingVideoBlockTarget.element)) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = blockHtml;
+      const newEl = wrapper.firstElementChild;
+      if (newEl) {
+        editingVideoBlockTarget.element.replaceWith(newEl);
+      }
+      setEditingVideoBlockTarget(null);
+    } else if (editor && isEdit) {
+      editor.focus();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+        document.execCommand('insertHTML', false, `${blockHtml}<p><br/></p>`);
+      } else {
+        editor.innerHTML = `${editor.innerHTML}\n${blockHtml}<p><br/></p>`;
+      }
+    } else {
+      const current = selectedDoc?.content || fContent || '';
+      const updated = `${current}\n\n${blockHtml}\n\n`;
+      setFContent(updated);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: updated, docType: 'video-lesson' });
+    }
+
+    if (editor && isEdit) {
+      const cleaned = transformVideoLessonsInHtml(editor.innerHTML, true);
+      editor.innerHTML = cleaned;
+      setFContent(cleaned);
+      pushHistorySnapshot(cleaned);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: cleaned, docType: 'video-lesson' });
+    }
+  };
+
+  // Convert pasted YouTube URL to embedded Video Lesson block
+  const handleConvertPastedToVideo = () => {
+    if (!detectedPastedYouTube || !editorRef.current) return;
+    const { parsed, rawUrl } = detectedPastedYouTube;
+    const editor = editorRef.current;
+
+    const blockHtml = generateVideoBlockHtml({
+      videoId: parsed.videoId,
+      url: parsed.originalUrl,
+      title: 'Video Lesson',
+      startTime: parsed.startTime,
+      isEditMode: true,
     });
 
-    setIsReadingTimerRunning(false);
-    setReadingSeconds(0);
-    setSessionStartTime(new Date());
+    const anchors = Array.from(editor.querySelectorAll('a'));
+    const targetAnchor = anchors.reverse().find(
+      (a) => a.href.includes(parsed.videoId) || a.textContent?.includes(rawUrl)
+    );
 
-    setPasteToast(`Logged ${durationMin} min reading session at ${timeStr}!`);
-    setTimeout(() => setPasteToast(null), 3000);
+    if (targetAnchor) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `${blockHtml}<p><br/></p>`;
+      targetAnchor.replaceWith(wrapper.firstElementChild!);
+    } else {
+      document.execCommand('insertHTML', false, `${blockHtml}<p><br/></p>`);
+    }
+
+    setFContent(editor.innerHTML);
+    pushHistorySnapshot(editor.innerHTML);
+    if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
+    setDetectedPastedYouTube(null);
   };
 
   // Add manual reading log
@@ -1087,6 +1326,9 @@ export default function KnowledgePage() {
 
   // Ensure all links in document are clickable & clicking a highlight mark or font-span opens the format toolbar
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Check if clicked video lesson action buttons first
+    if (handleCommonDocumentClick(e)) return;
+
     const target = e.target as HTMLElement;
     const anchor = target.closest('a');
     if (anchor && anchor.href) {
@@ -1394,6 +1636,21 @@ export default function KnowledgePage() {
     // Automatically put space after numbering: e.g. "1.hha" -> "1. hha"
     const plainText = rawText.replace(/(^|[\s\n])(\d+)[\.\)]([A-Za-z\u00C0-\u024F\u1E00-\u1EFF])/g, '$1$2. $3');
 
+    // Standalone YouTube URL detection: offer to insert as video block while preserving normal text & links
+    const trimmed = plainText.trim();
+    const parsedYt = parseYouTubeUrl(trimmed);
+    if (parsedYt && !/\s/.test(trimmed)) {
+      const defaultLinkHtml = `<a href="${parsedYt.watchUrl}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${parsedYt.watchUrl}">${trimmed}</a>`;
+      document.execCommand('insertHTML', false, defaultLinkHtml);
+      if (editorRef.current) {
+        setFContent(editorRef.current.innerHTML);
+        pushHistorySnapshot(editorRef.current.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
+      }
+      setDetectedPastedYouTube({ parsed: parsedYt, rawUrl: trimmed });
+      return;
+    }
+
     // Check if plainText contains URLs or Markdown links
     const hasUrls = /(https?:\/\/[^\s<]+|www\.[^\s<]+|\[[^\]]+\]\([^\)]+\))/.test(plainText);
 
@@ -1547,9 +1804,10 @@ export default function KnowledgePage() {
   };
 
   // Helper to convert content into rich HTML for live editing, Word doc, and book reading
-  const getRichHtml = (content: string) => {
+  const getRichHtml = (content: string, isEdit = (editorMode === 'edit')) => {
     if (!content) return '';
-    return renderMarkdown(content);
+    const html = renderMarkdown(content);
+    return transformVideoLessonsInHtml(html, isEdit);
   };
 
   // Load doc into editor
@@ -1665,13 +1923,18 @@ export default function KnowledgePage() {
   };
 
   const handleSave = () => {
-    if (!fTitle.trim()) return;
-    const tags = fTags.split(',').map((t) => t.trim()).filter(Boolean);
+    const rawTags = fTags.split(',').map((t) => t.trim()).filter(Boolean);
+    const isVideo = isDocVideoLesson({ content: fContent, tags: rawTags, docType: selectedDoc?.docType });
+    const fallbackTitle = isVideo ? 'Untitled Video Lesson' : 'Untitled Document';
+    const finalTitle = fTitle.trim() || fallbackTitle;
+    const tags = isVideo && !rawTags.includes('video-lesson') ? [...rawTags, 'video-lesson'] : rawTags;
+
     const payload = {
-      title: fTitle.trim(),
+      title: finalTitle,
       content: fContent,
       status: fStatus,
       category: fCategory,
+      docType: isVideo ? ('video-lesson' as const) : ('document' as const),
       isPinned: fIsPinned,
       readStatus: fReadStatus,
       readProgress: fReadProgress,
@@ -1690,6 +1953,9 @@ export default function KnowledgePage() {
     } else if (selectedDoc) {
       updateDoc(selectedDoc.id, payload);
     }
+    setFTitle(finalTitle);
+    setPasteToast('Saved successfully!');
+    setTimeout(() => setPasteToast(null), 2500);
   };
 
   const handleDelete = (id: string, title: string) => {
@@ -2906,6 +3172,8 @@ export default function KnowledgePage() {
 
   // Editor Interaction Handlers (Click for Link Popover, Keyboard Shortcuts, Tab/Shift+Tab)
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (handleCommonDocumentClick(e)) return;
+
     const target = e.target as HTMLElement;
     const anchor = target.closest('a') as HTMLAnchorElement | null;
     if (anchor && anchor.href) {
@@ -2983,6 +3251,85 @@ export default function KnowledgePage() {
     if (e.key === 'Backspace' || e.key === 'Delete') {
       if (editorRef.current) {
         pushHistorySnapshot(editorRef.current.innerHTML);
+      }
+
+      // Handle deletion of non-editable widgets, chips, or buttons
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+
+        if (!range.collapsed) {
+          const fragment = range.cloneContents();
+          if (fragment.querySelector('.video-timestamp-chip, button, [contenteditable="false"]')) {
+            e.preventDefault();
+            range.deleteContents();
+            if (editorRef.current) {
+              setFContent(editorRef.current.innerHTML);
+              if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
+            }
+            return;
+          }
+        } else {
+          const node = sel.anchorNode;
+          const offset = sel.anchorOffset;
+
+          if (e.key === 'Backspace') {
+            let targetNode: Node | null = null;
+            if (node?.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              if (offset > 0) {
+                targetNode = el.childNodes[offset - 1] || null;
+              }
+            } else if (node?.nodeType === Node.TEXT_NODE && offset === 0) {
+              targetNode = node.previousSibling;
+            }
+
+            if (targetNode instanceof HTMLElement) {
+              if (
+                targetNode.classList.contains('video-timestamp-chip') ||
+                targetNode.tagName === 'BUTTON' ||
+                targetNode.getAttribute('contenteditable') === 'false' ||
+                targetNode.classList.contains('inline-code')
+              ) {
+                e.preventDefault();
+                targetNode.remove();
+                if (editorRef.current) {
+                  setFContent(editorRef.current.innerHTML);
+                  if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
+                }
+                return;
+              }
+            }
+          } else if (e.key === 'Delete') {
+            let targetNode: Node | null = null;
+            if (node?.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              targetNode = el.childNodes[offset] || null;
+            } else if (node?.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent || '';
+              if (offset >= text.length) {
+                targetNode = node.nextSibling;
+              }
+            }
+
+            if (targetNode instanceof HTMLElement) {
+              if (
+                targetNode.classList.contains('video-timestamp-chip') ||
+                targetNode.tagName === 'BUTTON' ||
+                targetNode.getAttribute('contenteditable') === 'false' ||
+                targetNode.classList.contains('inline-code')
+              ) {
+                e.preventDefault();
+                targetNode.remove();
+                if (editorRef.current) {
+                  setFContent(editorRef.current.innerHTML);
+                  if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
+                }
+                return;
+              }
+            }
+          }
+        }
       }
     }
 
@@ -3263,11 +3610,19 @@ export default function KnowledgePage() {
     window.dispatchEvent(new CustomEvent('open-ai-chat'));
   };
 
+  // Study Material Type Counts
+  const allMaterialsCount = docs.length;
+  const booksCount = docs.filter((d) => !isDocVideoLesson(d)).length;
+  const videoLessonsCount = docs.filter((d) => isDocVideoLesson(d)).length;
+
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
   const filteredDocs = docs
     .filter((d) => {
       if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      const isVideo = isDocVideoLesson(d);
+      if (typeFilter === 'documents' && isVideo) return false;
+      if (typeFilter === 'videos' && !isVideo) return false;
       if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q)) return false;
       return true;
     })
@@ -3313,74 +3668,10 @@ export default function KnowledgePage() {
         </button>
       </div>
 
-      {/* Card 1: Reading Session & Digital Clock (First in Reading Tools) */}
-      <div className={styles.companionCard}>
-        <div className={styles.companionCardHeader}>
-          <span className={styles.companionCardTitle}>
-            <Clock size={12} style={{ color: 'var(--color-accent-light)' }} /> Reading Session
-          </span>
-          <span className={styles.companionCardBadge} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Lock size={9} style={{ color: '#10b981' }} />
-            Book Reader (Locked)
-          </span>
-        </div>
-
-        <div className={styles.companionTimerBox}>
-          <div className={styles.companionTimerDigits}>
-            <span className={`${styles.companionTimerDot} ${!isReadingTimerRunning ? styles.companionTimerDotPaused : ''}`} />
-            {String(Math.floor(readingSeconds / 60)).padStart(2, '0')}:{String(readingSeconds % 60).padStart(2, '0')}
-          </div>
-          <span className={styles.companionTimerMeta}>
-            {!isReadingTimerRunning && readingSeconds === 0
-              ? 'Ready • Tap Start to track time'
-              : !isReadingTimerRunning
-              ? `Paused • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : `Reading • Started ${sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-          </span>
-        </div>
-
-        <div className={styles.companionTimerControlsRow}>
-          <button
-            type="button"
-            className={`${styles.companionTimerToggleBtn} ${isReadingTimerRunning ? styles.companionTimerToggleRunning : ''}`}
-            onClick={handleToggleReadingTimer}
-            title={isReadingTimerRunning ? 'Pause reading timer' : readingSeconds > 0 ? 'Resume reading session' : 'Start reading session'}
-          >
-            {isReadingTimerRunning ? (
-              <>
-                <Pause size={12} />
-                <span>Pause</span>
-              </>
-            ) : (
-              <>
-                <Play size={12} />
-                <span>{readingSeconds > 0 ? 'Resume' : 'Start'}</span>
-              </>
-            )}
-          </button>
-          {readingSeconds > 0 && (
-            <button
-              type="button"
-              className={styles.companionTimerResetBtn}
-              onClick={handleResetReadingTimer}
-              title="Reset reading timer to 00:00"
-            >
-              <RotateCcw size={12} />
-              <span>Reset</span>
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          className={styles.companionLogActionBtn}
-          onClick={() => setReadingLogsModalOpen(true)}
-          title="View Reading History Logs & Schedule"
-        >
-          <History size={12} />
-          <span>Reading Logs &amp; Stats</span>
-        </button>
-      </div>
+      {/* Card 1: Redesigned Study Session Timer (Pomodoro | Stopwatch | Local Time | Progress Ring) */}
+      <StudySessionCard
+        onOpenReadingLogs={() => setReadingLogsModalOpen(true)}
+      />
 
       {/* Card 2: Smooth Auto-Scroll Controller */}
       <div className={styles.companionCard}>
@@ -3675,42 +3966,123 @@ export default function KnowledgePage() {
             accept=".pdf,.txt,.md,.doc,.docx,.csv,.json,.html"
             onChange={handleImportFile}
           />
-          <button
-            className={styles.btnSecondary}
-            onClick={() => importFileRef.current?.click()}
-            disabled={isImporting}
-            title="Import PDF, Word (.docx), Markdown, or Text files"
-          >
-            <FileUp size={14} /> {isImporting ? (importStatus || 'Importing...') : 'Import File'}
-          </button>
-          <button
-            type="button"
-            className={`${styles.btnSecondary} ${isCompanionOpen ? styles.btnSecondaryActive : ''}`}
-            onClick={() => {
-              if (!selectedId && filteredDocs.length > 0) {
-                handleSelectDoc(filteredDocs[0].id);
-              }
-              if (editorMode !== 'book' && editorMode !== 'word') {
-                setEditorMode('book');
-              }
-              setMobileTab('editor');
-              handleToggleCompanion();
-            }}
-            title={isCompanionOpen ? "Minimize Reading Tools (Typography & Highlights)" : "Show Reading Tools (Typography, Highlights & Timer)"}
-          >
-            <SlidersHorizontal size={14} style={{ color: isCompanionOpen ? 'var(--color-accent-light)' : 'inherit' }} />
-            <span>Reading Tools</span>
-          </button>
-          <button
-            className={styles.btnSecondary}
-            onClick={handlePasteAsBookDoc}
-            title="Paste copied text and format as Book note"
-          >
-            <ClipboardPaste size={14} /> Paste Text
-          </button>
-          <button className={styles.btnCreate} onClick={handleNewDoc}>
-            <Plus size={14} /> New Document
-          </button>
+          <div className={styles.actionMenuWrapper} ref={actionMenuRef}>
+            <button
+              type="button"
+              className={`${styles.btnPlusMenu} ${isActionMenuOpen ? styles.btnPlusMenuActive : ''}`}
+              onClick={() => setIsActionMenuOpen((prev) => !prev)}
+              title="Create & Tools Menu"
+              aria-label="Create new document or tools"
+              aria-expanded={isActionMenuOpen}
+              aria-haspopup="true"
+            >
+              <Plus size={18} className={`${styles.plusIcon} ${isActionMenuOpen ? styles.plusIconRotated : ''}`} />
+            </button>
+
+            {isActionMenuOpen && (
+              <div className={styles.actionMenuDropdown} role="menu">
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    handleNewDoc();
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: 'var(--color-accent)', background: 'var(--color-surface-2)' }}>
+                    <Plus size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>New Document</span>
+                    <span className={styles.actionMenuHint}>Create blank study document or book</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    handleOpenVideoLessonModal('create');
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
+                    <Video size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>New Video Lesson</span>
+                    <span className={styles.actionMenuHint}>YouTube video with interactive timestamp notes</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    importFileRef.current?.click();
+                  }}
+                  disabled={isImporting}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.1)' }}>
+                    <FileUp size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>{isImporting ? (importStatus || 'Importing...') : 'Import File'}</span>
+                    <span className={styles.actionMenuHint}>PDF, Word (.docx), Markdown, or Text files</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    handlePasteAsBookDoc();
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>
+                    <ClipboardPaste size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>Paste Text</span>
+                    <span className={styles.actionMenuHint}>Paste copied text and format as book note</span>
+                  </div>
+                </button>
+
+                <div className={styles.actionMenuDivider} />
+
+                <button
+                  type="button"
+                  className={`${styles.actionMenuItem} ${isCompanionOpen ? styles.actionMenuItemActive : ''}`}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    if (!selectedId && filteredDocs.length > 0) {
+                      handleSelectDoc(filteredDocs[0].id);
+                    }
+                    if (editorMode !== 'book' && editorMode !== 'word') {
+                      setEditorMode('book');
+                    }
+                    setMobileTab('editor');
+                    handleToggleCompanion();
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: isCompanionOpen ? 'var(--color-accent-light)' : 'var(--color-text-muted)', background: 'var(--color-surface-2)' }}>
+                    <SlidersHorizontal size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>Reading Tools</span>
+                    <span className={styles.actionMenuHint}>{isCompanionOpen ? 'Hide typography, highlights & timer' : 'Show typography, highlights & study timer'}</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -3757,6 +4129,36 @@ export default function KnowledgePage() {
             )}
           </div>
 
+          {/* Material Type Navigation: All | Books & Docs | Video Lessons */}
+          <div className={styles.materialTypeTabs} role="tablist" aria-label="Filter by material type">
+            <button
+              type="button"
+              className={`${styles.materialTypeTab} ${typeFilter === 'all' ? styles.materialTypeTabActive : ''}`}
+              onClick={() => setTypeFilter('all')}
+              title="All study materials"
+            >
+              <span>All ({allMaterialsCount})</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.materialTypeTab} ${typeFilter === 'documents' ? styles.materialTypeTabActive : ''}`}
+              onClick={() => setTypeFilter('documents')}
+              title="Books and written notes"
+            >
+              <BookOpen size={11} />
+              <span>Books ({booksCount})</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.materialTypeTab} ${typeFilter === 'videos' ? styles.materialTypeTabActive : ''}`}
+              onClick={() => setTypeFilter('videos')}
+              title="Dedicated video lessons"
+            >
+              <Video size={11} />
+              <span>Video Lessons ({videoLessonsCount})</span>
+            </button>
+          </div>
+
           <div className={styles.filterRow}>
             <div className={styles.statusChips}>
               {(['all', 'active', 'archived'] as const).map((s) => (
@@ -3769,20 +4171,43 @@ export default function KnowledgePage() {
                 </button>
               ))}
             </div>
-
           </div>
 
           {/* Documents Linear List */}
           <div className={styles.docList}>
             {filteredDocs.length === 0 ? (
               <div className={styles.emptyList}>
-                <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
-                <p>No documents found</p>
+                {typeFilter === 'videos' ? (
+                  <>
+                    <Video size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <p>No video lessons found</p>
+                    <button
+                      type="button"
+                      className={styles.emptyAddBtn}
+                      onClick={() => handleOpenVideoLessonModal('create')}
+                    >
+                      <Video size={13} /> + New Video Lesson
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <p>No documents found</p>
+                    <button
+                      type="button"
+                      className={styles.emptyAddBtn}
+                      onClick={handleNewDoc}
+                    >
+                      <Plus size={13} /> + New Document
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               filteredDocs.map((doc) => {
                 const isActive = doc.id === selectedId;
                 const isFeatured = featuredBookId === doc.id;
+                const isVideo = isDocVideoLesson(doc);
                 const statusDotColor = doc.status === 'active' ? '#10b981' : '#94a3b8';
 
                 return (
@@ -3795,6 +4220,15 @@ export default function KnowledgePage() {
                       <div className={styles.docRowTitleRow}>
                         <div className={styles.docRowTitleWrap}>
                           {doc.isPinned && <Pin size={11} className={styles.pinnedIcon} />}
+                          {isVideo ? (
+                            <span className={styles.videoLessonRowBadge} title="Video Lesson">
+                              <Video size={11} />
+                            </span>
+                          ) : (
+                            <span className={styles.bookRowBadge} title="Book / Document">
+                              <BookOpen size={11} />
+                            </span>
+                          )}
                           <span className={styles.docRowTitle}>{doc.title}</span>
                         </div>
                         <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
@@ -3805,6 +4239,15 @@ export default function KnowledgePage() {
                             title={isFeatured ? "Remove from Today's Reading" : "Feature on Today Dashboard"}
                           >
                             <Star size={11} fill={isFeatured ? "currentColor" : "none"} />
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.rowActionBtn} ${doc.isReminder ? styles.rowActionBtnActive : ''}`}
+                            onClick={() => toggleDocReminder(doc.id)}
+                            title={doc.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+                            style={doc.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined}
+                          >
+                            <Bell size={11} />
                           </button>
                           <button
                             type="button"
@@ -3942,9 +4385,10 @@ export default function KnowledgePage() {
                     <button
                       className={`${styles.segmentBtn} ${(editorMode === 'book' || editorMode === 'word') ? styles.segmentBtnActive : ''}`}
                       onClick={() => setEditorMode('book')}
-                      title="Book reading mode — Formal document layout"
+                      title={isCurrentVideo ? "Video lesson studio view" : "Book reading mode — Formal document layout"}
                     >
-                      <BookOpen size={12} /> Book
+                      {isCurrentVideo ? <Video size={12} /> : <BookOpen size={12} />}
+                      <span>{isCurrentVideo ? 'Video' : 'Book'}</span>
                     </button>
                     <button
                       className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
@@ -3972,45 +4416,62 @@ export default function KnowledgePage() {
                     </span>
                   )}
 
-                  {/* AI Knowledge Tools */}
-                  <button
-                    type="button"
-                    className={styles.headerGhostBtn}
-                    onClick={() => setAiModalOpen(true)}
-                    title="AI Tools: Auto-Format, Summary, Study Quiz, Ask AI"
-                  >
-                    <Sparkles size={13} style={{ color: 'var(--color-accent-light)' }} />
-                    <span>AI</span>
-                  </button>
-
-                  {/* Export PDF Button */}
-                  <button
-                    type="button"
-                    className={styles.headerGhostBtn}
-                    onClick={handleExportPdf}
-                    title="Export as PDF"
-                  >
-                    <Printer size={13} />
-                  </button>
-
-                  {/* Copy Text Button */}
-                  <button
-                    type="button"
-                    className={styles.headerGhostBtn}
-                    onClick={handleCopyText}
-                    title="Copy Document Text"
-                  >
-                    {copied ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
-                  </button>
-
                   {selectedDoc && (
-                    <EntityFiles
-                      variant="button"
-                      className={styles.headerGhostBtn}
-                      entityType="knowledge"
-                      entityId={selectedDoc.id}
-                      title={selectedDoc.title}
-                    />
+                    <button
+                      type="button"
+                      className={`${styles.headerGhostBtn} ${selectedDoc.isReminder ? styles.headerReminderBtnActive : ''}`}
+                      onClick={() => toggleDocReminder(selectedDoc.id)}
+                      title={selectedDoc.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+                      style={selectedDoc.isReminder ? { color: 'var(--color-warning, #f59e0b)', borderColor: 'rgba(245, 158, 11, 0.4)' } : undefined}
+                    >
+                      <Bell size={13} style={selectedDoc.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+                      <span>Reminder</span>
+                    </button>
+                  )}
+
+                  {!isCurrentVideo && (
+                    <>
+                      {/* AI Knowledge Tools */}
+                      <button
+                        type="button"
+                        className={styles.headerGhostBtn}
+                        onClick={() => setAiModalOpen(true)}
+                        title="AI Tools: Auto-Format, Summary, Study Quiz, Ask AI"
+                      >
+                        <Sparkles size={13} style={{ color: 'var(--color-accent-light)' }} />
+                        <span>AI</span>
+                      </button>
+
+                      {/* Export PDF Button */}
+                      <button
+                        type="button"
+                        className={styles.headerGhostBtn}
+                        onClick={handleExportPdf}
+                        title="Export as PDF"
+                      >
+                        <Printer size={13} />
+                      </button>
+
+                      {/* Copy Text Button */}
+                      <button
+                        type="button"
+                        className={styles.headerGhostBtn}
+                        onClick={handleCopyText}
+                        title="Copy Document Text"
+                      >
+                        {copied ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
+                      </button>
+
+                      {selectedDoc && (
+                        <EntityFiles
+                          variant="button"
+                          className={styles.headerGhostBtn}
+                          entityType="knowledge"
+                          entityId={selectedDoc.id}
+                          title={selectedDoc.title}
+                        />
+                      )}
+                    </>
                   )}
 
                   {editorMode === 'edit' && (
@@ -4108,6 +4569,10 @@ export default function KnowledgePage() {
                   onAutoFormat={handleTriggerAutoFormat}
                   isAutoFormatting={isAutoFormatting}
                   activeFormats={activeFormats}
+                  onAddVideo={() => {
+                    setEditingVideoBlockTarget(null);
+                    setVideoModalOpen(true);
+                  }}
                 />
               )}
 
@@ -4157,57 +4622,76 @@ export default function KnowledgePage() {
                   }}
                 />
               ) : (editorMode === 'book' || editorMode === 'word') ? (
-                /* ── Formal Microsoft Word Document Layout with Right Companion (Unified Book Mode) ── */
+                /* ── Formal Microsoft Word Document / Video Studio Layout with Right Companion ── */
                 <div className={isCompanionOpen ? styles.readerTwoColumnLayout : styles.readerTwoColumnLayoutCollapsed}>
                   <div className={styles.readerMainContent}>
-                    {/* Formal Microsoft Word Paper Sheet */}
-                    <div className={styles.wordDocumentSheet}>
-                      <div className={styles.wordDocumentHeader}>
-                        <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Document'}</div>
-                        <div className={styles.wordDocumentMetaRow}>
-                          <div className={styles.wordDocumentBadges}>
-                            <span className={styles.wordDocumentBadge}>
-                              <FileText size={11} /> Microsoft Word / PDF Style
-                            </span>
-                            <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <Lock size={10} /> Locked (Read-Only)
-                            </span>
-                            <span className={styles.wordDocumentBadge}>
-                              Author: Sariling Mundo
-                            </span>
-                            {fCategory && (
+                    {isCurrentVideo ? (
+                      /* ── Executive Video Lesson Studio Layout (Wide Theater Canvas) ── */
+                      <div className={styles.videoLessonStudioSheet}>
+                        <div
+                          ref={(el) => {
+                            (bookEditorRef as any).current = el;
+                            (wordEditorRef as any).current = el;
+                          }}
+                          contentEditable={false}
+                          onClick={handleContentClick}
+                          onKeyDown={handleLockedKeyDown}
+                          className={`${styles.wordDocumentBody} ${styles.videoLessonStudioBody}`}
+                          style={{
+                            color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                          }}
+                          dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                        />
+                      </div>
+                    ) : (
+                      /* ── Formal Microsoft Word Paper Sheet (Books & Standard Documents) ── */
+                      <div className={styles.wordDocumentSheet}>
+                        <div className={styles.wordDocumentHeader}>
+                          <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Document'}</div>
+                          <div className={styles.wordDocumentMetaRow}>
+                            <div className={styles.wordDocumentBadges}>
                               <span className={styles.wordDocumentBadge}>
-                                Category: {fCategory}
+                                <FileText size={11} /> Microsoft Word / PDF Style
                               </span>
-                            )}
-
-                          </div>
-                          <div>
-                            {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                              <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Lock size={10} /> Locked (Read-Only)
+                              </span>
+                              <span className={styles.wordDocumentBadge}>
+                                Author: Sariling Mundo
+                              </span>
+                              {fCategory && (
+                                <span className={styles.wordDocumentBadge}>
+                                  Category: {fCategory}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div
-                        ref={(el) => {
-                          (bookEditorRef as any).current = el;
-                          (wordEditorRef as any).current = el;
-                        }}
-                        contentEditable={false}
-                        onClick={handleContentClick}
-                        onKeyDown={handleLockedKeyDown}
-                        className={`${styles.wordDocumentBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
-                        style={{
-                          color: readingTextColor !== 'default' ? readingTextColor : undefined,
-                        }}
-                        dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
-                      />
+                        <div
+                          ref={(el) => {
+                            (bookEditorRef as any).current = el;
+                            (wordEditorRef as any).current = el;
+                          }}
+                          contentEditable={false}
+                          onClick={handleContentClick}
+                          onKeyDown={handleLockedKeyDown}
+                          className={`${styles.wordDocumentBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
+                          style={{
+                            color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                          }}
+                          dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                        />
 
-                      <div className={styles.wordDocumentFooter}>
-                        <span>Page 1 of 1 • Sariling Mundo Official Document</span>
-                        <span>Confidential &amp; Personal Knowledge Asset</span>
+                        <div className={styles.wordDocumentFooter}>
+                          <span>Page 1 of 1 • Sariling Mundo Official Document</span>
+                          <span>Confidential &amp; Personal Knowledge Asset</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Formal Right Companion Panel (Shown on demand when toggled) */}
@@ -4863,12 +5347,14 @@ export default function KnowledgePage() {
 
             <div className={styles.readingStatsGrid}>
               <div className={styles.readingStatCard}>
-                <span className={styles.readingStatLabel}>Current Reading Time</span>
+                <span className={styles.readingStatLabel}>Current Study Session</span>
                 <span className={styles.readingStatValue}>
-                  {Math.floor(readingSeconds / 60)} min {readingSeconds % 60}s
+                  {studyMode === 'pomodoro'
+                    ? `${Math.floor((pomoDuration - pomoSecondsLeft) / 60)}m ${(pomoDuration - pomoSecondsLeft) % 60}s elapsed`
+                    : `${Math.floor(stopwatchSeconds / 60)}m ${stopwatchSeconds % 60}s`}
                 </span>
                 <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-                  Started at {sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {studyMode === 'pomodoro' ? 'Pomodoro Active' : 'Stopwatch Tracker'}
                 </span>
               </div>
               <div className={styles.readingStatCard}>
@@ -4877,21 +5363,21 @@ export default function KnowledgePage() {
                   {selectedDoc?.totalReadMinutes || 0} mins
                 </span>
                 <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-                  Usual time: {selectedDoc?.preferredReadingTime || sessionStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {selectedDoc?.preferredReadingTime ? `Usual time: ${selectedDoc.preferredReadingTime}` : 'Recorded across sessions'}
                 </span>
               </div>
             </div>
 
-            {readingSeconds >= 30 && (
+            {studyMode === 'stopwatch' && stopwatchSeconds >= 30 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   className={styles.btnSecondary}
-                  onClick={handleSaveReadingSession}
+                  onClick={saveActiveStopwatchSession}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Save size={13} />
-                  <span>Save Current Session ({Math.round(readingSeconds / 60)}m)</span>
+                  <span>Save Current Session ({Math.round(stopwatchSeconds / 60)}m)</span>
                 </button>
               </div>
             )}
@@ -5141,6 +5627,55 @@ export default function KnowledgePage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded Focus View Workspace */}
+      {activeFocusLesson && (
+        <FocusViewWorkspace
+          videoId={activeFocusLesson.videoId}
+          lessonTitle={activeFocusLesson.lessonTitle}
+          startTime={activeFocusLesson.startTime}
+          bookId={activeFocusLesson.bookId || selectedDoc?.id}
+          bookTitle={activeFocusLesson.bookTitle || selectedDoc?.title || fTitle}
+          onClose={() => setActiveFocusLesson(null)}
+          onOpenReadingLogs={() => setReadingLogsModalOpen(true)}
+        />
+      )}
+
+      {/* Add / Edit Video Lesson Modal */}
+      <AddVideoLessonModal
+        isOpen={videoModalOpen}
+        onClose={() => {
+          setVideoModalOpen(false);
+          setEditingVideoBlockTarget(null);
+        }}
+        onInsert={handleInsertVideoLesson}
+        initialUrl={editingVideoBlockTarget?.initialUrl}
+        initialTitle={editingVideoBlockTarget?.initialTitle}
+        mode={videoModalMode}
+      />
+
+      {/* Floating Prompt on Pasting Standalone YouTube URL */}
+      {detectedPastedYouTube && (
+        <div className={styles.youtubePasteToast} role="alert">
+          <span>YouTube video link detected. Embed as a Video Lesson?</span>
+          <div className={styles.youtubePasteToastActions}>
+            <button
+              type="button"
+              className={styles.toastInsertVideoBtn}
+              onClick={handleConvertPastedToVideo}
+            >
+              Insert Video Lesson
+            </button>
+            <button
+              type="button"
+              className={styles.toastDismissBtn}
+              onClick={() => setDetectedPastedYouTube(null)}
+            >
+              Keep as Link
+            </button>
           </div>
         </div>
       )}

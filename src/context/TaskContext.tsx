@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Task, TaskStatus, TaskPriority, Subtask } from '@/types';
 import { loadJsonArray } from '@/lib/localStore';
 import { notifyItemDeleted } from './UndoContext';
+import { cleanMarkdownText } from '@/utils/textCleaner';
 
 const TASKS_STORAGE_KEY = 'life_os_tasks_v1';
 
@@ -116,6 +117,7 @@ interface TaskContextType {
   updateTask: (id: string, partial: Partial<Task>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   toggleTaskDone: (id: string) => void;
+  toggleTaskReminder: (id: string) => void;
   addSubtask: (taskId: string, title: string, estimatedMinutes?: number) => void;
   breakdownTask: (taskId: string, steps: string[]) => void;
   promoteSubtaskToTask: (taskId: string, subtaskId: string) => void;
@@ -170,15 +172,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     title: string,
     overrides?: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>
   ) => {
-    if (!title.trim()) return;
+    const cleanedTitle = cleanMarkdownText(title);
+    if (!cleanedTitle) return;
     const newTask: Task = {
       id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: title.trim(),
+      title: cleanedTitle,
       status: 'todo',
       priority: 'medium',
       tags: [],
       subtasks: [],
       ...overrides,
+      description: overrides?.description ? cleanMarkdownText(overrides.description) : overrides?.description,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -188,6 +192,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const addTask = (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTask: Task = {
       ...data,
+      title: cleanMarkdownText(data.title),
+      description: data.description ? cleanMarkdownText(data.description) : undefined,
       id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       completedAt: data.status === 'done' ? (data.completedAt || new Date().toISOString()) : undefined,
       tags: data.tags || [],
@@ -201,9 +207,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateTask = (id: string, partial: Partial<Task>) => {
+    const cleanedPartial = {
+      ...partial,
+      ...(partial.title !== undefined ? { title: cleanMarkdownText(partial.title) } : {}),
+      ...(partial.description !== undefined && partial.description !== null
+        ? { description: cleanMarkdownText(partial.description) }
+        : {}),
+    };
     const updated = tasks.map((t) => {
       if (t.id !== id) return t;
-      const merged = { ...t, ...partial, updatedAt: new Date().toISOString() };
+      const merged = { ...t, ...cleanedPartial, updatedAt: new Date().toISOString() };
       if (merged.subtasks && merged.subtasks.length > 0) {
         merged.isCompound = true;
       }
@@ -229,6 +242,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       status: isNowDone ? 'done' : 'todo',
       completedAt: isNowDone ? new Date().toISOString() : undefined,
     });
+  };
+
+  const toggleTaskReminder = (id: string) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    updateTask(id, { isReminder: !target.isReminder });
   };
 
   const addSubtask = (taskId: string, title: string, estimatedMinutes?: number) => {
@@ -386,6 +405,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         updateTask,
         updateTaskStatus,
         toggleTaskDone,
+        toggleTaskReminder,
         addSubtask,
         breakdownTask,
         promoteSubtaskToTask,

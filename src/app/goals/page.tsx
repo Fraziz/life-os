@@ -61,7 +61,7 @@ const STATUS_LABELS: Record<GoalStatus, string> = {
 export default function GoalsPage() {
   const { goals, addGoal, updateGoal, updateGoalProgress, deleteGoal, resetToDefaultGoals, isLoaded } = useGoals();
   const { dreams } = useDreams();
-  const { addProject } = useProjects();
+  const { projects, addProject } = useProjects();
   const { activeAreas, focusedAreaId } = useLifeAreas();
   const { tasks, addTask } = useTasks();
   const { settings } = useSettings();
@@ -171,11 +171,6 @@ export default function GoalsPage() {
   const [status, setStatus] = useState<GoalStatus>('in-progress');
   const [progress, setProgress] = useState<number>(0);
 
-  // Quick Add State (must be declared before any conditional return)
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickHorizon, setQuickHorizon] = useState<GoalHorizon>('90-day');
-  const [quickPriority, setQuickPriority] = useState<GoalPriority>('high');
-  const [quickDreamId, setQuickDreamId] = useState<string>('');
 
   const openCreateModal = () => {
     setEditingGoal(null);
@@ -245,23 +240,6 @@ export default function GoalsPage() {
     return <PageSkeleton variant="cards" cardsCount={4} showMetrics={true} showControls={true} />;
   }
 
-  const handleQuickAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickTitle.trim()) return;
-    addGoal({
-      title: quickTitle.trim(),
-      why: 'Key milestone toward core aspirations',
-      horizon: quickHorizon,
-      priority: quickPriority,
-      status: 'in-progress',
-      progress: 0,
-      parentDreamId: quickDreamId || undefined,
-      lifeAreaId: activeAreas[0]?.id || undefined,
-      targetDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-    });
-    setQuickTitle('');
-  };
-
   const filteredGoals = goals.filter((g) => {
     if (focusedAreaId && g.lifeAreaId !== focusedAreaId) return false;
     if (statusFilter === 'active' && (g.status === 'completed' || g.status === 'archived')) return false;
@@ -296,86 +274,6 @@ export default function GoalsPage() {
           </button>
         </div>
       </header>
-
-      {/* ── Quick Add Bar ── */}
-      <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
-        <div className={styles.quickAddRow}>
-          <Target size={16} className={styles.quickAddIcon} />
-          <input
-            type="text"
-            className={styles.quickAddInput}
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleQuickAddSubmit(e);
-              }
-            }}
-            placeholder="Add a new goal..."
-            autoFocus
-          />
-          <div className={styles.quickAddActions}>
-            <button
-              type="button"
-              className={styles.quickAddIconBtn}
-              onClick={openCreateModal}
-              title="Open Detailed Goal Editor"
-              aria-label="Open Detailed Goal Editor"
-            >
-              <Target size={15} />
-            </button>
-            <button
-              type="submit"
-              className={styles.quickAddBtn}
-              onClick={handleQuickAddSubmit}
-              aria-disabled={!quickTitle.trim()}
-            >
-              <span>Add</span>
-              <kbd className={styles.quickAddKbd}>↵</kbd>
-            </button>
-          </div>
-        </div>
-
-        <div className={`${styles.quickAddMetaRow} ${quickTitle.trim() ? styles.quickAddMetaRowOpen : ''}`}>
-          <div className={styles.quickAddPills}>
-            <select
-              className={styles.pillSelect}
-              value={quickHorizon}
-              onChange={(e) => setQuickHorizon(e.target.value as GoalHorizon)}
-            >
-              <option value="90-day">90-Day</option>
-              <option value="yearly">Yearly</option>
-              <option value="monthly">Monthly</option>
-              <option value="long-term">Long-term</option>
-            </select>
-
-            <select
-              className={styles.pillSelect}
-              value={quickPriority}
-              onChange={(e) => setQuickPriority(e.target.value as GoalPriority)}
-            >
-              <option value="high">High Priority</option>
-              <option value="urgent">Urgent</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-
-            <select
-              className={styles.pillSelect}
-              value={quickDreamId}
-              onChange={(e) => setQuickDreamId(e.target.value)}
-            >
-              <option value="">No Parent Dream</option>
-              {dreams.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </form>
 
       {/* ── Controls Bar ── */}
       <div className={styles.controlsBar}>
@@ -451,6 +349,11 @@ export default function GoalsPage() {
             const parentDream = dreams.find((d) => d.id === goal.parentDreamId);
             const area = activeAreas.find((a) => a.id === goal.lifeAreaId);
             const isHighlighted = highlightId === goal.id;
+            const linkedProjects = projects.filter((p) => p.goalId === goal.id);
+            const directTasks = tasks.filter((t) => t.goalId === goal.id && !t.projectId);
+            const isAutomated = linkedProjects.length > 0 || directTasks.length > 0;
+            const completedProjects = linkedProjects.filter((p) => p.status === 'completed' || p.progress === 100);
+            const doneTasks = directTasks.filter((t) => t.status === 'done');
 
             return (
               <article
@@ -524,7 +427,20 @@ export default function GoalsPage() {
                 {/* ── Single Interactive Progress Slider ── */}
                 <div className={styles.progressSection}>
                   <div className={styles.progressHeader}>
-                    <span className={styles.progressLabel}>Progress</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className={styles.progressLabel}>Progress</span>
+                      {isAutomated && (
+                        <span
+                          className={styles.autoBadge}
+                          title={`Auto-synced: ${completedProjects.length}/${linkedProjects.length} projects completed${
+                            directTasks.length > 0 ? `, ${doneTasks.length}/${directTasks.length} direct tasks done` : ''
+                          }`}
+                        >
+                          Auto ({completedProjects.length}/${linkedProjects.length} projs
+                          {directTasks.length > 0 ? `, ${doneTasks.length}/${directTasks.length} tasks` : ''})
+                        </span>
+                      )}
+                    </div>
                     <span className={styles.progressValue}>{goal.progress}%</span>
                   </div>
                   <div className={styles.sliderWrap}>
@@ -533,13 +449,20 @@ export default function GoalsPage() {
                       min="0"
                       max="100"
                       step="5"
+                      disabled={isAutomated}
                       className={styles.progressSlider}
                       style={{
                         background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${goal.progress}%, var(--color-surface-2) ${goal.progress}%, var(--color-surface-2) 100%)`,
+                        cursor: isAutomated ? 'not-allowed' : 'pointer',
+                        opacity: isAutomated ? 0.75 : 1,
                       }}
                       value={goal.progress}
                       onChange={(e) => updateGoalProgress(goal.id, parseInt(e.target.value))}
-                      title="Slide to update progress"
+                      title={
+                        isAutomated
+                          ? `Auto-calculated from connected projects and tasks. Complete child items to advance this goal.`
+                          : 'Slide to update progress'
+                      }
                     />
                   </div>
                 </div>

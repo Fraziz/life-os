@@ -147,6 +147,7 @@ export interface Dream {
   lifeAreaId?: string;        // Linked Life Area ID
   targetDate?: string;        // Target date e.g. "2027-12-31"
   status: DreamStatus;
+  progress?: number;          // 0–100 percentage based on connected goals
   notes?: string;             // Inspiration notes & thoughts
   imageUrl?: string;          // Optional vision board cover photo
   createdAt: string;
@@ -224,6 +225,7 @@ export interface Project {
   milestoneId?: string;        // Parent Milestone ID
   color?: string;              // Custom project color e.g. '#38bdf8'
   notes?: string;              // Execution notes & scratchpad
+  isReminder?: boolean;        // Active reminder on Today dashboard
   createdAt: string;
   updatedAt: string;
 }
@@ -258,6 +260,7 @@ export interface Task {
   color?: string;              // Custom accent line color e.g. '#bd93f9', '#f59e0b', '#38bdf8'
   tags: string[];              // Tag labels e.g. ['physics', 'gameplay']
   subtasks: Subtask[];
+  isReminder?: boolean;        // Active reminder on Today dashboard
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -299,6 +302,7 @@ export interface InboxItem {
   convertedEntityId?: string;
   isApplied?: boolean;
   appliedAt?: string;
+  color?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -411,6 +415,7 @@ export interface KnowledgeDocument {
   content: string;        // Markdown/rich text (stored as plain markdown)
   status: DocumentStatus;
   category?: DocumentCategory;
+  docType?: 'document' | 'video-lesson';
   isPinned?: boolean;
   readStatus?: DocumentReadStatus;
   readProgress?: number;  // 0 - 100 percentage
@@ -429,6 +434,7 @@ export interface KnowledgeDocument {
   totalReadMinutes?: number;
   lastReadAt?: string;
   preferredReadingTime?: string;
+  isReminder?: boolean;        // Active reminder on Today dashboard
 }
 
 // ── Reminders & Notifications (Phase 24) ───────────────────

@@ -28,8 +28,12 @@ import {
   Sparkles,
   Bell,
   Dumbbell,
+  Video,
+  Lightbulb,
+  Folder,
 } from 'lucide-react';
 
+import { isDocVideoLesson } from '@/utils/videoLesson';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -38,7 +42,7 @@ import { useInbox } from '@/context/InboxContext';
 import { useHabits } from '@/context/HabitContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
-import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
+import { playSuccessChime, playSubtaskTick, triggerDopamineBurst, playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
 import { formatTagLabel, getTagCategory } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
 import LifeDomainPill from '@/components/layout/LifeDomainPill';
@@ -62,13 +66,13 @@ const DEFAULT_WORKOUT_SCHEDULE = [
 
 export default function TodayDashboardContent() {
   const { settings } = useSettings();
-  const { tasks, toggleTaskDone, quickAddTask, toggleSubtask } = useTasks();
-  const { activeProjects } = useProjects();
+  const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
+  const { activeProjects, toggleProjectReminder } = useProjects();
   const { activeGoals } = useGoals();
   const { focusedAreaId, areas } = useLifeAreas();
-  const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied } = useInbox();
+  const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
-  const { docs, addDoc } = useKnowledge();
+  const { docs, addDoc, toggleDocReminder } = useKnowledge();
 
   const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
@@ -279,6 +283,85 @@ export default function TodayDashboardContent() {
 
   const [showCompleted, setShowCompleted] = useState(true);
 
+  // ── Unified Today's Reminders (Books, Videos, Tasks, Ideas, Projects) ──
+  const todayReminders = useMemo(() => {
+    const list: Array<{
+      id: string;
+      type: 'task' | 'book' | 'video' | 'idea' | 'project';
+      typeLabel: string;
+      title: string;
+      subtitle?: string;
+      href: string;
+      onFinish?: () => void;
+      onClearReminder: () => void;
+    }> = [];
+
+    // 1. Tasks marked as reminder
+    tasks
+      .filter((t) => t.isReminder && t.status !== 'done')
+      .forEach((t) => {
+        list.push({
+          id: t.id,
+          type: 'task',
+          typeLabel: 'TASK',
+          title: t.title,
+          subtitle: t.dueDate ? `Due ${t.dueDate}` : (t.priority ? `${t.priority} priority` : undefined),
+          href: '/tasks',
+          onFinish: () => toggleTaskDone(t.id),
+          onClearReminder: () => toggleTaskReminder(t.id),
+        });
+      });
+
+    // 2. Books & Videos marked as reminder
+    docs
+      .filter((d) => d.isReminder && d.status !== 'archived')
+      .forEach((d) => {
+        const isVideo = isDocVideoLesson(d);
+        list.push({
+          id: d.id,
+          type: isVideo ? 'video' : 'book',
+          typeLabel: isVideo ? 'VIDEO' : 'BOOK',
+          title: d.title,
+          subtitle: isVideo ? 'Video Lesson' : (d.category || 'Reading Material'),
+          href: isVideo ? '/focus' : '/knowledge',
+          onClearReminder: () => toggleDocReminder(d.id),
+        });
+      });
+
+    // 3. Idea Parking thoughts marked as reminder
+    (activeReminders || [])
+      .filter((r) => !r.isApplied && r.status === 'inbox')
+      .forEach((r) => {
+        list.push({
+          id: r.id,
+          type: 'idea',
+          typeLabel: 'IDEA',
+          title: r.content,
+          subtitle: r.reminderTime ? `Time: ${r.reminderTime}` : 'Idea Parking',
+          href: '/inbox',
+          onFinish: () => toggleItemApplied(r.id),
+          onClearReminder: () => toggleItemReminder(r.id),
+        });
+      });
+
+    // 4. Projects marked as reminder
+    (activeProjects || [])
+      .filter((p) => p.isReminder && p.status !== 'completed')
+      .forEach((p) => {
+        list.push({
+          id: p.id,
+          type: 'project',
+          typeLabel: 'PROJECT',
+          title: p.title,
+          subtitle: `${p.progress}% progress • ${p.priority} priority`,
+          href: '/projects',
+          onClearReminder: () => toggleProjectReminder(p.id),
+        });
+      });
+
+    return list;
+  }, [tasks, docs, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleDocReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+
   const [addingTask, setAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
@@ -419,7 +502,7 @@ export default function TodayDashboardContent() {
         setTimerSecs((prev) => {
           if (prev <= 1) {
             setTimerRunning(false);
-            playSuccessChime();
+            playTimerAlarmSound();
             return 25 * 60;
           }
           return prev - 1;
@@ -675,6 +758,73 @@ export default function TodayDashboardContent() {
             <Zap size={14} className={styles.todayEnergyZapIcon} />
             <span>{energyTips[energyLevel]}</span>
           </div>
+
+          {/* Today's Active Reminders (Important to Finish) */}
+          {todayReminders.length > 0 && (
+            <div className={styles.todayRemindersCard}>
+              <div className={styles.todayRemindersHeader}>
+                <div className={styles.todayRemindersHeaderLeft}>
+                  <span className={styles.todayRemindersDot} />
+                  <Bell size={13} className={styles.todayRemindersBell} />
+                  <h3 className={styles.todayRemindersTitle}>Today&apos;s Reminders</h3>
+                  <span className={styles.todayRemindersCountBadge}>{todayReminders.length}</span>
+                </div>
+                <span className={styles.todayRemindersSub}>Important to finish</span>
+              </div>
+
+              <div className={styles.todayRemindersList}>
+                {todayReminders.map((rem) => (
+                  <div key={`${rem.type}-${rem.id}`} className={styles.todayReminderRow}>
+                    {rem.onFinish ? (
+                      <button
+                        type="button"
+                        className={styles.reminderCheckBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rem.onFinish?.();
+                          playSuccessChime();
+                          triggerDopamineBurst();
+                        }}
+                        title="Mark as done / finish"
+                        aria-label="Complete reminder"
+                      >
+                        <Check size={12} />
+                      </button>
+                    ) : (
+                      <span className={styles.reminderDotMarker} />
+                    )}
+
+                    <span className={`${styles.reminderTypeBadge} ${styles[`typeBadge_${rem.type}`] || ''}`}>
+                      {rem.type === 'book' && <BookOpen size={10} />}
+                      {rem.type === 'video' && <Video size={10} />}
+                      {rem.type === 'task' && <CheckSquare size={10} />}
+                      {rem.type === 'idea' && <Lightbulb size={10} />}
+                      {rem.type === 'project' && <Folder size={10} />}
+                      <span>{rem.typeLabel}</span>
+                    </span>
+
+                    <Link href={rem.href} className={styles.reminderItemLink} title="Open item">
+                      <span className={styles.reminderItemTitle}>{rem.title}</span>
+                      {rem.subtitle && <span className={styles.reminderItemSub}>• {rem.subtitle}</span>}
+                    </Link>
+
+                    <button
+                      type="button"
+                      className={styles.reminderDismissBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rem.onClearReminder();
+                      }}
+                      title="Remove reminder (unpin from Today)"
+                      aria-label="Remove reminder"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Top Priorities */}
           <div className={styles.subSectionWrap}>

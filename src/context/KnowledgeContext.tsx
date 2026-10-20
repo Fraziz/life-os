@@ -8,6 +8,7 @@ import type { KnowledgeDocument, DocumentStatus } from '@/types';
 import { notifyItemDeleted } from './UndoContext';
 
 import { idbGet, idbSet } from '@/lib/idbStore';
+import { isDocVideoLesson, cleanDocumentContent } from '@/utils/videoLesson';
 
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
 const INITIALIZED_KEY = 'life_os_knowledge_initialized_v1';
@@ -142,6 +143,36 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       createdAt: t,
       updatedAt: t,
     },
+    {
+      id: generateId(),
+      title: 'Guitar Masterclass — Theory & Soloing',
+      content: `# Guitar Masterclass — Theory & Soloing
+
+## Lesson 1: Pentatonic Scale Mastery & Fretboard Visualization
+Welcome to the lead guitar study module. Follow the embedded video lesson below, review the practice drills, and launch Focus View for distraction-free study with your active Study Session timer.
+
+<div class="video-lesson-block" data-video-lesson="true" data-video-id="2Q_ZzBGPdqE" data-url="https://www.youtube.com/watch?v=2Q_ZzBGPdqE" data-title="Guitar Lesson 1: Minor Pentatonic Box Patterns" data-start="0"></div>
+
+### Core Concepts & Exercises:
+- **Box 1 Pattern**: Root note on 6th string, frets 5-8, 5-7, 5-7, 5-7, 5-8, 5-8.
+- **Picking Mechanics**: Alternate picking strictly down-up with relaxed wrist movement.
+- **Practice Rhythm**: Set a metronome to 75 BPM and play 1/8th notes smoothly across all 6 strings.
+`,
+      status: 'active',
+      tags: ['guitar', 'music', 'study', 'lessons'],
+      createdAt: t,
+      updatedAt: t,
+      readingLogs: [
+        {
+          id: 'sample_read_1',
+          startedAt: t,
+          durationMinutes: 25,
+          timeOfDay: '10:30 AM',
+          notes: 'Completed Lesson 1 video and Box 1 finger drills.',
+        },
+      ],
+      totalReadMinutes: 25,
+    },
   ];
 }
 
@@ -156,6 +187,7 @@ interface KnowledgeContextValue {
   deleteDoc: (id: string) => void;
   restoreDoc: (doc: KnowledgeDocument) => void;
   togglePinDoc: (id: string) => void;
+  toggleDocReminder: (id: string) => void;
   createProblemSolvingDoc: (problemTitle?: string, initialDescription?: string) => KnowledgeDocument;
   resetToDefaultDocs: () => void;
 }
@@ -167,6 +199,19 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const docsRef = useRef<KnowledgeDocument[]>([]);
   docsRef.current = docs;
+
+  const sanitizeDoc = useCallback((doc: KnowledgeDocument): KnowledgeDocument => {
+    let content = doc.content || '';
+    if (content.includes('video-lesson-block') || content.includes('video-lesson-frame-wrap') || content.includes(':::video-lesson')) {
+      content = cleanDocumentContent(content);
+    }
+    const isVideo = isDocVideoLesson({ ...doc, content });
+    return {
+      ...doc,
+      content,
+      docType: doc.docType || (isVideo ? 'video-lesson' : 'document'),
+    };
+  }, []);
 
   const reloadFromStorage = useCallback(async () => {
     let localDocs: KnowledgeDocument[] = [];
@@ -199,7 +244,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
             }
           }
         });
-        const merged = Array.from(map.values());
+        const merged = Array.from(map.values()).map(sanitizeDoc);
         setDocs(merged);
         docsRef.current = merged;
         setIsLoaded(true);
@@ -211,13 +256,14 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
     // Fallback if IDB was empty but localDocs exists
     if (localDocs.length > 0) {
-      setDocs(localDocs);
-      docsRef.current = localDocs;
-      void idbSet(STORAGE_KEY, localDocs);
+      const sanitized = localDocs.map(sanitizeDoc);
+      setDocs(sanitized);
+      docsRef.current = sanitized;
+      void idbSet(STORAGE_KEY, sanitized);
     } else {
       const isInit = typeof window !== 'undefined' ? localStorage.getItem(INITIALIZED_KEY) : 'true';
       if (!isInit) {
-        const defaults = defaultDocs();
+        const defaults = defaultDocs().map(sanitizeDoc);
         setDocs(defaults);
         docsRef.current = defaults;
         void idbSet(STORAGE_KEY, defaults);
@@ -294,6 +340,11 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
   const togglePinDoc = useCallback((id: string) => {
     const next = docsRef.current.map((d) => d.id === id ? { ...d, isPinned: !d.isPinned, updatedAt: now() } : d);
+    saveDocs(next);
+  }, [saveDocs]);
+
+  const toggleDocReminder = useCallback((id: string) => {
+    const next = docsRef.current.map((d) => d.id === id ? { ...d, isReminder: !d.isReminder, updatedAt: now() } : d);
     saveDocs(next);
   }, [saveDocs]);
 
@@ -378,6 +429,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
       deleteDoc,
       restoreDoc,
       togglePinDoc,
+      toggleDocReminder,
       createProblemSolvingDoc,
       resetToDefaultDocs,
     }}>

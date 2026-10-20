@@ -20,10 +20,15 @@ import { CalendarProvider } from '@/context/CalendarContext';
 import { HabitProvider } from '@/context/HabitContext';
 import { ReviewProvider } from '@/context/ReviewContext';
 import { KnowledgeProvider } from '@/context/KnowledgeContext';
+import { StudySessionProvider } from '@/context/StudySessionContext';
 import { QuickNotesProvider } from '@/context/QuickNotesContext';
 import { ReminderProvider, useReminders } from '@/context/ReminderContext';
 import { SearchProvider, useSearch } from '@/context/SearchContext';
 import { UndoProvider } from '@/context/UndoContext';
+import { TourProvider } from '@/context/TourContext';
+import TourOverlay from '@/components/tour/TourOverlay';
+import TourWelcomeModal from '@/components/tour/TourWelcomeModal';
+import TourCompletionModal from '@/components/tour/TourCompletionModal';
 import SearchModal from '@/components/search/SearchModal';
 import ReminderDrawer from '@/components/reminders/ReminderDrawer';
 import AssistantModal from '@/components/assistant/AssistantModal';
@@ -32,7 +37,7 @@ import AIAssistantPanel from '@/components/assistant/AIAssistantPanel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import CommandPalette from '@/components/command/CommandPalette';
-import ProjectProgressCascade from './ProjectProgressCascade';
+import HierarchyProgressSync from './HierarchyProgressSync';
 import GrammarAssist from '@/components/ui/GrammarAssist';
 import GlobalLinkPreview from '@/components/ui/GlobalLinkPreview';
 import { initFirebaseAnalytics } from '@/lib/firebase';
@@ -91,6 +96,20 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     } catch {
       // localStorage unavailable (SSR/private mode)
     }
+  }, []);
+
+  // Expand sidebar during tour if targeting sidebar items on desktop
+  useEffect(() => {
+    const handleTourSidebar = (e: Event) => {
+      const customEvent = e as CustomEvent<{ expand: boolean }>;
+      if (window.innerWidth >= 1024 && customEvent.detail?.expand) {
+        setIsPinned(true);
+      }
+    };
+    window.addEventListener('tour-expand-sidebar', handleTourSidebar);
+    return () => {
+      window.removeEventListener('tour-expand-sidebar', handleTourSidebar);
+    };
   }, []);
 
   useEffect(() => {
@@ -332,7 +351,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           mobileOpen={mobileOpen}
           onPinToggle={handlePinToggle}
           onMobileClose={() => setMobileOpen(false)}
-          onOpenReminders={() => setRemindersOpen(true)}
           onOpenAssistant={() => setAssistantOpen(true)}
           onOpenNextAction={() => setNextActionOpen(true)}
         />
@@ -342,12 +360,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           <TopBar
             pageTitle={getPageTitle(pathname)}
             onMenuToggle={() => setMobileOpen(true)}
-            onOpenReminders={() => setRemindersOpen(true)}
             onOpenNextAction={() => setNextActionOpen(true)}
           />
 
-          {/* Automatic Tasks-to-Projects Progress Cascade */}
-          <ProjectProgressCascade />
+          {/* Automatic Tasks -> Projects -> Goals -> Dreams Progress Cascade */}
+          <HierarchyProgressSync />
 
           <main
             className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''} ${pathname === '/knowledge' ? styles.knowledgeContent : ''}`}
@@ -388,6 +405,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       {/* Movable Minimalist Floating AI Chat Button */}
       <button
         type="button"
+        data-tour="ai-assistant-btn"
         onPointerDown={handleBubblePointerDown}
         onPointerMove={handleBubblePointerMove}
         onPointerUp={handleBubblePointerUp}
@@ -422,6 +440,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
       <GrammarAssist />
       <GlobalLinkPreview />
+
+      {/* Interactive Guided Tour Overlays and Dialogs */}
+      <TourOverlay />
+      <TourWelcomeModal />
+      <TourCompletionModal />
     </>
   );
 }
@@ -444,29 +467,33 @@ function withAppProviders(content: React.ReactNode) {
               <ProjectProvider>
                 <TaskProvider>
                   <KnowledgeProvider>
-                    <TodayPlanProvider>
-                      <FocusProvider>
-                        <InboxProvider>
-                          <CalendarProvider>
-                            <HabitProvider>
-                              <ReviewProvider>
-                                <QuickNotesProvider>
-                                  <ReminderProvider>
-                                    <SearchProvider>
-                                      <UndoProvider>
-                                        <ShellContent>
-                                          {content}
-                                        </ShellContent>
-                                      </UndoProvider>
-                                    </SearchProvider>
-                                  </ReminderProvider>
-                                </QuickNotesProvider>
-                              </ReviewProvider>
-                            </HabitProvider>
-                          </CalendarProvider>
-                        </InboxProvider>
-                      </FocusProvider>
-                    </TodayPlanProvider>
+                    <StudySessionProvider>
+                      <TodayPlanProvider>
+                        <FocusProvider>
+                          <InboxProvider>
+                            <CalendarProvider>
+                              <HabitProvider>
+                                <ReviewProvider>
+                                  <QuickNotesProvider>
+                                    <ReminderProvider>
+                                      <SearchProvider>
+                                        <UndoProvider>
+                                          <TourProvider>
+                                            <ShellContent>
+                                              {content}
+                                            </ShellContent>
+                                          </TourProvider>
+                                        </UndoProvider>
+                                      </SearchProvider>
+                                    </ReminderProvider>
+                                  </QuickNotesProvider>
+                                </ReviewProvider>
+                              </HabitProvider>
+                            </CalendarProvider>
+                          </InboxProvider>
+                        </FocusProvider>
+                      </TodayPlanProvider>
+                    </StudySessionProvider>
                   </KnowledgeProvider>
                 </TaskProvider>
               </ProjectProvider>

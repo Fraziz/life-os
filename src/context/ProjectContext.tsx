@@ -40,6 +40,7 @@ interface ProjectContextType {
   updateProject: (id: string, partial: Partial<Project>) => void;
   updateProjectProgress: (id: string, progress: number) => void;
   updateProjectStatus: (id: string, status: ProjectStatus) => void;
+  toggleProjectReminder: (id: string) => void;
   deleteProject: (id: string) => void;
   resetToDefaultProjects: () => void;
   isLoaded: boolean;
@@ -119,6 +120,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const toggleProjectReminder = (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    if (!target) return;
+    updateProject(id, { isReminder: !target.isReminder });
+  };
+
   const deleteProject = (id: string) => {
     const target = projects.find((p) => p.id !== id);
     const updated = projects.filter((p) => p.id !== id);
@@ -156,6 +163,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         updateProject,
         updateProjectProgress,
         updateProjectStatus,
+        toggleProjectReminder,
         deleteProject,
         resetToDefaultProjects,
         isLoaded,

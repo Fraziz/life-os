@@ -451,6 +451,21 @@
   margin: 0 auto;
 }
 
+.zenMode .focusContainerVideo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.zenMode .focusVideoWrapper {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto 60px;
+}
+
 .zenMode .focusBookWrapper {
   width: 100%;
   max-width: 820px;
@@ -613,6 +628,22 @@
   gap: var(--space-6);
   align-items: start;
   width: 100%;
+}
+
+.focusContainerVideo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-6);
+  align-items: start;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1180px) {
+  .focusContainerVideo {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1554,6 +1585,47 @@
   justify-content: space-between;
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.collapsibleHeader {
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.collapsibleHeader:hover .sideCardTitle {
+  color: var(--color-text);
+}
+
+.sideCardHeaderCollapsed {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+.sideCardHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collapseToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.collapseToggleBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .sideCardTitle {
@@ -3134,3 +3206,382 @@
   text-align: right;
   margin: 4px 0 0 0;
 }
+
+/* ============================================================
+   VIDEO LESSON BLOCKS IN FOCUS SPACE
+   Same executive aesthetics as Study & Books
+   ============================================================ */
+
+.videoLessonFocusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(105, 98, 244, 0.12);
+  color: var(--color-accent-light, #6962f4);
+  border: 1px solid rgba(105, 98, 244, 0.25);
+  white-space: nowrap;
+}
+
+.focusBookPageCardVideo {
+  padding: 24px 28px;
+}
+
+.focusBookBodyVideo {
+  margin-top: 0;
+}
+
+/* ============================================================
+   EXPANSIVE CINEMATIC VIDEO THEATER WORKSPACE
+   Big, wide, responsive, and formal layout for Video Lessons
+   ============================================================ */
+
+.focusVideoWrapper {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.focusVideoTheaterCard {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 12px);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+}
+
+.focusVideoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.focusVideoHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.focusVideoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(105, 98, 244, 0.12);
+  color: var(--color-accent-light, #6962f4);
+  border: 1px solid rgba(105, 98, 244, 0.25);
+  white-space: nowrap;
+}
+
+.focusVideoTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.focusVideoSwitchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.focusVideoSwitchBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.focusReminderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.focusReminderBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.focusReminderBtnActive {
+  background: var(--color-surface-2) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: var(--color-warning, #f59e0b) !important;
+}
+
+.focusVideoFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+}
+
+.focusVideoFrame :global(div[class*="playerWrapper"]) {
+  border-radius: 0;
+  border: none;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 100%;
+}
+
+.focusVideoNotesCard {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 12px);
+  padding: 24px 30px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.focusVideoNotesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 18px;
+}
+
+.focusVideoNotesTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.focusVideoNotesBody {
+  font-size: 1rem;
+  line-height: 1.85;
+  color: var(--color-text);
+  user-select: text;
+  cursor: text;
+  outline: none;
+  min-height: 120px;
+}
+
+.focusVideoNotesBody :global(h2),
+.focusVideoNotesBody :global(h3) {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 18px 0 10px 0;
+  color: var(--color-text);
+}
+
+.focusVideoNotesBody :global(ul) {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.focusVideoNotesBody :global(li) {
+  margin-bottom: 6px;
+}
+
+.focusBookBody :global(.video-lesson-block) {
+  margin: 0 0 24px 0;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.focusBookBody :global(.video-lesson-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  gap: 12px;
+}
+
+.focusBookBody :global(.video-lesson-info-left) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.focusBookBody :global(.video-lesson-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(105, 98, 244, 0.12);
+  color: var(--color-accent-light, #6962f4);
+  border: 1px solid rgba(105, 98, 244, 0.25);
+  white-space: nowrap;
+}
+
+.focusBookBody :global(.video-lesson-title) {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.focusBookBody :global(.video-lesson-tools) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.focusBookBody :global(.video-lesson-action-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.focusBookBody :global(.video-lesson-action-btn:hover) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border-hover, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.focusBookBody :global(.video-lesson-frame-wrap) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  background: #000000;
+}
+
+.focusBookBody :global(.video-lesson-frame-wrap iframe) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.btnSwitchTargetHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnSwitchTargetHeader:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-accent-light);
+}
+
+.btnSwitchTargetInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnSwitchTargetInline:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.bookFocusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+

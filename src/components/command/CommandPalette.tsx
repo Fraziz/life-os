@@ -107,6 +107,17 @@ export default function CommandPalette() {
         closePalette();
       },
     },
+    {
+      id: 'act-tour',
+      category: 'Quick Actions',
+      title: 'Take System Tour',
+      subtitle: 'Restart guided interactive onboarding tour',
+      keywords: ['tour', 'guide', 'help', 'tutorial', 'onboarding', 'walkthrough'],
+      onSelect: () => {
+        closePalette();
+        window.dispatchEvent(new CustomEvent('start-guided-tour', { detail: { tourId: 'main-tour' } }));
+      },
+    },
 
     {
       id: 'act-simple-mode',

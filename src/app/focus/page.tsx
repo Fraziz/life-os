@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Play,
@@ -19,6 +19,11 @@ import {
   ExternalLink,
   Pin,
   Save,
+  Video,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Bell,
 } from 'lucide-react';
 import { useFocus } from '@/context/FocusContext';
 import { useTasks } from '@/context/TaskContext';
@@ -26,6 +31,15 @@ import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
+import {
+  isDocVideoLesson,
+  transformVideoLessonsInHtml,
+  generateVideoBlockHtml,
+  extractVideoLessonData,
+  extractVideoLessonNotes,
+} from '@/utils/videoLesson';
+import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
+import YouTubePlayer from '@/components/study/YouTubePlayer';
 import {
   playSubtaskTick,
   playTimerCompleteFanfare,
@@ -36,6 +50,7 @@ import {
   type AmbientSoundType,
 } from '@/utils/soundAndDopamine';
 import type { Task, FocusModeType, KnowledgeDocument } from '@/types';
+import ContextualTourBanner from '@/components/tour/ContextualTourBanner';
 import styles from './page.module.css';
 
 function formatTimer(seconds: number): string {
@@ -118,14 +133,15 @@ export default function FocusPage() {
     isLoaded,
   } = useFocus();
 
-  const { docs, updateDoc, addDoc } = useKnowledge();
+  const { docs, updateDoc, addDoc, toggleDocReminder } = useKnowledge();
   const { tasks, toggleSubtask } = useTasks();
   const { goals } = useGoals();
   const { projects } = useProjects();
   const { quickDump } = useInbox();
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
-  const [targetTab, setTargetTab] = useState<'tasks' | 'knowledge'>('tasks');
+  const [targetTab, setTargetTab] = useState<'tasks' | 'knowledge' | 'videos'>('tasks');
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [targetSearchQuery, setTargetSearchQuery] = useState('');
 
   const [focusViewMode, setFocusViewMode] = useState<'timer' | 'book'>('book');
@@ -148,6 +164,23 @@ export default function FocusPage() {
   const [parkingLotInput, setParkingLotInput] = useState('');
   const [parkedNotice, setParkedNotice] = useState(false);
   const [zenParkOpen, setZenParkOpen] = useState(false);
+  const [ambientExpanded, setAmbientExpanded] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lifeos_ambient_expanded');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+
+  const toggleAmbientExpanded = () => {
+    setAmbientExpanded((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lifeos_ambient_expanded', String(next));
+      }
+      return next;
+    });
+  };
 
   // Reading scroll progress tracker
   const [readingScrollPercent, setReadingScrollPercent] = useState<number>(0);
@@ -194,24 +227,122 @@ export default function FocusPage() {
   // Sync content into book container ref whenever activeDoc or focusViewMode changes
   const getRichHtml = (content: string) => {
     if (!content) return '';
-    if (/<[a-z][^>]*>/i.test(content)) return content;
-    let html = content
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-      .replace(/^- (.*$)/gim, '<li>$1</li>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br/>');
-    return `<p>${html}</p>`;
+    let html = content;
+    if (!/<[a-z][^>]*>/i.test(content)) {
+      html = content
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+        .replace(/^- (.*$)/gim, '<li>$1</li>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br/>');
+      html = `<p>${html}</p>`;
+    }
+    // Clean up any stray video timestamp chip tags or buttons
+    html = html
+      .replace(/<button[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/button>/gi, '')
+      .replace(/<span[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
+      .replace(/\[00:00\]/g, '')
+      .replace(/(?:--\s*){3,}/g, '');
+    return transformVideoLessonsInHtml(html, false, true, activeDoc?.title);
+  };
+
+  const handleNotesKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Backspace / Delete handling for non-editable widgets, chips, buttons
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+
+        if (!range.collapsed) {
+          const fragment = range.cloneContents();
+          if (fragment.querySelector('.video-timestamp-chip, button, [contenteditable="false"]')) {
+            e.preventDefault();
+            range.deleteContents();
+            handleManualSave();
+            return;
+          }
+        } else {
+          const node = sel.anchorNode;
+          const offset = sel.anchorOffset;
+
+          if (e.key === 'Backspace') {
+            let targetNode: Node | null = null;
+            if (node?.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              if (offset > 0) {
+                targetNode = el.childNodes[offset - 1] || null;
+              }
+            } else if (node?.nodeType === Node.TEXT_NODE && offset === 0) {
+              targetNode = node.previousSibling;
+            }
+
+            if (targetNode instanceof HTMLElement) {
+              if (
+                targetNode.classList.contains('video-timestamp-chip') ||
+                targetNode.tagName === 'BUTTON' ||
+                targetNode.getAttribute('contenteditable') === 'false' ||
+                targetNode.classList.contains('inline-code')
+              ) {
+                e.preventDefault();
+                targetNode.remove();
+                handleManualSave();
+                return;
+              }
+            }
+          } else if (e.key === 'Delete') {
+            let targetNode: Node | null = null;
+            if (node?.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              targetNode = el.childNodes[offset] || null;
+            } else if (node?.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent || '';
+              if (offset >= text.length) {
+                targetNode = node.nextSibling;
+              }
+            }
+
+            if (targetNode instanceof HTMLElement) {
+              if (
+                targetNode.classList.contains('video-timestamp-chip') ||
+                targetNode.tagName === 'BUTTON' ||
+                targetNode.getAttribute('contenteditable') === 'false' ||
+                targetNode.classList.contains('inline-code')
+              ) {
+                e.preventDefault();
+                targetNode.remove();
+                handleManualSave();
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const handleNotesClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const chip = target.closest('.video-timestamp-chip, [data-timestamp], button') as HTMLElement | null;
+    if (chip && bookContainerRef.current?.contains(chip)) {
+      e.preventDefault();
+      e.stopPropagation();
+      chip.remove();
+      handleManualSave();
+    }
   };
 
   useEffect(() => {
     if (activeDoc && bookContainerRef.current) {
-      bookContainerRef.current.innerHTML = getRichHtml(activeDoc.content || '');
+      if (isDocVideoLesson(activeDoc)) {
+        bookContainerRef.current.innerHTML = getRichHtml(extractVideoLessonNotes(activeDoc.content || ''));
+      } else {
+        bookContainerRef.current.innerHTML = getRichHtml(activeDoc.content || '');
+      }
     }
   }, [activeDoc, focusViewMode]);
 
@@ -508,7 +639,24 @@ export default function FocusPage() {
   const handleManualSave = () => {
     const container = bookContainerRef.current;
     if (container && activeDoc) {
-      updateDoc(activeDoc.id, { content: container.innerHTML });
+      if (isDocVideoLesson(activeDoc)) {
+        const videoData = extractVideoLessonData(activeDoc.content || '');
+        if (videoData) {
+          const videoBlockHtml = generateVideoBlockHtml({
+            videoId: videoData.videoId,
+            url: videoData.url,
+            title: activeDoc.title || videoData.title,
+            startTime: videoData.startTime,
+            isEditMode: false,
+          });
+          const combined = `${videoBlockHtml}\n\n${container.innerHTML}`;
+          updateDoc(activeDoc.id, { content: combined });
+        } else {
+          updateDoc(activeDoc.id, { content: container.innerHTML });
+        }
+      } else {
+        updateDoc(activeDoc.id, { content: container.innerHTML });
+      }
       triggerSaveToast();
     }
   };
@@ -599,6 +747,9 @@ export default function FocusPage() {
       return timeB - timeA;
     });
 
+  const bookDocs = filteredDocs.filter((d) => !isDocVideoLesson(d));
+  const videoDocs = filteredDocs.filter((d) => isDocVideoLesson(d));
+
   // ── Today's Progress: group sessions by task/book, filtered to today ──
   const todayStr = new Date().toDateString();
   const todaySessions = focusHistory.filter((s) => {
@@ -645,7 +796,7 @@ export default function FocusPage() {
 
             <div className={styles.zenTargetInfo}>
               <span className={styles.zenTargetLabel}>
-                {activeDoc ? 'BOOK' : 'TARGET'}
+                {activeDoc ? (isDocVideoLesson(activeDoc) ? 'VIDEO LESSON' : 'BOOK') : 'TARGET'}
               </span>
               <span
                 className={styles.zenTargetTitle}
@@ -703,18 +854,22 @@ export default function FocusPage() {
             {/* Knowledge reading tools when reading a book */}
             {activeDoc && (
               <div className={styles.zenBookTools}>
-                <span className={styles.zenReadingStat} title="Reading progress">
-                  {readingScrollPercent}%
-                </span>
+                {!isDocVideoLesson(activeDoc) && (
+                  <>
+                    <span className={styles.zenReadingStat} title="Reading progress">
+                      {readingScrollPercent}%
+                    </span>
 
-                <button
-                  type="button"
-                  className={`${styles.zenSaveBtn} ${showSaveToast ? styles.zenSaveBtnSuccess : ''}`}
-                  onClick={handleManualSave}
-                  title="Save highlights to Study & Books"
-                >
-                  {showSaveToast ? 'Saved' : 'Save'}
-                </button>
+                    <button
+                      type="button"
+                      className={`${styles.zenSaveBtn} ${showSaveToast ? styles.zenSaveBtnSuccess : ''}`}
+                      onClick={handleManualSave}
+                      title="Save highlights to Study & Books"
+                    >
+                      {showSaveToast ? 'Saved' : 'Save'}
+                    </button>
+                  </>
+                )}
 
                 {/* Minimal View Toggle in Zen Mode */}
                 <div className={styles.zenViewToggle}>
@@ -722,9 +877,9 @@ export default function FocusPage() {
                     type="button"
                     className={`${styles.zenViewBtn} ${focusViewMode === 'book' ? styles.zenViewBtnActive : ''}`}
                     onClick={() => setFocusViewMode('book')}
-                    title="Switch to Book Reader View"
+                    title={isDocVideoLesson(activeDoc) ? "Switch to Video Lesson Studio" : "Switch to Book Reader View"}
                   >
-                    Book
+                    {isDocVideoLesson(activeDoc) ? 'Video' : 'Book'}
                   </button>
                   <button
                     type="button"
@@ -789,7 +944,7 @@ export default function FocusPage() {
       )}
 
       {/* Hairline reading progress track across viewport top when in Book Zen Mode */}
-      {isZenMode && activeDoc && focusViewMode === 'book' && (
+      {isZenMode && activeDoc && focusViewMode === 'book' && !isDocVideoLesson(activeDoc) && (
         <div className={styles.zenReadingProgressBarTrack}>
           <div
             className={styles.zenReadingProgressBarFill}
@@ -806,19 +961,21 @@ export default function FocusPage() {
               <h1 className={styles.title}>Focus Space</h1>
               {activeDoc && (
                 <span className={styles.toastSaved}>
-                  Book Reader Active
+                  {isDocVideoLesson(activeDoc) ? 'Video Lesson Active' : 'Book Reader Active'}
                 </span>
               )}
             </div>
             {!(activeDoc && focusViewMode === 'book') && (
               <p className={styles.subtitle}>
-                Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.
+                {activeDoc && isDocVideoLesson(activeDoc)
+                  ? 'Hyperfocus timer, ADHD distraction parking lot, and video lesson studio.'
+                  : 'Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.'}
               </p>
             )}
           </div>
 
           <div className={styles.headerActions}>
-            {/* View Mode Toggle when reading a Knowledge Book */}
+            {/* View Mode Toggle when reading a Knowledge Book or Video Lesson */}
             {activeDoc && (
               <div className={styles.targetTabGroup} style={{ margin: 0 }}>
                 <button
@@ -826,7 +983,7 @@ export default function FocusPage() {
                   className={`${styles.targetTab} ${focusViewMode === 'book' ? styles.targetTabActive : ''}`}
                   onClick={() => setFocusViewMode('book')}
                 >
-                  Book View
+                  {isDocVideoLesson(activeDoc) ? 'Video View' : 'Book View'}
                 </button>
                 <button
                   type="button"
@@ -849,38 +1006,152 @@ export default function FocusPage() {
         </header>
       )}
 
+      {/* Contextual Onboarding Tour Guide */}
+      {!isZenMode && <ContextualTourBanner tourId="focus-space" featureName="Focus Space" />}
+
       {/* Main Focus Container */}
-      <div className={activeDoc && focusViewMode === 'book' ? styles.focusContainerBook : styles.focusContainer}>
+      <div className={activeDoc && focusViewMode === 'book' ? (isDocVideoLesson(activeDoc) ? styles.focusContainerVideo : styles.focusContainerBook) : styles.focusContainer}>
         {/* Left / Main Section */}
         <section className={styles.focusMain} style={{ width: '100%' }}>
           {/* If a Knowledge document is active AND we are in Book View */}
           {activeDoc && focusViewMode === 'book' ? (
-            <div className={styles.focusBookWrapper}>
-              {/* Book Page Card */}
-              <div className={styles.focusBookPageCard}>
-                <div className={styles.focusBookTitle}>{activeDoc.title}</div>
-                {activeDoc.tags && activeDoc.tags.length > 0 && (
-                  <div className={styles.bookMeta}>
-                    {activeDoc.tags.map((t) => (
-                      <span key={t} className={styles.bookTag}>#{t}</span>
-                    ))}
+            isDocVideoLesson(activeDoc) ? (
+              /* ── EXPANSIVE CINEMATIC VIDEO LESSON THEATER ── */
+              <div className={styles.focusVideoWrapper}>
+                {/* 1. Large 16:9 Video Player Theater Card (Big, Wide & Responsive) */}
+                <div className={styles.focusVideoTheaterCard}>
+                  <div className={styles.focusVideoHeader}>
+                    <div className={styles.focusVideoHeaderLeft}>
+                      <span className={styles.focusVideoBadge}>
+                        <Video size={12} /> Video Lesson
+                      </span>
+                      <h2 className={styles.focusVideoTitle}>{activeDoc.title}</h2>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className={`${styles.focusReminderBtn} ${activeDoc.isReminder ? styles.focusReminderBtnActive : ''}`}
+                        onClick={() => toggleDocReminder(activeDoc.id)}
+                        title={activeDoc.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+                      >
+                        <Bell size={12} style={activeDoc.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+                        <span>Reminder</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.focusVideoSwitchBtn}
+                        onClick={() => setTaskPickerOpen(true)}
+                        title="Switch focus target (Tasks, Books, or Video Lessons)"
+                      >
+                        <RotateCcw size={12} />
+                        <span>Switch Target</span>
+                      </button>
+                    </div>
                   </div>
-                )}
-                <div className={styles.bookDivider} />
 
-                <div
-                  ref={bookContainerRef}
-                  contentEditable={false}
-                  className={styles.focusBookBody}
-                  dangerouslySetInnerHTML={{ __html: getRichHtml(activeDoc.content || '') }}
-                />
+                  <div className={styles.focusVideoFrame}>
+                    <YouTubePlayer
+                      videoId={extractVideoLessonData(activeDoc.content || '')?.videoId || ''}
+                      startTime={extractVideoLessonData(activeDoc.content || '')?.startTime || 0}
+                      title={activeDoc.title}
+                    />
+                  </div>
+                </div>
 
-                <div className={styles.bookFooter}>
-                  <span>Reading Target in Focus Mode · Sariling Mundo</span>
-                  <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                {/* 2. Practice & Study Notes Card with Live Highlighter & Study Notes */}
+                <div className={styles.focusVideoNotesCard}>
+                  <div className={styles.focusVideoNotesHeader}>
+                    <div className={styles.focusVideoNotesTitle}>
+                      <FileText size={14} style={{ color: 'var(--color-accent-light)' }} />
+                      <span>Lesson Practice &amp; Study Notes</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className={`${styles.bookSaveBtn} ${showSaveToast ? styles.bookSaveBtnSuccess : ''}`}
+                        onClick={handleManualSave}
+                        title="Save highlights and notes back to document"
+                      >
+                        <Save size={12} style={{ marginRight: 4 }} />
+                        <span>{showSaveToast ? 'Saved' : 'Save Notes'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={bookContainerRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className={styles.focusVideoNotesBody}
+                    dangerouslySetInnerHTML={{ __html: getRichHtml(extractVideoLessonNotes(activeDoc.content || '')) }}
+                    onKeyDown={handleNotesKeyDown}
+                    onClick={handleNotesClick}
+                    onBlur={handleManualSave}
+                  />
+
+                  <div className={styles.bookFooter} style={{ marginTop: '16px', borderTop: '1px solid var(--color-border-subtle)', paddingTop: '10px' }}>
+                    <span>Practice &amp; Study Notes · Sariling Mundo</span>
+                    <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Standard Book Reading View (A4 Book Paper) */
+              <div className={styles.focusBookWrapper}>
+                <div className={styles.focusBookPageCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className={styles.bookFocusBadge}>
+                        <BookOpen size={12} /> Book
+                      </span>
+                      <div className={styles.focusBookTitle}>{activeDoc.title}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className={`${styles.focusReminderBtn} ${activeDoc.isReminder ? styles.focusReminderBtnActive : ''}`}
+                        onClick={() => toggleDocReminder(activeDoc.id)}
+                        title={activeDoc.isReminder ? "Remove reminder (clears from Today)" : "Set Reminder (Show on Today)"}
+                      >
+                        <Bell size={12} style={activeDoc.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
+                        <span>Reminder</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnSwitchTargetInline}
+                        onClick={() => setTaskPickerOpen(true)}
+                        title="Switch to another task, book, or video lesson"
+                      >
+                        <RotateCcw size={12} />
+                        <span>Switch Target</span>
+                      </button>
+                    </div>
+                  </div>
+                  {activeDoc.tags && activeDoc.tags.filter((t) => t.toLowerCase() !== 'video-lesson').length > 0 && (
+                    <div className={styles.bookMeta}>
+                      {activeDoc.tags
+                        .filter((t) => t.toLowerCase() !== 'video-lesson')
+                        .map((t) => (
+                          <span key={t} className={styles.bookTag}>#{t}</span>
+                        ))}
+                    </div>
+                  )}
+                  <div className={styles.bookDivider} />
+
+                  <div
+                    ref={bookContainerRef}
+                    contentEditable={false}
+                    className={styles.focusBookBody}
+                    dangerouslySetInnerHTML={{ __html: getRichHtml(activeDoc.content || '') }}
+                  />
+
+                  <div className={styles.bookFooter}>
+                    <span>Reading Target in Focus Mode · Sariling Mundo</span>
+                    <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             /* Standard Focus Timer Card */
             <div className={styles.focusCard}>
@@ -913,7 +1184,7 @@ export default function FocusPage() {
               </div>
 
               {/* Formal Digital Timer Display Card */}
-              <div className={styles.timerDisplayCard}>
+              <div className={styles.timerDisplayCard} data-tour="focus-timer">
                 <div className={styles.timerNumber}>
                   {mode === 'flow'
                     ? formatTimer(secondsElapsed)
@@ -931,11 +1202,20 @@ export default function FocusPage() {
               </div>
 
               {/* Current Task / Target Details */}
-              <div className={styles.currentTaskArea}>
+              <div className={styles.currentTaskArea} data-tour="focus-task-select">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <span className={styles.taskTagPill}>
-                    {activeDoc ? 'READING TARGET' : 'CURRENT TARGET'}
+                    {activeDoc ? (isDocVideoLesson(activeDoc) ? 'VIDEO LESSON TARGET' : 'READING TARGET') : 'CURRENT TARGET'}
                   </span>
+                  <button
+                    type="button"
+                    className={styles.btnSwitchTargetInline}
+                    onClick={() => setTaskPickerOpen(true)}
+                    title="Switch focus target (Tasks, Books, or Video Lessons)"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Switch Target</span>
+                  </button>
                   {parentProject && (
                     <span style={{ fontSize: '11px', color: 'var(--color-accent-light)', background: 'var(--color-surface-2)', padding: '2px 8px', borderRadius: '4px' }}>
                       Project: {parentProject.title}
@@ -959,7 +1239,7 @@ export default function FocusPage() {
                       className={styles.focusBookBtn}
                       onClick={() => setFocusViewMode('book')}
                     >
-                      Open Book Reader with Highlighter
+                      {isDocVideoLesson(activeDoc) ? 'Open Video Lesson Studio' : 'Open Book Reader with Highlighter'}
                     </button>
                   </div>
                 )}
@@ -1129,7 +1409,7 @@ export default function FocusPage() {
                     : formatTimer(secondsRemaining)}
                 </div>
                 <div className={styles.bookTimerMetaRow}>
-                  <span>{mode === 'flow' ? 'Flow Session' : `${mode === 'pomodoro' ? '25 Min Focus' : 'Break Time'}`}</span>
+                  <span>{mode === 'flow' ? 'Flow Session' : `${mode === 'pomodoro' ? (isDocVideoLesson(activeDoc) ? '25 Min Lesson' : '25 Min Focus') : 'Break Time'}`}</span>
                   <span>•</span>
                   <span>{formatTimer(secondsElapsed)} spent</span>
                 </div>
@@ -1153,7 +1433,7 @@ export default function FocusPage() {
                   </button>
                 ) : (
                   <button className={styles.bookBtnStart} onClick={startTimer}>
-                    {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
+                    {secondsElapsed > 0 ? 'Resume' : isDocVideoLesson(activeDoc) ? 'Start Lesson' : 'Start Focus'}
                   </button>
                 )}
 
@@ -1169,8 +1449,9 @@ export default function FocusPage() {
                     type="button"
                     className={styles.bookUtilityBtn}
                     onClick={() => setTaskPickerOpen(true)}
+                    title="Switch target"
                   >
-                    Switch
+                    Switch Target
                   </button>
                   <button
                     type="button"
@@ -1182,227 +1463,232 @@ export default function FocusPage() {
                 </div>
               </div>
 
-              <div className={styles.bookPanelDivider} />
+              {/* When in Video Lesson, keep sidebar ultra-clean showing ONLY the Focus Session timer box */}
+              {!isDocVideoLesson(activeDoc) && (
+                <>
+                  <div className={styles.bookPanelDivider} />
 
-              {/* ── Reading & Annotation Tools (Knowledge Focus Only) ── */}
-              <div>
-                <div className={styles.bookReadingHeader}>
-                  <div className={styles.bookReadingMeta}>
-                    <span className={styles.bookReadingPercent}>{readingScrollPercent}% read</span>
-                  </div>
-                  <div className={styles.bookReadingToolsRight}>
-                    <button
-                      type="button"
-                      className={`${styles.bookSaveBtn} ${showSaveToast ? styles.bookSaveBtnSuccess : ''}`}
-                      onClick={handleManualSave}
-                      title="Save highlights to Study & Books"
-                    >
-                      <span>{showSaveToast ? 'Saved' : 'Save'}</span>
-                    </button>
-                    <Link
-                      href="/knowledge"
-                      className={styles.bookExtLink}
-                      title="Open in Study & Books"
-                    >
-                      Study &amp; Books
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Thin Reading Progress Track */}
-                <div className={styles.bookReadingTrack} title={`Reading progress: ${readingScrollPercent}%`}>
-                  <div
-                    className={styles.bookReadingFill}
-                    style={{ width: `${readingScrollPercent}%` }}
-                  />
-                </div>
-
-                {/* Annotate Mode Switch: Highlight vs Font Color */}
-                <div className={styles.annotateModeSwitch}>
-                  <button
-                    type="button"
-                    className={`${styles.annotateModeBtn} ${annotationMode === 'highlight' ? styles.annotateModeBtnActive : ''}`}
-                    onClick={() => setAnnotationMode('highlight')}
-                  >
-                    Highlight (BG)
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.annotateModeBtn} ${annotationMode === 'fontColor' ? styles.annotateModeBtnActive : ''}`}
-                    onClick={() => setAnnotationMode('fontColor')}
-                  >
-                    Font Color (Text)
-                  </button>
-                </div>
-
-                {annotationMode === 'highlight' ? (
-                  /* Highlighter Color Palette & Quick Eraser */
-                  <div className={styles.bookHighlighterRow}>
-                    <span className={styles.bookHighlighterLabel}>Highlight</span>
-                    <div className={styles.bookSwatchGroup}>
-                      {HIGHLIGHT_COLORS.map((c) => (
-                        <button
-                          key={c.name}
-                          type="button"
-                          className={`${styles.bookSwatchDot} ${activeHighlightColor === c.name ? styles.bookSwatchDotActive : ''}`}
-                          style={{
-                            backgroundColor: c.border,
-                          }}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleHighlightInFocus(c.name)}
-                          title={`Select ${c.label} highlighter`}
-                        />
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.bookEraserBtn}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleRemoveHighlightInFocus()}
-                      title="Clear highlight from selected text"
-                    >
-                      <Eraser size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  /* Font Color Palette & Reset */
-                  <div className={styles.bookHighlighterRow}>
-                    <span className={styles.bookHighlighterLabel}>Text Color</span>
-                    <div className={styles.bookSwatchGroup}>
-                      {FONT_COLORS.map((fc) => (
-                        <button
-                          key={fc.name}
-                          type="button"
-                          className={`${styles.bookSwatchDot} ${activeFontColor === fc.color ? styles.bookSwatchDotActive : ''}`}
-                          style={{
-                            backgroundColor: fc.color === 'inherit' ? 'var(--color-surface-2)' : fc.color,
-                            borderColor: fc.border,
-                            color: fc.name === 'white' ? '#0f172a' : fc.color === 'inherit' ? 'var(--color-text)' : '#ffffff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '9px',
-                            fontWeight: 700,
-                          }}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleFontColorInFocus(fc.color)}
-                          title={`Font Color: ${fc.label}`}
-                        >
-                          A
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.bookEraserBtn}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleFontColorInFocus('inherit')}
-                      title="Reset font color to default"
-                    >
-                      <RotateCcw size={11} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.bookPanelDivider} />
-
-              {/* ── Today's Progress ── */}
-              {todayProgressList.length > 0 && (
-                <div>
-                  <div className={styles.bookSectionTitle}>
-                    Today&rsquo;s Focus
-                    <span className={styles.todayTotalBadge}>{fmtMin(todayTotalMinutes)}</span>
-                  </div>
-                  <div className={styles.todayList}>
-                    {todayProgressList.map((entry) => (
-                      <div key={entry.title} className={styles.todayEntry}>
-                        <span className={styles.todayEntryTitle} title={entry.title}>
-                          {entry.title.replace(/^Reading:\s*/i, '')}
-                        </span>
-                        <span className={styles.todayEntryTime}>{fmtMin(entry.minutes)}</span>
+                  {/* ── Reading & Annotation Tools (Knowledge Focus Only) ── */}
+                  <div>
+                    <div className={styles.bookReadingHeader}>
+                      <div className={styles.bookReadingMeta}>
+                        <span className={styles.bookReadingPercent}>{readingScrollPercent}% read</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className={styles.bookReadingToolsRight}>
+                        <button
+                          type="button"
+                          className={`${styles.bookSaveBtn} ${showSaveToast ? styles.bookSaveBtnSuccess : ''}`}
+                          onClick={handleManualSave}
+                          title="Save highlights to Study & Books"
+                        >
+                          <span>{showSaveToast ? 'Saved' : 'Save'}</span>
+                        </button>
+                        <Link
+                          href="/knowledge"
+                          className={styles.bookExtLink}
+                          title="Open in Study & Books"
+                        >
+                          Study &amp; Books
+                        </Link>
+                      </div>
+                    </div>
 
-              <div className={styles.bookPanelDivider} />
-
-              {/* ADHD Distraction Quick-Park (Inline, minimal) */}
-              <div>
-                <div className={styles.bookSectionTitle}>Distraction Parking</div>
-                <form onSubmit={handleParkDistraction} className={styles.bookInlineParkForm}>
-                  <input
-                    type="text"
-                    value={parkingLotInput}
-                    onChange={(e) => setParkingLotInput(e.target.value)}
-                    placeholder="Park a quick thought... ↵"
-                    className={styles.bookInlineParkInput}
-                  />
-                  <button type="submit" className={styles.bookInlineParkBtn} title="Save to parking lot">
-                    Park
-                  </button>
-                </form>
-                {parkedNotice && (
-                  <p className={styles.bookParkSuccessText}>
-                    Saved to Brain Dump!
-                  </p>
-                )}
-              </div>
-
-              <div className={styles.bookPanelDivider} />
-
-              {/* Ambient Soundscapes (Compact Selector) */}
-              <div>
-                <div className={styles.bookAmbientHeader}>
-                  <span className={styles.bookSectionTitle}>Ambient Sound</span>
-                  {ambientSound !== 'off' && (
-                    <button
-                      type="button"
-                      className={styles.bookAmbientMute}
-                      onClick={() => handleAmbientToggle('off')}
-                      title="Stop soundscape"
-                    >
-                      <VolumeX size={11} />
-                      <span>Mute</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className={styles.bookAmbientControlRow}>
-                  <select
-                    value={ambientSound}
-                    onChange={(e) => handleAmbientToggle(e.target.value as any)}
-                    className={styles.bookAmbientSelect}
-                    aria-label="Ambient sound"
-                  >
-                    <option value="off">Off (Silent Focus)</option>
-                    {SOUNDSCAPES.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.icon} {s.title} ({s.subtitle})
-                      </option>
-                    ))}
-                  </select>
-
-                  {ambientSound !== 'off' && (
-                    <div className={styles.bookAmbientVolWrap}>
-                      <Volume2 size={12} className={styles.bookAmbientVolIcon} />
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={ambientVol}
-                        onChange={handleVolumeChange}
-                        className={styles.bookAmbientSlider}
-                        title={`Volume: ${Math.round(ambientVol * 100)}%`}
+                    {/* Thin Reading Progress Track */}
+                    <div className={styles.bookReadingTrack} title={`Reading progress: ${readingScrollPercent}%`}>
+                      <div
+                        className={styles.bookReadingFill}
+                        style={{ width: `${readingScrollPercent}%` }}
                       />
-                      <span className={styles.bookAmbientVolText}>{Math.round(ambientVol * 100)}%</span>
+                    </div>
+
+                    {/* Annotate Mode Switch: Highlight vs Font Color */}
+                    <div className={styles.annotateModeSwitch}>
+                      <button
+                        type="button"
+                        className={`${styles.annotateModeBtn} ${annotationMode === 'highlight' ? styles.annotateModeBtnActive : ''}`}
+                        onClick={() => setAnnotationMode('highlight')}
+                      >
+                        Highlight (BG)
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.annotateModeBtn} ${annotationMode === 'fontColor' ? styles.annotateModeBtnActive : ''}`}
+                        onClick={() => setAnnotationMode('fontColor')}
+                      >
+                        Font Color (Text)
+                      </button>
+                    </div>
+
+                    {annotationMode === 'highlight' ? (
+                      /* Highlighter Color Palette & Quick Eraser */
+                      <div className={styles.bookHighlighterRow}>
+                        <span className={styles.bookHighlighterLabel}>Highlight</span>
+                        <div className={styles.bookSwatchGroup}>
+                          {HIGHLIGHT_COLORS.map((c) => (
+                            <button
+                              key={c.name}
+                              type="button"
+                              className={`${styles.bookSwatchDot} ${activeHighlightColor === c.name ? styles.bookSwatchDotActive : ''}`}
+                              style={{
+                                backgroundColor: c.border,
+                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleHighlightInFocus(c.name)}
+                              title={`Select ${c.label} highlighter`}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.bookEraserBtn}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleRemoveHighlightInFocus()}
+                          title="Clear highlight from selected text"
+                        >
+                          <Eraser size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      /* Font Color Palette & Reset */
+                      <div className={styles.bookHighlighterRow}>
+                        <span className={styles.bookHighlighterLabel}>Text Color</span>
+                        <div className={styles.bookSwatchGroup}>
+                          {FONT_COLORS.map((fc) => (
+                            <button
+                              key={fc.name}
+                              type="button"
+                              className={`${styles.bookSwatchDot} ${activeFontColor === fc.color ? styles.bookSwatchDotActive : ''}`}
+                              style={{
+                                backgroundColor: fc.color === 'inherit' ? 'var(--color-surface-2)' : fc.color,
+                                borderColor: fc.border,
+                                color: fc.name === 'white' ? '#0f172a' : fc.color === 'inherit' ? 'var(--color-text)' : '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '9px',
+                                fontWeight: 700,
+                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleFontColorInFocus(fc.color)}
+                              title={`Font Color: ${fc.label}`}
+                            >
+                              A
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.bookEraserBtn}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleFontColorInFocus('inherit')}
+                          title="Reset font color to default"
+                        >
+                          <RotateCcw size={11} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.bookPanelDivider} />
+
+                  {/* ── Today's Progress ── */}
+                  {todayProgressList.length > 0 && (
+                    <div>
+                      <div className={styles.bookSectionTitle}>
+                        Today&rsquo;s Focus
+                        <span className={styles.todayTotalBadge}>{fmtMin(todayTotalMinutes)}</span>
+                      </div>
+                      <div className={styles.todayList}>
+                        {todayProgressList.map((entry) => (
+                          <div key={entry.title} className={styles.todayEntry}>
+                            <span className={styles.todayEntryTitle} title={entry.title}>
+                              {entry.title.replace(/^Reading:\s*/i, '')}
+                            </span>
+                            <span className={styles.todayEntryTime}>{fmtMin(entry.minutes)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
+
+                  <div className={styles.bookPanelDivider} />
+
+                  {/* ADHD Distraction Quick-Park (Inline, minimal) */}
+                  <div>
+                    <div className={styles.bookSectionTitle}>Distraction Parking</div>
+                    <form onSubmit={handleParkDistraction} className={styles.bookInlineParkForm}>
+                      <input
+                        type="text"
+                        value={parkingLotInput}
+                        onChange={(e) => setParkingLotInput(e.target.value)}
+                        placeholder="Park a quick thought... ↵"
+                        className={styles.bookInlineParkInput}
+                      />
+                      <button type="submit" className={styles.bookInlineParkBtn} title="Save to parking lot">
+                        Park
+                      </button>
+                    </form>
+                    {parkedNotice && (
+                      <p className={styles.bookParkSuccessText}>
+                        Saved to Brain Dump!
+                      </p>
+                    )}
+                  </div>
+
+                  <div className={styles.bookPanelDivider} />
+
+                  {/* Ambient Soundscapes (Compact Selector) */}
+                  <div>
+                    <div className={styles.bookAmbientHeader}>
+                      <span className={styles.bookSectionTitle}>Ambient Sound</span>
+                      {ambientSound !== 'off' && (
+                        <button
+                          type="button"
+                          className={styles.bookAmbientMute}
+                          onClick={() => handleAmbientToggle('off')}
+                          title="Stop soundscape"
+                        >
+                          <VolumeX size={11} />
+                          <span>Mute</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className={styles.bookAmbientControlRow}>
+                      <select
+                        value={ambientSound}
+                        onChange={(e) => handleAmbientToggle(e.target.value as any)}
+                        className={styles.bookAmbientSelect}
+                        aria-label="Ambient sound"
+                      >
+                        <option value="off">Off (Silent Focus)</option>
+                        {SOUNDSCAPES.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.icon} {s.title} ({s.subtitle})
+                          </option>
+                        ))}
+                      </select>
+
+                      {ambientSound !== 'off' && (
+                        <div className={styles.bookAmbientVolWrap}>
+                          <Volume2 size={12} className={styles.bookAmbientVolIcon} />
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={ambientVol}
+                            onChange={handleVolumeChange}
+                            className={styles.bookAmbientSlider}
+                            title={`Volume: ${Math.round(ambientVol * 100)}%`}
+                          />
+                          <span className={styles.bookAmbientVolText}>{Math.round(ambientVol * 100)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </aside>
           ) : (
             /* ── Standard Timer View Right Sidebar ── */
@@ -1430,8 +1716,9 @@ export default function FocusPage() {
                     <button
                       className={styles.sideActionBtn}
                       onClick={() => setTaskPickerOpen(true)}
+                      title="Switch target"
                     >
-                      Switch
+                      Switch Target
                     </button>
                   </div>
 
@@ -1502,8 +1789,21 @@ export default function FocusPage() {
               </div>
 
               {/* Ambient Soundscapes */}
-              <div className={styles.sideCard}>
-                <div className={styles.sideCardHeader}>
+              <div className={styles.sideCard} data-tour="focus-audio">
+                <div
+                  className={`${styles.sideCardHeader} ${styles.collapsibleHeader} ${!ambientExpanded ? styles.sideCardHeaderCollapsed : ''}`}
+                  onClick={toggleAmbientExpanded}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleAmbientExpanded();
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={ambientExpanded}
+                  aria-label="Toggle Ambient Soundscapes"
+                >
                   <div className={styles.sideCardTitleGroup}>
                     <span className={styles.sideCardTitle}>
                       Ambient Soundscapes
@@ -1515,62 +1815,83 @@ export default function FocusPage() {
                       </span>
                     )}
                   </div>
-                  {ambientSound !== 'off' && (
+                  <div className={styles.sideCardHeaderActions}>
+                    {ambientSound !== 'off' && (
+                      <button
+                        type="button"
+                        className={styles.ambientMuteBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAmbientToggle('off');
+                        }}
+                        title="Stop ambient audio"
+                      >
+                        <VolumeX size={12} />
+                        <span>Stop</span>
+                      </button>
+                    )}
                     <button
                       type="button"
-                      className={styles.ambientMuteBtn}
-                      onClick={() => handleAmbientToggle('off')}
-                      title="Stop ambient audio"
+                      className={styles.collapseToggleBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleAmbientExpanded();
+                      }}
+                      aria-label={ambientExpanded ? 'Collapse Ambient Soundscapes' : 'Expand Ambient Soundscapes'}
+                      title={ambientExpanded ? 'Collapse' : 'Expand'}
                     >
-                      <VolumeX size={12} />
-                      <span>Stop</span>
+                      {ambientExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
-                  )}
-                </div>
-
-                <div className={styles.ambientBtnGrid}>
-                  {SOUNDSCAPES.map((s) => {
-                    const isActive = ambientSound === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={`${styles.ambientPill} ${isActive ? styles.activeAmbient : ''}`}
-                        onClick={() => handleAmbientToggle(s.id)}
-                        title={`${s.title} (${s.subtitle})`}
-                      >
-                        <span className={styles.ambientIcon}>{s.icon}</span>
-                        <div className={styles.ambientTextCol}>
-                          <span className={styles.ambientTitle}>{s.title}</span>
-                          <span className={styles.ambientSubtitle}>{s.subtitle}</span>
-                        </div>
-                        {isActive && (
-                          <span className={styles.ambientEqualizer}>
-                            <span className={styles.eqBar} style={{ animationDelay: '0ms' }} />
-                            <span className={styles.eqBar} style={{ animationDelay: '180ms' }} />
-                            <span className={styles.eqBar} style={{ animationDelay: '360ms' }} />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {ambientSound !== 'off' && (
-                  <div className={styles.ambientVolBar}>
-                    <Volume2 size={13} className={styles.ambientVolIcon} />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={ambientVol}
-                      onChange={handleVolumeChange}
-                      className={styles.ambientSlider}
-                      title="Ambient Sound Volume"
-                    />
-                    <span className={styles.ambientVolLabel}>{Math.round(ambientVol * 100)}%</span>
                   </div>
+                </div>
+
+                {ambientExpanded && (
+                  <>
+                    <div className={styles.ambientBtnGrid}>
+                      {SOUNDSCAPES.map((s) => {
+                        const isActive = ambientSound === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            className={`${styles.ambientPill} ${isActive ? styles.activeAmbient : ''}`}
+                            onClick={() => handleAmbientToggle(s.id)}
+                            title={`${s.title} (${s.subtitle})`}
+                          >
+                            <span className={styles.ambientIcon}>{s.icon}</span>
+                            <div className={styles.ambientTextCol}>
+                              <span className={styles.ambientTitle}>{s.title}</span>
+                              <span className={styles.ambientSubtitle}>{s.subtitle}</span>
+                            </div>
+                            {isActive && (
+                              <span className={styles.ambientEqualizer}>
+                                <span className={styles.eqBar} style={{ animationDelay: '0ms' }} />
+                                <span className={styles.eqBar} style={{ animationDelay: '180ms' }} />
+                                <span className={styles.eqBar} style={{ animationDelay: '360ms' }} />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {ambientSound !== 'off' && (
+                      <div className={styles.ambientVolBar}>
+                        <Volume2 size={13} className={styles.ambientVolIcon} />
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={ambientVol}
+                          onChange={handleVolumeChange}
+                          className={styles.ambientSlider}
+                          title="Ambient Sound Volume"
+                        />
+                        <span className={styles.ambientVolLabel}>{Math.round(ambientVol * 100)}%</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </aside>
@@ -1591,7 +1912,7 @@ export default function FocusPage() {
               </button>
             </div>
 
-            {/* Tabs: Tasks vs Knowledge & Books */}
+            {/* Tabs: Tasks vs Books vs Video Lessons */}
             <div className={styles.targetTabGroup}>
               <button
                 type="button"
@@ -1605,7 +1926,16 @@ export default function FocusPage() {
                 className={`${styles.targetTab} ${targetTab === 'knowledge' ? styles.targetTabActive : ''}`}
                 onClick={() => setTargetTab('knowledge')}
               >
-                Knowledge & Books ({filteredDocs.length})
+                <BookOpen size={12} />
+                <span>Books ({bookDocs.length})</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.targetTab} ${targetTab === 'videos' ? styles.targetTabActive : ''}`}
+                onClick={() => setTargetTab('videos')}
+              >
+                <Video size={12} />
+                <span>Video Lessons ({videoDocs.length})</span>
               </button>
             </div>
 
@@ -1613,7 +1943,7 @@ export default function FocusPage() {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder={targetTab === 'tasks' ? 'Search tasks...' : 'Search books, notes, documents...'}
+                placeholder={targetTab === 'tasks' ? 'Search tasks...' : targetTab === 'videos' ? 'Search video lessons...' : 'Search books, notes, documents...'}
                 value={targetSearchQuery}
                 onChange={(e) => setTargetSearchQuery(e.target.value)}
                 className={styles.targetSearchInput}
@@ -1622,7 +1952,68 @@ export default function FocusPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
-              {targetTab === 'tasks' ? (
+              {targetTab === 'videos' ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      marginBottom: '4px',
+                      fontSize: '12px',
+                      padding: '8px',
+                      background: 'rgba(105, 98, 244, 0.1)',
+                      border: '1px solid var(--color-accent-light, #6962f4)',
+                      color: 'var(--color-text)',
+                    }}
+                    onClick={() => setVideoModalOpen(true)}
+                  >
+                    <Video size={14} style={{ color: 'var(--color-accent-light)' }} /> + Add New Video Lesson Target
+                  </button>
+                  {videoDocs.length > 0 ? (
+                    videoDocs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className={`${styles.knowledgeTargetItem} ${activeDoc?.id === doc.id ? styles.knowledgeTargetActive : ''}`}
+                        onClick={() => {
+                          selectFocusDoc(doc);
+                          setFocusViewMode('book');
+                          setTaskPickerOpen(false);
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Video size={14} style={{ color: 'var(--color-accent-light)' }} />
+                            {doc.isPinned && <Pin size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />}
+                            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
+                              {doc.title}
+                            </span>
+                          </div>
+                          {doc.tags && doc.tags.length > 0 && (
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              {doc.tags.map((t) => (
+                                <span key={t} style={{ fontSize: '10px', color: 'var(--color-text-faint)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px' }}>
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <button className={styles.btnReset} style={{ padding: '2px 8px', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                          Select Lesson
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
+                      No video lessons found. Click above to add one!
+                    </p>
+                  )}
+                </>
+              ) : targetTab === 'tasks' ? (
                 filteredTasks.length > 0 ? (
                   filteredTasks.map((task) => (
                     <div
@@ -1684,8 +2075,8 @@ export default function FocusPage() {
                   >
                     <Plus size={14} style={{ color: 'var(--color-accent-light)' }} /> + Create New Note / Book Target
                   </button>
-                  {filteredDocs.length > 0 ? (
-                    filteredDocs.map((doc) => (
+                  {bookDocs.length > 0 ? (
+                    bookDocs.map((doc) => (
                       <div
                         key={doc.id}
                         className={`${styles.knowledgeTargetItem} ${activeDoc?.id === doc.id ? styles.knowledgeTargetActive : ''}`}
@@ -1720,7 +2111,7 @@ export default function FocusPage() {
                     ))
                   ) : (
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', textAlign: 'center', padding: '16px 0' }}>
-                      No knowledge documents found.
+                      No book documents found.
                     </p>
                   )}
                 </>
@@ -1869,6 +2260,38 @@ export default function FocusPage() {
           </button>
         </div>
       )}
+
+      {/* Modal: Add New Video Lesson Target directly in Focus Space */}
+      <AddVideoLessonModal
+        isOpen={videoModalOpen}
+        onClose={() => setVideoModalOpen(false)}
+        mode="create"
+        onInsert={({ videoId, url, title, startTime }) => {
+          const lessonTitle = title.trim() || 'Video Lesson';
+          const blockHtml = generateVideoBlockHtml({
+            videoId,
+            url,
+            title: lessonTitle,
+            startTime,
+            isEditMode: false,
+          });
+          const newDoc = addDoc({
+            title: lessonTitle,
+            content: `${blockHtml}\n\n## Practice & Study Notes\n- Key chords, tabs, and insights...\n`,
+            status: 'active',
+            category: 'learning',
+            tags: ['video-lesson'],
+            docType: 'video-lesson',
+            isPinned: false,
+            readStatus: 'reading',
+            readProgress: 0,
+          });
+          selectFocusDoc(newDoc);
+          setFocusViewMode('book');
+          setTaskPickerOpen(false);
+          setVideoModalOpen(false);
+        }}
+      />
     </div>
   );
 }

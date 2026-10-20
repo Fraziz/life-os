@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Logo from '@/components/ui/Logo';
-import { useReminders } from '@/context/ReminderContext';
-import { Bell, Compass } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import styles from './TopBar.module.css';
 
 interface TopBarProps {
   pageTitle: string;
   onMenuToggle: () => void;
-  onOpenReminders?: () => void;
   onOpenNextAction?: () => void;
 }
 
@@ -96,15 +94,8 @@ function CloudSyncDot() {
 export default function TopBar({
   pageTitle,
   onMenuToggle,
-  onOpenReminders,
   onOpenNextAction,
 }: TopBarProps) {
-  const { unreadCount } = useReminders();
-  const hasNotifications = unreadCount > 0;
-  const bellTooltip = hasNotifications
-    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
-    : 'Notifications';
-
   return (
     <header className={styles.topBar} role="banner">
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
@@ -120,34 +111,19 @@ export default function TopBar({
         <span className={styles.pageTitle}>{pageTitle}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} data-tour="topbar-actions">
         <CloudSyncDot />
 
         {onOpenNextAction && (
           <button
+            type="button"
             className={styles.iconBtn}
             onClick={onOpenNextAction}
             title="What should I do right now?"
             aria-label="What to do"
+            data-tour="topbar-compass"
           >
             <Compass size={18} />
-          </button>
-        )}
-
-        {onOpenReminders && (
-          <button
-            className={styles.iconBtn}
-            onClick={onOpenReminders}
-            title={bellTooltip}
-            aria-label={bellTooltip}
-          >
-            <Bell size={18} />
-
-            {hasNotifications && (
-              <span className={styles.badge} aria-label={`${unreadCount} unread notifications`}>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
           </button>
         )}
 

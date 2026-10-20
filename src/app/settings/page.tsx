@@ -35,9 +35,11 @@ import {
   Layers,
   Zap,
   Check,
+  Compass,
 } from 'lucide-react';
 
 import ActiveDevices from '@/components/settings/ActiveDevices';
+import { useTour } from '@/context/TourContext';
 import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -71,6 +73,7 @@ export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
   const { user, isGuest, logout, logoutAllDevices, changePassword } = useAuth();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
+  const { startTour, resetAllTours } = useTour();
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
@@ -934,6 +937,91 @@ export default function SettingsPage() {
                 <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* ── Guided Tours & Onboarding ── */}
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionIcon}>
+              <Compass size={16} />
+            </div>
+            <div className={styles.sectionHeaderContent}>
+              <h2 className={styles.sectionTitle}>Guided Tours &amp; Onboarding</h2>
+              <p className={styles.sectionDesc}>Interactive walkthroughs and step-by-step guidance across system features.</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+            <div style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-lg, 10px)',
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Main System Tour</strong>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
+                  Take a guided walkthrough of the core cockpit, Idea Parking, Tasks Kanban, Planning hierarchy, and AI Assistant.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                onClick={() => {
+                  startTour('main-tour');
+                  setToastText('Starting System Tour…');
+                  setShowSavedToast(true);
+                  setTimeout(() => setShowSavedToast(false), 2000);
+                }}
+              >
+                <Compass size={14} />
+                Restart System Tour
+              </button>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-lg, 10px)',
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <RotateCcw size={16} style={{ color: 'var(--color-text-muted)' }} />
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Feature Tips &amp; Guides</strong>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
+                  Reset contextual tutorial banners (such as Focus Space and Idea Parking guides) so they appear again when visiting those pages.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                onClick={() => {
+                  resetAllTours();
+                  setToastText('All tour progress and contextual tips reset');
+                  setShowSavedToast(true);
+                  setTimeout(() => setShowSavedToast(false), 2500);
+                }}
+              >
+                <RotateCcw size={14} />
+                Reset All Guides
+              </button>
+            </div>
           </div>
         </section>
 

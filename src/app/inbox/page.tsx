@@ -36,6 +36,11 @@ import {
   Mail,
   AlertCircle,
   Pencil,
+  Palette,
+  Ban,
+  Bell,
+  Lightbulb,
+  StickyNote,
 } from 'lucide-react';
 import { useSpeechToText } from '@/utils/useSpeechToText';
 import { useInbox } from '@/context/InboxContext';
@@ -53,14 +58,36 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
+import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
 import type { InboxItem, InboxConvertedType } from '@/types';
 import { processBrainDumpWithAI, breakdownThoughtWithAI, type ThoughtBreakdownResult } from '@/utils/aiEngine';
 import type { BrainDumpClassification } from '@/utils/aiEngine';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
+import ContextualTourBanner from '@/components/tour/ContextualTourBanner';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AutoLinkText from '@/components/ui/AutoLinkText';
+
+export interface NoteColorOption {
+  id: string;
+  label: string;
+  swatch: string;
+}
+
+export const NOTE_COLORS: NoteColorOption[] = [
+  { id: 'default', label: 'Default', swatch: 'transparent' },
+  { id: 'coral', label: 'Coral', swatch: '#f28b82' },
+  { id: 'peach', label: 'Peach', swatch: '#fbbc04' },
+  { id: 'sand', label: 'Sand', swatch: '#fff475' },
+  { id: 'mint', label: 'Mint', swatch: '#ccff90' },
+  { id: 'sage', label: 'Sage', swatch: '#a7ffeb' },
+  { id: 'fog', label: 'Fog', swatch: '#cbf0f8' },
+  { id: 'storm', label: 'Storm', swatch: '#aecbfa' },
+  { id: 'dusk', label: 'Dusk', swatch: '#d7aefb' },
+  { id: 'blossom', label: 'Blossom', swatch: '#fdcfe8' },
+  { id: 'clay', label: 'Clay', swatch: '#e6c9a8' },
+];
 
 export default function InboxPage() {
   const {
@@ -70,7 +97,6 @@ export default function InboxPage() {
     doneItems,
     activeReminders,
     convertedItems,
-    somedayItems,
     quickDump,
     bulkDump,
     deleteInboxItem,
@@ -85,7 +111,6 @@ export default function InboxPage() {
     convertToDream,
     convertToNote,
     convertToProblemSolver,
-    convertToSomeday,
     restoreToInbox,
     updateInboxItem,
     clearInbox,
@@ -125,9 +150,9 @@ export default function InboxPage() {
   };
 
   const handleSaveEdit = (id: string) => {
-    const trimmed = editingItemText.trim();
-    if (!trimmed) return;
-    updateInboxItem(id, { content: trimmed });
+    const cleaned = cleanMarkdownText(editingItemText);
+    if (!cleaned) return;
+    updateInboxItem(id, { content: cleaned });
     setEditingItemId(null);
     playSuccessChime();
     showToast('Note updated');
@@ -261,7 +286,7 @@ export default function InboxPage() {
 
   // Input states
   const [quickInput, setQuickInput] = useState('');
-  const [dumpType, setDumpType] = useState<'thought' | 'reminder'>('thought');
+  const [isReminder, setIsReminder] = useState(false);
   const [reminderTime, setReminderTimeInput] = useState('');
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
@@ -304,7 +329,7 @@ export default function InboxPage() {
   };
 
   // Active filter tab
-  const [filterTab, setFilterTab] = useState<'inbox' | 'important' | 'reminders' | 'done' | 'converted' | 'someday'>('inbox');
+  const [filterTab, setFilterTab] = useState<'inbox' | 'important' | 'reminders' | 'done' | 'converted'>('inbox');
 
   // Confidential Vault State for Important Notes
   const { user, isGuest, changePassword } = useAuth();
@@ -419,7 +444,7 @@ export default function InboxPage() {
         setVaultPassword('');
         setVaultError(null);
         playSuccessChime();
-        showToast('Important notes unlocked');
+        showToast('Notes unlocked');
         return;
       }
 
@@ -447,7 +472,7 @@ export default function InboxPage() {
         setVaultPassword('');
         setVaultError(null);
         playSuccessChime();
-        showToast('Important notes unlocked');
+        showToast('Notes unlocked');
       } else {
         throw new Error('Incorrect password. Try again.');
       }
@@ -461,6 +486,20 @@ export default function InboxPage() {
 
   // Conversion Modal State
   const [convertModalItem, setConvertModalItem] = useState<InboxItem | null>(null);
+
+  // Google Keep Color Picker State
+  const [openColorPickerId, setOpenColorPickerId] = useState<string | null>(null);
+  const [quickColor, setQuickColor] = useState<string>('default');
+  const [quickColorOpen, setQuickColorOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      setOpenColorPickerId(null);
+      setQuickColorOpen(false);
+    };
+    window.addEventListener('click', handleDocumentClick);
+    return () => window.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   // Voice brain dump (must be declared before any conditional returns)
   const baseVoiceTextRef = useRef('');
@@ -481,21 +520,26 @@ export default function InboxPage() {
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickInput.trim()) return;
-    quickDump(quickInput.trim(), {
-      isReminder: dumpType === 'reminder',
-      reminderTime: dumpType === 'reminder' && reminderTime.trim() ? reminderTime.trim() : undefined,
+    const cleaned = cleanMarkdownText(quickInput);
+    if (!cleaned) return;
+    quickDump(cleaned, {
+      isReminder: isReminder,
+      reminderTime: isReminder && reminderTime.trim() ? reminderTime.trim() : undefined,
       isImportant: filterTab === 'important',
+      color: quickColor !== 'default' ? quickColor : undefined,
     });
     setQuickInput('');
+    setIsReminder(false);
     setReminderTimeInput('');
+    setQuickColor('default');
   };
 
   const handleBulkSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bulkInput.trim()) return;
-    const lines = bulkInput.split('\n');
-    bulkDump(lines, dumpType === 'reminder');
+    const lines = bulkInput.split('\n').map((l) => cleanMarkdownText(l)).filter(Boolean);
+    if (lines.length === 0) return;
+    bulkDump(lines, isReminder);
     setBulkInput('');
     setIsBulkOpen(false);
   };
@@ -513,9 +557,7 @@ export default function InboxPage() {
       ? activeReminders
       : filterTab === 'done'
       ? doneItems
-      : filterTab === 'converted'
-      ? convertedItems
-      : somedayItems;
+      : convertedItems;
 
   return (
     <div className={styles.page}>
@@ -529,60 +571,30 @@ export default function InboxPage() {
         </div>
       </header>
 
+      {/* Contextual Onboarding Tour Guide */}
+      <ContextualTourBanner tourId="idea-parking" featureName="Idea Parking" />
+
       {/* ── Fast Idea Parking Capture Bar ── */}
       {!(filterTab === 'important' && !isVaultUnlocked) && (
-        <form onSubmit={handleQuickSubmit} className={styles.quickAddCard}>
+        <form onSubmit={handleQuickSubmit} data-tour="inbox-capture-bar" className={`${styles.quickAddCard} ${quickColor !== 'default' && (styles as any)[`cardColor_${quickColor}`] ? (styles as any)[`cardColor_${quickColor}`] : ''}`}>
           <div className={styles.quickAddRow}>
-            <div className={styles.typeToggle}>
-              <button
-                type="button"
-                className={`${styles.typeToggleBtn} ${dumpType === 'thought' ? styles.typeToggleActive : ''}`}
-                onClick={() => setDumpType('thought')}
-                title="Park Idea / Thought"
-              >
-                Idea
-              </button>
-              <button
-                type="button"
-                className={`${styles.typeToggleBtn} ${dumpType === 'reminder' ? styles.typeToggleActiveReminder : ''}`}
-                onClick={() => setDumpType('reminder')}
-                title="Set as Reminder (shows in system reminders and Today dashboard)"
-              >
-                Reminder
-              </button>
-            </div>
+            <Lightbulb size={16} className={styles.quickAddIcon} />
 
             <input
               type="text"
               className={styles.quickAddInput}
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
+              onPaste={(e) => handleCleanPasteEvent(e, setQuickInput)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleQuickSubmit(e);
                 }
               }}
-              placeholder={
-                isListening
-                  ? 'Listening to voice...'
-                  : dumpType === 'reminder'
-                  ? 'Set a reminder for today...'
-                  : 'Dump a thought, task, idea, or worry...'
-              }
+              placeholder={isListening ? 'Listening to voice...' : 'Enter idea parking...'}
               autoFocus
             />
-
-            {dumpType === 'reminder' && (
-              <input
-                type="text"
-                className={styles.reminderTimeInput}
-                value={reminderTime}
-                onChange={(e) => setReminderTimeInput(e.target.value)}
-                placeholder="Time note (e.g. 3:00 PM)"
-                title="Optional reminder time note"
-              />
-            )}
 
             <div className={styles.quickAddActions}>
               {speechSupported && (
@@ -598,8 +610,8 @@ export default function InboxPage() {
                     alignItems: 'center',
                     gap: '4px',
                   }}
-                  title={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
-                  aria-label={isListening ? 'Stop recording voice' : 'Voice Brain Dump'}
+                  title={isListening ? 'Stop recording voice' : 'Voice Capture'}
+                  aria-label={isListening ? 'Stop recording voice' : 'Voice Capture'}
                 >
                   {isListening ? <MicOff size={13} /> : <Mic size={13} />}
                   <span style={{ fontSize: '11px' }}>{isListening ? 'Listening...' : 'Voice'}</span>
@@ -611,22 +623,104 @@ export default function InboxPage() {
                 onClick={handleQuickSubmit}
                 aria-disabled={!quickInput.trim()}
               >
-                <span>{dumpType === 'reminder' ? 'Reminder' : 'Add'}</span> <kbd className={styles.quickAddKbd}>↵</kbd>
+                <span>Add</span> <kbd className={styles.quickAddKbd}>↵</kbd>
               </button>
             </div>
           </div>
 
           {/* Quick Add Meta Row */}
-          <div className={`${styles.quickAddMetaRow} ${quickInput.trim() || isBulkOpen ? styles.quickAddMetaRowOpen : ''}`}>
+          <div className={`${styles.quickAddMetaRow} ${quickInput.trim() || isBulkOpen || isReminder ? styles.quickAddMetaRowOpen : ''}`}>
             <div className={styles.quickAddPills}>
+              <button
+                type="button"
+                className={`${styles.pillSelect} ${isReminder ? styles.pillSelectActive : ''}`}
+                onClick={() => setIsReminder(!isReminder)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                title="Toggle reminder scheduling"
+              >
+                <Bell size={12} />
+                <span>{isReminder ? 'Reminder' : 'Set as reminder'}</span>
+              </button>
+
+              {isReminder && (
+                <div className={styles.timeInputWrap}>
+                  <Clock size={11} className={styles.timeInputIcon} />
+                  <input
+                    type="text"
+                    className={styles.reminderTimeInput}
+                    value={reminderTime}
+                    onChange={(e) => setReminderTimeInput(e.target.value)}
+                    placeholder="Time note (e.g. 3:00 PM)"
+                    title="Optional reminder time note"
+                  />
+                </div>
+              )}
+
               <button
                 type="button"
                 className={styles.pillSelect}
                 onClick={() => setIsBulkOpen(!isBulkOpen)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
-                {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Dump
+                {isBulkOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Multi-line Note
               </button>
+
+              <div className={styles.colorPickerWrap}>
+                <button
+                  type="button"
+                  className={styles.pillSelect}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickColorOpen(!quickColorOpen);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                  title="Choose note color like Google Keep"
+                >
+                  <Palette size={12} />
+                  {quickColor !== 'default' && (
+                    <span
+                      className={styles.quickColorDot}
+                      style={{
+                        backgroundColor: NOTE_COLORS.find((c) => c.id === quickColor)?.swatch || 'transparent',
+                      }}
+                    />
+                  )}
+                  <span>{quickColor !== 'default' ? NOTE_COLORS.find((c) => c.id === quickColor)?.label : 'Color'}</span>
+                </button>
+                {quickColorOpen && (
+                  <div
+                    className={styles.colorPalettePopoverQuick}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {NOTE_COLORS.map((nc) => (
+                      <button
+                        key={nc.id}
+                        type="button"
+                        className={`${styles.colorSwatchBtn} ${
+                          quickColor === nc.id ? styles.colorSwatchBtnActive : ''
+                        }`}
+                        style={{
+                          backgroundColor: nc.swatch === 'transparent' ? 'var(--color-surface-2)' : nc.swatch,
+                          borderColor: nc.swatch === 'transparent' ? 'var(--color-border)' : 'transparent',
+                        }}
+                        onClick={() => {
+                          setQuickColor(nc.id);
+                          setQuickColorOpen(false);
+                        }}
+                        title={nc.label}
+                        aria-label={nc.label}
+                      >
+                        {nc.id === 'default' && (
+                          <Ban size={10} style={{ color: 'var(--color-text-muted)' }} />
+                        )}
+                        {quickColor === nc.id && nc.id !== 'default' && (
+                          <Check size={10} style={{ color: '#000000' }} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -636,6 +730,7 @@ export default function InboxPage() {
                 className={styles.bulkTextarea}
                 value={bulkInput}
                 onChange={(e) => setBulkInput(e.target.value)}
+                onPaste={(e) => handleCleanPasteEvent(e, setBulkInput)}
                 placeholder="Paste or type multiple thoughts (one item per line)..."
               />
               <button
@@ -667,7 +762,7 @@ export default function InboxPage() {
               if (filterTab === 'important' && isVaultUnlocked) {
                 setIsVaultUnlocked(false);
                 setVaultPassword('');
-                showToast('Important notes locked');
+                showToast('Notes locked');
               } else {
                 setIsVaultUnlocked(false);
                 setFilterTab('important');
@@ -676,9 +771,9 @@ export default function InboxPage() {
               }
             }}
             style={filterTab === 'important' ? undefined : { color: '#d4a373' }}
-            title={filterTab === 'important' && isVaultUnlocked ? 'Click to lock Important vault' : 'Confidential Important Notes (requires password)'}
+            title={filterTab === 'important' && isVaultUnlocked ? 'Click to lock Notes vault' : 'Confidential Notes (requires password)'}
           >
-            Important ({importantItems.length})
+            Notes ({importantItems.length})
           </button>
           <button
             className={`${styles.tab} ${filterTab === 'reminders' ? styles.activeTab : ''}`}
@@ -698,12 +793,6 @@ export default function InboxPage() {
           >
             Converted ({convertedItems.length})
           </button>
-          <button
-            className={`${styles.tab} ${filterTab === 'someday' ? styles.activeTab : ''}`}
-            onClick={() => setFilterTab('someday')}
-          >
-            Someday / Maybe ({somedayItems.length})
-          </button>
         </div>
 
         {filterTab === 'important' && isVaultUnlocked && (
@@ -718,7 +807,7 @@ export default function InboxPage() {
                 setChangePassNew('');
                 setChangePassConfirm('');
               }}
-              title="Change Password (syncs with account and Important vault)"
+              title="Change Password (syncs with account and Notes vault)"
             >
               <KeyRound size={12} />
               <span>Change Password</span>
@@ -730,9 +819,9 @@ export default function InboxPage() {
               onClick={() => {
                 setIsVaultUnlocked(false);
                 setVaultPassword('');
-                showToast('Important notes locked');
+                showToast('Notes locked');
               }}
-              title="Lock Important Vault"
+              title="Lock Notes Vault"
             >
               <Lock size={12} />
               <span>Lock Vault</span>
@@ -783,7 +872,7 @@ export default function InboxPage() {
               <div className={styles.vaultBadgeIcon}>
                 <Lock size={18} className={styles.vaultLockIcon} />
               </div>
-              <h2 className={styles.vaultTitle}>Important Notes</h2>
+              <h2 className={styles.vaultTitle}>Notes</h2>
               <p className={styles.vaultDesc}>
                 {user?.email && !isGuest
                   ? 'Enter account password to unlock'
@@ -875,7 +964,7 @@ export default function InboxPage() {
               {filterTab === 'inbox'
                 ? 'Your head is completely clear! Nothing in the inbox.'
                 : filterTab === 'important'
-                ? 'No important notes yet. Click "Normal" on any note or idea to move it here (IDs, phone numbers, LRN, credentials, files).'
+                ? 'No notes yet. Click the note icon on any thought or convert to Note to hide it here in your secret vault.'
                 : filterTab === 'done'
                 ? 'No already done ideas yet. Check any idea to mark it applied/done.'
                 : filterTab === 'reminders'
@@ -886,67 +975,34 @@ export default function InboxPage() {
             </p>
           </div>
         ) : (
-          currentList.map((item) => (
-            <article key={item.id} className={styles.inboxItemCard}>
+          currentList.map((item, index) => (
+            <article
+              key={item.id}
+              data-tour={index === 0 ? 'inbox-first-card' : undefined}
+              className={`${styles.inboxItemCard} ${item.color && (styles as any)[`cardColor_${item.color}`] ? (styles as any)[`cardColor_${item.color}`] : ''}`}
+            >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => handleToggleItemApplied(item)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    color: item.isApplied ? 'var(--color-success)' : 'var(--color-text-faint)',
-                    marginTop: '2px',
-                  }}
-                  title={item.isApplied ? 'Mark as Not Done' : 'Mark as Done / Applied'}
-                >
-                  {item.isApplied ? <CheckSquare size={18} /> : <Square size={18} />}
-                </button>
+                {!(item.isImportant || filterTab === 'important') && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleItemApplied(item)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      color: item.isApplied ? 'var(--color-success)' : 'var(--color-text-faint)',
+                      marginTop: '2px',
+                    }}
+                    title={item.isApplied ? 'Mark as Not Done' : 'Mark as Done / Applied'}
+                  >
+                    {item.isApplied ? <CheckSquare size={18} /> : <Square size={18} />}
+                  </button>
+                )}
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className={styles.itemBadgeRow}>
-                    {item.status === 'inbox' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => toggleItemReminder(item.id)}
-                          className={item.isReminder ? styles.reminderBadge : styles.dumpBadge}
-                          title={
-                            item.isReminder
-                              ? 'Reminder: active on Today dashboard (click to convert to thought)'
-                              : 'Thought (click to convert to Reminder)'
-                          }
-                        >
-                          {item.isReminder ? 'Reminder' : 'Thought'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const willBeImportant = !item.isImportant;
-                            toggleItemImportant(item.id);
-                            if (willBeImportant) {
-                              setFilterTab('important');
-                              playSuccessChime();
-                              showToast('Moved to Important Notes');
-                            } else {
-                              showToast('Unmarked as Important');
-                            }
-                          }}
-                          className={item.isImportant ? styles.importantBadge : styles.dumpBadge}
-                          title={
-                            item.isImportant
-                              ? 'Important Note (click to unmark)'
-                              : 'Click to move to Important Notes (IDs, phone, LRN, files)'
-                          }
-                        >
-                          {item.isImportant ? 'Important' : 'Normal'}
-                        </button>
-                      </>
-                    )}
-                    {item.reminderTime && (
+                  {item.reminderTime && (
+                    <div className={styles.itemBadgeRow} style={{ marginBottom: '6px' }}>
                       <span
                         style={{
                           fontSize: '11px',
@@ -954,18 +1010,22 @@ export default function InboxPage() {
                           background: 'var(--color-surface-2)',
                           padding: '1px 6px',
                           borderRadius: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
-                        {item.reminderTime}
+                        <Clock size={10} /> {item.reminderTime}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {editingItemId === item.id ? (
                     <div className={styles.editContainer}>
                       <textarea
                         className={styles.editTextarea}
                         value={editingItemText}
                         onChange={(e) => setEditingItemText(e.target.value)}
+                        onPaste={(e) => handleCleanPasteEvent(e, setEditingItemText)}
                         onKeyDown={(e) => {
                           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                             e.preventDefault();
@@ -1000,8 +1060,8 @@ export default function InboxPage() {
                     <p
                       className={styles.itemContent}
                       style={{
-                        textDecoration: item.isApplied ? 'line-through' : 'none',
-                        opacity: item.isApplied ? 0.65 : 1,
+                        textDecoration: (item.isApplied && !(item.isImportant || filterTab === 'important')) ? 'line-through' : 'none',
+                        opacity: (item.isApplied && !(item.isImportant || filterTab === 'important')) ? 0.65 : 1,
                       }}
                     >
                       <AutoLinkText text={item.content} />
@@ -1009,16 +1069,17 @@ export default function InboxPage() {
                   )}
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    {item.isApplied && ' • Applied / Done'}
+                    {item.isImportant && ' • Note'}
+                    {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today'}
+                    {item.isApplied && !(item.isImportant || filterTab === 'important') && ' • Applied / Done'}
                     {item.convertedTo && ` • Converted to ${(item.convertedPriority === 'urgent' || item.convertedPriority === 'high') ? 'IMPORTANT ' : ''}${item.convertedTo.toUpperCase()}${item.isApplied ? ' (Done in Tasks)' : ''}`}
-                    {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today Ticker'}
                   </span>
                 </div>
               </div>
 
               <div
                 className={`${styles.convertButtonGroup} ${
-                  editingItemId === item.id || convertModalItem?.id === item.id
+                  editingItemId === item.id || convertModalItem?.id === item.id || openColorPickerId === item.id
                     ? styles.convertButtonGroupActive
                     : ''
                 }`}
@@ -1026,6 +1087,98 @@ export default function InboxPage() {
                 {item.isImportant || filterTab === 'important' ? (
                   <div className={styles.convertButtonRow}>
                     <div className={styles.convertRightActions}>
+                      {/* Minimalist Thought / Reminder Toggle Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${item.isReminder ? styles.btnActionActiveReminder : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleItemReminder(item.id);
+                          if (!item.isReminder) {
+                            showToast('Set as Reminder on Today dashboard');
+                          } else {
+                            showToast('Converted to Thought');
+                          }
+                        }}
+                        title={
+                          item.isReminder
+                            ? 'Active Reminder (shown on Today screen) — click to switch to Thought'
+                            : 'Thought — click to set as Reminder on Today screen'
+                        }
+                        aria-label={item.isReminder ? 'Convert to Thought' : 'Convert to Reminder'}
+                      >
+                        {item.isReminder ? (
+                          <Bell size={13} style={{ color: 'var(--color-accent-light, #818cf8)' }} />
+                        ) : (
+                          <Lightbulb size={13} style={{ color: 'var(--color-text-muted)' }} />
+                        )}
+                      </button>
+
+                      {/* Minimalist Note Toggle Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${styles.btnActionActiveNote}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleItemImportant(item.id);
+                          showToast('Removed from Notes');
+                        }}
+                        title="Note: In Notes (click to unmark and move to Inbox)"
+                        aria-label="Remove from Notes"
+                      >
+                        <StickyNote size={13} style={{ color: '#f59e0b' }} />
+                      </button>
+
+                      {/* Color Picker Button & Popover */}
+                      <div className={styles.colorPickerWrap}>
+                        <button
+                          type="button"
+                          className={`${styles.btnCopy} ${openColorPickerId === item.id ? styles.btnCopyActive : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenColorPickerId(openColorPickerId === item.id ? null : item.id);
+                          }}
+                          title="Note color"
+                          aria-label="Change note color"
+                        >
+                          <Palette size={13} />
+                        </button>
+                        {openColorPickerId === item.id && (
+                          <div
+                            className={styles.colorPalettePopover}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {NOTE_COLORS.map((nc) => (
+                              <button
+                                key={nc.id}
+                                type="button"
+                                className={`${styles.colorSwatchBtn} ${
+                                  (item.color || 'default') === nc.id ? styles.colorSwatchBtnActive : ''
+                                }`}
+                                style={{
+                                  backgroundColor: nc.swatch === 'transparent' ? 'var(--color-surface-2)' : nc.swatch,
+                                  borderColor: nc.swatch === 'transparent' ? 'var(--color-border)' : 'transparent',
+                                }}
+                                onClick={() => {
+                                  updateInboxItem(item.id, { color: nc.id === 'default' ? undefined : nc.id });
+                                  setOpenColorPickerId(null);
+                                  playSuccessChime();
+                                }}
+                                title={nc.label}
+                                aria-label={nc.label}
+                              >
+                                {nc.id === 'default' && (
+                                  <Ban size={10} style={{ color: 'var(--color-text-muted)' }} />
+                                )}
+                                {(item.color || 'default') === nc.id && nc.id !== 'default' && (
+                                  <Check size={10} style={{ color: '#000000' }} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       <button
                         type="button"
                         className={styles.btnCopy}
@@ -1136,6 +1289,114 @@ export default function InboxPage() {
                     </div>
 
                     <div className={styles.convertRightActions}>
+                      {/* Minimalist Thought / Reminder Toggle Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${item.isReminder ? styles.btnActionActiveReminder : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleItemReminder(item.id);
+                          if (!item.isReminder) {
+                            showToast('Set as Reminder on Today dashboard');
+                          } else {
+                            showToast('Converted to Thought');
+                          }
+                        }}
+                        title={
+                          item.isReminder
+                            ? 'Active Reminder (shown on Today screen) — click to switch to Thought'
+                            : 'Thought — click to set as Reminder on Today screen'
+                        }
+                        aria-label={item.isReminder ? 'Convert to Thought' : 'Convert to Reminder'}
+                      >
+                        {item.isReminder ? (
+                          <Bell size={13} style={{ color: 'var(--color-accent-light, #818cf8)' }} />
+                        ) : (
+                          <Lightbulb size={13} style={{ color: 'var(--color-text-muted)' }} />
+                        )}
+                      </button>
+
+                      {/* Minimalist Note Toggle Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${item.isImportant ? styles.btnActionActiveNote : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const willBeImportant = !item.isImportant;
+                          toggleItemImportant(item.id);
+                          if (willBeImportant) {
+                            setFilterTab('important');
+                            playSuccessChime();
+                            showToast('Moved to Notes');
+                          } else {
+                            showToast('Removed from Notes');
+                          }
+                        }}
+                        title={
+                          item.isImportant
+                            ? 'Note: Saved in Notes (click to unmark)'
+                            : 'Save as Note (click to hide in Notes)'
+                        }
+                        aria-label={item.isImportant ? 'Remove from Notes' : 'Save as Note'}
+                      >
+                        <StickyNote
+                          size={13}
+                          style={{
+                            color: item.isImportant ? '#f59e0b' : 'var(--color-text-muted)',
+                          }}
+                        />
+                      </button>
+
+                      {/* Color Picker Button & Popover */}
+                      <div className={styles.colorPickerWrap}>
+                        <button
+                          type="button"
+                          className={`${styles.btnCopy} ${openColorPickerId === item.id ? styles.btnCopyActive : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenColorPickerId(openColorPickerId === item.id ? null : item.id);
+                          }}
+                          title="Note color"
+                          aria-label="Change note color"
+                        >
+                          <Palette size={13} />
+                        </button>
+                        {openColorPickerId === item.id && (
+                          <div
+                            className={styles.colorPalettePopover}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {NOTE_COLORS.map((nc) => (
+                              <button
+                                key={nc.id}
+                                type="button"
+                                className={`${styles.colorSwatchBtn} ${
+                                  (item.color || 'default') === nc.id ? styles.colorSwatchBtnActive : ''
+                                }`}
+                                style={{
+                                  backgroundColor: nc.swatch === 'transparent' ? 'var(--color-surface-2)' : nc.swatch,
+                                  borderColor: nc.swatch === 'transparent' ? 'var(--color-border)' : 'transparent',
+                                }}
+                                onClick={() => {
+                                  updateInboxItem(item.id, { color: nc.id === 'default' ? undefined : nc.id });
+                                  setOpenColorPickerId(null);
+                                  playSuccessChime();
+                                }}
+                                title={nc.label}
+                                aria-label={nc.label}
+                              >
+                                {nc.id === 'default' && (
+                                  <Ban size={10} style={{ color: 'var(--color-text-muted)' }} />
+                                )}
+                                {(item.color || 'default') === nc.id && nc.id !== 'default' && (
+                                  <Check size={10} style={{ color: '#000000' }} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       <button
                         type="button"
                         className={styles.btnCopy}
@@ -1186,30 +1447,103 @@ export default function InboxPage() {
       {/* ── Conversion Modal ── */}
       {convertModalItem && (
         <div className={styles.modalOverlay} onClick={() => setConvertModalItem(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                Convert: &ldquo;<AutoLinkText text={convertModalItem.content} />&rdquo;
-              </h3>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setConvertModalItem(null)}>
+          <div className={styles.convertModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.convertModalHeader}>
+              <div className={styles.convertModalTitleArea}>
+                <h3 className={styles.convertModalTitle}>Convert Idea</h3>
+                <p className={styles.convertModalSubtitle}>
+                  Choose a target destination in your Life OS hierarchy.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.convertModalCloseBtn}
+                onClick={() => setConvertModalItem(null)}
+                title="Close"
+                aria-label="Close"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Not sure? Pick Task — you can always move it later.
-            </p>
+            <div className={styles.convertPreviewBox}>
+              <p className={styles.convertPreviewText}>
+                <AutoLinkText text={convertModalItem.content} />
+              </p>
+            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <div className={styles.convertGrid}>
               <button
-                className={styles.dumpBtn}
-                style={{
-                  background: 'rgba(212, 163, 115, 0.12)',
-                  color: 'var(--color-text)',
-                  border: '1px solid rgba(212, 163, 115, 0.4)',
-                  justifyContent: 'flex-start',
-                  padding: 'var(--space-3)',
+                type="button"
+                className={`${styles.convertOptionBtn} ${styles.convertOptionTask}`}
+                onClick={() => {
+                  handleConvertToTask(convertModalItem);
+                  setConvertModalItem(null);
                 }}
+              >
+                <div className={styles.convertOptionLeft}>
+                  <span className={styles.convertOptionIcon}>
+                    <CheckSquare size={16} />
+                  </span>
+                  <span className={styles.convertOptionLabel}>Task</span>
+                </div>
+                <span className={styles.convertOptionTag}>Action item</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.convertOptionBtn} ${styles.convertOptionProject}`}
+                onClick={() => {
+                  convertToProject(convertModalItem.id);
+                  setConvertModalItem(null);
+                }}
+              >
+                <div className={styles.convertOptionLeft}>
+                  <span className={styles.convertOptionIcon}>
+                    <Folder size={16} />
+                  </span>
+                  <span className={styles.convertOptionLabel}>Project</span>
+                </div>
+                <span className={styles.convertOptionTag}>Initiative</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.convertOptionBtn} ${styles.convertOptionGoal}`}
+                onClick={() => {
+                  convertToGoal(convertModalItem.id);
+                  setConvertModalItem(null);
+                }}
+              >
+                <div className={styles.convertOptionLeft}>
+                  <span className={styles.convertOptionIcon}>
+                    <Target size={16} />
+                  </span>
+                  <span className={styles.convertOptionLabel}>Goal</span>
+                </div>
+                <span className={styles.convertOptionTag}>Milestone</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.convertOptionBtn} ${styles.convertOptionDream}`}
+                onClick={() => {
+                  convertToDream(convertModalItem.id);
+                  setConvertModalItem(null);
+                }}
+              >
+                <div className={styles.convertOptionLeft}>
+                  <span className={styles.convertOptionIcon}>
+                    <CloudSun size={16} />
+                  </span>
+                  <span className={styles.convertOptionLabel}>Dream</span>
+                </div>
+                <span className={styles.convertOptionTag}>Life vision</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.convertOptionBtn} ${styles.convertOptionNote}`}
                 onClick={() => {
                   if (!convertModalItem.isImportant) {
                     toggleItemImportant(convertModalItem.id);
@@ -1217,87 +1551,32 @@ export default function InboxPage() {
                   setConvertModalItem(null);
                   setFilterTab('important');
                   playSuccessChime();
-                  showToast('Moved to Important Notes');
+                  showToast('Moved to Notes');
                 }}
               >
-                <Zap size={16} style={{ color: '#d4a373' }} /> Move to Important Notes <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 600, color: '#d4a373' }}>IDs, Phone, LRN, Files</span>
+                <div className={styles.convertOptionLeft}>
+                  <span className={styles.convertOptionIcon}>
+                    <StickyNote size={16} />
+                  </span>
+                  <span className={styles.convertOptionLabel}>Note</span>
+                </div>
+                <span className={styles.convertOptionTag}>Secret vault</span>
               </button>
+            </div>
 
+            <div className={styles.convertModalFooter}>
+              <span className={styles.convertFooterLabel}>Time-sensitive alert:</span>
               <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  handleConvertToTask(convertModalItem);
-                  setConvertModalItem(null);
-                }}
-              >
-                <CheckSquare size={16} style={{ color: 'var(--color-accent)' }} /> Convert to Task <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>15-min action</span>
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  convertToProject(convertModalItem.id);
-                  setConvertModalItem(null);
-                }}
-              >
-                <Folder size={16} style={{ color: '#38bdf8' }} /> Convert to Project <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Folder of steps</span>
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  convertToGoal(convertModalItem.id);
-                  setConvertModalItem(null);
-                }}
-              >
-                <Target size={16} style={{ color: '#f59e0b' }} /> Convert to Goal <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>1–3 month quest</span>
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  convertToDream(convertModalItem.id);
-                  setConvertModalItem(null);
-                }}
-              >
-                <CloudSun size={16} style={{ color: '#ec4899' }} /> Convert to Dream <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 500, color: 'var(--color-text-faint)' }}>Big life wish</span>
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  convertToNote(convertModalItem.id);
-                  setConvertModalItem(null);
-                }}
-              >
-                <FileText size={16} style={{ color: '#a855f7' }} /> Convert to Note
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
-                onClick={() => {
-                  convertToSomeday(convertModalItem.id);
-                  setConvertModalItem(null);
-                }}
-              >
-                <Clock size={16} style={{ color: 'var(--color-text-faint)' }} /> Someday / Maybe
-              </button>
-
-              <button
-                className={styles.dumpBtn}
-                style={{ background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)', justifyContent: 'flex-start', padding: 'var(--space-3)' }}
+                type="button"
+                className={`${styles.convertReminderBtn} ${convertModalItem.isReminder ? styles.convertReminderBtnActive : ''}`}
                 onClick={() => {
                   toggleItemReminder(convertModalItem.id);
                   setConvertModalItem(null);
+                  showToast(convertModalItem.isReminder ? 'Converted to Thought' : 'Set as Reminder on Today dashboard');
                 }}
               >
-                {convertModalItem.isReminder ? 'Convert to Normal Thought' : 'Set as Active Reminder'}
+                <Bell size={14} />
+                <span>{convertModalItem.isReminder ? 'Remove Active Reminder' : 'Set as Active Reminder'}</span>
               </button>
             </div>
           </div>
@@ -1512,7 +1791,7 @@ export default function InboxPage() {
             </div>
 
             <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
-              Your new password automatically syncs with your account login and this Important Notes Vault.
+              Your new password automatically syncs with your account login and this Notes Vault.
             </p>
 
             {changePassError && (

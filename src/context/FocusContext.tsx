@@ -5,6 +5,7 @@ import type { Task, FocusModeType, FocusSession, KnowledgeDocument } from '@/typ
 import { useTasks } from './TaskContext';
 import { useSettings } from './SettingsContext';
 import { useKnowledge } from './KnowledgeContext';
+import { playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
 
 const FOCUS_HISTORY_KEY = 'life_os_focus_history_v1';
 
@@ -158,8 +159,9 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
         } else {
           setSecondsRemaining((prev) => {
             if (prev <= 1) {
-              // Timer finished
+              // Timer finished — play real digital clock countdown alarm
               setIsRunning(false);
+              playTimerAlarmSound();
               return 0;
             }
             return prev - 1;
@@ -174,6 +176,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   }, [isRunning, mode]);
 
   const startTimer = () => {
+    stopTimerAlarm();
     if (!sessionStartRef.current) {
       sessionStartRef.current = new Date().toISOString();
     }
@@ -181,10 +184,12 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   };
 
   const pauseTimer = () => {
+    stopTimerAlarm();
     setIsRunning(false);
   };
 
   const resetTimer = () => {
+    stopTimerAlarm();
     setIsRunning(false);
     setSecondsRemaining(timerDurationSeconds);
     setSecondsElapsed(0);
@@ -192,6 +197,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setTimerMode = (newMode: FocusModeType, customMinutes?: number) => {
+    stopTimerAlarm();
     setIsRunning(false);
     setMode(newMode);
     sessionStartRef.current = null;
@@ -243,6 +249,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   };
 
   const finishSession = (notes?: string, markTaskCompleted = false) => {
+    stopTimerAlarm();
     const elapsedMinutes = Math.max(1, Math.round(secondsElapsed / 60));
     const title = activeDoc
       ? `Reading: ${activeDoc.title}`

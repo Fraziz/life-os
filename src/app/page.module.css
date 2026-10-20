@@ -858,7 +858,6 @@ a.summaryPill:hover {
 }
 
 .actionCard:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border-color: #cbd5e1;
 }
@@ -2866,4 +2865,219 @@ a.summaryPill:hover {
   background: rgba(24, 46, 32, 0.65);
   border-color: rgba(134, 239, 172, 0.15);
   color: #f0fdf4;
+}
+
+
+/* ── Today's Unified Reminders Card (Minimalist Executive) ── */
+.todayRemindersCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.todayRemindersHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.todayRemindersHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.todayRemindersDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-warning, #f59e0b);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.45);
+}
+
+.todayRemindersBell {
+  color: var(--color-warning, #f59e0b);
+}
+
+.todayRemindersTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--color-text);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.todayRemindersCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.todayRemindersSub {
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.todayRemindersList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todayReminderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  transition: all 0.15s ease;
+}
+
+.todayReminderRow:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-hover, var(--color-surface-2));
+}
+
+.reminderCheckBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.reminderCheckBtn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.reminderDotMarker {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-faint);
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.reminderTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.typeBadge_book {
+  background: rgba(165, 148, 255, 0.12);
+  color: #a594ff;
+  border: 1px solid rgba(165, 148, 255, 0.25);
+}
+
+.typeBadge_video {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.typeBadge_task {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.typeBadge_idea {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.typeBadge_project {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.reminderItemLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.reminderItemTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminderItemSub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminderDismissBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.reminderDismissBtn:hover {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
 }

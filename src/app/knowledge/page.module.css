@@ -366,6 +366,84 @@
   align-items: center;
 }
 
+.materialTypeTabs {
+  display: flex;
+  gap: 3px;
+  background: var(--color-surface-2);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-2);
+  flex-shrink: 0;
+}
+
+.materialTypeTab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.materialTypeTab:hover {
+  color: var(--color-text);
+}
+
+.materialTypeTabActive {
+  background: var(--color-surface);
+  color: var(--color-text) !important;
+  font-weight: var(--weight-semibold);
+  border-color: var(--color-border-subtle);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.videoLessonRowBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent-light, #6962f4);
+  flex-shrink: 0;
+}
+
+.bookRowBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-faint);
+  flex-shrink: 0;
+}
+
+.emptyAddBtn {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.emptyAddBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
 .filterRow {
   display: flex;
   align-items: center;
@@ -949,6 +1027,12 @@
   background: var(--color-surface-2);
   color: var(--color-text);
   border-color: var(--color-border-subtle);
+}
+
+.headerReminderBtnActive {
+  background: var(--color-surface-2) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: var(--color-warning, #f59e0b) !important;
 }
 
 .headerAiBtn {
@@ -3510,6 +3594,102 @@
 }
 
 /* ==========================================================================
+   VIDEO LESSON STUDIO LAYOUT (WIDE THEATER CANVAS)
+   ========================================================================== */
+.videoLessonStudioSheet {
+  width: 100%;
+  max-width: 1200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 14px);
+  padding: clamp(18px, 3.2vw, 36px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+  position: relative;
+  font-family: inherit;
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+[data-theme='light'] .videoLessonStudioSheet {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  color: #1e293b;
+}
+
+:global([data-theme='nature']) .videoLessonStudioSheet {
+  background: rgba(14, 28, 19, 0.6);
+  border-color: rgba(134, 239, 172, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.videoLessonStudioBody {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: var(--color-text);
+}
+
+.videoLessonStudioBody :global(.video-lesson-block) {
+  margin: 0 0 24px 0;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.videoLessonStudioBody :global(.video-lesson-frame-wrap) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  min-height: 280px;
+}
+
+@media (min-width: 860px) {
+  .videoLessonStudioBody :global(.video-lesson-frame-wrap) {
+    min-height: 480px;
+  }
+}
+
+.videoLessonStudioBody :global(h1),
+.videoLessonStudioBody :global(h2),
+.videoLessonStudioBody :global(h3) {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  letter-spacing: -0.015em;
+}
+
+.videoLessonStudioBody :global(h3) {
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 8px;
+}
+
+.videoLessonStudioBody :global(p),
+.videoLessonStudioBody :global(ul),
+.videoLessonStudioBody :global(ol) {
+  margin-bottom: 14px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .videoLessonStudioSheet {
+    padding: 16px 12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* ==========================================================================
    SMOOTH AUTO-SCROLL CONTROLS
    ========================================================================== */
 .autoScrollGroup {
@@ -4519,4 +4699,376 @@
 
 .toastUndoBtn:hover {
   background: rgba(255, 255, 255, 0.32);
+}
+
+/* ============================================================
+   VIDEO LESSON BLOCKS (Inside Book, Editor, & Preview)
+   Minimalist hairline borders, responsive 16:9 player, violet accent
+   ============================================================ */
+
+.richEditor :global(.video-lesson-block),
+.wordDocumentBody :global(.video-lesson-block),
+.previewCanvas :global(.video-lesson-block),
+:global(.video-lesson-block) {
+  margin: 22px 0;
+  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: border-color var(--transition-fast);
+}
+
+.richEditor :global(.video-lesson-header),
+.wordDocumentBody :global(.video-lesson-header),
+.previewCanvas :global(.video-lesson-header),
+:global(.video-lesson-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.richEditor :global(.video-lesson-info-left),
+.wordDocumentBody :global(.video-lesson-info-left),
+.previewCanvas :global(.video-lesson-info-left),
+:global(.video-lesson-info-left) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.richEditor :global(.video-lesson-badge),
+.wordDocumentBody :global(.video-lesson-badge),
+.previewCanvas :global(.video-lesson-badge),
+:global(.video-lesson-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(105, 98, 244, 0.12);
+  color: var(--color-accent-light, #6962f4);
+  border: 1px solid rgba(105, 98, 244, 0.25);
+  white-space: nowrap;
+}
+
+.richEditor :global(.video-lesson-title),
+.wordDocumentBody :global(.video-lesson-title),
+.previewCanvas :global(.video-lesson-title),
+:global(.video-lesson-title) {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.richEditor :global(.video-lesson-tools),
+.wordDocumentBody :global(.video-lesson-tools),
+.previewCanvas :global(.video-lesson-tools),
+:global(.video-lesson-tools) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.richEditor :global(.video-lesson-action-btn),
+.wordDocumentBody :global(.video-lesson-action-btn),
+.previewCanvas :global(.video-lesson-action-btn),
+:global(.video-lesson-action-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 5px;
+  background: var(--color-accent, #6962f4);
+  color: #ffffff;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.richEditor :global(.video-lesson-action-btn:hover),
+.wordDocumentBody :global(.video-lesson-action-btn:hover),
+.previewCanvas :global(.video-lesson-action-btn:hover),
+:global(.video-lesson-action-btn:hover) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.richEditor :global(.video-lesson-tool-btn),
+:global(.video-lesson-tool-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.richEditor :global(.video-lesson-tool-btn:hover),
+:global(.video-lesson-tool-btn:hover) {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.richEditor :global(.video-lesson-tool-danger:hover),
+:global(.video-lesson-tool-danger:hover) {
+  color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.richEditor :global(.video-lesson-frame-wrap),
+.wordDocumentBody :global(.video-lesson-frame-wrap),
+.previewCanvas :global(.video-lesson-frame-wrap),
+:global(.video-lesson-frame-wrap) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
+  background: #000000;
+}
+
+.richEditor :global(.video-lesson-frame-wrap iframe),
+.wordDocumentBody :global(.video-lesson-frame-wrap iframe),
+.previewCanvas :global(.video-lesson-frame-wrap iframe),
+:global(.video-lesson-frame-wrap iframe) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Floating Toast for Detected YouTube URL on Paste */
+.youtubePasteToast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  font-size: 0.8125rem;
+  animation: slideUpFade 0.2s ease-out;
+}
+
+.youtubePasteToastActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toastInsertVideoBtn {
+  background: var(--color-accent, #6962f4);
+  color: #ffffff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toastInsertVideoBtn:hover {
+  filter: brightness(1.1);
+}
+
+.toastDismissBtn {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toastDismissBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── Minimalist Executive Plus / Action Menu ── */
+.actionMenuWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btnPlusMenu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover, #6366f1));
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+}
+
+.btnPlusMenu:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: var(--shadow-md);
+}
+
+.btnPlusMenu:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btnPlusMenu:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.btnPlusMenuActive {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+}
+
+.plusIcon {
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.plusIconRotated {
+  transform: rotate(45deg);
+}
+
+.actionMenuDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl, 14px);
+  padding: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: actionMenuPop 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes actionMenuPop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.actionMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionMenuItem:hover {
+  background: var(--color-surface-hover, var(--color-surface-2));
+  border-color: var(--color-border-subtle);
+}
+
+.actionMenuItem:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.actionMenuItemActive {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-subtle);
+}
+
+.actionMenuIconBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.actionMenuItem:hover .actionMenuIconBox {
+  transform: scale(1.08);
+}
+
+.actionMenuText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.actionMenuLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.actionMenuHint {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.actionMenuDivider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 4px 6px;
 }

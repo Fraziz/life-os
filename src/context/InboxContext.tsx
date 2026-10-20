@@ -9,6 +9,7 @@ import { useDreams } from './DreamContext';
 import { useKnowledge } from './KnowledgeContext';
 import { loadJsonArray, saveJson, touchUpdateMeta } from '@/lib/localStore';
 import { notifyItemDeleted } from './UndoContext';
+import { cleanMarkdownText } from '@/utils/textCleaner';
 
 const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
 
@@ -73,7 +74,7 @@ interface InboxContextType {
   activeReminders: InboxItem[];
   convertedItems: InboxItem[];
   somedayItems: InboxItem[];
-  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean }) => void;
+  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string }) => void;
   bulkDump: (lines: string[], defaultIsReminder?: boolean) => void;
   deleteInboxItem: (id: string) => void;
   toggleItemApplied: (id: string) => void;
@@ -161,16 +162,18 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean }) => {
-    if (!content.trim()) return;
+  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string }) => {
+    const cleaned = cleanMarkdownText(content);
+    if (!cleaned) return;
     const isReminder = options?.isReminder ?? false;
     const isImportant = options?.isImportant ?? false;
     const newItem: InboxItem = {
       id: `inbox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      content: content.trim(),
+      content: cleaned,
       status: 'inbox',
       isReminder,
       isImportant,
+      color: options?.color,
       itemType: isReminder ? 'reminder' : 'thought',
       reminderTime: options?.reminderTime,
       createdAt: new Date().toISOString(),
@@ -180,7 +183,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const bulkDump = (lines: string[], defaultIsReminder: boolean = false) => {
-    const valid = lines.map((l) => l.trim()).filter(Boolean);
+    const valid = lines.map((l) => cleanMarkdownText(l)).filter(Boolean);
     if (valid.length === 0) return;
 
     const newItems: InboxItem[] = valid.map((content, idx) => {
@@ -260,11 +263,15 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateInboxItem = (id: string, updates: Partial<InboxItem>) => {
+    const cleanedUpdates: Partial<InboxItem> = {
+      ...updates,
+      ...(updates.content !== undefined ? { content: cleanMarkdownText(updates.content) } : {}),
+    };
     const updated = items.map((item) => {
       if (item.id !== id) return item;
       return {
         ...item,
-        ...updates,
+        ...cleanedUpdates,
         updatedAt: new Date().toISOString(),
       };
     });
@@ -446,7 +453,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   };
 
   const importantItems = items.filter((i) => i.isImportant && !i.isApplied && i.status !== 'archived');
-  const activeItems = items.filter((i) => i.status === 'inbox' && !i.isImportant);
+  const activeItems = items.filter((i) => (i.status === 'inbox' || i.status === 'someday') && !i.isImportant);
   const doneItems = items.filter((i) => i.isApplied || i.status === 'archived');
   const activeReminders = items.filter((i) => i.status === 'inbox' && i.isReminder && !i.isApplied);
   const convertedItems = items.filter((i) => i.status === 'converted' && !i.isApplied && !i.isImportant);
