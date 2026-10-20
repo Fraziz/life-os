@@ -1707,7 +1707,7 @@
 .breadcrumbChain {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
   font-size: 0.72rem;
 }
@@ -1715,52 +1715,90 @@
 .goalBreadcrumbChip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  background: var(--color-surface-2);
-  color: var(--color-accent);
-  border: 1px solid var(--color-border-subtle);
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(245, 166, 35, 0.08);
+  color: #d97706;
+  border: 1px solid rgba(245, 166, 35, 0.25);
   border-radius: var(--radius-sm, 6px);
   font-weight: 600;
   font-size: 0.72rem;
-  max-width: 150px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:global([data-theme='dark']) .goalBreadcrumbChip {
+  color: #f5a623;
+  background: rgba(245, 166, 35, 0.12);
+  border-color: rgba(245, 166, 35, 0.3);
 }
 
 .milestoneBreadcrumbChip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  background: var(--color-surface-2);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-subtle);
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(34, 211, 165, 0.08);
+  color: #0d9488;
+  border: 1px solid rgba(34, 211, 165, 0.25);
   border-radius: var(--radius-sm, 6px);
   font-weight: 500;
   font-size: 0.72rem;
-  max-width: 130px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+:global([data-theme='dark']) .milestoneBreadcrumbChip {
+  color: #22d3a5;
+  background: rgba(34, 211, 165, 0.12);
+  border-color: rgba(34, 211, 165, 0.3);
+}
+
 .parentProjectChip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border: 1px solid var(--color-border-subtle);
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(165, 148, 255, 0.08);
+  color: #6366f1;
+  border: 1px solid rgba(165, 148, 255, 0.25);
   border-radius: var(--radius-sm, 6px);
   font-weight: 600;
   font-size: 0.72rem;
-  max-width: 150px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:global([data-theme='dark']) .parentProjectChip {
+  color: var(--color-accent-light, #a594ff);
+  background: rgba(165, 148, 255, 0.12);
+  border-color: rgba(165, 148, 255, 0.3);
+}
+
+.compactGoalChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  background: rgba(245, 166, 35, 0.08);
+  color: #d97706;
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+:global([data-theme='dark']) .compactGoalChip {
+  color: #f5a623;
+  background: rgba(245, 166, 35, 0.12);
 }
 
 .breadcrumbArrow {

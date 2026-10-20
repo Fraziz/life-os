@@ -51,6 +51,7 @@ import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
 import DailyAccomplishReminder from '@/components/reminders/DailyAccomplishReminder';
+import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 import styles from './page.module.css';
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -67,8 +68,8 @@ const DEFAULT_WORKOUT_SCHEDULE = [
 export default function TodayDashboardContent() {
   const { settings } = useSettings();
   const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
-  const { activeProjects, toggleProjectReminder } = useProjects();
-  const { activeGoals } = useGoals();
+  const { activeProjects, projects, toggleProjectReminder } = useProjects();
+  const { activeGoals, goals } = useGoals();
   const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
@@ -217,8 +218,7 @@ export default function TodayDashboardContent() {
     const activeArea = areas.find((a) => a.id === focusedAreaId);
     const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
     return tasks.filter((t) => {
-      const parentProject = activeProjects.find((p) => p.id === t.projectId);
-      const parentGoal = activeGoals.find((g) => g.id === (t.goalId || parentProject?.goalId));
+      const { parentProject, parentGoal } = resolveTaskHierarchy(t, projects, goals);
       const matchesDirect = t.lifeAreaId === focusedAreaId;
       const matchesProject = parentProject?.lifeAreaId === focusedAreaId;
       const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
@@ -232,7 +232,7 @@ export default function TodayDashboardContent() {
       );
       return matchesDirect || matchesProject || matchesGoal || matchesTag;
     });
-  }, [tasks, focusedAreaId, areas, activeProjects, activeGoals]);
+  }, [tasks, focusedAreaId, areas, projects, goals]);
 
   const domainHabits = useMemo(() => {
     if (!focusedAreaId) return habits;
@@ -841,6 +841,7 @@ export default function TodayDashboardContent() {
               )}
               {topPriorities.map((item, idx) => {
                 const isDoItNow = item.tags?.includes('do-it-now');
+                const itemHier = resolveTaskHierarchy(item, projects, goals);
 
                 return (
                   <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -887,18 +888,32 @@ export default function TodayDashboardContent() {
                         )}
                       </div>
 
-                      {/* Right-aligned Tag Badge — consistent with Project Action */}
-                      {isDoItNow ? (
-                        <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
-                          <span className={styles.tagDot} />
-                          Do It Now
-                        </span>
-                      ) : item.tags && item.tags.length > 0 ? (
-                        <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
-                          <span className={styles.tagDot} />
-                          {formatTagLabel(item.tags[0])}
-                        </span>
-                      ) : null}
+                      {/* Right-aligned Meta Badges: Goal, Project, Tag */}
+                      <div className={styles.taskMetaRight}>
+                        {itemHier.parentGoal && (
+                          <span className={styles.taskGoalPill} title={`Goal: ${itemHier.parentGoal.title}`}>
+                            <Target size={10} style={{ flexShrink: 0 }} />
+                            <span>Goal: {itemHier.parentGoal.title}</span>
+                          </span>
+                        )}
+                        {itemHier.parentProject && (
+                          <span className={styles.taskProjectPill} title={`Project: ${itemHier.parentProject.title}`}>
+                            <Folder size={10} style={{ flexShrink: 0 }} />
+                            <span>Project: {itemHier.parentProject.title}</span>
+                          </span>
+                        )}
+                        {isDoItNow ? (
+                          <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
+                            <span className={styles.tagDot} />
+                            Do It Now
+                          </span>
+                        ) : item.tags && item.tags.length > 0 ? (
+                          <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
+                            <span className={styles.tagDot} />
+                            {formatTagLabel(item.tags[0])}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
 
                     {/* Subtask Step Breakdown (Collapsible) */}
@@ -936,6 +951,7 @@ export default function TodayDashboardContent() {
             <div className={styles.otherTasksList}>
               {otherTasks.map((task) => {
                 const isDoItNow = task.tags?.includes('do-it-now');
+                const otherHier = resolveTaskHierarchy(task, projects, goals);
                 return (
                   <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div
@@ -968,17 +984,31 @@ export default function TodayDashboardContent() {
                           <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
                         </button>
                       )}
-                      {isDoItNow ? (
-                        <span className={`${styles.tagBadge} ${styles.tagDoitnow}`} style={{ marginLeft: 'auto' }}>
-                          <span className={styles.tagDot} />
-                          Do It Now
-                        </span>
-                      ) : task.tags && task.tags.length > 0 ? (
-                        <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`} style={{ marginLeft: 'auto' }}>
-                          <span className={styles.tagDot} />
-                          {formatTagLabel(task.tags[0])}
-                        </span>
-                      ) : null}
+                      <div className={styles.taskMetaRight} style={{ marginLeft: 'auto' }}>
+                        {otherHier.parentGoal && (
+                          <span className={styles.taskGoalPill} title={`Goal: ${otherHier.parentGoal.title}`}>
+                            <Target size={10} style={{ flexShrink: 0 }} />
+                            <span>Goal: {otherHier.parentGoal.title}</span>
+                          </span>
+                        )}
+                        {otherHier.parentProject && (
+                          <span className={styles.taskProjectPill} title={`Project: ${otherHier.parentProject.title}`}>
+                            <Folder size={10} style={{ flexShrink: 0 }} />
+                            <span>Project: {otherHier.parentProject.title}</span>
+                          </span>
+                        )}
+                        {isDoItNow ? (
+                          <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
+                            <span className={styles.tagDot} />
+                            Do It Now
+                          </span>
+                        ) : task.tags && task.tags.length > 0 ? (
+                          <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`}>
+                            <span className={styles.tagDot} />
+                            {formatTagLabel(task.tags[0])}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
 
                   {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}

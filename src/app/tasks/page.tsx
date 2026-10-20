@@ -37,6 +37,9 @@ import {
   Bell,
   Eye,
   EyeOff,
+  Target,
+  Folder,
+  Flag,
 } from 'lucide-react';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { formatTagLabel } from '@/utils/tagUtils';
@@ -47,6 +50,7 @@ import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
+import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 
 const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'backlog', label: 'Backlog' },
@@ -359,9 +363,9 @@ export default function TasksPage() {
   };
 
   const filteredTasks = tasks.filter((t) => {
+    const { parentProject, parentGoal } = resolveTaskHierarchy(t, projects, goals, milestones);
+
     if (focusedAreaId) {
-      const parentProject = projects.find((p) => p.id === t.projectId);
-      const parentGoal = goals.find((g) => g.id === (t.goalId || parentProject?.goalId));
       const activeArea = areas.find((a) => a.id === focusedAreaId);
       const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
 
@@ -389,13 +393,21 @@ export default function TasksPage() {
       if (doneTimeframe === 'week' && !isDateThisWeek(taskDate)) return false;
       if (doneTimeframe === 'month' && !isDateThisMonth(taskDate)) return false;
     }
-    if (projectFilter !== 'all' && t.projectId !== projectFilter) return false;
+    if (projectFilter !== 'all') {
+      const matchesProjId = t.projectId === projectFilter || parentProject?.id === projectFilter;
+      if (!matchesProjId) return false;
+    }
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
     return true;
   });
 
   const renderCompactDoneRow = (task: Task) => {
-    const parentProject = projects.find((p) => p.id === task.projectId);
+    const { parentProject, parentGoal } = resolveTaskHierarchy(
+      task,
+      projects,
+      goals,
+      milestones
+    );
     const doneDate = task.completedAt || task.updatedAt;
     const timeFormatted = doneDate
       ? new Date(doneDate).toLocaleDateString([], {
@@ -428,9 +440,16 @@ export default function TasksPage() {
           <span className={styles.compactDoneTitle} title={task.title}>
             {task.title}
           </span>
+          {parentGoal && (
+            <span className={styles.compactGoalChip} title={`Goal: ${parentGoal.title}`}>
+              <Target size={10} />
+              Goal: {parentGoal.title}
+            </span>
+          )}
           {parentProject && (
             <span className={styles.compactProjectChip} title={`Project: ${parentProject.title}`}>
-              {parentProject.title}
+              <Folder size={10} />
+              Project: {parentProject.title}
             </span>
           )}
         </div>
@@ -471,15 +490,12 @@ export default function TasksPage() {
   };
 
   const renderTaskCard = (task: Task, col: typeof STATUS_COLUMNS[0]) => {
-    const parentProject = projects.find((p) => p.id === task.projectId);
-
-    // Resolve Goal: task's direct goalId OR from parent project
-    const goalId = task.goalId || parentProject?.goalId;
-    const parentGoal = goalId ? goals.find((g) => g.id === goalId) : null;
-
-    // Resolve Milestone: task's direct milestoneId OR from parent project
-    const milestoneId = task.milestoneId || parentProject?.milestoneId;
-    const parentMilestone = milestoneId ? milestones.find((m) => m.id === milestoneId) : null;
+    const { parentProject, parentGoal, parentMilestone } = resolveTaskHierarchy(
+      task,
+      projects,
+      goals,
+      milestones
+    );
 
     const isDone = task.status === 'done';
     const isCompound = task.isCompound || task.subtasks.length > 0;
@@ -669,23 +685,29 @@ export default function TasksPage() {
             <span className={styles.breadcrumbChain}>
               {parentGoal && (
                 <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
-                  {parentGoal.title}
+                  <Target size={11} style={{ flexShrink: 0 }} />
+                  <span style={{ opacity: 0.85, fontWeight: 700 }}>Goal:</span>
+                  <span>{parentGoal.title}</span>
                 </span>
               )}
-              {parentGoal && parentMilestone && (
+              {parentGoal && (parentMilestone || parentProject) && (
                 <span className={styles.breadcrumbArrow}>›</span>
               )}
               {parentMilestone && (
                 <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
-                  {parentMilestone.title}
+                  <Flag size={11} style={{ flexShrink: 0 }} />
+                  <span style={{ opacity: 0.85, fontWeight: 700 }}>Milestone:</span>
+                  <span>{parentMilestone.title}</span>
                 </span>
               )}
-              {(parentGoal || parentMilestone) && parentProject && (
+              {parentMilestone && parentProject && (
                 <span className={styles.breadcrumbArrow}>›</span>
               )}
               {parentProject && (
                 <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
-                  {parentProject.title}
+                  <Folder size={11} style={{ flexShrink: 0 }} />
+                  <span style={{ opacity: 0.85, fontWeight: 700 }}>Project:</span>
+                  <span>{parentProject.title}</span>
                 </span>
               )}
             </span>

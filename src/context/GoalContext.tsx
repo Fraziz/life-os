@@ -68,6 +68,36 @@ export const DEFAULT_GOALS: Goal[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
+  {
+    id: 'goal-5',
+    title: 'Master Conversational & Professional English',
+    description: 'Daily SVO sentence structures, grammar practice, reading comprehension, and fluent speaking.',
+    why: 'Expand global career opportunities, communication clarity, and self-expression.',
+    parentDreamId: 'dream-3',
+    lifeAreaId: 'area-learning',
+    horizon: '90-day',
+    targetDate: '2026-12-31',
+    priority: 'high',
+    status: 'in-progress',
+    progress: 55,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'goal-6',
+    title: 'Achieve Peak Physical Fitness & Strength',
+    description: 'Consistent upper/lower body workouts, pull-ups, stamina building, and daily mobility.',
+    why: 'High energy, physical resilience, mental clarity, and longevity.',
+    parentDreamId: 'dream-2',
+    lifeAreaId: 'area-health',
+    horizon: 'yearly',
+    targetDate: '2026-12-31',
+    priority: 'high',
+    status: 'in-progress',
+    progress: 65,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 interface GoalContextType {
@@ -93,7 +123,14 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = loadJsonArray<Goal>(GOALS_STORAGE_KEY);
       if (parsed && parsed.length > 0) {
-        setGoals(parsed);
+        // Ensure default goals are available if user had older partial storage
+        const existingIds = new Set(parsed.map((g) => g.id));
+        const missing = DEFAULT_GOALS.filter((dg) => !existingIds.has(dg.id));
+        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed;
+        setGoals(combined);
+        if (missing.length > 0) {
+          try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(combined)); } catch {}
+        }
       } else {
         setGoals(DEFAULT_GOALS);
         try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(DEFAULT_GOALS)); } catch {}
