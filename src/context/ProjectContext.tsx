@@ -15,6 +15,8 @@ export const DEFAULT_PROJECTS: Project[] = [
     status: 'active',
     priority: 'high',
     progress: 100,
+    goalId: 'goal-4',
+    lifeAreaId: 'area-creative',
     notes: 'Next: Finalize card designs. 75 / 75 cards ready.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -26,6 +28,8 @@ export const DEFAULT_PROJECTS: Project[] = [
     status: 'active',
     priority: 'high',
     progress: 40,
+    goalId: 'goal-4',
+    lifeAreaId: 'area-career',
     notes: 'Next: Finalize packaging design. Product Plan in progress.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -56,7 +60,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = loadJsonArray<Project>(PROJECTS_STORAGE_KEY);
       if (parsed && parsed.length > 0) {
-        setProjects(parsed);
+        // Auto-heal / backfill missing goalId if applicable
+        const healed = parsed.map((p) => {
+          if (!p.goalId) {
+            const def = DEFAULT_PROJECTS.find((dp) => dp.id === p.id);
+            if (def?.goalId) {
+              return { ...p, goalId: def.goalId, lifeAreaId: p.lifeAreaId || def.lifeAreaId };
+            }
+          }
+          return p;
+        });
+        setProjects(healed);
       } else {
         setProjects(DEFAULT_PROJECTS);
         try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(DEFAULT_PROJECTS)); } catch {}

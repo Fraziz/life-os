@@ -17,6 +17,9 @@ export const DEFAULT_TASKS: Task[] = [
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],
     estimatedDuration: 60,
+    projectId: 'project-link-or-dare',
+    goalId: 'goal-1',
+    lifeAreaId: 'area-creative',
     tags: ['School', 'UI', 'Design'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -30,6 +33,8 @@ export const DEFAULT_TASKS: Task[] = [
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],
     estimatedDuration: 45,
+    goalId: 'goal-3',
+    lifeAreaId: 'area-learning',
     tags: ['Study', 'English'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -43,6 +48,8 @@ export const DEFAULT_TASKS: Task[] = [
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],
     estimatedDuration: 45,
+    goalId: 'goal-2',
+    lifeAreaId: 'area-health',
     tags: ['Health', 'Fitness'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -54,6 +61,9 @@ export const DEFAULT_TASKS: Task[] = [
     description: 'Compare printing quote and quality for card deck prototyping.',
     status: 'todo',
     priority: 'medium',
+    projectId: 'project-link-or-dare',
+    goalId: 'goal-4',
+    lifeAreaId: 'area-creative',
     tags: ['LINK OR DARE', 'Business'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -65,6 +75,9 @@ export const DEFAULT_TASKS: Task[] = [
     description: 'Structure nutritional specs and FDA compliance.',
     status: 'todo',
     priority: 'medium',
+    projectId: 'project-gainroot',
+    goalId: 'goal-4',
+    lifeAreaId: 'area-career',
     tags: ['GAINROOT', 'Product'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -76,6 +89,7 @@ export const DEFAULT_TASKS: Task[] = [
     description: 'Fingerpicking and chord transitions.',
     status: 'todo',
     priority: 'medium',
+    lifeAreaId: 'area-creative',
     tags: ['Hobby', 'Music'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -87,6 +101,8 @@ export const DEFAULT_TASKS: Task[] = [
     description: 'Meditations or Letters from a Stoic daily reading.',
     status: 'todo',
     priority: 'medium',
+    goalId: 'goal-3',
+    lifeAreaId: 'area-learning',
     tags: ['Mindset', 'Reading'],
     subtasks: [],
     createdAt: new Date().toISOString(),
@@ -139,7 +155,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = loadJsonArray<Task>(TASKS_STORAGE_KEY);
       if (parsed && parsed.length > 0) {
-        setTasks(parsed);
+        // Auto-heal / backfill missing projectId or goalId
+        const healed = parsed.map((t) => {
+          const updated = { ...t };
+          if (!updated.projectId || !updated.goalId) {
+            const def = DEFAULT_TASKS.find((dt) => dt.id === t.id);
+            if (def) {
+              updated.projectId = updated.projectId || def.projectId;
+              updated.goalId = updated.goalId || def.goalId;
+              updated.lifeAreaId = updated.lifeAreaId || def.lifeAreaId;
+            }
+          }
+          // Infer project from tags if still missing
+          if (!updated.projectId) {
+            if (t.tags?.some((tag) => tag.toLowerCase().includes('link or dare'))) {
+              updated.projectId = 'project-link-or-dare';
+              updated.goalId = updated.goalId || 'goal-4';
+            } else if (t.tags?.some((tag) => tag.toLowerCase().includes('gainroot'))) {
+              updated.projectId = 'project-gainroot';
+              updated.goalId = updated.goalId || 'goal-4';
+            }
+          }
+          return updated;
+        });
+        setTasks(healed);
       } else {
         setTasks(DEFAULT_TASKS);
         try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(DEFAULT_TASKS)); } catch {}

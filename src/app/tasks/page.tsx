@@ -96,6 +96,7 @@ export default function TasksPage() {
   const [quickPriority, setQuickPriority] = useState<TaskPriority>('medium');
   const [quickStatus, setQuickStatus] = useState<TaskStatus>('todo');
   const [quickProjectId, setQuickProjectId] = useState<string>('');
+  const [quickGoalId, setQuickGoalId] = useState<string>('');
   const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
 
   // Filters & Views
@@ -172,12 +173,16 @@ export default function TasksPage() {
     const cleaned = cleanMarkdownText(quickTitle);
     if (!cleaned) return;
 
+    const resolvedGoalId = quickGoalId || projects.find((p) => p.id === quickProjectId)?.goalId;
     quickAddTask(cleaned, {
       priority: quickPriority,
       status: quickStatus,
       projectId: quickProjectId || undefined,
+      goalId: resolvedGoalId || undefined,
     });
     setQuickTitle('');
+    setQuickProjectId('');
+    setQuickGoalId('');
     playSuccessChime();
     triggerDopamineBurst();
   };
@@ -192,7 +197,7 @@ export default function TasksPage() {
     setModalEst('');
     setModalAct('');
     setModalProjectId(projects[0]?.id || '');
-    setModalGoalId('');
+    setModalGoalId(projects[0]?.goalId || goals[0]?.id || '');
     setModalMilestoneId('');
     setModalTags('');
     setModalColor('');
@@ -209,7 +214,8 @@ export default function TasksPage() {
     setModalEst(t.estimatedDuration ?? '');
     setModalAct(t.actualDuration ?? '');
     setModalProjectId(t.projectId || '');
-    setModalGoalId(t.goalId || '');
+    const parentProj = projects.find((p) => p.id === t.projectId);
+    setModalGoalId(t.goalId || parentProj?.goalId || '');
     setModalMilestoneId(t.milestoneId || '');
     setModalTags(t.tags.join(', '));
     setModalColor(t.color || '');
@@ -657,41 +663,48 @@ export default function TasksPage() {
         </div>
 
         {/* ── Hierarchy Breadcrumb: Goal › Milestone › Project ── */}
-        {(parentGoal || parentMilestone || parentProject || task.tags.length > 0) && (
-          <div className={styles.tagsRow}>
-            {/* Breadcrumb chain */}
-            {(parentGoal || parentMilestone || parentProject) && (
-              <span className={styles.breadcrumbChain}>
-                {parentGoal && (
-                  <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
-                    {parentGoal.title}
-                  </span>
-                )}
-                {parentGoal && parentMilestone && (
-                  <span className={styles.breadcrumbArrow}>›</span>
-                )}
-                {parentMilestone && (
-                  <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
-                    {parentMilestone.title}
-                  </span>
-                )}
-                {(parentGoal || parentMilestone) && parentProject && (
-                  <span className={styles.breadcrumbArrow}>›</span>
-                )}
-                {parentProject && (
-                  <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
-                    {parentProject.title}
-                  </span>
-                )}
-              </span>
-            )}
-            {task.tags.map((tg) => (
-              <span key={tg} className={styles.tagChip}>
-                #{formatTagLabel(tg)}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className={styles.tagsRow}>
+          {/* Breadcrumb chain */}
+          {(parentGoal || parentMilestone || parentProject) ? (
+            <span className={styles.breadcrumbChain}>
+              {parentGoal && (
+                <span className={styles.goalBreadcrumbChip} title={`Goal: ${parentGoal.title}`}>
+                  {parentGoal.title}
+                </span>
+              )}
+              {parentGoal && parentMilestone && (
+                <span className={styles.breadcrumbArrow}>›</span>
+              )}
+              {parentMilestone && (
+                <span className={styles.milestoneBreadcrumbChip} title={`Milestone: ${parentMilestone.title}`}>
+                  {parentMilestone.title}
+                </span>
+              )}
+              {(parentGoal || parentMilestone) && parentProject && (
+                <span className={styles.breadcrumbArrow}>›</span>
+              )}
+              {parentProject && (
+                <span className={styles.parentProjectChip} title={`Project: ${parentProject.title}`}>
+                  {parentProject.title}
+                </span>
+              )}
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={styles.assignHierarchyBtn}
+              onClick={() => openEditModal(task)}
+              title="Assign to Goal or Project"
+            >
+              + Link Goal / Project
+            </button>
+          )}
+          {task.tags.map((tg) => (
+            <span key={tg} className={styles.tagChip}>
+              #{formatTagLabel(tg)}
+            </span>
+          ))}
+        </div>
 
         {/* ── Card Footer ── */}
         <div className={styles.taskFooter}>
@@ -891,12 +904,36 @@ export default function TasksPage() {
             <select
               className={styles.pillSelect}
               value={quickProjectId}
-              onChange={(e) => setQuickProjectId(e.target.value)}
+              onChange={(e) => {
+                const pid = e.target.value;
+                setQuickProjectId(pid);
+                const proj = projects.find((p) => p.id === pid);
+                if (proj?.goalId && !quickGoalId) {
+                  setQuickGoalId(proj.goalId);
+                }
+              }}
+              title="Assign Project"
+              aria-label="Assign Project"
             >
               <option value="">No Project</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.title}
+                  Project: {p.title}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.pillSelect}
+              value={quickGoalId}
+              onChange={(e) => setQuickGoalId(e.target.value)}
+              title="Assign Goal"
+              aria-label="Assign Goal"
+            >
+              <option value="">No Goal</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  Goal: {g.title}
                 </option>
               ))}
             </select>
@@ -1422,7 +1459,14 @@ export default function TasksPage() {
                     id="modal-project"
                     className={styles.select}
                     value={modalProjectId}
-                    onChange={(e) => setModalProjectId(e.target.value)}
+                    onChange={(e) => {
+                      const pid = e.target.value;
+                      setModalProjectId(pid);
+                      const proj = projects.find((p) => p.id === pid);
+                      if (proj?.goalId && !modalGoalId) {
+                        setModalGoalId(proj.goalId);
+                      }
+                    }}
                   >
                     <option value="">-- No Project --</option>
                     {projects.map((p) => (
@@ -1434,6 +1478,25 @@ export default function TasksPage() {
                 </div>
 
                 <div className={styles.formGroup}>
+                  <label className={styles.label} htmlFor="modal-goal">Parent Goal</label>
+                  <select
+                    id="modal-goal"
+                    className={styles.select}
+                    value={modalGoalId}
+                    onChange={(e) => setModalGoalId(e.target.value)}
+                  >
+                    <option value="">-- No Goal --</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.gridTwo}>
+                <div className={styles.formGroup}>
                   <label className={styles.label} htmlFor="modal-due">Due Date</label>
                   <input
                     id="modal-due"
@@ -1443,9 +1506,7 @@ export default function TasksPage() {
                     onChange={(e) => setModalDueDate(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className={styles.gridTwo}>
                 <div className={styles.formGroup}>
                   <label className={styles.label} htmlFor="modal-est">Estimated Duration (Minutes)</label>
                   <input
@@ -1459,20 +1520,20 @@ export default function TasksPage() {
                     placeholder="e.g. 30"
                   />
                 </div>
+              </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label} htmlFor="modal-act">Actual Duration (Minutes)</label>
-                  <input
-                    id="modal-act"
-                    type="number"
-                    min="0"
-                    step="5"
-                    className={styles.input}
-                    value={modalAct}
-                    onChange={(e) => setModalAct(e.target.value ? parseInt(e.target.value) : '')}
-                    placeholder="e.g. 45"
-                  />
-                </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="modal-act">Actual Duration (Minutes)</label>
+                <input
+                  id="modal-act"
+                  type="number"
+                  min="0"
+                  step="5"
+                  className={styles.input}
+                  value={modalAct}
+                  onChange={(e) => setModalAct(e.target.value ? parseInt(e.target.value) : '')}
+                  placeholder="e.g. 45"
+                />
               </div>
 
               <div className={styles.formGroup}>
