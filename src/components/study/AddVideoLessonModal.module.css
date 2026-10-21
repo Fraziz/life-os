@@ -95,16 +95,51 @@
   border-color: var(--color-accent);
 }
 
+
 .previewBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 0.75rem;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+  width: 100%;
+}
+
+.previewBadgeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
   color: var(--color-success);
-  background: rgba(16, 185, 129, 0.08);
-  padding: 6px 10px;
-  border-radius: 5px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  flex-shrink: 0;
+}
+
+.previewBadgeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.previewBadgePlatform {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.previewBadgeDetail {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .errorBadge {

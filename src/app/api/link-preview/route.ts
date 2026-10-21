@@ -166,12 +166,15 @@ export async function GET(req: NextRequest) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
+    const isFb = validUrl.includes('facebook.com') || validUrl.includes('fb.watch');
+    const userAgent = isFb
+      ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
     const response = await fetch(validUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (compatible; SarilingMundoBot/1.0)',
+        'User-Agent': userAgent,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
@@ -245,6 +248,26 @@ export async function GET(req: NextRequest) {
     let ogImage = getMeta('og:image') || getMeta('twitter:image');
     const ogSite = getMeta('og:site_name');
 
+    // Canonical URL detection from og:url or link[rel="canonical"]
+    const canonicalLinkMatch = htmlChunk.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*)["']/i) ||
+                               htmlChunk.match(/<link[^>]+href=["']([^"']*)["'][^>]+rel=["']canonical["']/i);
+    const canonicalHref = canonicalLinkMatch && canonicalLinkMatch[1] ? decodeHtmlEntities(canonicalLinkMatch[1].trim()) : null;
+    const ogUrl = getMeta('og:url') || canonicalHref;
+
+    let resolvedUrl = response.url || validUrl;
+    if (ogUrl && /^https?:\/\//i.test(ogUrl)) {
+      resolvedUrl = ogUrl;
+    }
+
+    // Clean tracking parameters from resolved URL
+    try {
+      const u = new URL(resolvedUrl);
+      ['mibextid', 'rdid', 'ref', 'source', 'locale', 'sfnsn', 'fs', 'idorvanity', 'vh', 'fbclid'].forEach((p) =>
+        u.searchParams.delete(p)
+      );
+      resolvedUrl = u.toString();
+    } catch {}
+
     if (ogImage && !/^https?:\/\//i.test(ogImage)) {
       if (ogImage.startsWith('//')) {
         ogImage = `https:${ogImage}`;
@@ -256,7 +279,7 @@ export async function GET(req: NextRequest) {
     }
 
     const result: LinkPreviewData = {
-      url: validUrl,
+      url: resolvedUrl,
       hostname,
       title: ogTitle || fallback.title,
       description: ogDesc || fallback.description,

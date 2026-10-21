@@ -327,7 +327,40 @@ export default function FocusPage() {
 
   const handleNotesClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    const chip = target.closest('.video-timestamp-chip, [data-timestamp], button') as HTMLElement | null;
+
+    // 1. Pop-out Video action button -> Floating companion window (bypasses all iframe restrictions)
+    const popoutBtn = target.closest('[data-action="popout-video"]') as HTMLElement | null;
+    if (popoutBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = popoutBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const targetUrl = popoutBtn.getAttribute('data-url') || card?.getAttribute('data-url') || '';
+      if (targetUrl) {
+        const width = 880;
+        const height = 580;
+        const left = Math.max(0, typeof window !== 'undefined' ? window.screen.width - width - 40 : 0);
+        const top = 60;
+        window.open(
+          targetUrl,
+          'LifeOSVideoPlayer',
+          `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=no`
+        );
+      }
+      return;
+    }
+
+    // 2. Allow normal link clicks
+    if (target.closest('a')) {
+      return;
+    }
+
+    // 3. Ignore clicks inside video lesson block controls
+    if (target.closest('.video-lesson-block')) {
+      return;
+    }
+
+    // 4. Timestamp chip removal
+    const chip = target.closest('.video-timestamp-chip, [data-timestamp]') as HTMLElement | null;
     if (chip && bookContainerRef.current?.contains(chip)) {
       e.preventDefault();
       e.stopPropagation();
@@ -1052,6 +1085,7 @@ export default function FocusPage() {
                   <div className={styles.focusVideoFrame}>
                     <YouTubePlayer
                       videoId={extractVideoLessonData(activeDoc.content || '')?.videoId || ''}
+                      url={extractVideoLessonData(activeDoc.content || '')?.url || ''}
                       startTime={extractVideoLessonData(activeDoc.content || '')?.startTime || 0}
                       title={activeDoc.title}
                     />
@@ -1143,6 +1177,7 @@ export default function FocusPage() {
                     contentEditable={false}
                     className={styles.focusBookBody}
                     dangerouslySetInnerHTML={{ __html: getRichHtml(activeDoc.content || '') }}
+                    onClick={handleNotesClick}
                   />
 
                   <div className={styles.bookFooter}>

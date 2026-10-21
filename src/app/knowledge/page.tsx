@@ -97,7 +97,13 @@ import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
 import { formatDocumentWithAI, formatDocumentLocally, type FormatResult } from '@/utils/smartDocumentFormatter';
 import { parseYouTubeUrl, isStandaloneYouTubeUrl } from '@/utils/youtube';
-import { generateVideoBlockHtml, transformVideoLessonsInHtml, isDocVideoLesson } from '@/utils/videoLesson';
+import {
+  generateVideoBlockHtml,
+  transformVideoLessonsInHtml,
+  isDocVideoLesson,
+  extractVideoLessonData,
+  extractVideoLessonNotes,
+} from '@/utils/videoLesson';
 import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
 import FocusViewWorkspace from '@/components/study/FocusViewWorkspace';
 import StudySessionCard from '@/components/study/StudySessionCard';
@@ -965,24 +971,38 @@ export default function KnowledgePage() {
   // Video Lessons & Expanded Focus View states
   const [activeFocusLesson, setActiveFocusLesson] = useState<{
     videoId: string;
+    url?: string;
     lessonTitle: string;
     startTime: number;
     bookId?: string;
     bookTitle?: string;
   } | null>(null);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [videoModalMode, setVideoModalMode] = useState<'insert' | 'create'>('insert');
+  const [videoModalMode, setVideoModalMode] = useState<'insert' | 'create' | 'edit'>('insert');
 
-  const handleOpenVideoLessonModal = (mode: 'insert' | 'create' = 'insert') => {
+  const handleOpenVideoLessonModal = (mode: 'insert' | 'create' | 'edit' = 'insert') => {
     setVideoModalMode(mode);
     setEditingVideoBlockTarget(null);
     setVideoModalOpen(true);
   };
   const [editingVideoBlockTarget, setEditingVideoBlockTarget] = useState<{
-    element: HTMLElement;
+    element?: HTMLElement | null;
     initialUrl: string;
     initialTitle: string;
+    docId?: string;
   } | null>(null);
+
+  const handleEditCurrentVideoLesson = () => {
+    if (!selectedDoc) return;
+    const videoData = extractVideoLessonData(selectedDoc.content || '');
+    setEditingVideoBlockTarget({
+      initialUrl: videoData?.url || '',
+      initialTitle: selectedDoc.title || videoData?.title || '',
+      docId: selectedDoc.id,
+    });
+    setVideoModalMode('edit');
+    setVideoModalOpen(true);
+  };
   const [detectedPastedYouTube, setDetectedPastedYouTube] = useState<{
     parsed: NonNullable<ReturnType<typeof parseYouTubeUrl>>;
     rawUrl: string;
@@ -1114,6 +1134,27 @@ export default function KnowledgePage() {
       return true;
     }
 
+    // 1b. Pop-out Video action button -> Floating companion window (bypasses all iframe restrictions)
+    const popoutBtn = target.closest('[data-action="popout-video"]') as HTMLElement | null;
+    if (popoutBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = popoutBtn.closest('.video-lesson-block') as HTMLElement | null;
+      const targetUrl = popoutBtn.getAttribute('data-url') || card?.getAttribute('data-url') || '';
+      if (targetUrl) {
+        const width = 880;
+        const height = 580;
+        const left = Math.max(0, typeof window !== 'undefined' ? window.screen.width - width - 40 : 0);
+        const top = 60;
+        window.open(
+          targetUrl,
+          'LifeOSVideoPlayer',
+          `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=no`
+        );
+      }
+      return true;
+    }
+
     // 2. Move Up action button (Edit mode)
     const moveUpBtn = target.closest('[data-action="move-up-video"]') as HTMLElement | null;
     if (moveUpBtn && editorMode === 'edit') {
@@ -1144,19 +1185,24 @@ export default function KnowledgePage() {
       return true;
     }
 
-    // 4. Edit Video action button (Edit mode)
+    // 4. Edit Video action button (Only change link and name)
     const editBtn = target.closest('[data-action="edit-video"]') as HTMLElement | null;
-    if (editBtn && editorMode === 'edit') {
+    if (editBtn) {
       e.preventDefault();
       e.stopPropagation();
       const card = editBtn.closest('.video-lesson-block') as HTMLElement | null;
-      if (card) {
-        const videoId = card.getAttribute('data-video-id') || '';
-        const url = card.getAttribute('data-url') || `https://www.youtube.com/watch?v=${videoId}`;
-        const title = card.getAttribute('data-title') || '';
-        setEditingVideoBlockTarget({ element: card, initialUrl: url, initialTitle: title });
-        setVideoModalOpen(true);
-      }
+      const videoData = selectedDoc ? extractVideoLessonData(selectedDoc.content || '') : null;
+      const videoId = editBtn.getAttribute('data-video-id') || card?.getAttribute('data-video-id') || videoData?.videoId || '';
+      const url = editBtn.getAttribute('data-url') || card?.getAttribute('data-url') || videoData?.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
+      const title = editBtn.getAttribute('data-title') || card?.getAttribute('data-title') || videoData?.title || selectedDoc?.title || fTitle || '';
+      setEditingVideoBlockTarget({
+        element: card,
+        initialUrl: url,
+        initialTitle: title,
+        docId: selectedDoc?.id,
+      });
+      setVideoModalMode('edit');
+      setVideoModalOpen(true);
       return true;
     }
 
@@ -1218,6 +1264,37 @@ export default function KnowledgePage() {
       setPasteToast('New Video Lesson created & saved!');
       setTimeout(() => setPasteToast(null), 3000);
       return;
+    }
+
+    if (videoModalMode === 'edit' || editingVideoBlockTarget?.docId) {
+      const targetDocId = editingVideoBlockTarget?.docId || selectedDoc?.id;
+      const targetDoc = targetDocId ? docs.find((d) => d.id === targetDocId) || selectedDoc : selectedDoc;
+
+      if (targetDoc) {
+        const lessonTitle = title.trim() || targetDoc.title || 'Video Lesson';
+        const notes = extractVideoLessonNotes(targetDoc.content || '');
+        const newBlockHtml = generateVideoBlockHtml({
+          videoId,
+          url,
+          title: lessonTitle,
+          startTime,
+          isEditMode: false,
+        });
+        const updatedContent = `${newBlockHtml}\n\n${notes}`;
+
+        updateDoc(targetDoc.id, {
+          title: lessonTitle,
+          content: updatedContent,
+          docType: 'video-lesson',
+        });
+        setFTitle(lessonTitle);
+        setFContent(updatedContent);
+        setEditorMode('book');
+        setEditingVideoBlockTarget(null);
+        setPasteToast('Video link & lesson name updated!');
+        setTimeout(() => setPasteToast(null), 2500);
+        return;
+      }
     }
 
     const isEdit = editorMode === 'edit';
@@ -4381,30 +4458,56 @@ export default function KnowledgePage() {
                     <span>Notes</span>
                   </button>
 
-                  <div className={styles.segmentedControl}>
-                    <button
-                      className={`${styles.segmentBtn} ${(editorMode === 'book' || editorMode === 'word') ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('book')}
-                      title={isCurrentVideo ? "Video lesson studio view" : "Book reading mode — Formal document layout"}
-                    >
-                      {isCurrentVideo ? <Video size={12} /> : <BookOpen size={12} />}
-                      <span>{isCurrentVideo ? 'Video' : 'Book'}</span>
-                    </button>
-                    <button
-                      className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('edit')}
-                      title="Edit note"
-                    >
-                      <Edit2 size={12} /> Edit
-                    </button>
-                    <button
-                      className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
-                      onClick={() => setEditorMode('preview')}
-                      title="Preview rendered markdown"
-                    >
-                      <Eye size={12} /> Preview
-                    </button>
-                  </div>
+                  {isCurrentVideo ? (
+                    <div className={styles.segmentedControl}>
+                      <button
+                        type="button"
+                        className={`${styles.segmentBtn} ${styles.segmentBtnActive}`}
+                        onClick={() => setEditorMode('book')}
+                        title="Video Lesson Studio"
+                      >
+                        <Video size={12} />
+                        <span>Video Lesson</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.segmentBtn}
+                        onClick={handleEditCurrentVideoLesson}
+                        title="Edit video link and lesson name"
+                      >
+                        <Edit2 size={12} />
+                        <span>Edit Link &amp; Name</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.segmentedControl}>
+                      <button
+                        type="button"
+                        className={`${styles.segmentBtn} ${(editorMode === 'book' || editorMode === 'word') ? styles.segmentBtnActive : ''}`}
+                        onClick={() => setEditorMode('book')}
+                        title="Book reading mode — Formal document layout"
+                      >
+                        <BookOpen size={12} />
+                        <span>Book</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.segmentBtn} ${editorMode === 'edit' ? styles.segmentBtnActive : ''}`}
+                        onClick={() => setEditorMode('edit')}
+                        title="Edit note"
+                      >
+                        <Edit2 size={12} /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.segmentBtn} ${editorMode === 'preview' ? styles.segmentBtnActive : ''}`}
+                        onClick={() => setEditorMode('preview')}
+                        title="Preview rendered markdown"
+                      >
+                        <Eye size={12} /> Preview
+                      </button>
+                    </div>
+                  )}
 
 
                 </div>
@@ -5635,6 +5738,7 @@ export default function KnowledgePage() {
       {activeFocusLesson && (
         <FocusViewWorkspace
           videoId={activeFocusLesson.videoId}
+          url={activeFocusLesson.url}
           lessonTitle={activeFocusLesson.lessonTitle}
           startTime={activeFocusLesson.startTime}
           bookId={activeFocusLesson.bookId || selectedDoc?.id}

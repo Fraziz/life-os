@@ -163,6 +163,37 @@ export default function InboxPage() {
     setEditingItemText('');
   };
 
+  // Google Notes Text Editing State
+  const [editingNotesItemId, setEditingNotesItemId] = useState<string | null>(null);
+  const [editingNotesText, setEditingNotesText] = useState<string>('');
+
+  const handleStartEditNotes = (item: InboxItem) => {
+    setEditingNotesItemId(item.id);
+    setEditingNotesText(item.notes || '');
+  };
+
+  const handleSaveNotes = (id: string) => {
+    const cleaned = cleanMarkdownText(editingNotesText);
+    updateInboxItem(id, { notes: cleaned || undefined });
+    setEditingNotesItemId(null);
+    setEditingNotesText('');
+    playSuccessChime();
+    showToast(cleaned ? 'Note text saved' : 'Note text cleared');
+  };
+
+  const handleClearNotes = (id: string) => {
+    updateInboxItem(id, { notes: undefined });
+    setEditingNotesItemId(null);
+    setEditingNotesText('');
+    playSuccessChime();
+    showToast('Note text removed');
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditingNotesItemId(null);
+    setEditingNotesText('');
+  };
+
   const handleToggleItemApplied = (item: InboxItem) => {
     toggleItemApplied(item.id);
     if (!item.isApplied) {
@@ -1067,8 +1098,84 @@ export default function InboxPage() {
                       <AutoLinkText text={item.content} />
                     </p>
                   )}
+
+                  {/* Google Notes Style Note Text Display or Inline Editor */}
+                  {editingNotesItemId === item.id ? (
+                    <div className={styles.notesEditContainer} onClick={(e) => e.stopPropagation()}>
+                      <div className={styles.notesEditHeader}>
+                        <FileText size={12} className={styles.notesEditHeaderIcon} />
+                        <span>Google Notes Text</span>
+                      </div>
+                      <textarea
+                        className={styles.notesEditTextarea}
+                        placeholder="Add note text or details (like in Google Notes)..."
+                        value={editingNotesText}
+                        onChange={(e) => setEditingNotesText(e.target.value)}
+                        onPaste={(e) => handleCleanPasteEvent(e, setEditingNotesText)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveNotes(item.id);
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancelEditNotes();
+                          }
+                        }}
+                        rows={Math.max(3, editingNotesText.split('\n').length)}
+                        autoFocus
+                      />
+                      <div className={styles.notesEditActions}>
+                        <button
+                          type="button"
+                          className={styles.btnSaveEdit}
+                          onClick={() => handleSaveNotes(item.id)}
+                        >
+                          Save Note
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnCancelEdit}
+                          onClick={handleCancelEditNotes}
+                        >
+                          Cancel
+                        </button>
+                        {item.notes && (
+                          <button
+                            type="button"
+                            className={styles.btnClearNotes}
+                            onClick={() => handleClearNotes(item.id)}
+                            title="Clear note text"
+                          >
+                            Clear Text
+                          </button>
+                        )}
+                        <span className={styles.editHint}>Ctrl+Enter to save, Esc to cancel</span>
+                      </div>
+                    </div>
+                  ) : (
+                    item.notes && (
+                      <div
+                        className={styles.itemNotesBox}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEditNotes(item);
+                        }}
+                        title="Click to edit note text (Google Notes style)"
+                      >
+                        <div className={styles.itemNotesHeader}>
+                          <FileText size={11} className={styles.itemNotesIcon} />
+                          <span>Note Text</span>
+                        </div>
+                        <div className={styles.itemNotesContent}>
+                          <AutoLinkText text={item.notes} />
+                        </div>
+                      </div>
+                    )
+                  )}
+
                   <span className={styles.itemDate}>
                     Captured {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {item.notes && ' • Note Text'}
                     {item.isImportant && ' • Note'}
                     {item.isReminder && !item.isApplied && item.status === 'inbox' && ' • Active on Today'}
                     {item.isApplied && !(item.isImportant || filterTab === 'important') && ' • Applied / Done'}
@@ -1079,7 +1186,7 @@ export default function InboxPage() {
 
               <div
                 className={`${styles.convertButtonGroup} ${
-                  editingItemId === item.id || convertModalItem?.id === item.id || openColorPickerId === item.id
+                  editingItemId === item.id || editingNotesItemId === item.id || convertModalItem?.id === item.id || openColorPickerId === item.id
                     ? styles.convertButtonGroupActive
                     : ''
                 }`}
@@ -1127,6 +1234,37 @@ export default function InboxPage() {
                         aria-label="Remove from Notes"
                       >
                         <StickyNote size={13} style={{ color: '#f59e0b' }} />
+                      </button>
+
+                      {/* Google Notes Text Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${item.notes ? styles.btnActionActiveNotesText : ''} ${editingNotesItemId === item.id ? styles.btnCopyActive : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (editingNotesItemId === item.id) {
+                            handleCancelEditNotes();
+                          } else {
+                            handleStartEditNotes(item);
+                          }
+                        }}
+                        title={
+                          item.notes
+                            ? 'Edit note text (Google Notes)'
+                            : 'Add text like in Google Notes'
+                        }
+                        aria-label={item.notes ? 'Edit note text' : 'Add text like in Google Notes'}
+                      >
+                        <FileText
+                          size={13}
+                          style={{
+                            color: item.notes
+                              ? '#38bdf8'
+                              : editingNotesItemId === item.id
+                              ? 'var(--color-primary, #6366f1)'
+                              : 'var(--color-text-muted)',
+                          }}
+                        />
                       </button>
 
                       {/* Color Picker Button & Popover */}
@@ -1343,6 +1481,37 @@ export default function InboxPage() {
                           size={13}
                           style={{
                             color: item.isImportant ? '#f59e0b' : 'var(--color-text-muted)',
+                          }}
+                        />
+                      </button>
+
+                      {/* Google Notes Text Icon */}
+                      <button
+                        type="button"
+                        className={`${styles.btnCopy} ${item.notes ? styles.btnActionActiveNotesText : ''} ${editingNotesItemId === item.id ? styles.btnCopyActive : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (editingNotesItemId === item.id) {
+                            handleCancelEditNotes();
+                          } else {
+                            handleStartEditNotes(item);
+                          }
+                        }}
+                        title={
+                          item.notes
+                            ? 'Edit note text (Google Notes)'
+                            : 'Add text like in Google Notes'
+                        }
+                        aria-label={item.notes ? 'Edit note text' : 'Add text like in Google Notes'}
+                      >
+                        <FileText
+                          size={13}
+                          style={{
+                            color: item.notes
+                              ? '#38bdf8'
+                              : editingNotesItemId === item.id
+                              ? 'var(--color-primary, #6366f1)'
+                              : 'var(--color-text-muted)',
                           }}
                         />
                       </button>

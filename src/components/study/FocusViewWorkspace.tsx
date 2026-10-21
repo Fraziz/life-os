@@ -21,6 +21,7 @@ import { useKnowledge } from '@/context/KnowledgeContext';
 
 interface FocusViewWorkspaceProps {
   videoId: string;
+  url?: string;
   lessonTitle: string;
   startTime?: number;
   bookId?: string;
@@ -31,6 +32,7 @@ interface FocusViewWorkspaceProps {
 
 export default function FocusViewWorkspace({
   videoId,
+  url,
   lessonTitle,
   startTime = 0,
   bookId,
@@ -207,6 +209,7 @@ export default function FocusViewWorkspace({
           <div className={styles.videoContainer}>
             <YouTubePlayer
               videoId={videoId}
+              url={url}
               startTime={startTime}
               title={lessonTitle}
             />

@@ -74,7 +74,7 @@ interface InboxContextType {
   activeReminders: InboxItem[];
   convertedItems: InboxItem[];
   somedayItems: InboxItem[];
-  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string }) => void;
+  quickDump: (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string; notes?: string }) => void;
   bulkDump: (lines: string[], defaultIsReminder?: boolean) => void;
   deleteInboxItem: (id: string) => void;
   toggleItemApplied: (id: string) => void;
@@ -162,7 +162,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string }) => {
+  const quickDump = (content: string, options?: { isReminder?: boolean; reminderTime?: string; isImportant?: boolean; color?: string; notes?: string }) => {
     const cleaned = cleanMarkdownText(content);
     if (!cleaned) return;
     const isReminder = options?.isReminder ?? false;
@@ -170,6 +170,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     const newItem: InboxItem = {
       id: `inbox-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       content: cleaned,
+      notes: options?.notes ? cleanMarkdownText(options.notes) : undefined,
       status: 'inbox',
       isReminder,
       isImportant,
@@ -266,6 +267,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     const cleanedUpdates: Partial<InboxItem> = {
       ...updates,
       ...(updates.content !== undefined ? { content: cleanMarkdownText(updates.content) } : {}),
+      ...(updates.notes !== undefined ? { notes: updates.notes ? cleanMarkdownText(updates.notes) : undefined } : {}),
     };
     const updated = items.map((item) => {
       if (item.id !== id) return item;
@@ -314,6 +316,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
 
     const createdTask = addTask({
       title: item.content,
+      description: item.notes,
       status: taskStatus,
       completedAt: taskStatus === 'done' ? new Date().toISOString() : undefined,
       priority,

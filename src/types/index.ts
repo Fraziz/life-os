@@ -291,6 +291,7 @@ export type BrainDumpItemType = 'thought' | 'reminder';
 export interface InboxItem {
   id: string;
   content: string;
+  notes?: string; // Text / note body like in Google Notes
   status: InboxItemStatus;
   isReminder?: boolean;
   isImportant?: boolean;

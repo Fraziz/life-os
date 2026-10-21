@@ -495,6 +495,11 @@
   background: rgba(245, 158, 11, 0.12) !important;
 }
 
+.btnActionActiveNotesText {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+}
+
 /* ── Inline Edit Mode ── */
 .editContainer {
   display: flex;
@@ -568,6 +573,119 @@
   font-size: 11px;
   color: var(--color-text-faint);
   margin-left: 4px;
+}
+
+/* ── Google Notes Style Attached Text Box & Editor ── */
+.itemNotesBox {
+  margin-top: 8px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.itemNotesBox:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.itemNotesHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #38bdf8;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.itemNotesIcon {
+  color: #38bdf8;
+}
+
+.itemNotesContent {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-secondary, #cbd5e1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.notesEditContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface, #1e1e24);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.notesEditHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+.notesEditHeaderIcon {
+  color: #38bdf8;
+}
+
+.notesEditTextarea {
+  width: 100%;
+  min-height: 75px;
+  padding: 8px 10px;
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text, #f1f5f9);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color var(--transition-fast);
+}
+
+.notesEditTextarea:focus {
+  border-color: #38bdf8;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+.notesEditActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btnClearNotes {
+  background: transparent;
+  color: var(--color-danger, #f87171);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnClearNotes:hover {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: var(--color-danger, #f87171);
 }
 
 /*  Modal  */
