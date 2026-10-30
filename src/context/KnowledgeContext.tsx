@@ -162,6 +162,42 @@ interface KnowledgeContextValue {
 
 const KnowledgeContext = createContext<KnowledgeContextValue | undefined>(undefined);
 
+export function isTrueBookOrVideo(item: any): boolean {
+  if (!item || typeof item !== 'object') return false;
+  if (!item.id || typeof item.id !== 'string') return false;
+
+  const obsoleteIds = new Set([
+    'doc-sariling-mundo-manual',
+    'doc-life-os-manual',
+    'doc-business-ideas',
+    'doc-game-blobbit',
+    'doc-blender-notes',
+  ]);
+  if (obsoleteIds.has(item.id)) return false;
+
+  // Reject tasks
+  if (item.subtasks !== undefined || item.dueDate !== undefined || item.estimatedDuration !== undefined || item.actualDuration !== undefined) return false;
+  if (item.priority === 'urgent' || item.priority === 'high' || item.priority === 'medium' || item.priority === 'low') return false;
+  if (item.status === 'todo' || item.status === 'in_progress' || item.status === 'done') return false;
+  if (item.id.startsWith('task_') || item.id.startsWith('t_')) return false;
+
+  // Reject inbox / idea parking items
+  if (item.id.startsWith('inbox_') || item.id.startsWith('thought_') || item.id.startsWith('dump_')) return false;
+  if (item.convertedTo !== undefined || item.isApplied !== undefined || item.reminderTime !== undefined) return false;
+
+  // Reject goals, dreams, habits, workouts, projects
+  if (item.horizon !== undefined || item.targetDate !== undefined || item.quarter !== undefined) return false;
+  if (item.whyItMatters !== undefined || item.visionPrompt !== undefined) return false;
+  if (item.streak !== undefined || item.completedDates !== undefined || item.frequency !== undefined) return false;
+  if (item.exercises !== undefined || item.routineId !== undefined) return false;
+  if (item.columns !== undefined) return false;
+
+  // Must have a title or content
+  if (!item.title && !item.content) return false;
+
+  return true;
+}
+
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const { user, isGuest } = useAuth();
   const uid = user && !isGuest ? user.uid : null;
@@ -193,26 +229,24 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const reloadFromStorage = useCallback(async (isCloudSyncEvent: boolean = false) => {
     const map = new Map<string, KnowledgeDocument>();
 
-    // 1. Recover from all known localStorage keys (current and legacy)
-    const localKeys = [
+    // 1. Recover from specific book storage keys ONLY (no tasks, no inbox items)
+    const bookKeys = [
       STORAGE_KEY,
-      'life_os_knowledge_docs',
-      'knowledge_docs',
+      'life_os_knowledge_docs_backup',
       'life_os_books_v1',
       'life_os_books',
-      'life_os_knowledge_docs_backup',
-      'life_os_study_docs',
-      'life_os_docs',
+      'life_os_knowledge_docs',
+      'knowledge_docs',
     ];
 
-    for (const key of localKeys) {
+    for (const key of bookKeys) {
       try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
         if (raw) {
           const parsed = JSON.parse(raw);
           const list = Array.isArray(parsed) ? parsed : [parsed];
           list.forEach((d) => {
-            if (d && typeof d === 'object' && d.id) {
+            if (isTrueBookOrVideo(d)) {
               const existing = map.get(d.id);
               if (!existing) {
                 map.set(d.id, d);
@@ -233,62 +267,24 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Comprehensive scan across all localStorage keys for any saved book or study doc
-    if (typeof localStorage !== 'undefined') {
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (!k) continue;
-          if (k.startsWith('life_os_') || k.includes('doc') || k.includes('book') || k.includes('knowledge')) {
-            const raw = localStorage.getItem(k);
-            if (raw && (raw.startsWith('[') || raw.startsWith('{'))) {
-              try {
-                const parsed = JSON.parse(raw);
-                const items = Array.isArray(parsed) ? parsed : [parsed];
-                items.forEach((d) => {
-                  if (d && typeof d === 'object' && d.id && (d.title || d.content)) {
-                    const existing = map.get(d.id);
-                    if (!existing) {
-                      map.set(d.id, d);
-                    } else {
-                      const newLen = (d.content || '').length;
-                      const existLen = (existing.content || '').length;
-                      if (newLen > existLen) map.set(d.id, d);
-                    }
-                  }
-                });
-              } catch {}
-            }
-          }
-        }
-      } catch {}
-    }
-
-    // 2. Recover from all IndexedDB keys (which hold large docs & books without 5MB quota limit)
-    const idbKeys = [
-      STORAGE_KEY,
-      'life_os_knowledge_docs_backup',
-      'life_os_knowledge_docs',
-      'life_os_books_v1',
-      'life_os_books',
-    ];
-
-    for (const key of idbKeys) {
+    // 2. Recover from IndexedDB book keys ONLY
+    for (const key of bookKeys) {
       try {
         const idbDocs = await idbGet<KnowledgeDocument[]>(key);
         if (Array.isArray(idbDocs) && idbDocs.length > 0) {
           idbDocs.forEach((d) => {
-            if (!d || !d.id) return;
-            const existing = map.get(d.id);
-            if (!existing) {
-              map.set(d.id, d);
-            } else {
-              const idbLen = (d.content || '').length;
-              const existLen = (existing.content || '').length;
-              const idbTime = new Date(d.updatedAt || 0).getTime();
-              const existTime = new Date(existing.updatedAt || 0).getTime();
-              if (idbLen >= existLen || idbTime >= existTime) {
+            if (isTrueBookOrVideo(d)) {
+              const existing = map.get(d.id);
+              if (!existing) {
                 map.set(d.id, d);
+              } else {
+                const idbLen = (d.content || '').length;
+                const existLen = (existing.content || '').length;
+                const idbTime = new Date(d.updatedAt || 0).getTime();
+                const existTime = new Date(existing.updatedAt || 0).getTime();
+                if (idbLen >= existLen || idbTime >= existTime) {
+                  map.set(d.id, d);
+                }
               }
             }
           });
@@ -298,37 +294,13 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Comprehensive scan across all IndexedDB values via idbGetAll
-    try {
-      const allIdbEntries = await idbGetAll<unknown>();
-      allIdbEntries.forEach((entry) => {
-        if (Array.isArray(entry)) {
-          entry.forEach((d) => {
-            if (d && typeof d === 'object' && d.id && (d.title || d.content)) {
-              const existing = map.get(d.id);
-              if (!existing) {
-                map.set(d.id, d);
-              } else {
-                const newLen = (d.content || '').length;
-                const existLen = (existing.content || '').length;
-                if (newLen > existLen) map.set(d.id, d);
-              }
-            }
-          });
-        }
-      });
-    } catch {}
-
     // 3. Defaults & User Books preservation:
     const defaults = defaultDocs();
     if (map.size === 0) {
-      // First time initialization: populate default starter documents
       defaults.forEach((d) => map.set(d.id, d));
     } else {
-      // Keep defaults available if user has never touched them, without duplicating
       defaults.forEach((d) => {
         if (!map.has(d.id)) {
-          // If a user has another doc with matching title, don't duplicate
           const hasMatchingTitle = Array.from(map.values()).some((existing) => existing.title === d.title);
           if (!hasMatchingTitle) {
             map.set(d.id, d);
@@ -337,9 +309,12 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Filter out obsolete starter documents, manuals, and idea scratchpads that do not belong in Books & Video Lessons
-    const obsoleteIds = ['doc-sariling-mundo-manual', 'doc-life-os-manual', 'doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes'];
-    obsoleteIds.forEach((id) => map.delete(id));
+    // 4. Ensure no non-book objects leaked into the library
+    for (const [id, item] of Array.from(map.entries())) {
+      if (!isTrueBookOrVideo(item)) {
+        map.delete(id);
+      }
+    }
 
     const merged = Array.from(map.values()).map(sanitizeDoc);
     setDocs(merged);
@@ -445,6 +420,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
           const currentMap = new Map(docsRef.current.map((d) => [d.id, d]));
           let hasNewLegacy = false;
           for (const lDoc of legacyDocs) {
+            if (!isTrueBookOrVideo(lDoc)) continue;
             const existing = currentMap.get(lDoc.id);
             if (!existing) {
               currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
@@ -481,12 +457,26 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
         const localList = docsRef.current;
         const localMap = new Map(localList.map((d) => [d.id, d]));
-        const obsoleteIds = new Set(['doc-sariling-mundo-manual', 'doc-life-os-manual', 'doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes']);
-        obsoleteIds.forEach((id) => localMap.delete(id));
-        const filteredRemote = remoteDocs.filter((r) => !obsoleteIds.has(r.id));
+        let stateChanged = false;
+
+        // Purge non-books from localMap
+        for (const [id, item] of Array.from(localMap.entries())) {
+          if (!isTrueBookOrVideo(item)) {
+            localMap.delete(id);
+            stateChanged = true;
+          }
+        }
+
+        // Filter valid remote books
+        const filteredRemote = remoteDocs.filter(isTrueBookOrVideo);
         const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));
 
-        let stateChanged = false;
+        // Delete any rogue non-book items mistakenly uploaded to Firestore books collection
+        for (const remote of remoteDocs) {
+          if (!isTrueBookOrVideo(remote)) {
+            void deleteBookFromCloud(uid, remote.id);
+          }
+        }
 
         // 1. Process remote books: merge or update local
         for (const remote of filteredRemote) {
@@ -513,9 +503,9 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         }
 
         // 2. Process local books not in Firestore:
-        for (const local of localList) {
-          if (!remoteMap.has(local.id)) {
-            // Never delete local books! Push to cloud so they are permanently preserved.
+        for (const local of Array.from(localMap.values())) {
+          if (isTrueBookOrVideo(local) && !remoteMap.has(local.id)) {
+            // Push valid local books to cloud so they are permanently preserved
             queueBookSaveToCloud(uid, local, 1000);
           }
         }
