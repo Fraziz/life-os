@@ -102,7 +102,7 @@ export default function TodayDashboardContent() {
     || docs.find((d) => d.readStatus === 'reading')
     || docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100)
     || docs.find((d) => d.isPinned)
-    || docs.find((d) => !d.id.startsWith('doc-sariling-mundo') && !d.id.startsWith('doc-game-blobbit'))
+    || docs.find((d) => !d.id.startsWith('doc-sariling-mundo') && !d.id.startsWith('doc-life-os'))
     || docs[0];
 
   const handleSelectFeaturedBook = (id: string) => {
@@ -148,8 +148,8 @@ export default function TodayDashboardContent() {
       if (aReading && !bReading) return -1;
       if (!aReading && bReading) return 1;
       // 3. User's custom books before default system manuals
-      const aIsCustom = !a.id.startsWith('doc-sariling-mundo') && !a.id.startsWith('doc-game-blobbit');
-      const bIsCustom = !b.id.startsWith('doc-sariling-mundo') && !b.id.startsWith('doc-game-blobbit');
+      const aIsCustom = !a.id.startsWith('doc-sariling-mundo') && !a.id.startsWith('doc-life-os');
+      const bIsCustom = !b.id.startsWith('doc-sariling-mundo') && !b.id.startsWith('doc-life-os');
       if (aIsCustom && !bIsCustom) return -1;
       if (!aIsCustom && bIsCustom) return 1;
       // 4. Pinned books

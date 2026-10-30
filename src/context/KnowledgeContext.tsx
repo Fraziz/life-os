@@ -116,41 +116,75 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       ],
     },
     {
-      id: 'doc-game-blobbit',
-      title: 'Game Design Document — Blobbit',
-      content: `# Blobbit — Game Design Document\n\n## Concept\nA 2D platformer where the player controls Blobbit, a sentient blob navigating a neon world.\n\n## Core Mechanics\n- **Movement**: Stretch and compress to gain momentum\n- **Abilities**: Wall cling, double jump, dash\n\n## Levels\n1. Tutorial Caverns\n2. Neon City\n3. Final Boss: The Void\n\n## Art Style\nNeon color palette, dark backgrounds, glowing outlines.\n\n## Todo\n- [ ] Design level 2 layout\n- [ ] Write boss fight logic\n- [ ] Create sound effects\n`,
+      id: 'doc-atomic-habits',
+      title: 'Atomic Habits — James Clear (Book Summary)',
       status: 'active',
-      tags: ['game', 'design', 'blobbit'],
+      category: 'learning',
+      docType: 'document',
+      readStatus: 'reading',
+      currentPage: 42,
+      totalPages: 320,
+      readProgress: 13,
+      tags: ['book', 'reading', 'habits', 'self-improvement'],
       createdAt: t,
       updatedAt: t,
+      content: `# Atomic Habits — James Clear
+
+## Core Principles
+- **1% Better Every Day**: Small compounding habits create massive results over time.
+- **The Four Laws of Behavior Change**:
+  1. Make it obvious (Cue)
+  2. Make it attractive (Craving)
+  3. Make it easy (Response)
+  4. Make it satisfying (Reward)
+
+## Identity-Based Habits
+The ultimate form of intrinsic motivation is when a habit becomes part of your identity. Not "I want to read", but "I am a reader."
+
+## Key Quotes
+> "You do not rise to the level of your goals. You fall to the level of your systems."
+`,
       studyQuiz: [
         {
-          question: 'What is Blobbit\'s primary movement mechanic for gaining momentum?',
-          answer: 'Stretching and compressing to propel forward and build speed.',
-        },
-        {
-          question: 'What are Blobbit\'s core mobility abilities?',
-          answer: 'Wall cling, double jump, and dash.',
+          question: 'What are the 4 Laws of Behavior Change according to Atomic Habits?',
+          answer: 'Make it obvious, make it attractive, make it easy, and make it satisfying.',
+          userMastered: true,
         },
       ],
+      readingLogs: [
+        {
+          id: 'log_atomic_1',
+          startedAt: t,
+          durationMinutes: 30,
+          timeOfDay: '9:00 AM',
+          notes: 'Read Chapters 1 to 3 on compounding small habits.',
+        },
+      ],
+      totalReadMinutes: 30,
     },
     {
-      id: 'doc-blender-notes',
-      title: 'Blender Learning Notes',
-      content: `# Blender Learning Notes\n\n## Key Shortcuts\n- **G** — Grab/move\n- **R** — Rotate\n- **S** — Scale\n- **X** — Delete\n- **Tab** — Edit mode toggle\n\n## Workflow Tips\n- Always apply transforms before exporting\n- Use N-panel for precision values\n- Shade smooth + Auto Smooth for clean meshes\n\n## Resources\n- Blender Guru Donut tutorial\n- CG Cookie fundamentals\n`,
+      id: 'doc-deep-work',
+      title: 'Deep Work — Cal Newport (Study Guide)',
       status: 'active',
-      tags: ['blender', '3d', 'learning'],
+      category: 'learning',
+      docType: 'document',
+      readStatus: 'to-read',
+      currentPage: 1,
+      totalPages: 296,
+      readProgress: 0,
+      tags: ['book', 'reading', 'focus', 'productivity'],
       createdAt: t,
       updatedAt: t,
-    },
-    {
-      id: 'doc-business-ideas',
-      title: 'Business Ideas',
-      content: `# Business Ideas\n\n## Software Products\n- Personal finance tracker with envelope budgeting\n- Simple invoice generator for freelancers\n\n## Creative\n- Sell 3D assets on markets like Fab or Sketchfab\n- Commission character designs\n\n## Questions to Answer\n- What pain point am I uniquely able to solve?\n- What has the lowest startup cost?\n`,
-      status: 'active',
-      tags: ['business', 'ideas', 'future'],
-      createdAt: t,
-      updatedAt: t,
+      content: `# Deep Work — Cal Newport
+
+## The Deep Work Hypothesis
+The ability to perform deep work is becoming increasingly rare at exactly the same time it is becoming increasingly valuable in our economy.
+
+## Core Strategies
+- **Monastic or Bimodal Scheduling**: Protect deep focus blocks without distraction.
+- **Embrace Boredom**: Train your brain to resist the urge for instant novelty.
+- **Quit Social Media / Distractions**: Eliminate low-leverage mental noise.
+`,
     },
     {
       id: 'doc-guitar-masterclass',
@@ -379,6 +413,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    // Filter out obsolete starter idea documents that do not belong in Books & Video Lessons
+    const obsoleteIds = ['doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes'];
+    obsoleteIds.forEach((id) => map.delete(id));
+
     const merged = Array.from(map.values()).map(sanitizeDoc);
     setDocs(merged);
     docsRef.current = merged;
@@ -519,12 +557,15 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
         const localList = docsRef.current;
         const localMap = new Map(localList.map((d) => [d.id, d]));
-        const remoteMap = new Map(remoteDocs.map((d) => [d.id, d]));
+        const obsoleteIds = new Set(['doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes']);
+        obsoleteIds.forEach((id) => localMap.delete(id));
+        const filteredRemote = remoteDocs.filter((r) => !obsoleteIds.has(r.id));
+        const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));
 
         let stateChanged = false;
 
         // 1. Process remote books: merge or update local
-        for (const remote of remoteDocs) {
+        for (const remote of filteredRemote) {
           const local = localMap.get(remote.id);
           if (!local) {
             // New book from cloud!

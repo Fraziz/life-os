@@ -3708,10 +3708,10 @@ export default function KnowledgePage() {
     window.dispatchEvent(new CustomEvent('open-ai-chat'));
   };
 
-  // Study Material Type Counts
+  // Material Type Counts: strictly Books and Video Lessons
   const allMaterialsCount = docs.length;
-  const booksCount = docs.filter((d) => isDocBookOrDocument(d)).length;
   const videoLessonsCount = docs.filter((d) => isDocVideoLesson(d)).length;
+  const booksCount = docs.filter((d) => !isDocVideoLesson(d)).length;
 
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
@@ -3719,9 +3719,8 @@ export default function KnowledgePage() {
     .filter((d) => {
       const docStatus = d.status || 'active';
       if (statusFilter !== 'all' && docStatus !== statusFilter) return false;
-      const isBook = isDocBookOrDocument(d);
       const isVideo = isDocVideoLesson(d);
-      if (typeFilter === 'documents' && !isBook) return false;
+      if (typeFilter === 'documents' && isVideo) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
       if (q && !d.title.toLowerCase().includes(q) && !(d.content || '').toLowerCase().includes(q)) return false;
       return true;
@@ -3731,8 +3730,8 @@ export default function KnowledgePage() {
       if (!a.isPinned && b.isPinned) return 1;
 
       // Prioritize user's custom books and study notes above default starter system manuals
-      const aIsDefault = a.id === 'doc-sariling-mundo-manual' || a.id === 'doc-game-blobbit' || a.id === 'doc-blender-notes' || a.id === 'doc-business-ideas';
-      const bIsDefault = b.id === 'doc-sariling-mundo-manual' || b.id === 'doc-game-blobbit' || b.id === 'doc-blender-notes' || b.id === 'doc-business-ideas';
+      const aIsDefault = a.id === 'doc-life-os-manual' || a.id === 'doc-sariling-mundo-manual';
+      const bIsDefault = b.id === 'doc-life-os-manual' || b.id === 'doc-sariling-mundo-manual';
       if (!aIsDefault && bIsDefault) return -1;
       if (aIsDefault && !bIsDefault) return 1;
 
@@ -4060,9 +4059,9 @@ export default function KnowledgePage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Study &amp; Books</h1>
+          <h1 className={styles.title}>Books &amp; Video Lessons</h1>
           <p className={styles.subtitle}>
-            {filteredDocs.length} {filteredDocs.length === 1 ? 'study guide or book' : 'study guides & books'}
+            {booksCount} {booksCount === 1 ? 'book' : 'books'} · {videoLessonsCount} {videoLessonsCount === 1 ? 'video lesson' : 'video lessons'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -4101,8 +4100,8 @@ export default function KnowledgePage() {
                     <Plus size={15} />
                   </div>
                   <div className={styles.actionMenuText}>
-                    <span className={styles.actionMenuLabel}>New Document</span>
-                    <span className={styles.actionMenuHint}>Create blank study document or book</span>
+                    <span className={styles.actionMenuLabel}>New Book</span>
+                    <span className={styles.actionMenuHint}>Create blank book or study guide</span>
                   </div>
                 </button>
 
@@ -4225,7 +4224,7 @@ export default function KnowledgePage() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Search all books &amp; notes..."
+              placeholder="Search books &amp; video lessons..."
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
             />
@@ -4236,27 +4235,33 @@ export default function KnowledgePage() {
             )}
           </div>
 
-          {/* Material Type Navigation: All | Books & Docs | Video Lessons */}
+          {/* Material Type Navigation: All | Books | Video Lessons */}
           <div className={styles.materialTypeTabs} role="tablist" aria-label="Filter by material type">
             <button
               type="button"
+              role="tab"
+              aria-selected={typeFilter === 'all'}
               className={`${styles.materialTypeTab} ${typeFilter === 'all' ? styles.materialTypeTabActive : ''}`}
               onClick={() => setTypeFilter('all')}
-              title="All books, notes, and study materials"
+              title="All books &amp; video lessons"
             >
               <span>All ({allMaterialsCount})</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={typeFilter === 'documents'}
               className={`${styles.materialTypeTab} ${typeFilter === 'documents' ? styles.materialTypeTabActive : ''}`}
               onClick={() => setTypeFilter('documents')}
-              title="Books and written notes"
+              title="Books"
             >
               <BookOpen size={11} />
-              <span>Books &amp; Notes ({booksCount})</span>
+              <span>Books ({booksCount})</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={typeFilter === 'videos'}
               className={`${styles.materialTypeTab} ${typeFilter === 'videos' ? styles.materialTypeTabActive : ''}`}
               onClick={() => setTypeFilter('videos')}
               title="Dedicated video lessons"
@@ -4299,13 +4304,13 @@ export default function KnowledgePage() {
                 ) : (
                   <>
                     <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
-                    <p>No documents found</p>
+                    <p>No books found</p>
                     <button
                       type="button"
                       className={styles.emptyAddBtn}
                       onClick={handleNewDoc}
                     >
-                      <Plus size={13} /> + New Document
+                      <Plus size={13} /> + New Book
                     </button>
                   </>
                 )}
@@ -4468,7 +4473,7 @@ export default function KnowledgePage() {
                   <FileUp size={14} /> Import PDF / File
                 </button>
                 <button className={styles.btnCreate} onClick={handleNewDoc}>
-                  <Plus size={15} /> New Document
+                  <Plus size={15} /> New Book
                 </button>
               </div>
             </div>
@@ -4482,10 +4487,10 @@ export default function KnowledgePage() {
                     type="button"
                     className={styles.mobileBackBtn}
                     onClick={() => setMobileTab('list')}
-                    title="Back to all books and documents list"
+                    title="Back to all books and video lessons list"
                   >
                     <ChevronLeft size={16} />
-                    <span>All Books</span>
+                    <span>All Books &amp; Lessons</span>
                   </button>
 
                   {isCurrentVideo ? (

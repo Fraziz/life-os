@@ -86,7 +86,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         id: 'knowledge',
-        label: 'Study & Books',
+        label: 'Books & Lessons',
         href: '/knowledge',
         icon: 'knowledge',
         isAvailable: true,
