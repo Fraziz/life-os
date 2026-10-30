@@ -417,6 +417,11 @@ export interface KnowledgeDocument {
   status: DocumentStatus;
   category?: DocumentCategory;
   docType?: 'document' | 'video-lesson';
+  author?: string;             // Book author or course instructor
+  fileUrl?: string;            // Direct URL/Blob to attached PDF, EPUB, or media file
+  fileName?: string;           // Original attached file name (e.g. "Atomic_Habits.pdf")
+  fileSize?: string;           // Human-readable file size (e.g. "3.4 MB")
+  fileType?: string;           // File extension or mime type (e.g. "pdf", "epub")
   isPinned?: boolean;
   readStatus?: DocumentReadStatus;
   readProgress?: number;  // 0 - 100 percentage

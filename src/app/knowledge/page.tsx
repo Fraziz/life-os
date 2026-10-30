@@ -755,7 +755,7 @@ export default function KnowledgePage() {
 
   const [searchQ, setSearchQ]     = useState('');
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; title: string } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | DocumentStatus>('all');
+  const [readFilter, setReadFilter] = useState<'all' | 'reading' | 'to-read' | 'completed'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'documents' | 'videos'>('all');
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -1582,15 +1582,31 @@ export default function KnowledgePage() {
     try {
       const result = await extractTextFromFile(file);
       const isPdf = file.name.toLowerCase().endsWith('.pdf');
-      const tags = isPdf ? ['pdf', 'imported'] : ['imported', 'notes'];
+      const isEpub = file.name.toLowerCase().endsWith('.epub');
+      const tags = isPdf ? ['book', 'pdf', 'reading'] : isEpub ? ['book', 'epub', 'reading'] : ['book', 'reading'];
       
-      const docTitle = result.title || file.name;
+      const docTitle = (result.title || file.name).replace(/\.[^/.]+$/, '');
       const docContent = result.content || '';
+
+      const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const fileSizeStr = file.size > 1024 * 1024 ? `${fileSizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+      let fileBlobUrl = '';
+      try {
+        fileBlobUrl = URL.createObjectURL(file);
+      } catch {}
 
       const newDoc = addDoc({
         title: docTitle,
         content: docContent,
         status: 'active',
+        category: 'learning',
+        docType: 'document',
+        readStatus: 'reading',
+        fileName: file.name,
+        fileSize: fileSizeStr,
+        fileType: isPdf ? 'pdf' : isEpub ? 'epub' : 'document',
+        fileUrl: fileBlobUrl,
         tags,
       });
 
@@ -3717,8 +3733,7 @@ export default function KnowledgePage() {
   const q = searchQ.toLowerCase();
   const filteredDocs = docs
     .filter((d) => {
-      const docStatus = d.status || 'active';
-      if (statusFilter !== 'all' && docStatus !== statusFilter) return false;
+      if (readFilter !== 'all' && (d.readStatus || 'reading') !== readFilter) return false;
       const isVideo = isDocVideoLesson(d);
       if (typeFilter === 'documents' && isVideo) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
@@ -4069,7 +4084,7 @@ export default function KnowledgePage() {
             type="file"
             ref={importFileRef}
             style={{ display: 'none' }}
-            accept=".pdf,.txt,.md,.doc,.docx,.csv,.json,.html"
+            accept=".pdf,.epub,.txt,.md,.doc,.docx"
             onChange={handleImportFile}
           />
           <div className={styles.actionMenuWrapper} ref={actionMenuRef}>
@@ -4137,8 +4152,8 @@ export default function KnowledgePage() {
                     <FileUp size={15} />
                   </div>
                   <div className={styles.actionMenuText}>
-                    <span className={styles.actionMenuLabel}>{isImporting ? (importStatus || 'Importing...') : 'Import File'}</span>
-                    <span className={styles.actionMenuHint}>PDF, Word (.docx), Markdown, or Text files</span>
+                    <span className={styles.actionMenuLabel}>{isImporting ? (importStatus || 'Importing Book...') : 'Import Book File'}</span>
+                    <span className={styles.actionMenuHint}>PDF, EPUB, Word (.docx), or Text book files</span>
                   </div>
                 </button>
 
@@ -4273,13 +4288,18 @@ export default function KnowledgePage() {
 
           <div className={styles.filterRow}>
             <div className={styles.statusChips}>
-              {(['all', 'active', 'archived'] as const).map((s) => (
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'reading', label: 'Reading' },
+                { id: 'to-read', label: 'To Read' },
+                { id: 'completed', label: 'Finished' },
+              ].map((rf) => (
                 <button
-                  key={s}
-                  className={`${styles.statusChip} ${statusFilter === s ? styles.statusChipActive : ''}`}
-                  onClick={() => setStatusFilter(s)}
+                  key={rf.id}
+                  className={`${styles.statusChip} ${readFilter === rf.id ? styles.statusChipActive : ''}`}
+                  onClick={() => setReadFilter(rf.id as any)}
                 >
-                  {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
+                  {rf.label}
                 </button>
               ))}
             </div>
@@ -4303,7 +4323,7 @@ export default function KnowledgePage() {
                   </>
                 ) : (
                   <>
-                    <FileText size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <BookOpen size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
                     <p>No books found</p>
                     <button
                       type="button"
@@ -4392,15 +4412,27 @@ export default function KnowledgePage() {
                       </div>
 
                       <div className={styles.docRowMeta}>
-                        <span className={styles.statusBadge}>
-                          <span className={styles.statusDot} style={{ background: statusDotColor }} />
-                          <span className={styles.statusText}>{doc.status}</span>
-                        </span>
-                        {doc.readStatus === 'completed' ? (
-                          <span className={styles.metaPillDone}>Done</span>
-                        ) : (doc.readProgress != null && doc.readProgress > 0) ? (
-                          <span className={styles.metaPillProgress}>{doc.readProgress}%</span>
-                        ) : null}
+                        {isVideo ? (
+                          <span className={styles.metaVideoTag}>
+                            <Video size={10} /> Video Lesson
+                          </span>
+                        ) : doc.readStatus === 'completed' ? (
+                          <span className={styles.metaStatusFinished}>Finished</span>
+                        ) : doc.readStatus === 'reading' ? (
+                          <span className={styles.metaStatusReading}>
+                            Reading{doc.currentPage && doc.totalPages ? ` · p. ${doc.currentPage}/${doc.totalPages}` : (doc.readProgress ? ` · ${doc.readProgress}%` : '')}
+                          </span>
+                        ) : (
+                          <span className={styles.metaStatusToRead}>To Read</span>
+                        )}
+                        {doc.author && (
+                          <span className={styles.docRowAuthor} title={doc.author}>by {doc.author}</span>
+                        )}
+                        {doc.fileName && (
+                          <span className={styles.bookInfoFilePill} title={doc.fileName} style={{ fontSize: '9.5px', padding: '1px 5px' }}>
+                            <FileText size={9} /> {doc.fileName.split('.').pop()?.toUpperCase() || 'FILE'}
+                          </span>
+                        )}
 
                         <div className={styles.metaRightActions}>
                           {isFeatured && (
@@ -4453,7 +4485,7 @@ export default function KnowledgePage() {
             <div className={styles.canvasEmpty}>
               <BookOpen size={44} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
               <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                Select a document, create a new entry, or import a PDF
+                Select a book or video lesson, or import a book file
               </p>
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button
@@ -4470,7 +4502,7 @@ export default function KnowledgePage() {
                   onClick={() => importFileRef.current?.click()}
                   disabled={isImporting}
                 >
-                  <FileUp size={14} /> Import PDF / File
+                  <FileUp size={14} /> Import Book File
                 </button>
                 <button className={styles.btnCreate} onClick={handleNewDoc}>
                   <Plus size={15} /> New Book
@@ -4622,29 +4654,41 @@ export default function KnowledgePage() {
 
 
 
-              {/* Connected Metadata Badges (Formal Linear Bar) */}
-              {(linkedDream || linkedGoal || linkedProject || linkedTask) && (
-                <div className={styles.linkedBadgesBar}>
-                  {linkedDream && (
-                    <span className={styles.linkedBadge}>
-                      <CloudSun size={11} /> Dream: {linkedDream.title}
-                    </span>
-                  )}
-                  {linkedGoal && (
-                    <span className={styles.linkedBadge}>
-                      <Target size={11} /> Goal: {linkedGoal.title}
-                    </span>
-                  )}
-                  {linkedProject && (
-                    <span className={styles.linkedBadge}>
-                      <Folder size={11} /> Project: {linkedProject.title}
-                    </span>
-                  )}
-                  {linkedTask && (
-                    <span className={styles.linkedBadge}>
-                      <CheckSquare size={11} /> Task: {linkedTask.title}
-                    </span>
-                  )}
+              {/* Book File or Video Lesson Info Banner */}
+              {selectedDoc && (
+                <div className={styles.bookInfoBanner}>
+                  <div className={styles.bookInfoLeft}>
+                    {isCurrentVideo ? (
+                      <span className={styles.bookInfoTypeBadgeVideo}>
+                        <Video size={12} /> Video Lesson
+                      </span>
+                    ) : (
+                      <span className={styles.bookInfoTypeBadgeBook}>
+                        <BookOpen size={12} /> Book
+                      </span>
+                    )}
+                    {selectedDoc.author && (
+                      <span className={styles.bookInfoAuthor}>by {selectedDoc.author}</span>
+                    )}
+                    {selectedDoc.fileName && (
+                      <span className={styles.bookInfoFilePill} title={selectedDoc.fileName}>
+                        <FileText size={11} /> {selectedDoc.fileName} {selectedDoc.fileSize ? `(${selectedDoc.fileSize})` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.bookInfoRight}>
+                    {selectedDoc.fileUrl && (
+                      <a
+                        href={selectedDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.bookOpenFileLink}
+                        download={selectedDoc.fileName}
+                      >
+                        <ExternalLink size={11} /> Open / Download File
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -4785,23 +4829,28 @@ export default function KnowledgePage() {
                       /* ── Formal Microsoft Word Paper Sheet (Books & Standard Documents) ── */
                       <div className={styles.wordDocumentSheet}>
                         <div className={styles.wordDocumentHeader}>
-                          <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Document'}</div>
+                          <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Book'}</div>
                           <div className={styles.wordDocumentMetaRow}>
                             <div className={styles.wordDocumentBadges}>
                               <span className={styles.wordDocumentBadge}>
-                                <FileText size={11} /> Microsoft Word / PDF Style
+                                <BookOpen size={11} /> Book Reader
                               </span>
                               <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 <Lock size={10} /> Locked (Read-Only)
                               </span>
-                              <span className={styles.wordDocumentBadge}>
-                                Author: Sariling Mundo
-                              </span>
-                              {fCategory && (
+                              {selectedDoc?.author && (
                                 <span className={styles.wordDocumentBadge}>
-                                  Category: {fCategory}
+                                  Author: {selectedDoc.author}
                                 </span>
                               )}
+                              {selectedDoc?.totalPages && (
+                                <span className={styles.wordDocumentBadge}>
+                                  Pages: {selectedDoc.currentPage || 1} / {selectedDoc.totalPages}
+                                </span>
+                              )}
+                              <span className={styles.wordDocumentBadge} style={{ color: selectedDoc?.readStatus === 'completed' ? '#10b981' : 'var(--color-accent)' }}>
+                                {selectedDoc?.readStatus === 'completed' ? 'Completed' : selectedDoc?.readStatus === 'reading' ? 'Reading' : 'To Read'}
+                              </span>
                             </div>
                             <div>
                               {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}

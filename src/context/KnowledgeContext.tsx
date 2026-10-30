@@ -34,90 +34,9 @@ function defaultDocs(): KnowledgeDocument[] {
   const t = '2026-08-01T00:00:00.000Z';
   return [
     {
-      id: 'doc-sariling-mundo-manual',
-      title: 'Sariling Mundo — Complete Operations Manual & Hierarchy Guide',
-      content: `# Sariling Mundo — Official System Manual & Hierarchy Guide
-
-## 1. Executive Overview
-Sariling Mundo is an ADHD-friendly personal operating system designed to bridge the gap between long-term ambitions and daily execution. It eliminates overwhelm through structured hierarchy, visual chunking, and dopamine-positive feedback loops.
-
----
-
-## 2. Core Execution Hierarchy
-Every action in Sariling Mundo cascades downwards from long-term vision to daily execution:
-
-1. **DREAM** (The Big Vision / North Star)
-   - Found under \`Direction → Dreams\`
-   - Captures high-level life aspirations and deep "Why it matters" statements.
-2. **GOAL** (Measurable Outcome)
-   - Found under \`Organize → Goals\`
-   - Time-bound outcomes (Yearly, 90-Day, Monthly) that make dreams tangible.
-3. **MILESTONE** (Journey Checkpoints)
-   - Found under \`Organize → Milestones\`
-   - Key checkpoints (25%, 50%, 75%) along a Goal's trajectory with target dates.
-4. **PROJECT** (Execution Workstream)
-   - Found under \`Organize → Projects\`
-   - Active initiatives with visual boards that group related tasks together.
-5. **TASK** (Bite-Sized Action)
-   - Found under \`Organize → Tasks\` and the \`Today\` dashboard.
-   - 15–45 minute actionable next steps. Includes an **AI Breakdown** tool to slice large tasks into tiny subtasks.
-6. **FOCUS SESSION** (Execution)
-   - Found under \`Today → Focus Mode\`
-   - Pomodoro hyperfocus timer with Zen Mode and dopamine completion chimes.
-
----
-
-## 3. Tab-by-Tab Feature Reference
-
-### A. Today & Execution
-- **Today (\`/\`)**: Daily mission control with Focus task, Time Capacity bar, and habit checklist.
-- **Focus Mode (\`/focus\`)**: 15/25/45/90 minute timers, Zen Mode, and ambient soundscapes.
-
-### B. Capture
-- **Brain Dump (\`/inbox\`)**: Zero-friction idea capture. 1-click convert thoughts into Tasks, Projects, Goals, Dreams, or Notes.
-
-### C. Direction
-- **Life Roadmap (\`/roadmap\`)**: Interactive node graph connecting Tasks → Projects → Milestones → Goals → Dreams.
-- **Life Areas (\`/areas\`)**: 8 life domains (Health, Career, Wealth, Learning, Social, Creative, Mindset, Family).
-
-### D. Productivity Toolkit
-- **Calendar (\`/calendar\`)**: Time-blocking schedule for daily and weekly time management.
-- **Habits (\`/habits\`)**: Streak tracking, consistency heatmaps, and past-7-day history.
-- **Weekly Review (\`/review\`)**: Sunday reflection system for wins, logged focus hours, and next week's focus.
-- **Reset Plan (\`/reset\`)**: Overwhelm recovery button. Cleans backlog noise and gives you 1 simple next action.
-- **Knowledge (\`/knowledge\`)**: Formal wiki, markdown documentation, and PDF/Text export.
-- **Files (\`/files\`)**: Free cloud file vault for photos, documents, and Google Drive links.
-
----
-
-## 4. Power Shortcuts
-- **Ctrl + J** (or Center Compass button on Mobile): *"What Should I Do Right Now?"* AI Next Action picker.
-- **Ctrl + K**: Global search across all entities.
-- **Shift + ?**: Keyboard shortcuts cheatsheet.
-`,
-      status: 'active',
-      tags: ['manual', 'guide', 'life-os', 'hierarchy'],
-      createdAt: t,
-      updatedAt: t,
-      studyQuiz: [
-        {
-          question: 'What is the core execution hierarchy in Sariling Mundo from top to bottom?',
-          answer: 'Dream → Goal → Milestone → Project → Task → Focus Session.',
-          userMastered: true,
-        },
-        {
-          question: 'What keyboard shortcut opens the "What Should I Do Right Now?" AI Next Action picker?',
-          answer: 'Ctrl + J (or the Center Compass button on mobile bottom navigation).',
-        },
-        {
-          question: 'Which view is designed for overwhelm recovery when your backlog is cluttered?',
-          answer: 'Reset Plan (/reset), which clears mental noise and gives you 1 high-leverage next action.',
-        },
-      ],
-    },
-    {
       id: 'doc-atomic-habits',
       title: 'Atomic Habits — James Clear (Book Summary)',
+      author: 'James Clear',
       status: 'active',
       category: 'learning',
       docType: 'document',
@@ -165,6 +84,7 @@ The ultimate form of intrinsic motivation is when a habit becomes part of your i
     {
       id: 'doc-deep-work',
       title: 'Deep Work — Cal Newport (Study Guide)',
+      author: 'Cal Newport',
       status: 'active',
       category: 'learning',
       docType: 'document',
@@ -189,6 +109,11 @@ The ability to perform deep work is becoming increasingly rare at exactly the sa
     {
       id: 'doc-guitar-masterclass',
       title: 'Guitar Masterclass — Theory & Soloing',
+      author: 'Music Theory Workshop',
+      status: 'active',
+      category: 'general',
+      docType: 'video-lesson',
+      readStatus: 'reading',
       content: `# Guitar Masterclass — Theory & Soloing
 
 ## Lesson 1: Pentatonic Scale Mastery & Fretboard Visualization
@@ -201,7 +126,6 @@ Welcome to the lead guitar study module. Follow the embedded video lesson below,
 - **Picking Mechanics**: Alternate picking strictly down-up with relaxed wrist movement.
 - **Practice Rhythm**: Set a metronome to 75 BPM and play 1/8th notes smoothly across all 6 strings.
 `,
-      status: 'active',
       tags: ['guitar', 'music', 'study', 'lessons'],
       createdAt: t,
       updatedAt: t,
@@ -413,8 +337,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Filter out obsolete starter idea documents that do not belong in Books & Video Lessons
-    const obsoleteIds = ['doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes'];
+    // Filter out obsolete starter documents, manuals, and idea scratchpads that do not belong in Books & Video Lessons
+    const obsoleteIds = ['doc-sariling-mundo-manual', 'doc-life-os-manual', 'doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes'];
     obsoleteIds.forEach((id) => map.delete(id));
 
     const merged = Array.from(map.values()).map(sanitizeDoc);
@@ -557,7 +481,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
         const localList = docsRef.current;
         const localMap = new Map(localList.map((d) => [d.id, d]));
-        const obsoleteIds = new Set(['doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes']);
+        const obsoleteIds = new Set(['doc-sariling-mundo-manual', 'doc-life-os-manual', 'doc-business-ideas', 'doc-game-blobbit', 'doc-blender-notes']);
         obsoleteIds.forEach((id) => localMap.delete(id));
         const filteredRemote = remoteDocs.filter((r) => !obsoleteIds.has(r.id));
         const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));

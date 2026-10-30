@@ -39,6 +39,11 @@ export function cleanDocForFirestore(docItem: KnowledgeDocument): Record<string,
 
   if (docItem.category) raw.category = docItem.category;
   if (docItem.docType) raw.docType = docItem.docType;
+  if (docItem.author) raw.author = docItem.author;
+  if (docItem.fileUrl) raw.fileUrl = docItem.fileUrl;
+  if (docItem.fileName) raw.fileName = docItem.fileName;
+  if (docItem.fileSize) raw.fileSize = docItem.fileSize;
+  if (docItem.fileType) raw.fileType = docItem.fileType;
   if (typeof docItem.isPinned === 'boolean') raw.isPinned = docItem.isPinned;
   if (docItem.readStatus) raw.readStatus = docItem.readStatus;
   if (typeof docItem.readProgress === 'number') raw.readProgress = docItem.readProgress;
@@ -120,6 +125,11 @@ export async function deserializeFirestoreDoc(
 
   if (data.category) docItem.category = data.category;
   if (data.docType) docItem.docType = data.docType;
+  if (data.author) docItem.author = data.author;
+  if (data.fileUrl) docItem.fileUrl = data.fileUrl;
+  if (data.fileName) docItem.fileName = data.fileName;
+  if (data.fileSize) docItem.fileSize = data.fileSize;
+  if (data.fileType) docItem.fileType = data.fileType;
   if (typeof data.isPinned === 'boolean') docItem.isPinned = data.isPinned;
   if (data.readStatus) docItem.readStatus = data.readStatus;
   if (typeof data.readProgress === 'number') docItem.readProgress = data.readProgress;
