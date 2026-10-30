@@ -104,3 +104,23 @@ export async function idbDelete(key: string): Promise<void> {
     /* noop */
   }
 }
+
+export async function idbGetAll<T = unknown>(): Promise<T[]> {
+  if (typeof window === 'undefined') return [];
+  try {
+    const db = await getDb();
+    return await new Promise<T[]>((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
+        req.onerror = () => resolve([]);
+      } catch {
+        resolve([]);
+      }
+    });
+  } catch {
+    return [];
+  }
+}

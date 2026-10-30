@@ -21,18 +21,6 @@ function kvRef(uid: string, key: string) {
 export function isManagedKvKey(key: string): boolean {
   if (!key || !key.startsWith(PREFIX)) return false;
   if (key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') return false;
-  // Books & study documents are synced via dedicated users/{uid}/books Firestore subcollection
-  // to prevent Firestore single-document quota bottlenecks and enable per-book real-time sync
-  if (
-    key === 'life_os_knowledge_docs_v1' ||
-    key === 'life_os_knowledge_docs_backup' ||
-    key === 'life_os_knowledge_docs' ||
-    key === 'life_os_books_v1' ||
-    key === 'life_os_books' ||
-    key === 'knowledge_docs'
-  ) {
-    return false;
-  }
   return true;
 }
 

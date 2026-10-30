@@ -1838,7 +1838,13 @@ export default function KnowledgePage() {
       } catch {
         // ignore
       }
-      setSelectedId((prev) => prev || docs[0].id);
+      const preferredInitialDoc = docs.find((d) => 
+        !d.id.startsWith('doc-sariling-mundo') && 
+        !d.id.startsWith('doc-game-blobbit') && 
+        !d.id.startsWith('doc-blender-notes') && 
+        !d.id.startsWith('doc-business-ideas')
+      ) || docs[0];
+      setSelectedId((prev) => prev || preferredInitialDoc.id);
     }
   }, [isLoaded, docs]);
 
@@ -3709,6 +3715,13 @@ export default function KnowledgePage() {
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
+
+      // Prioritize user's custom books and study notes above default starter system manuals
+      const aIsDefault = a.id === 'doc-sariling-mundo-manual' || a.id === 'doc-game-blobbit' || a.id === 'doc-blender-notes' || a.id === 'doc-business-ideas';
+      const bIsDefault = b.id === 'doc-sariling-mundo-manual' || b.id === 'doc-game-blobbit' || b.id === 'doc-blender-notes' || b.id === 'doc-business-ideas';
+      if (!aIsDefault && bIsDefault) return -1;
+      if (aIsDefault && !bIsDefault) return 1;
+
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;

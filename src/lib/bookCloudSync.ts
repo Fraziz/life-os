@@ -264,28 +264,57 @@ export function subscribeToCloudBooks(
 }
 
 /**
- * Recovers legacy books if previously stored in users/{uid}/kv/life_os_knowledge_docs_v1
+ * Recovers legacy books if previously stored in users/{uid}/kv/ across any known key
  */
 export async function migrateLegacyBooksFromKv(uid: string): Promise<KnowledgeDocument[]> {
   if (!uid) return [];
   const db = safeDb();
   if (!db) return [];
 
-  try {
-    const kvSnap = await getDoc(doc(db, 'users', uid, 'kv', 'life_os_knowledge_docs_v1'));
-    if (kvSnap.exists()) {
-      const raw = kvSnap.data()?.v;
-      if (typeof raw === 'string') {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((d) => d && d.id) as KnowledgeDocument[];
+  const candidateKeys = [
+    'life_os_knowledge_docs_v1',
+    'life_os_knowledge_docs_backup',
+    'life_os_knowledge_docs',
+    'life_os_books_v1',
+    'life_os_books',
+    'knowledge_docs',
+  ];
+
+  const map = new Map<string, KnowledgeDocument>();
+
+  for (const key of candidateKeys) {
+    try {
+      const kvSnap = await getDoc(doc(db, 'users', uid, 'kv', key));
+      if (kvSnap.exists()) {
+        const raw = kvSnap.data()?.v;
+        if (typeof raw === 'string') {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            parsed.forEach((d) => {
+              if (d && d.id) {
+                const existing = map.get(d.id);
+                if (!existing) {
+                  map.set(d.id, d);
+                } else {
+                  const newLen = (d.content || '').length;
+                  const existLen = (existing.content || '').length;
+                  const newTime = new Date(d.updatedAt || 0).getTime();
+                  const existTime = new Date(existing.updatedAt || 0).getTime();
+                  if (newLen > existLen || newTime > existTime) {
+                    map.set(d.id, d);
+                  }
+                }
+              }
+            });
+          }
         }
       }
+    } catch (err) {
+      console.warn(`[bookCloudSync] Legacy KV recovery error for ${key}:`, err);
     }
-  } catch (err) {
-    console.warn('[bookCloudSync] Legacy KV recovery error:', err);
   }
-  return [];
+
+  return Array.from(map.values());
 }
 
 /**

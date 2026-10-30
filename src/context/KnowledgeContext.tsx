@@ -15,7 +15,7 @@ import {
   wipeCloudBooks,
 } from '@/lib/bookCloudSync';
 
-import { idbGet, idbSet } from '@/lib/idbStore';
+import { idbGet, idbSet, idbGetAll } from '@/lib/idbStore';
 import { isDocVideoLesson, cleanDocumentContent } from '@/utils/videoLesson';
 
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
@@ -241,6 +241,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       'life_os_books_v1',
       'life_os_books',
       'life_os_knowledge_docs_backup',
+      'life_os_study_docs',
+      'life_os_docs',
     ];
 
     for (const key of localKeys) {
@@ -248,28 +250,58 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            parsed.forEach((d) => {
-              if (d && d.id) {
-                const existing = map.get(d.id);
-                if (!existing) {
+          const list = Array.isArray(parsed) ? parsed : [parsed];
+          list.forEach((d) => {
+            if (d && typeof d === 'object' && d.id) {
+              const existing = map.get(d.id);
+              if (!existing) {
+                map.set(d.id, d);
+              } else {
+                const newLen = (d.content || '').length;
+                const existLen = (existing.content || '').length;
+                const newTime = new Date(d.updatedAt || 0).getTime();
+                const existTime = new Date(existing.updatedAt || 0).getTime();
+                if (newLen > existLen || newTime > existTime) {
                   map.set(d.id, d);
-                } else {
-                  const newLen = (d.content || '').length;
-                  const existLen = (existing.content || '').length;
-                  const newTime = new Date(d.updatedAt || 0).getTime();
-                  const existTime = new Date(existing.updatedAt || 0).getTime();
-                  if (newLen > existLen || newTime > existTime) {
-                    map.set(d.id, d);
-                  }
                 }
               }
-            });
-          }
+            }
+          });
         }
       } catch {
         // ignore
       }
+    }
+
+    // Comprehensive scan across all localStorage keys for any saved book or study doc
+    if (typeof localStorage !== 'undefined') {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (k.startsWith('life_os_') || k.includes('doc') || k.includes('book') || k.includes('knowledge')) {
+            const raw = localStorage.getItem(k);
+            if (raw && (raw.startsWith('[') || raw.startsWith('{'))) {
+              try {
+                const parsed = JSON.parse(raw);
+                const items = Array.isArray(parsed) ? parsed : [parsed];
+                items.forEach((d) => {
+                  if (d && typeof d === 'object' && d.id && (d.title || d.content)) {
+                    const existing = map.get(d.id);
+                    if (!existing) {
+                      map.set(d.id, d);
+                    } else {
+                      const newLen = (d.content || '').length;
+                      const existLen = (existing.content || '').length;
+                      if (newLen > existLen) map.set(d.id, d);
+                    }
+                  }
+                });
+              } catch {}
+            }
+          }
+        }
+      } catch {}
     }
 
     // 2. Recover from all IndexedDB keys (which hold large docs & books without 5MB quota limit)
@@ -305,6 +337,27 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         console.warn(`[KnowledgeContext] IDB read error for ${key}:`, idbErr);
       }
     }
+
+    // Comprehensive scan across all IndexedDB values via idbGetAll
+    try {
+      const allIdbEntries = await idbGetAll<unknown>();
+      allIdbEntries.forEach((entry) => {
+        if (Array.isArray(entry)) {
+          entry.forEach((d) => {
+            if (d && typeof d === 'object' && d.id && (d.title || d.content)) {
+              const existing = map.get(d.id);
+              if (!existing) {
+                map.set(d.id, d);
+              } else {
+                const newLen = (d.content || '').length;
+                const existLen = (existing.content || '').length;
+                if (newLen > existLen) map.set(d.id, d);
+              }
+            }
+          });
+        }
+      });
+    } catch {}
 
     // 3. Defaults & User Books preservation:
     const defaults = defaultDocs();
@@ -420,10 +473,21 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
           const currentMap = new Map(docsRef.current.map((d) => [d.id, d]));
           let hasNewLegacy = false;
           for (const lDoc of legacyDocs) {
-            if (!currentMap.has(lDoc.id)) {
+            const existing = currentMap.get(lDoc.id);
+            if (!existing) {
               currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
               hasNewLegacy = true;
               void saveBookToCloud(uid, lDoc);
+            } else {
+              const lLen = (lDoc.content || '').length;
+              const exLen = (existing.content || '').length;
+              const lTime = new Date(lDoc.updatedAt || 0).getTime();
+              const exTime = new Date(existing.updatedAt || 0).getTime();
+              if (lLen > exLen || lTime > exTime) {
+                currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
+                hasNewLegacy = true;
+                void saveBookToCloud(uid, lDoc);
+              }
             }
           }
           if (hasNewLegacy) {
@@ -476,15 +540,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         // 2. Process local books not in Firestore:
         for (const local of localList) {
           if (!remoteMap.has(local.id)) {
-            if (local.syncedWithCloud) {
-              // Remote deletion -> remove locally
-              localMap.delete(local.id);
-              stateChanged = true;
-            } else {
-              // Local book not yet in cloud: upload!
-              local.syncedWithCloud = true;
-              void saveBookToCloud(uid, local);
-            }
+            // Never delete local books! Push to cloud so they are permanently preserved.
+            void saveBookToCloud(uid, local);
           }
         }
 
