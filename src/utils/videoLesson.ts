@@ -298,7 +298,7 @@ export function transformVideoLessonsInHtml(
   if (!html) return '';
 
   // 1. Transform markdown custom block: :::video-lesson{id="..." url="..." title="..." start="..." platform="..."}:::
-  let result = html.replace(
+  const result = html.replace(
     /:::video-lesson\{([^}]+)\}:::/g,
     (_, attrsStr) => {
       const idMatch = attrsStr.match(/id="([^"]+)"/);

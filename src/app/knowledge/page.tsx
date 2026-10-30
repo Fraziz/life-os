@@ -141,6 +141,20 @@ const FONT_COLORS: { name: string; label: string; color: string; border: string 
   { name: 'blue', label: 'Sky Blue', color: '#3b82f6', border: '#2563eb' },
 ];
 
+function safeFormatTime(dateVal: any): string {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function safeFormatDate(dateVal: any, opts?: Intl.DateTimeFormatOptions): string {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', opts || { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // ── Markdown Table Parser ──────────────────────────────────────────
 function renderMarkdownTables(text: string): string {
   // Regex matches a full markdown table block with header, separator, and data rows
@@ -4531,7 +4545,7 @@ export default function KnowledgePage() {
                 <div className={styles.canvasActionsRight}>
                   {selectedDoc && (
                     <span className={styles.lastSavedText}>
-                      Saved {new Date(selectedDoc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      Saved {safeFormatTime(selectedDoc.updatedAt) || 'just now'}
                     </span>
                   )}
 
@@ -4647,7 +4661,7 @@ export default function KnowledgePage() {
                     </span>
                     {selectedDoc.lastReviewedAt && (
                       <span className={styles.docReadLastDate}>
-                        Last session {new Date(selectedDoc.lastReviewedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        Last session {safeFormatDate(selectedDoc.lastReviewedAt, { month: 'short', day: 'numeric' })}
                       </span>
                     )}
                   </div>
@@ -5514,9 +5528,9 @@ export default function KnowledgePage() {
                   {selectedDoc.readingLogs.map((log) => (
                     <div key={log.id} className={styles.readingLogItem}>
                       <div>
-                        <strong>{new Date(log.startedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong>
+                        <strong>{safeFormatDate(log.startedAt, { month: 'short', day: 'numeric' }) || 'Session'}</strong>
                         {' · '}
-                        <span>{log.timeOfDay || new Date(log.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{log.timeOfDay || safeFormatTime(log.startedAt) || 'Logged'}</span>
                       </div>
                       <span style={{ fontWeight: 700, color: 'var(--color-accent)' }}>
                         {log.durationMinutes} min{log.durationMinutes === 1 ? '' : 's'}

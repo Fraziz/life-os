@@ -140,6 +140,24 @@ export async function deserializeFirestoreDoc(
   return docItem;
 }
 
+const bookDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * Debounced cloud saver for books — prevents spamming Firestore on every keystroke.
+ */
+export function queueBookSaveToCloud(uid: string, docData: KnowledgeDocument, delayMs = 600): void {
+  if (!uid || !docData?.id) return;
+  const existing = bookDebounceTimers.get(docData.id);
+  if (existing) {
+    clearTimeout(existing);
+  }
+  const timer = setTimeout(() => {
+    bookDebounceTimers.delete(docData.id);
+    void saveBookToCloud(uid, docData);
+  }, delayMs);
+  bookDebounceTimers.set(docData.id, timer);
+}
+
 /**
  * Saves a book permanently to the user's Firestore books subcollection.
  * Handles automatic chunking if the book is exceptionally large (>500,000 characters).
@@ -187,10 +205,12 @@ export async function saveBookToCloud(uid: string, docData: KnowledgeDocument): 
     }
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+      window.dispatchEvent(new CustomEvent('life_os_writing_done'));
     }
   } catch (err) {
-    console.warn(`[bookCloudSync] Error saving book ${docData.id} to cloud:`, err);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[bookCloudSync] Error saving book ${docData.id} to cloud:`, err);
+    }
   }
 }
 
@@ -221,11 +241,13 @@ export async function deleteBookFromCloud(uid: string, docId: string): Promise<v
   try {
     await deleteDoc(docRef);
   } catch (err) {
-    console.warn(`[bookCloudSync] Error deleting book ${docId} from cloud:`, err);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[bookCloudSync] Error deleting book ${docId} from cloud:`, err);
+    }
   }
 
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+    window.dispatchEvent(new CustomEvent('life_os_writing_done'));
   }
 }
 
@@ -252,12 +274,10 @@ export function subscribeToCloudBooks(
         const remoteDocs = await Promise.all(promises);
         onDocsUpdated(remoteDocs);
       } catch (err) {
-        console.warn('[bookCloudSync] Snapshot processing error:', err);
         if (onError) onError(err);
       }
     },
     (err) => {
-      console.warn('[bookCloudSync] Snapshot listener error:', err);
       if (onError) onError(err);
     }
   );
@@ -309,8 +329,8 @@ export async function migrateLegacyBooksFromKv(uid: string): Promise<KnowledgeDo
           }
         }
       }
-    } catch (err) {
-      console.warn(`[bookCloudSync] Legacy KV recovery error for ${key}:`, err);
+    } catch {
+      // Key does not exist in Firestore KV; continue gracefully
     }
   }
 

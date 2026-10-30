@@ -9,6 +9,7 @@ import { notifyItemDeleted } from './UndoContext';
 import { useAuth } from './AuthContext';
 import {
   saveBookToCloud,
+  queueBookSaveToCloud,
   deleteBookFromCloud,
   subscribeToCloudBooks,
   migrateLegacyBooksFromKv,
@@ -230,7 +231,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const reloadFromStorage = useCallback(async () => {
+  const reloadFromStorage = useCallback(async (isCloudSyncEvent: boolean = false) => {
     const map = new Map<string, KnowledgeDocument>();
 
     // 1. Recover from all known localStorage keys (current and legacy)
@@ -387,31 +388,39 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     void idbSet(STORAGE_KEY, merged);
     void idbSet('life_os_knowledge_docs_backup', merged);
 
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      localStorage.setItem(INITIALIZED_KEY, 'true');
-    } catch {
-      // If full content exceeds localStorage 5MB quota, save lightweight summary while IndexedDB retains full text
+    if (!isCloudSyncEvent) {
       try {
-        const lightDocs = merged.map((d) => {
-          if ((d.content || '').length > 30000) {
-            return {
-              ...d,
-              content: d.content.slice(0, 10000) + '\n\n[...Full book content preserved in local device storage...]',
-            };
-          }
-          return d;
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
-        localStorage.setItem(INITIALIZED_KEY, 'true');
-      } catch {}
+        const currentRaw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+        const newRaw = JSON.stringify(merged);
+        if (currentRaw !== newRaw) {
+          localStorage.setItem(STORAGE_KEY, newRaw);
+          localStorage.setItem(INITIALIZED_KEY, 'true');
+        }
+      } catch {
+        // If full content exceeds localStorage 5MB quota, save lightweight summary while IndexedDB retains full text
+        try {
+          const lightDocs = merged.map((d) => {
+            if ((d.content || '').length > 30000) {
+              return {
+                ...d,
+                content: d.content.slice(0, 10000) + '\n\n[...Full book content preserved in local device storage...]',
+              };
+            }
+            return d;
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
+          localStorage.setItem(INITIALIZED_KEY, 'true');
+        } catch {}
+      }
     }
   }, [sanitizeDoc]);
 
   useEffect(() => {
-    reloadFromStorage();
+    void reloadFromStorage(false);
 
-    const handleSync = () => reloadFromStorage();
+    const handleSync = () => {
+      void reloadFromStorage(true);
+    };
     window.addEventListener('life_os_cloud_synced', handleSync);
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, [reloadFromStorage]);
@@ -477,7 +486,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
             if (!existing) {
               currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
               hasNewLegacy = true;
-              void saveBookToCloud(uid, lDoc);
+              queueBookSaveToCloud(uid, lDoc, 1000);
             } else {
               const lLen = (lDoc.content || '').length;
               const exLen = (existing.content || '').length;
@@ -486,7 +495,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
               if (lLen > exLen || lTime > exTime) {
                 currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
                 hasNewLegacy = true;
-                void saveBookToCloud(uid, lDoc);
+                queueBookSaveToCloud(uid, lDoc, 1000);
               }
             }
           }
@@ -495,8 +504,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
             saveDocs(merged);
           }
         }
-      } catch (err) {
-        console.warn('[KnowledgeContext] Legacy KV migration check warning:', err);
+      } catch {
+        // Fallback silently if legacy KV store doesn't exist
       }
     })();
 
@@ -532,7 +541,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
               stateChanged = true;
             } else if (localTime > remoteTime || (localLen > remoteLen && !remote.isChunked)) {
               // Local is newer -> push local to cloud!
-              void saveBookToCloud(uid, local);
+              queueBookSaveToCloud(uid, local, 1000);
             }
           }
         }
@@ -541,7 +550,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         for (const local of localList) {
           if (!remoteMap.has(local.id)) {
             // Never delete local books! Push to cloud so they are permanently preserved.
-            void saveBookToCloud(uid, local);
+            queueBookSaveToCloud(uid, local, 1000);
           }
         }
 
@@ -550,8 +559,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
           saveDocs(merged);
         }
       },
-      (err) => {
-        console.warn('[KnowledgeContext] Cloud books sync listener warning:', err);
+      () => {
+        // Offline resilience fallback to LocalStorage + IndexedDB
       }
     );
 
@@ -595,7 +604,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     });
     saveDocs(next);
     if (uidRef.current && updatedDocItem) {
-      void saveBookToCloud(uidRef.current, updatedDocItem);
+      queueBookSaveToCloud(uidRef.current, updatedDocItem, 800);
     }
   }, [saveDocs]);
 
