@@ -188,7 +188,7 @@ export function parseUniversalVideoUrl(rawUrl: string): ParsedVideoInfo | null {
       platform: 'youtube',
       platformName: isShorts ? 'YouTube Shorts' : 'YouTube',
       videoId,
-      embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&rel=0&modestbranding=1`,
+      embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0${startTime > 0 ? `&start=${startTime}` : ''}`,
       aspectRatio: isShorts ? '9/16' : '16/9',
       canEmbedDirectly: true,
       cleanExternalUrl: isShorts
@@ -378,7 +378,7 @@ export function parseUniversalVideoUrl(rawUrl: string): ParsedVideoInfo | null {
         platform: 'youtube',
         platformName: 'YouTube',
         videoId: fallbackId,
-        embedUrl: `https://www.youtube-nocookie.com/embed/${fallbackId}?rel=0&modestbranding=1`,
+        embedUrl: `https://www.youtube.com/embed/${fallbackId}?rel=0`,
         aspectRatio: '16/9',
         canEmbedDirectly: true,
         cleanExternalUrl: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,

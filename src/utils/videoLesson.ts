@@ -265,8 +265,8 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
         : `https://www.youtube.com/watch?v=${videoId}${startTime > 0 ? `&t=${startTime}s` : ''}`;
     }
 
-    const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&rel=0&modestbranding=1&enablejsapi=1`;
-    innerMediaHtml = `<iframe src="${ytEmbedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+    const ytEmbedUrl = `https://www.youtube.com/embed/${videoId}?rel=0${startTime > 0 ? `&start=${startTime}` : ''}`;
+    innerMediaHtml = `<iframe src="${ytEmbedUrl}" title="${safeTitle}" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
   } else {
     // Universal parsing for other platforms (Vimeo, TikTok, Instagram, Direct MP4, etc.)
     const parsed = parseUniversalVideoUrl(rawUrl || rawVideoId);
@@ -278,7 +278,7 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
     if (platform === 'direct') {
       innerMediaHtml = `<video src="${safeUrl}" controls playsinline preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
     } else if (parsed && parsed.canEmbedDirectly && parsed.embedUrl) {
-      innerMediaHtml = `<iframe src="${parsed.embedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+      innerMediaHtml = `<iframe src="${parsed.embedUrl}" title="${safeTitle}" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     } else {
       innerMediaHtml = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:12px;background:var(--color-surface-2);">
         <p style="margin:0;font-size:0.875rem;color:var(--color-text-secondary);">${platformName} video is ready to watch.</p>

@@ -63,7 +63,7 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
   if (!yt) return null;
 
   const { videoId, startTime, isShorts } = yt;
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&enablejsapi=1&rel=0`;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0${startTime > 0 ? `&start=${startTime}` : ''}`;
   const watchUrl = isShorts
     ? `https://www.youtube.com/shorts/${videoId}`
     : `https://www.youtube.com/watch?v=${videoId}${startTime > 0 ? `&t=${startTime}s` : ''}`;

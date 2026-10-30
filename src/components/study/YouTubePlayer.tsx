@@ -61,15 +61,15 @@ export default function YouTubePlayer({
       const effectiveId = yt?.videoId || (videoId && /^[\w-]{11}$/.test(videoId) ? videoId : '');
       const effectiveStart = yt?.startTime || startTime || 0;
       if (effectiveId) {
-        const embedUrl = `https://www.youtube-nocookie.com/embed/${effectiveId}?start=${effectiveStart}&rel=0&modestbranding=1&enablejsapi=1`;
+        const embedUrl = `https://www.youtube.com/embed/${effectiveId}?rel=0${effectiveStart > 0 ? `&start=${effectiveStart}` : ''}`;
         return (
           <iframe
             className={styles.playerIframe}
             src={embedUrl}
             title={title || 'YouTube Video'}
+            referrerPolicy="strict-origin-when-cross-origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
-            loading="lazy"
             onError={() => setHasError(true)}
           />
         );
@@ -96,9 +96,9 @@ export default function YouTubePlayer({
           className={styles.playerIframe}
           src={parsed.embedUrl}
           title={title || parsed.titleHint || `${platformName} Video`}
+          referrerPolicy="strict-origin-when-cross-origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
-          loading="lazy"
           onError={() => setHasError(true)}
         />
       );
