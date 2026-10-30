@@ -136,7 +136,7 @@ export default function TodayDashboardContent() {
     .filter((d) =>
       !bookSearchQuery.trim() ||
       d.title.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
-      (d.tags && d.tags.some((t) => t.toLowerCase().includes(bookSearchQuery.toLowerCase())))
+      (Array.isArray(d.tags) && d.tags.some((t) => t.toLowerCase().includes(bookSearchQuery.toLowerCase())))
     )
     .sort((a, b) => {
       // 1. Featured / active book at the top

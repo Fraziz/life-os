@@ -160,7 +160,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (parsed && parsed.length > 0) {
         // Auto-heal / backfill missing projectId or goalId
         const healed = parsed.map((t) => {
-          const updated = { ...t };
+          const updated = {
+            ...t,
+            tags: Array.isArray(t.tags) ? t.tags : [],
+          };
           const titleLower = (t.title || '').toLowerCase();
           const tagsLower = (t.tags || []).map((tg) => tg.toLowerCase());
 

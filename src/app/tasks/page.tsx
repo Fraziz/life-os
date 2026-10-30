@@ -218,7 +218,7 @@ export default function TasksPage() {
     const parentProj = projects.find((p) => p.id === t.projectId);
     setModalGoalId(t.goalId || parentProj?.goalId || '');
     setModalMilestoneId(t.milestoneId || '');
-    setModalTags(t.tags.join(', '));
+    setModalTags((Array.isArray(t.tags) ? t.tags : []).join(', '));
     setModalColor(t.color || '');
     setModalOpen(true);
   };
@@ -713,7 +713,7 @@ export default function TasksPage() {
               + Link Goal / Project
             </button>
           )}
-          {task.tags.map((tg) => (
+          {(Array.isArray(task.tags) ? task.tags : []).map((tg) => (
             <span key={tg} className={styles.tagChip}>
               #{formatTagLabel(tg)}
             </span>

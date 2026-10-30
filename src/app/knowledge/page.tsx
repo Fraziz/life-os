@@ -1920,7 +1920,7 @@ export default function KnowledgePage() {
       setFReadProgress(selectedDoc.readProgress ?? 0);
       setFCurrentPage(selectedDoc.currentPage);
       setFTotalPages(selectedDoc.totalPages);
-      setFTags(selectedDoc.tags.join(', '));
+      setFTags((Array.isArray(selectedDoc.tags) ? selectedDoc.tags : []).join(', '));
       setFDreamId(selectedDoc.linkedDreamId || '');
       setFGoalId(selectedDoc.linkedGoalId || '');
       setFProjectId(selectedDoc.linkedProjectId || '');

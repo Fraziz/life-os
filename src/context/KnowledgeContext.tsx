@@ -228,6 +228,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       content,
       status: doc.status || 'active',
       docType: doc.docType || (isVideo ? 'video-lesson' : 'document'),
+      tags: Array.isArray(doc.tags) ? doc.tags.filter(Boolean) : [],
     };
   }, []);
 
@@ -578,6 +579,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       createdAt: t,
       updatedAt: t,
       syncedWithCloud: Boolean(uidRef.current),
+      tags: Array.isArray(input.tags) ? input.tags.filter(Boolean) : [],
     };
     const next = [docItem, ...docsRef.current];
     saveDocs(next);
@@ -591,11 +593,12 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     let updatedDocItem: KnowledgeDocument | null = null;
     const next = docsRef.current.map((d) => {
       if (d.id === id) {
-        const updated = {
+        const updated: KnowledgeDocument = {
           ...d,
           ...input,
           updatedAt: now(),
           syncedWithCloud: Boolean(uidRef.current),
+          tags: input.tags !== undefined ? (Array.isArray(input.tags) ? input.tags.filter(Boolean) : []) : (Array.isArray(d.tags) ? d.tags : []),
         };
         updatedDocItem = updated;
         return updated;

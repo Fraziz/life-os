@@ -770,8 +770,8 @@ export default function FocusPage() {
   const filteredDocs = docs
     .filter(
       (d) =>
-        d.title.toLowerCase().includes(targetSearchQuery.toLowerCase()) ||
-        d.tags.some((tag) => tag.toLowerCase().includes(targetSearchQuery.toLowerCase()))
+        (d.title || '').toLowerCase().includes(targetSearchQuery.toLowerCase()) ||
+        (Array.isArray(d.tags) && d.tags.some((tag) => tag.toLowerCase().includes(targetSearchQuery.toLowerCase())))
     )
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
