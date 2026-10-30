@@ -101,6 +101,7 @@ import {
   generateVideoBlockHtml,
   transformVideoLessonsInHtml,
   isDocVideoLesson,
+  isDocBookOrDocument,
   extractVideoLessonData,
   extractVideoLessonNotes,
 } from '@/utils/videoLesson';
@@ -3689,18 +3690,20 @@ export default function KnowledgePage() {
 
   // Study Material Type Counts
   const allMaterialsCount = docs.length;
-  const booksCount = docs.filter((d) => !isDocVideoLesson(d)).length;
+  const booksCount = docs.filter((d) => isDocBookOrDocument(d)).length;
   const videoLessonsCount = docs.filter((d) => isDocVideoLesson(d)).length;
 
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
   const filteredDocs = docs
     .filter((d) => {
-      if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      const docStatus = d.status || 'active';
+      if (statusFilter !== 'all' && docStatus !== statusFilter) return false;
+      const isBook = isDocBookOrDocument(d);
       const isVideo = isDocVideoLesson(d);
-      if (typeFilter === 'documents' && isVideo) return false;
+      if (typeFilter === 'documents' && !isBook) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
-      if (q && !d.title.toLowerCase().includes(q) && !d.content.toLowerCase().includes(q)) return false;
+      if (q && !d.title.toLowerCase().includes(q) && !(d.content || '').toLowerCase().includes(q)) return false;
       return true;
     })
     .sort((a, b) => {
@@ -4171,7 +4174,7 @@ export default function KnowledgePage() {
           onClick={() => setMobileTab('list')}
         >
           <List size={13} />
-          <span>Documents ({filteredDocs.length})</span>
+          <span>My Books &amp; Library ({filteredDocs.length})</span>
         </button>
         <button
           type="button"
@@ -4195,7 +4198,7 @@ export default function KnowledgePage() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Filter documents..."
+              placeholder="Search all books &amp; notes..."
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
             />
@@ -4212,7 +4215,7 @@ export default function KnowledgePage() {
               type="button"
               className={`${styles.materialTypeTab} ${typeFilter === 'all' ? styles.materialTypeTabActive : ''}`}
               onClick={() => setTypeFilter('all')}
-              title="All study materials"
+              title="All books, notes, and study materials"
             >
               <span>All ({allMaterialsCount})</span>
             </button>
@@ -4223,7 +4226,7 @@ export default function KnowledgePage() {
               title="Books and written notes"
             >
               <BookOpen size={11} />
-              <span>Books ({booksCount})</span>
+              <span>Books &amp; Notes ({booksCount})</span>
             </button>
             <button
               type="button"
@@ -4452,10 +4455,10 @@ export default function KnowledgePage() {
                     type="button"
                     className={styles.mobileBackBtn}
                     onClick={() => setMobileTab('list')}
-                    title="Back to all documents list"
+                    title="Back to all books and documents list"
                   >
                     <ChevronLeft size={16} />
-                    <span>Notes</span>
+                    <span>All Books</span>
                   </button>
 
                   {isCurrentVideo ? (

@@ -102,6 +102,7 @@ export default function TodayDashboardContent() {
     || docs.find((d) => d.readStatus === 'reading')
     || docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100)
     || docs.find((d) => d.isPinned)
+    || docs.find((d) => !d.id.startsWith('doc-sariling-mundo') && !d.id.startsWith('doc-game-blobbit'))
     || docs[0];
 
   const handleSelectFeaturedBook = (id: string) => {
@@ -131,9 +132,34 @@ export default function TodayDashboardContent() {
     handleSelectFeaturedBook(created.id);
   };
 
-  const filteredPickerDocs = docs.filter((d) =>
-    !bookSearchQuery.trim() || d.title.toLowerCase().includes(bookSearchQuery.toLowerCase())
-  );
+  const filteredPickerDocs = [...docs]
+    .filter((d) =>
+      !bookSearchQuery.trim() ||
+      d.title.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
+      (d.tags && d.tags.some((t) => t.toLowerCase().includes(bookSearchQuery.toLowerCase())))
+    )
+    .sort((a, b) => {
+      // 1. Featured / active book at the top
+      if (a.id === featuredBookId) return -1;
+      if (b.id === featuredBookId) return 1;
+      // 2. Currently reading books next
+      const aReading = a.readStatus === 'reading' || (a.readProgress || 0) > 0;
+      const bReading = b.readStatus === 'reading' || (b.readProgress || 0) > 0;
+      if (aReading && !bReading) return -1;
+      if (!aReading && bReading) return 1;
+      // 3. User's custom books before default system manuals
+      const aIsCustom = !a.id.startsWith('doc-sariling-mundo') && !a.id.startsWith('doc-game-blobbit');
+      const bIsCustom = !b.id.startsWith('doc-sariling-mundo') && !b.id.startsWith('doc-game-blobbit');
+      if (aIsCustom && !bIsCustom) return -1;
+      if (!aIsCustom && bIsCustom) return 1;
+      // 4. Pinned books
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // 5. Recent updatedAt
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
 
   const [briefingModalOpen, setBriefingModalOpen] = useState(false);
   const [optimizeModalOpen, setOptimizeModalOpen] = useState(false);

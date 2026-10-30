@@ -46,6 +46,43 @@ export function isDocVideoLesson(doc: {
 }
 
 /**
+ * Checks whether a document represents a written book, guide, or reading document.
+ * Documents with video embeds are STILL books if they contain study notes, book tags, or reading progress!
+ */
+export function isDocBookOrDocument(doc: {
+  docType?: string;
+  tags?: string[];
+  content?: string;
+  title?: string;
+  category?: string;
+  readProgress?: number;
+  totalPages?: number;
+} | null | undefined): boolean {
+  if (!doc) return false;
+  // If explicitly tagged or marked as a book, reading material, or imported doc, always true
+  if (Array.isArray(doc.tags) && doc.tags.some((t) => {
+    const lower = (t || '').toLowerCase();
+    return lower === 'book' || lower === 'reading' || lower === 'pdf' || lower === 'imported' || lower === 'notes' || lower === 'guide' || lower === 'manual';
+  })) {
+    return true;
+  }
+  // If user has reading progress or pages tracked, it is a book
+  if ((doc.readProgress !== undefined && doc.readProgress > 0) || doc.totalPages) {
+    return true;
+  }
+  // Standard document type
+  if (!doc.docType || doc.docType === 'document') {
+    return true;
+  }
+  // Even if docType === 'video-lesson', if it has written notes, it is also a study book
+  const content = doc.content || '';
+  if (content.length > 250) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Extracts primary video lesson data from content string
  */
 export function extractVideoLessonData(content: string): VideoLessonData | null {

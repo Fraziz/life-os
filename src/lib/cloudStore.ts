@@ -18,12 +18,30 @@ function kvRef(uid: string, key: string) {
   return doc(getFirebaseDb(), 'users', uid, 'kv', key);
 }
 
+export function isManagedKvKey(key: string): boolean {
+  if (!key || !key.startsWith(PREFIX)) return false;
+  if (key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') return false;
+  // Books & study documents are synced via dedicated users/{uid}/books Firestore subcollection
+  // to prevent Firestore single-document quota bottlenecks and enable per-book real-time sync
+  if (
+    key === 'life_os_knowledge_docs_v1' ||
+    key === 'life_os_knowledge_docs_backup' ||
+    key === 'life_os_knowledge_docs' ||
+    key === 'life_os_books_v1' ||
+    key === 'life_os_books' ||
+    key === 'knowledge_docs'
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function snapshotLocal(): Array<[string, string]> {
   const rows: Array<[string, string]> = [];
   if (typeof localStorage === 'undefined') return rows;
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i);
-    if (!key || !key.startsWith(PREFIX)) continue;
+    if (!key || !isManagedKvKey(key)) continue;
     const value = localStorage.getItem(key);
     if (value !== null) rows.push([key, value]);
   }
@@ -111,7 +129,7 @@ function patchLocalStorage() {
 
   Storage.prototype.setItem = function patchedSetItem(key: string, value: string) {
     rawSetItem.call(this, key, value);
-    if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && key !== 'life_os_active_uid' && activeUid) {
+    if (this === localStorage && isManagedKvKey(key) && activeUid) {
       touchUpdateMeta(key);
       pendingDeletions.delete(key);
       pending.set(key, value);
@@ -128,7 +146,7 @@ function patchLocalStorage() {
   if (rawRemoveItem) {
     Storage.prototype.removeItem = function patchedRemoveItem(key: string) {
       rawRemoveItem.call(this, key);
-      if (this === localStorage && key.startsWith(PREFIX) && key !== 'life_os_kv_updated_v1' && key !== 'life_os_active_uid' && activeUid) {
+      if (this === localStorage && isManagedKvKey(key) && activeUid) {
         pending.delete(key);
         pendingDeletions.add(key);
         scheduleFlush();
@@ -141,7 +159,7 @@ function patchLocalStorage() {
       if (this === localStorage && activeUid) {
         const local = snapshotLocal();
         local.forEach(([k]) => {
-          if (k !== 'life_os_kv_updated_v1' && k !== 'life_os_active_uid') {
+          if (isManagedKvKey(k)) {
             pending.delete(k);
             pendingDeletions.add(k);
           }
@@ -165,7 +183,13 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
       const toRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && k.startsWith(PREFIX) && k !== 'life_os_sidebar_collapsed') {
+        if (
+          k &&
+          k.startsWith(PREFIX) &&
+          k !== 'life_os_sidebar_collapsed' &&
+          k !== 'life_os_knowledge_docs_v1' &&
+          k !== 'life_os_knowledge_docs_backup'
+        ) {
           toRemove.push(k);
         }
       }
@@ -196,6 +220,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 
   if (!snap.empty) {
     snap.forEach((item) => {
+      if (!isManagedKvKey(item.id)) return;
       const value = item.data().v;
       if (typeof value !== 'string') return;
       const cloudAt = Number(item.data().updatedAt) || 0;
@@ -249,7 +274,7 @@ export function startCloudSync(uid: string) {
 
         snap.docChanges().forEach((change) => {
           const key = change.doc.id;
-          if (!key.startsWith(PREFIX) || key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') {
+          if (!isManagedKvKey(key)) {
             return;
           }
 

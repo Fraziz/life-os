@@ -33,6 +33,7 @@ import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import {
   isDocVideoLesson,
+  isDocBookOrDocument,
   transformVideoLessonsInHtml,
   generateVideoBlockHtml,
   extractVideoLessonData,
@@ -780,7 +781,7 @@ export default function FocusPage() {
       return timeB - timeA;
     });
 
-  const bookDocs = filteredDocs.filter((d) => !isDocVideoLesson(d));
+  const bookDocs = filteredDocs.filter((d) => isDocBookOrDocument(d));
   const videoDocs = filteredDocs.filter((d) => isDocVideoLesson(d));
 
   // ── Today's Progress: group sessions by task/book, filtered to today ──

@@ -5,6 +5,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { wipeCloudKv } from '@/lib/cloudStore';
+import { wipeCloudBooks } from '@/lib/bookCloudSync';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
 import {
   User,
@@ -2873,7 +2874,12 @@ export default function SettingsPage() {
                         const phrase = prompt('To confirm erasure of all data, type "DELETE ALL MY DATA" below:');
                         if (phrase === 'DELETE ALL MY DATA') {
                           if (user) {
-                            try { await wipeCloudKv(user.uid); } catch { /* keep going */ }
+                            try {
+                              await Promise.all([
+                                wipeCloudKv(user.uid),
+                                wipeCloudBooks(user.uid),
+                              ]);
+                            } catch { /* keep going */ }
                           }
                           localStorage.clear();
                           alert('Sariling Mundo data has been erased.');

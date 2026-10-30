@@ -436,6 +436,8 @@ export interface KnowledgeDocument {
   lastReadAt?: string;
   preferredReadingTime?: string;
   isReminder?: boolean;        // Active reminder on Today dashboard
+  syncedWithCloud?: boolean;   // Synced with Firestore books subcollection
+  isChunked?: boolean;         // Stored in subcollection chunks in cloud for massive size
 }
 
 // ── Reminders & Notifications (Phase 24) ───────────────────

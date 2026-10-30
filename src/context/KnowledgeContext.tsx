@@ -6,6 +6,14 @@ import React, {
 } from 'react';
 import type { KnowledgeDocument, DocumentStatus } from '@/types';
 import { notifyItemDeleted } from './UndoContext';
+import { useAuth } from './AuthContext';
+import {
+  saveBookToCloud,
+  deleteBookFromCloud,
+  subscribeToCloudBooks,
+  migrateLegacyBooksFromKv,
+  wipeCloudBooks,
+} from '@/lib/bookCloudSync';
 
 import { idbGet, idbSet } from '@/lib/idbStore';
 import { isDocVideoLesson, cleanDocumentContent } from '@/utils/videoLesson';
@@ -22,10 +30,10 @@ function now() {
 }
 
 function defaultDocs(): KnowledgeDocument[] {
-  const t = now();
+  const t = '2026-08-01T00:00:00.000Z';
   return [
     {
-      id: generateId(),
+      id: 'doc-sariling-mundo-manual',
       title: 'Sariling Mundo — Complete Operations Manual & Hierarchy Guide',
       content: `# Sariling Mundo — Official System Manual & Hierarchy Guide
 
@@ -107,7 +115,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       ],
     },
     {
-      id: generateId(),
+      id: 'doc-game-blobbit',
       title: 'Game Design Document — Blobbit',
       content: `# Blobbit — Game Design Document\n\n## Concept\nA 2D platformer where the player controls Blobbit, a sentient blob navigating a neon world.\n\n## Core Mechanics\n- **Movement**: Stretch and compress to gain momentum\n- **Abilities**: Wall cling, double jump, dash\n\n## Levels\n1. Tutorial Caverns\n2. Neon City\n3. Final Boss: The Void\n\n## Art Style\nNeon color palette, dark backgrounds, glowing outlines.\n\n## Todo\n- [ ] Design level 2 layout\n- [ ] Write boss fight logic\n- [ ] Create sound effects\n`,
       status: 'active',
@@ -126,7 +134,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       ],
     },
     {
-      id: generateId(),
+      id: 'doc-blender-notes',
       title: 'Blender Learning Notes',
       content: `# Blender Learning Notes\n\n## Key Shortcuts\n- **G** — Grab/move\n- **R** — Rotate\n- **S** — Scale\n- **X** — Delete\n- **Tab** — Edit mode toggle\n\n## Workflow Tips\n- Always apply transforms before exporting\n- Use N-panel for precision values\n- Shade smooth + Auto Smooth for clean meshes\n\n## Resources\n- Blender Guru Donut tutorial\n- CG Cookie fundamentals\n`,
       status: 'active',
@@ -135,7 +143,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       updatedAt: t,
     },
     {
-      id: generateId(),
+      id: 'doc-business-ideas',
       title: 'Business Ideas',
       content: `# Business Ideas\n\n## Software Products\n- Personal finance tracker with envelope budgeting\n- Simple invoice generator for freelancers\n\n## Creative\n- Sell 3D assets on markets like Fab or Sketchfab\n- Commission character designs\n\n## Questions to Answer\n- What pain point am I uniquely able to solve?\n- What has the lowest startup cost?\n`,
       status: 'active',
@@ -144,7 +152,7 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       updatedAt: t,
     },
     {
-      id: generateId(),
+      id: 'doc-guitar-masterclass',
       title: 'Guitar Masterclass — Theory & Soloing',
       content: `# Guitar Masterclass — Theory & Soloing
 
@@ -182,6 +190,7 @@ type UpdateInput = Partial<Omit<KnowledgeDocument, 'id' | 'createdAt'>>;
 interface KnowledgeContextValue {
   docs: KnowledgeDocument[];
   isLoaded: boolean;
+  isCloudSynced: boolean;
   addDoc: (input: CreateInput) => KnowledgeDocument;
   updateDoc: (id: string, input: UpdateInput) => void;
   deleteDoc: (id: string) => void;
@@ -195,9 +204,16 @@ interface KnowledgeContextValue {
 const KnowledgeContext = createContext<KnowledgeContextValue | undefined>(undefined);
 
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
+  const { user, isGuest } = useAuth();
+  const uid = user && !isGuest ? user.uid : null;
+  const uidRef = useRef<string | null>(null);
+  uidRef.current = uid;
+
   const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const docsRef = useRef<KnowledgeDocument[]>([]);
+  const isLoadedRef = useRef(false);
   docsRef.current = docs;
 
   const sanitizeDoc = useCallback((doc: KnowledgeDocument): KnowledgeDocument => {
@@ -209,75 +225,135 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     return {
       ...doc,
       content,
+      status: doc.status || 'active',
       docType: doc.docType || (isVideo ? 'video-lesson' : 'document'),
     };
   }, []);
 
   const reloadFromStorage = useCallback(async () => {
-    let localDocs: KnowledgeDocument[] = [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) localDocs = parsed;
-      }
-    } catch {
-      // ignore
-    }
+    const map = new Map<string, KnowledgeDocument>();
 
-    // Check IndexedDB (which holds large docs and books without 5MB quota limit)
-    try {
-      const idbDocs = await idbGet<KnowledgeDocument[]>(STORAGE_KEY);
-      if (Array.isArray(idbDocs) && idbDocs.length > 0) {
-        // Merge with localDocs, prioritizing IndexedDB's full content for large books
-        const map = new Map<string, KnowledgeDocument>();
-        localDocs.forEach((d) => map.set(d.id, d));
-        idbDocs.forEach((d) => {
-          const existing = map.get(d.id);
-          if (!existing) {
-            map.set(d.id, d);
-          } else {
-            const idbLen = (d.content || '').length;
-            const locLen = (existing.content || '').length;
-            if (idbLen >= locLen || new Date(d.updatedAt || 0) >= new Date(existing.updatedAt || 0)) {
-              map.set(d.id, d);
-            }
+    // 1. Recover from all known localStorage keys (current and legacy)
+    const localKeys = [
+      STORAGE_KEY,
+      'life_os_knowledge_docs',
+      'knowledge_docs',
+      'life_os_books_v1',
+      'life_os_books',
+      'life_os_knowledge_docs_backup',
+    ];
+
+    for (const key of localKeys) {
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((d) => {
+              if (d && d.id) {
+                const existing = map.get(d.id);
+                if (!existing) {
+                  map.set(d.id, d);
+                } else {
+                  const newLen = (d.content || '').length;
+                  const existLen = (existing.content || '').length;
+                  const newTime = new Date(d.updatedAt || 0).getTime();
+                  const existTime = new Date(existing.updatedAt || 0).getTime();
+                  if (newLen > existLen || newTime > existTime) {
+                    map.set(d.id, d);
+                  }
+                }
+              }
+            });
           }
-        });
-        const merged = Array.from(map.values()).map(sanitizeDoc);
-        setDocs(merged);
-        docsRef.current = merged;
-        setIsLoaded(true);
-        return;
+        }
+      } catch {
+        // ignore
       }
-    } catch (idbErr) {
-      console.warn('[KnowledgeContext] IDB read error:', idbErr);
     }
 
-    // Fallback if IDB was empty but localDocs exists
-    if (localDocs.length > 0) {
-      const sanitized = localDocs.map(sanitizeDoc);
-      setDocs(sanitized);
-      docsRef.current = sanitized;
-      void idbSet(STORAGE_KEY, sanitized);
-    } else {
-      const isInit = typeof window !== 'undefined' ? localStorage.getItem(INITIALIZED_KEY) : 'true';
-      if (!isInit) {
-        const defaults = defaultDocs().map(sanitizeDoc);
-        setDocs(defaults);
-        docsRef.current = defaults;
-        void idbSet(STORAGE_KEY, defaults);
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-          localStorage.setItem(INITIALIZED_KEY, 'true');
-        } catch {}
-      } else {
-        setDocs([]);
-        docsRef.current = [];
+    // 2. Recover from all IndexedDB keys (which hold large docs & books without 5MB quota limit)
+    const idbKeys = [
+      STORAGE_KEY,
+      'life_os_knowledge_docs_backup',
+      'life_os_knowledge_docs',
+      'life_os_books_v1',
+      'life_os_books',
+    ];
+
+    for (const key of idbKeys) {
+      try {
+        const idbDocs = await idbGet<KnowledgeDocument[]>(key);
+        if (Array.isArray(idbDocs) && idbDocs.length > 0) {
+          idbDocs.forEach((d) => {
+            if (!d || !d.id) return;
+            const existing = map.get(d.id);
+            if (!existing) {
+              map.set(d.id, d);
+            } else {
+              const idbLen = (d.content || '').length;
+              const existLen = (existing.content || '').length;
+              const idbTime = new Date(d.updatedAt || 0).getTime();
+              const existTime = new Date(existing.updatedAt || 0).getTime();
+              if (idbLen >= existLen || idbTime >= existTime) {
+                map.set(d.id, d);
+              }
+            }
+          });
+        }
+      } catch (idbErr) {
+        console.warn(`[KnowledgeContext] IDB read error for ${key}:`, idbErr);
       }
     }
+
+    // 3. Defaults & User Books preservation:
+    const defaults = defaultDocs();
+    if (map.size === 0) {
+      // First time initialization: populate default starter documents
+      defaults.forEach((d) => map.set(d.id, d));
+    } else {
+      // Keep defaults available if user has never touched them, without duplicating
+      defaults.forEach((d) => {
+        if (!map.has(d.id)) {
+          // If a user has another doc with matching title, don't duplicate
+          const hasMatchingTitle = Array.from(map.values()).some((existing) => existing.title === d.title);
+          if (!hasMatchingTitle) {
+            map.set(d.id, d);
+          }
+        }
+      });
+    }
+
+    const merged = Array.from(map.values()).map(sanitizeDoc);
+    setDocs(merged);
+    docsRef.current = merged;
+    isLoadedRef.current = true;
     setIsLoaded(true);
-  }, []);
+
+    // 4. Critical: Persist the full merged books library back to BOTH IndexedDB & LocalStorage
+    void idbSet(STORAGE_KEY, merged);
+    void idbSet('life_os_knowledge_docs_backup', merged);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      localStorage.setItem(INITIALIZED_KEY, 'true');
+    } catch {
+      // If full content exceeds localStorage 5MB quota, save lightweight summary while IndexedDB retains full text
+      try {
+        const lightDocs = merged.map((d) => {
+          if ((d.content || '').length > 30000) {
+            return {
+              ...d,
+              content: d.content.slice(0, 10000) + '\n\n[...Full book content preserved in local device storage...]',
+            };
+          }
+          return d;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
+        localStorage.setItem(INITIALIZED_KEY, 'true');
+      } catch {}
+    }
+  }, [sanitizeDoc]);
 
   useEffect(() => {
     reloadFromStorage();
@@ -288,6 +364,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   }, [reloadFromStorage]);
 
   const saveDocs = useCallback((next: KnowledgeDocument[]) => {
+    // Safety check: Never allow saving an empty array if loading hasn't finished
+    if (!isLoadedRef.current && next.length === 0) {
+      return;
+    }
     docsRef.current = next;
     setDocs(next);
     if (typeof window !== 'undefined') {
@@ -298,15 +378,16 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
     // 1. Immediately persist full documents & books into IndexedDB (unlimited quota)
     void idbSet(STORAGE_KEY, next);
+    void idbSet('life_os_knowledge_docs_backup', next);
 
-    // 2. Also save to localStorage for fast initial paint / cloud sync
+    // 2. Also save to localStorage for fast initial paint / offline caching
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (quotaErr) {
       console.warn('[KnowledgeContext] localStorage quota exceeded, saving lightweight index while IndexedDB retains full content:', quotaErr);
       try {
         const lightDocs = next.map((d) => {
-          if ((d.content || '').length > 40000) {
+          if ((d.content || '').length > 30000) {
             return {
               ...d,
               content: d.content.slice(0, 10000) + '\n\n[...Full document saved in local high-capacity storage...]',
@@ -321,32 +402,159 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const persist = useCallback((next: KnowledgeDocument[]) => {
-    saveDocs(next);
-  }, [saveDocs]);
+  // Real-time bidirectional Firestore Synchronization
+  useEffect(() => {
+    if (!uid) {
+      setIsCloudSynced(false);
+      return;
+    }
+
+    let unsub: (() => void) | null = null;
+    let isCancelled = false;
+
+    // Check legacy KV migration for existing cloud users
+    (async () => {
+      try {
+        const legacyDocs = await migrateLegacyBooksFromKv(uid);
+        if (legacyDocs.length > 0 && !isCancelled) {
+          const currentMap = new Map(docsRef.current.map((d) => [d.id, d]));
+          let hasNewLegacy = false;
+          for (const lDoc of legacyDocs) {
+            if (!currentMap.has(lDoc.id)) {
+              currentMap.set(lDoc.id, { ...lDoc, syncedWithCloud: true });
+              hasNewLegacy = true;
+              void saveBookToCloud(uid, lDoc);
+            }
+          }
+          if (hasNewLegacy) {
+            const merged = Array.from(currentMap.values()).map(sanitizeDoc);
+            saveDocs(merged);
+          }
+        }
+      } catch (err) {
+        console.warn('[KnowledgeContext] Legacy KV migration check warning:', err);
+      }
+    })();
+
+    // Subscribe to users/{uid}/books subcollection in real time
+    unsub = subscribeToCloudBooks(
+      uid,
+      (remoteDocs) => {
+        if (isCancelled) return;
+        setIsCloudSynced(true);
+
+        const localList = docsRef.current;
+        const localMap = new Map(localList.map((d) => [d.id, d]));
+        const remoteMap = new Map(remoteDocs.map((d) => [d.id, d]));
+
+        let stateChanged = false;
+
+        // 1. Process remote books: merge or update local
+        for (const remote of remoteDocs) {
+          const local = localMap.get(remote.id);
+          if (!local) {
+            // New book from cloud!
+            localMap.set(remote.id, { ...remote, syncedWithCloud: true });
+            stateChanged = true;
+          } else {
+            const remoteTime = new Date(remote.updatedAt || 0).getTime();
+            const localTime = new Date(local.updatedAt || 0).getTime();
+            const remoteLen = (remote.content || '').length;
+            const localLen = (local.content || '').length;
+
+            if (remoteTime > localTime || (remoteLen > localLen && !local.syncedWithCloud)) {
+              // Remote is newer or has full text
+              localMap.set(remote.id, { ...remote, syncedWithCloud: true });
+              stateChanged = true;
+            } else if (localTime > remoteTime || (localLen > remoteLen && !remote.isChunked)) {
+              // Local is newer -> push local to cloud!
+              void saveBookToCloud(uid, local);
+            }
+          }
+        }
+
+        // 2. Process local books not in Firestore:
+        for (const local of localList) {
+          if (!remoteMap.has(local.id)) {
+            if (local.syncedWithCloud) {
+              // Remote deletion -> remove locally
+              localMap.delete(local.id);
+              stateChanged = true;
+            } else {
+              // Local book not yet in cloud: upload!
+              local.syncedWithCloud = true;
+              void saveBookToCloud(uid, local);
+            }
+          }
+        }
+
+        if (stateChanged) {
+          const merged = Array.from(localMap.values()).map(sanitizeDoc);
+          saveDocs(merged);
+        }
+      },
+      (err) => {
+        console.warn('[KnowledgeContext] Cloud books sync listener warning:', err);
+      }
+    );
+
+    return () => {
+      isCancelled = true;
+      if (unsub) unsub();
+    };
+  }, [uid, sanitizeDoc, saveDocs]);
 
   const addDoc = useCallback((input: CreateInput): KnowledgeDocument => {
     const t = now();
-    const doc: KnowledgeDocument = { ...input, id: generateId(), createdAt: t, updatedAt: t };
-    const next = [doc, ...docsRef.current];
+    const docItem: KnowledgeDocument = {
+      ...input,
+      id: generateId(),
+      createdAt: t,
+      updatedAt: t,
+      syncedWithCloud: Boolean(uidRef.current),
+    };
+    const next = [docItem, ...docsRef.current];
     saveDocs(next);
-    return doc;
+    if (uidRef.current) {
+      void saveBookToCloud(uidRef.current, docItem);
+    }
+    return docItem;
   }, [saveDocs]);
 
   const updateDoc = useCallback((id: string, input: UpdateInput) => {
-    const next = docsRef.current.map((d) => d.id === id ? { ...d, ...input, updatedAt: now() } : d);
+    let updatedDocItem: KnowledgeDocument | null = null;
+    const next = docsRef.current.map((d) => {
+      if (d.id === id) {
+        const updated = {
+          ...d,
+          ...input,
+          updatedAt: now(),
+          syncedWithCloud: Boolean(uidRef.current),
+        };
+        updatedDocItem = updated;
+        return updated;
+      }
+      return d;
+    });
     saveDocs(next);
+    if (uidRef.current && updatedDocItem) {
+      void saveBookToCloud(uidRef.current, updatedDocItem);
+    }
   }, [saveDocs]);
 
   const togglePinDoc = useCallback((id: string) => {
-    const next = docsRef.current.map((d) => d.id === id ? { ...d, isPinned: !d.isPinned, updatedAt: now() } : d);
-    saveDocs(next);
-  }, [saveDocs]);
+    const target = docsRef.current.find((d) => d.id === id);
+    if (target) {
+      updateDoc(id, { isPinned: !target.isPinned });
+    }
+  }, [updateDoc]);
 
   const toggleDocReminder = useCallback((id: string) => {
-    const next = docsRef.current.map((d) => d.id === id ? { ...d, isReminder: !d.isReminder, updatedAt: now() } : d);
-    saveDocs(next);
-  }, [saveDocs]);
+    const target = docsRef.current.find((d) => d.id === id);
+    if (target) {
+      updateDoc(id, { isReminder: !target.isReminder });
+    }
+  }, [updateDoc]);
 
   const createProblemSolvingDoc = useCallback((problemTitle?: string, initialDescription?: string): KnowledgeDocument => {
     const title = problemTitle ? `Problem: ${problemTitle}` : 'Problem Breakdown & Analysis';
@@ -390,16 +598,28 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     });
   }, [addDoc]);
 
-  const restoreDoc = useCallback((doc: KnowledgeDocument) => {
-    if (docsRef.current.some((d) => d.id === doc.id)) return;
-    const next = [doc, ...docsRef.current];
+  const restoreDoc = useCallback((docItem: KnowledgeDocument) => {
+    if (docsRef.current.some((d) => d.id === docItem.id)) return;
+    const restored = {
+      ...docItem,
+      updatedAt: now(),
+      syncedWithCloud: Boolean(uidRef.current),
+    };
+    const next = [restored, ...docsRef.current];
     saveDocs(next);
+    if (uidRef.current) {
+      void saveBookToCloud(uidRef.current, restored);
+    }
   }, [saveDocs]);
 
   const deleteDoc = useCallback((id: string) => {
     const target = docsRef.current.find((d) => d.id === id);
     const next = docsRef.current.filter((d) => d.id !== id);
     saveDocs(next);
+
+    if (uidRef.current) {
+      void deleteBookFromCloud(uidRef.current, id);
+    }
 
     if (target) {
       const docToRestore = target;
@@ -416,14 +636,22 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     }
   }, [saveDocs, restoreDoc]);
 
-  const resetToDefaultDocs = useCallback(() => {
-    saveDocs(defaultDocs());
+  const resetToDefaultDocs = useCallback(async () => {
+    const defaults = defaultDocs();
+    saveDocs(defaults);
+    if (uidRef.current) {
+      await wipeCloudBooks(uidRef.current);
+      for (const d of defaults) {
+        await saveBookToCloud(uidRef.current, d);
+      }
+    }
   }, [saveDocs]);
 
   return (
     <KnowledgeContext.Provider value={{
       docs,
       isLoaded,
+      isCloudSynced,
       addDoc,
       updateDoc,
       deleteDoc,
