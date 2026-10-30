@@ -6,7 +6,7 @@
  * Guarantees exactly ONE video block per video ID without duplicate iframes.
  */
 
-import { parseUniversalVideoUrl } from './universalVideo';
+import { parseUniversalVideoUrl, extractYouTubeVideoDetails } from './universalVideo';
 
 export interface VideoLessonData {
   videoId: string;
@@ -39,7 +39,7 @@ export function isDocVideoLesson(doc: {
     return true;
   }
   const content = doc.content || '';
-  if (/data-video-lesson=["']true["']|class=["'][^"']*\bvideo-lesson-block\b|:::video-lesson\{|youtube-nocookie\.com\/embed\/|youtube\.com\/embed\/|tiktok\.com|instagram\.com\/reel/i.test(content)) {
+  if (/data-video-lesson=["']true["']|class=["'][^"']*\bvideo-lesson-block\b|:::video-lesson\{|youtube-nocookie\.com\/embed\/|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch|tiktok\.com|instagram\.com\/reel/i.test(content)) {
     return true;
   }
   return false;
@@ -88,7 +88,7 @@ export function isDocBookOrDocument(doc: {
 export function extractVideoLessonData(content: string): VideoLessonData | null {
   if (!content) return null;
 
-  // 1. Markdown syntax
+  // 1. Markdown syntax: :::video-lesson{...}:::
   const mdMatch = content.match(/:::video-lesson\{([^}]+)\}:::/);
   if (mdMatch) {
     const idMatch = mdMatch[1].match(/id="([^"]+)"/);
@@ -96,14 +96,27 @@ export function extractVideoLessonData(content: string): VideoLessonData | null 
     const titleMatch = mdMatch[1].match(/title="([^"]+)"/);
     const startMatch = mdMatch[1].match(/start="([^"]+)"/);
     const platformMatch = mdMatch[1].match(/platform="([^"]+)"/);
-    if (idMatch && idMatch[1]) {
-      const url = urlMatch ? urlMatch[1] : `https://www.youtube.com/watch?v=${idMatch[1]}`;
+
+    let rawId = idMatch ? idMatch[1] : '';
+    let rawUrl = urlMatch ? urlMatch[1] : (rawId && !rawId.startsWith('custom-') ? `https://www.youtube.com/watch?v=${rawId}` : '');
+    let platform = platformMatch ? platformMatch[1] : undefined;
+
+    const yt = extractYouTubeVideoDetails(rawUrl) || extractYouTubeVideoDetails(rawId);
+    if (yt) {
+      rawId = yt.videoId;
+      platform = 'youtube';
+      if (!rawUrl || rawUrl.includes('custom-')) {
+        rawUrl = `https://www.youtube.com/watch?v=${yt.videoId}`;
+      }
+    }
+
+    if (rawId) {
       return {
-        videoId: idMatch[1],
-        url,
+        videoId: rawId,
+        url: rawUrl,
         title: titleMatch ? titleMatch[1] : 'Video Lesson',
-        startTime: startMatch ? parseInt(startMatch[1], 10) : 0,
-        platform: platformMatch ? platformMatch[1] : undefined,
+        startTime: startMatch ? parseInt(startMatch[1], 10) : (yt?.startTime || 0),
+        platform,
       };
     }
   }
@@ -115,12 +128,26 @@ export function extractVideoLessonData(content: string): VideoLessonData | null 
     const titleMatch = content.match(/data-title=["']([^"']+)["']/i);
     const startMatch = content.match(/data-start=["']([^"']+)["']/i);
     const platformMatch = content.match(/data-platform=["']([^"']+)["']/i);
+
+    let rawId = idMatch[1];
+    let rawUrl = urlMatch ? urlMatch[1] : (rawId && !rawId.startsWith('custom-') ? `https://www.youtube.com/watch?v=${rawId}` : '');
+    let platform = platformMatch ? platformMatch[1] : undefined;
+
+    const yt = extractYouTubeVideoDetails(rawUrl) || extractYouTubeVideoDetails(rawId);
+    if (yt) {
+      rawId = yt.videoId;
+      platform = 'youtube';
+      if (!rawUrl || rawUrl.includes('custom-')) {
+        rawUrl = `https://www.youtube.com/watch?v=${yt.videoId}`;
+      }
+    }
+
     return {
-      videoId: idMatch[1],
-      url: urlMatch ? urlMatch[1] : `https://www.youtube.com/watch?v=${idMatch[1]}`,
+      videoId: rawId,
+      url: rawUrl,
       title: titleMatch ? titleMatch[1] : 'Video Lesson',
-      startTime: startMatch ? parseInt(startMatch[1], 10) : 0,
-      platform: platformMatch ? platformMatch[1] : undefined,
+      startTime: startMatch ? parseInt(startMatch[1], 10) : (yt?.startTime || 0),
+      platform,
     };
   }
 
@@ -138,6 +165,21 @@ export function extractVideoLessonData(content: string): VideoLessonData | null 
         url: `https://www.youtube.com/watch?v=${videoId}`,
         title: 'Video Lesson',
         startTime,
+        platform: 'youtube',
+      };
+    }
+  }
+
+  // 4. Standalone YouTube URL in content
+  const ytFallbackMatch = content.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/[^\s"'>]+|youtu\.be\/[a-zA-Z0-9_-]+)/i);
+  if (ytFallbackMatch) {
+    const yt = extractYouTubeVideoDetails(ytFallbackMatch[0]);
+    if (yt) {
+      return {
+        videoId: yt.videoId,
+        url: ytFallbackMatch[0],
+        title: 'Video Lesson',
+        startTime: yt.startTime,
         platform: 'youtube',
       };
     }
@@ -179,29 +221,64 @@ export function extractVideoLessonNotes(content: string): string {
 
 /**
  * Generates semantic, robust HTML for a Universal Video Lesson card.
+ * Embedded players play directly inline inside the document.
  */
 export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string {
-  const { videoId, url, title, startTime = 0, isEditMode = false, isFocusSpace = false } = options;
+  const { videoId: rawVideoId, url: rawUrl, title, startTime: rawStartTime = 0, isEditMode = false, isFocusSpace = false } = options;
   const safeTitle = (title || 'Video Lesson').replace(/"/g, '&quot;');
-  const safeUrl = (url || `https://www.youtube.com/watch?v=${videoId}`).replace(/"/g, '&quot;');
 
-  // Parse universal video platform information
-  const parsed = parseUniversalVideoUrl(url || videoId);
-  const platform = parsed ? parsed.platform : (options.platform || 'youtube');
-  const platformName = parsed ? parsed.platformName : 'Video';
-  const isVertical = parsed ? parsed.aspectRatio === '9/16' : false;
+  // Robust YouTube URL and ID detection
+  const ytDetails = extractYouTubeVideoDetails(rawUrl) || extractYouTubeVideoDetails(rawVideoId);
+  const isYouTube = Boolean(
+    ytDetails ||
+    options.platform === 'youtube' ||
+    (rawUrl && (rawUrl.includes('youtu.be') || rawUrl.includes('youtube.com') || rawUrl.includes('youtube-nocookie.com'))) ||
+    (rawVideoId && /^[a-zA-Z0-9_-]{11}$/.test(rawVideoId))
+  );
 
-  // Build frame content: Native video for direct files, iframe for embeddable links, or fallback card
+  let platform = options.platform || 'youtube';
+  let platformName = 'Video';
+  let videoId = rawVideoId || '';
+  let startTime = rawStartTime || 0;
+  let isVertical = false;
   let innerMediaHtml = '';
-  if (platform === 'direct') {
-    innerMediaHtml = `<video src="${safeUrl}" controls playsinline preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
-  } else if (parsed && parsed.canEmbedDirectly && parsed.embedUrl) {
-    innerMediaHtml = `<iframe src="${parsed.embedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+  let safeUrl = (rawUrl || '').replace(/"/g, '&quot;');
+
+  if (isYouTube) {
+    const effectiveId =
+      ytDetails?.videoId ||
+      (rawVideoId && /^[a-zA-Z0-9_-]{11}$/.test(rawVideoId)
+        ? rawVideoId
+        : rawUrl?.match(/(?:v=|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/)?.[1] || '');
+    const effectiveStart = ytDetails?.startTime ?? rawStartTime ?? 0;
+    const isShorts = ytDetails?.isShorts || Boolean(rawUrl?.includes('/shorts/'));
+
+    platform = 'youtube';
+    platformName = isShorts ? 'YouTube Shorts' : 'YouTube';
+    videoId = effectiveId || rawVideoId || '';
+    startTime = effectiveStart;
+    isVertical = isShorts;
+
+    if (!safeUrl || safeUrl.includes('custom-')) {
+      safeUrl = isShorts
+        ? `https://www.youtube.com/shorts/${videoId}`
+        : `https://www.youtube.com/watch?v=${videoId}${startTime > 0 ? `&t=${startTime}s` : ''}`;
+    }
+
+    const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&rel=0&modestbranding=1&enablejsapi=1`;
+    innerMediaHtml = `<iframe src="${ytEmbedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
   } else {
-    // Direct YouTube nocookie fallback if parsed.embedUrl is missing
-    const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&enablejsapi=1&rel=0`;
-    if (platform === 'youtube') {
-      innerMediaHtml = `<iframe src="${ytEmbedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+    // Universal parsing for other platforms (Vimeo, TikTok, Instagram, Direct MP4, etc.)
+    const parsed = parseUniversalVideoUrl(rawUrl || rawVideoId);
+    platform = parsed ? parsed.platform : (options.platform || 'custom');
+    platformName = parsed ? parsed.platformName : 'Video';
+    isVertical = parsed ? parsed.aspectRatio === '9/16' : false;
+    safeUrl = (parsed?.cleanExternalUrl || rawUrl || (rawVideoId ? `https://www.youtube.com/watch?v=${rawVideoId}` : '')).replace(/"/g, '&quot;');
+
+    if (platform === 'direct') {
+      innerMediaHtml = `<video src="${safeUrl}" controls playsinline preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
+    } else if (parsed && parsed.canEmbedDirectly && parsed.embedUrl) {
+      innerMediaHtml = `<iframe src="${parsed.embedUrl}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
     } else {
       innerMediaHtml = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:12px;background:var(--color-surface-2);">
         <p style="margin:0;font-size:0.875rem;color:var(--color-text-secondary);">${platformName} video is ready to watch.</p>
@@ -288,6 +365,7 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
 
 /**
  * Cleans, deduplicates, and transforms all video lesson blocks in an HTML string.
+ * Automatically upgrades any legacy fallback blocks to playable direct iframes.
  */
 export function transformVideoLessonsInHtml(
   html: string,
@@ -298,7 +376,7 @@ export function transformVideoLessonsInHtml(
   if (!html) return '';
 
   // 1. Transform markdown custom block: :::video-lesson{id="..." url="..." title="..." start="..." platform="..."}:::
-  const result = html.replace(
+  let result = html.replace(
     /:::video-lesson\{([^}]+)\}:::/g,
     (_, attrsStr) => {
       const idMatch = attrsStr.match(/id="([^"]+)"/);
@@ -322,27 +400,46 @@ export function transformVideoLessonsInHtml(
     }
   );
 
-  // Client-side DOMParser pass
+  // 2. Client-side DOMParser pass for rich transformation & fallback recovery
   if (typeof window !== 'undefined' && typeof DOMParser !== 'undefined') {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(result, 'text/html');
-      const seenVideoIds = new Set<string>();
+      const seenVideoKeys = new Set<string>();
 
       const blocks = Array.from(doc.querySelectorAll<HTMLElement>('.video-lesson-block, [data-video-lesson="true"]'));
       blocks.forEach((block) => {
-        const videoId = block.getAttribute('data-video-id') || '';
-        const url = block.getAttribute('data-url') || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
+        let videoId = block.getAttribute('data-video-id') || '';
+        let url = block.getAttribute('data-url') || '';
         const title = overrideTitle || block.getAttribute('data-title') || 'Video Lesson';
         const startTime = parseInt(block.getAttribute('data-start') || '0', 10);
-        const platform = block.getAttribute('data-platform') || undefined;
+        let platform = block.getAttribute('data-platform') || undefined;
 
-        if (!videoId || seenVideoIds.has(videoId)) {
+        // If block has a fallback link inside, recover the URL from it
+        if (!url) {
+          const innerLink = block.querySelector<HTMLAnchorElement>('a[href]');
+          if (innerLink && innerLink.href) {
+            url = innerLink.href;
+          }
+        }
+
+        // Recover YouTube videoId if url was stored
+        const yt = extractYouTubeVideoDetails(url) || extractYouTubeVideoDetails(videoId);
+        if (yt) {
+          videoId = yt.videoId;
+          platform = 'youtube';
+          if (!url || url.includes('custom-')) {
+            url = yt.isShorts ? `https://www.youtube.com/shorts/${videoId}` : `https://www.youtube.com/watch?v=${videoId}`;
+          }
+        }
+
+        const dedupeKey = videoId || url;
+        if (!dedupeKey || seenVideoKeys.has(dedupeKey)) {
           block.remove();
           return;
         }
 
-        seenVideoIds.add(videoId);
+        seenVideoKeys.add(dedupeKey);
 
         // Remove any immediate sibling orphaned .video-lesson-frame-wrap or iframes
         let sib = block.nextElementSibling;

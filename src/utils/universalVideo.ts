@@ -46,6 +46,132 @@ export function parseVideoTimestamp(raw?: string | null): number {
   return isNaN(plainNum) ? 0 : Math.max(0, plainNum);
 }
 
+export interface YouTubeVideoDetails {
+  videoId: string;
+  startTime: number;
+  isShorts: boolean;
+}
+
+/**
+ * Universally extracts YouTube video ID and start time from any URL or raw ID string.
+ * Supports youtu.be, youtube.com (watch, shorts, embed, live, v, e), m.youtube.com, music.youtube.com, etc.
+ */
+export function extractYouTubeVideoDetails(input?: string | null): YouTubeVideoDetails | null {
+  if (!input || typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // 1. Direct 11-char ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return { videoId: trimmed, startTime: 0, isShorts: false };
+  }
+
+  let videoId: string | null = null;
+  let startTime = 0;
+  let isShorts = false;
+
+  // Try URL parsing
+  try {
+    const urlObj = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    const host = urlObj.hostname.toLowerCase();
+
+    // Timestamp from 't' or 'start'
+    const tParam = urlObj.searchParams.get('t') || urlObj.searchParams.get('start');
+    if (tParam) {
+      startTime = parseVideoTimestamp(tParam);
+    }
+
+    if (
+      host.includes('youtube.com') ||
+      host.includes('youtu.be') ||
+      host.includes('youtube-nocookie.com')
+    ) {
+      if (urlObj.pathname.includes('/shorts/')) {
+        isShorts = true;
+      }
+
+      // Check query param 'v'
+      const v = urlObj.searchParams.get('v');
+      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+        videoId = v;
+      }
+
+      // If youtu.be domain, first path segment is usually the videoId
+      if (!videoId && host.includes('youtu.be')) {
+        const segments = urlObj.pathname.split('/').filter(Boolean);
+        if (segments[0] && segments[0] !== 'watch' && segments[0] !== 'shorts' && segments[0] !== 'live') {
+          const candidate = segments[0].replace(/[^a-zA-Z0-9_-]/g, '');
+          if (candidate.length >= 8) {
+            videoId = candidate.slice(0, 11);
+          }
+        }
+      }
+
+      // Check special path segments: /shorts/ID, /embed/ID, /live/ID, /v/ID, /watch/ID
+      if (!videoId) {
+        const segments = urlObj.pathname.split('/').filter(Boolean);
+        for (let i = 0; i < segments.length; i++) {
+          if (['shorts', 'live', 'embed', 'v', 'watch'].includes(segments[i]) && segments[i + 1]) {
+            const candidate = segments[i + 1].replace(/[^a-zA-Z0-9_-]/g, '');
+            if (candidate.length >= 8) {
+              videoId = candidate.slice(0, 11);
+              if (segments[i] === 'shorts') isShorts = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // If any segment is 11 chars
+      if (!videoId) {
+        const segments = urlObj.pathname.split('/').filter(Boolean);
+        for (const seg of segments) {
+          const candidate = seg.replace(/[^a-zA-Z0-9_-]/g, '');
+          if (/^[a-zA-Z0-9_-]{11}$/.test(candidate)) {
+            videoId = candidate;
+            break;
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-fatal, proceed to regex fallbacks
+  }
+
+  // Fallback 1: Standard regex
+  if (!videoId) {
+    const ytRegex = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/|\/v\/|\/e\/)([a-zA-Z0-9_-]{11})/i;
+    const match = trimmed.match(ytRegex);
+    if (match) {
+      videoId = match[1];
+      if (trimmed.includes('/shorts/')) isShorts = true;
+    }
+  }
+
+  // Fallback 2: If contains youtu.be or youtube.com, match any 11-char sequence
+  if (!videoId && (trimmed.includes('youtu.be') || trimmed.includes('youtube.com'))) {
+    const fallbackMatch = trimmed.match(/(?:[\/=]|v%3D)([a-zA-Z0-9_-]{11})/);
+    if (fallbackMatch) {
+      videoId = fallbackMatch[1];
+    }
+  }
+
+  // Fallback 3: If youtu.be with any pathname segment
+  if (!videoId && trimmed.includes('youtu.be')) {
+    const ytBeMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]+)/i);
+    if (ytBeMatch && ytBeMatch[1]) {
+      videoId = ytBeMatch[1].slice(0, 11);
+    }
+  }
+
+  if (videoId) {
+    const cleanId = videoId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 11);
+    return { videoId: cleanId, startTime, isShorts };
+  }
+
+  return null;
+}
+
 /**
  * Universal video parser that supports all major video platforms and direct files.
  */
@@ -53,22 +179,10 @@ export function parseUniversalVideoUrl(rawUrl: string): ParsedVideoInfo | null {
   const trimmed = (rawUrl || '').trim();
   if (!trimmed) return null;
 
-  // 1. YouTube & YouTube Shorts
-  const ytRegex = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-  const ytMatch = trimmed.match(ytRegex);
-  if (ytMatch) {
-    const videoId = ytMatch[1];
-    const isShorts = trimmed.includes('/shorts/');
-
-    let startTime = 0;
-    try {
-      const urlObj = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
-      const tParam = urlObj.searchParams.get('t') || urlObj.searchParams.get('start');
-      startTime = parseVideoTimestamp(tParam);
-    } catch {
-      // fallback
-    }
-
+  // 1. YouTube & YouTube Shorts (Omnipresent Direct Support)
+  const ytDetails = extractYouTubeVideoDetails(trimmed);
+  if (ytDetails) {
+    const { videoId, startTime, isShorts } = ytDetails;
     return {
       originalUrl: trimmed,
       platform: 'youtube',
@@ -254,6 +368,25 @@ export function parseUniversalVideoUrl(rawUrl: string): ParsedVideoInfo | null {
   try {
     const urlObj = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
     const hostname = urlObj.hostname.replace('www.', '');
+
+    // Safety guard: if hostname is YouTube or youtu.be, never let it be custom!
+    if (hostname.includes('youtube') || hostname.includes('youtu.be')) {
+      const segs = urlObj.pathname.split('/').filter(Boolean);
+      const fallbackId = segs[0] || `yt-${Date.now()}`;
+      return {
+        originalUrl: trimmed,
+        platform: 'youtube',
+        platformName: 'YouTube',
+        videoId: fallbackId,
+        embedUrl: `https://www.youtube-nocookie.com/embed/${fallbackId}?rel=0&modestbranding=1`,
+        aspectRatio: '16/9',
+        canEmbedDirectly: true,
+        cleanExternalUrl: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
+        titleHint: 'YouTube Video Lesson',
+        startTime: 0,
+      };
+    }
+
     return {
       originalUrl: trimmed,
       platform: 'custom',

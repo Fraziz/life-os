@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, AlertCircle, Copy, Check, Maximize2, Sparkles } from 'lucide-react';
 import styles from './YouTubePlayer.module.css';
-import { parseUniversalVideoUrl } from '@/utils/universalVideo';
+import { parseUniversalVideoUrl, extractYouTubeVideoDetails } from '@/utils/universalVideo';
 
 interface YouTubePlayerProps {
   videoId?: string;
@@ -23,13 +23,15 @@ export default function YouTubePlayer({
   const [hasError, setHasError] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Parse using Universal Video engine
+  // Check YouTube first via robust YouTube extraction
+  const yt = extractYouTubeVideoDetails(url) || extractYouTubeVideoDetails(videoId);
   const targetUrl = url || (videoId && /^[\w-]{11}$/.test(videoId) ? `https://www.youtube.com/watch?v=${videoId}` : videoId);
   const parsed = parseUniversalVideoUrl(targetUrl);
 
-  const isVertical = parsed?.aspectRatio === '9/16';
+  const isYouTube = Boolean(yt || parsed?.platform === 'youtube');
+  const isVertical = yt?.isShorts || parsed?.aspectRatio === '9/16';
   const wrapperClass = `${styles.playerWrapper} ${isVertical ? styles.playerWrapperVertical : ''}`;
-  const platformName = parsed?.platformName || 'Video';
+  const platformName = isYouTube ? (yt?.isShorts ? 'YouTube Shorts' : 'YouTube') : (parsed?.platformName || 'Video');
   const externalLink = parsed?.cleanExternalUrl || targetUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
 
   const handlePopout = () => {
@@ -54,7 +56,27 @@ export default function YouTubePlayer({
 
   // Render video inner element
   const renderInnerMedia = () => {
-    // 1. Native HTML5 Video for Direct MP4 / WebM
+    // 1. Direct YouTube Embed (Playable directly inside frame)
+    if (isYouTube && !hasError) {
+      const effectiveId = yt?.videoId || (videoId && /^[\w-]{11}$/.test(videoId) ? videoId : '');
+      const effectiveStart = yt?.startTime || startTime || 0;
+      if (effectiveId) {
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${effectiveId}?start=${effectiveStart}&rel=0&modestbranding=1&enablejsapi=1`;
+        return (
+          <iframe
+            className={styles.playerIframe}
+            src={embedUrl}
+            title={title || 'YouTube Video'}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+            onError={() => setHasError(true)}
+          />
+        );
+      }
+    }
+
+    // 2. Native HTML5 Video for Direct MP4 / WebM
     if (parsed?.platform === 'direct') {
       return (
         <video
@@ -67,30 +89,13 @@ export default function YouTubePlayer({
       );
     }
 
-    // 2. Direct Embeds: YouTube, TikTok, Instagram, X, Telegram, Facebook, Vimeo
+    // 3. Other Direct Embeds: Vimeo, TikTok, Instagram, X, Telegram, Facebook
     if (parsed && parsed.canEmbedDirectly && parsed.embedUrl && !hasError) {
       return (
         <iframe
           className={styles.playerIframe}
           src={parsed.embedUrl}
           title={title || parsed.titleHint || `${platformName} Video`}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          loading="lazy"
-          onError={() => setHasError(true)}
-        />
-      );
-    }
-
-    // 3. Fallback for standard 11-char YouTube video ID if URL parser wasn't given a full link
-    const isValidYouTubeId = Boolean(videoId && /^[\w-]{11}$/.test(videoId));
-    if (isValidYouTubeId && !hasError) {
-      const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&rel=0`;
-      return (
-        <iframe
-          className={styles.playerIframe}
-          src={embedUrl}
-          title={title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"

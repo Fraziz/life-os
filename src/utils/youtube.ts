@@ -3,6 +3,8 @@
  * Supports standard watch, youtu.be, shorts, and embed URLs with timestamp preservation.
  */
 
+import { extractYouTubeVideoDetails } from './universalVideo';
+
 export interface ParsedYouTube {
   videoId: string;
   startTime: number;
@@ -15,6 +17,7 @@ const ALLOWED_HOSTS = new Set([
   'youtube.com',
   'www.youtube.com',
   'm.youtube.com',
+  'music.youtube.com',
   'youtu.be',
   'www.youtu.be',
   'youtube-nocookie.com',
@@ -56,65 +59,14 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
   const trimmed = input.trim();
   if (trimmed.length < 5) return null;
 
-  let urlStr = trimmed;
-  if (!/^https?:\/\//i.test(urlStr)) {
-    urlStr = `https://${urlStr}`;
-  }
+  const yt = extractYouTubeVideoDetails(trimmed);
+  if (!yt) return null;
 
-  let urlObj: URL;
-  try {
-    urlObj = new URL(urlStr);
-  } catch {
-    return null;
-  }
-
-  const hostname = urlObj.hostname.toLowerCase();
-  if (!ALLOWED_HOSTS.has(hostname)) {
-    return null;
-  }
-
-  let videoId: string | null = null;
-  let startTime = 0;
-
-  // Check query params for timestamp: 't' or 'start'
-  const tParam = urlObj.searchParams.get('t') || urlObj.searchParams.get('start');
-  if (tParam) {
-    startTime = parseYouTubeTimestamp(tParam);
-  }
-
-  // 1. youtu.be/VIDEO_ID
-  if (hostname === 'youtu.be' || hostname === 'www.youtu.be') {
-    const pathPart = urlObj.pathname.slice(1).split('/')[0];
-    if (pathPart && /^[\w-]{11}$/.test(pathPart)) {
-      videoId = pathPart;
-    }
-  }
-  // 2. youtube.com/shorts/VIDEO_ID
-  else if (urlObj.pathname.startsWith('/shorts/')) {
-    const pathPart = urlObj.pathname.replace('/shorts/', '').split('/')[0];
-    if (pathPart && /^[\w-]{11}$/.test(pathPart)) {
-      videoId = pathPart;
-    }
-  }
-  // 3. youtube.com/embed/VIDEO_ID
-  else if (urlObj.pathname.startsWith('/embed/')) {
-    const pathPart = urlObj.pathname.replace('/embed/', '').split('/')[0];
-    if (pathPart && /^[\w-]{11}$/.test(pathPart)) {
-      videoId = pathPart;
-    }
-  }
-  // 4. youtube.com/watch?v=VIDEO_ID
-  else if (urlObj.searchParams.has('v')) {
-    const v = urlObj.searchParams.get('v');
-    if (v && /^[\w-]{11}$/.test(v)) {
-      videoId = v;
-    }
-  }
-
-  if (!videoId) return null;
-
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&enablejsapi=1`;
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}${startTime > 0 ? `&t=${startTime}s` : ''}`;
+  const { videoId, startTime, isShorts } = yt;
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?start=${startTime}&enablejsapi=1&rel=0`;
+  const watchUrl = isShorts
+    ? `https://www.youtube.com/shorts/${videoId}`
+    : `https://www.youtube.com/watch?v=${videoId}${startTime > 0 ? `&t=${startTime}s` : ''}`;
 
   return {
     videoId,
