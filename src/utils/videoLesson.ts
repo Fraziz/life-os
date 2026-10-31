@@ -321,6 +321,9 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
   <div class="video-lesson-frame-wrap"${verticalStyles}>
     ${innerMediaHtml}
   </div>
+  <div class="video-lesson-sub-hint">
+    <span>If playback is restricted by the video creator, click <strong>Pop-out ⧉</strong> or <strong>Open ${platformName} ↗</strong> above to watch.</span>
+  </div>
 </div>`;
   }
 
@@ -359,6 +362,9 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
   </div>
   <div class="video-lesson-frame-wrap"${verticalStyles}>
     ${innerMediaHtml}
+  </div>
+  <div class="video-lesson-sub-hint">
+    <span>If playback is restricted by the video creator, click <strong>Pop-out ⧉</strong> or <strong>Open ${platformName} ↗</strong> above to watch.</span>
   </div>
 </div>`;
 }
