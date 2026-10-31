@@ -34,6 +34,105 @@ function defaultDocs(): KnowledgeDocument[] {
   const t = '2026-08-01T00:00:00.000Z';
   return [
     {
+      id: 'doc-sariling-mundo-manual',
+      title: 'Sariling Mundo — Complete Operations Manual & Hierarchy Guide',
+      author: 'Life OS System Guide',
+      status: 'active',
+      category: 'guides',
+      docType: 'document',
+      readStatus: 'reading',
+      currentPage: 1,
+      totalPages: 18,
+      readProgress: 5,
+      tags: ['manual', 'guide', 'life-os', 'hierarchy', 'book'],
+      createdAt: t,
+      updatedAt: t,
+      content: `# Sariling Mundo — Official System Manual & Hierarchy Guide
+
+## 1. Executive Overview
+Sariling Mundo is an ADHD-friendly personal operating system designed to bridge the gap between long-term ambitions and daily execution. It eliminates overwhelm through structured hierarchy, visual chunking, and dopamine-positive feedback loops.
+
+---
+
+## 2. Core Execution Hierarchy
+Every action in Sariling Mundo cascades downwards from long-term vision to daily execution:
+
+1. **DREAM** (The Big Vision / North Star)
+   - Found under \`Direction → Dreams\`
+   - Captures high-level life aspirations and deep "Why it matters" statements.
+2. **GOAL** (Measurable Outcome)
+   - Found under \`Organize → Goals\`
+   - Time-bound outcomes (Yearly, 90-Day, Monthly) that make dreams tangible.
+3. **MILESTONE** (Journey Checkpoints)
+   - Found under \`Organize → Milestones\`
+   - Key checkpoints (25%, 50%, 75%) along a Goal's trajectory with target dates.
+4. **PROJECT** (Execution Workstream)
+   - Found under \`Organize → Projects\`
+   - Active initiatives with visual boards that group related tasks together.
+5. **TASK** (Bite-Sized Action)
+   - Found under \`Organize → Tasks\` and the \`Today\` dashboard.
+   - 15–45 minute actionable next steps. Includes an **AI Breakdown** tool to slice large tasks into tiny subtasks.
+6. **FOCUS SESSION** (Execution)
+   - Found under \`Today → Focus Mode\`
+   - Pomodoro hyperfocus timer with Zen Mode and dopamine completion chimes.
+
+---
+
+## 3. Tab-by-Tab Feature Reference
+
+### A. Today & Execution
+- **Today (\`/\`)**: Daily mission control with Focus task, Time Capacity bar, and habit checklist.
+- **Focus Mode (\`/focus\`)**: 15/25/45/90 minute timers, Zen Mode, and ambient soundscapes.
+
+### B. Capture
+- **Brain Dump (\`/inbox\`)**: Zero-friction idea capture. 1-click convert thoughts into Tasks, Projects, Goals, Dreams, or Notes.
+
+### C. Direction
+- **Life Roadmap (\`/roadmap\`)**: Interactive node graph connecting Tasks → Projects → Milestones → Goals → Dreams.
+- **Life Areas (\`/areas\`)**: 8 life domains (Health, Career, Wealth, Learning, Social, Creative, Mindset, Family).
+
+### D. Productivity Toolkit
+- **Calendar (\`/calendar\`)**: Time-blocking schedule for daily and weekly time management.
+- **Habits (\`/habits\`)**: Streak tracking, consistency heatmaps, and past-7-day history.
+- **Weekly Review (\`/review\`)**: Sunday reflection system for wins, logged focus hours, and next week's focus.
+- **Reset Plan (\`/reset\`)**: Overwhelm recovery button. Cleans backlog noise and gives you 1 simple next action.
+- **Knowledge (\`/knowledge\`)**: Formal wiki, markdown documentation, and PDF/Text export.
+- **Files (\`/files\`)**: Free cloud file vault for photos, documents, and Google Drive links.
+
+---
+
+## 4. Power Shortcuts
+- **Ctrl + J** (or Center Compass button on Mobile): *"What Should I Do Right Now?"* AI Next Action picker.
+- **Ctrl + K**: Global search across all entities.
+- **Shift + ?**: Keyboard shortcuts cheatsheet.
+`,
+      studyQuiz: [
+        {
+          question: 'What is the core execution hierarchy in Sariling Mundo from top to bottom?',
+          answer: 'Dream → Goal → Milestone → Project → Task → Focus Session.',
+          userMastered: true,
+        },
+        {
+          question: 'What keyboard shortcut opens the "What Should I Do Right Now?" AI Next Action picker?',
+          answer: 'Ctrl + J (or the Center Compass button on mobile bottom navigation).',
+        },
+        {
+          question: 'Which view is designed for overwhelm recovery when your backlog is cluttered?',
+          answer: 'Reset Plan (/reset), which clears mental noise and gives you 1 high-leverage next action.',
+        },
+      ],
+      readingLogs: [
+        {
+          id: 'log_manual_1',
+          startedAt: t,
+          durationMinutes: 20,
+          timeOfDay: '8:00 AM',
+          notes: 'Reviewed system hierarchy and keyboard shortcuts cheatsheet.',
+        },
+      ],
+      totalReadMinutes: 20,
+    },
+    {
       id: 'doc-atomic-habits',
       title: 'Atomic Habits — James Clear (Book Summary)',
       author: 'James Clear',
@@ -105,6 +204,23 @@ The ability to perform deep work is becoming increasingly rare at exactly the sa
 - **Embrace Boredom**: Train your brain to resist the urge for instant novelty.
 - **Quit Social Media / Distractions**: Eliminate low-leverage mental noise.
 `,
+      studyQuiz: [
+        {
+          question: 'What is the Deep Work Hypothesis according to Cal Newport?',
+          answer: 'The ability to perform deep work is becoming increasingly rare at exactly the same time it is becoming increasingly valuable in our economy.',
+          userMastered: true,
+        },
+      ],
+      readingLogs: [
+        {
+          id: 'log_deep_1',
+          startedAt: t,
+          durationMinutes: 20,
+          timeOfDay: '10:00 AM',
+          notes: 'Studied core strategies and monastic focus blocks.',
+        },
+      ],
+      totalReadMinutes: 20,
     },
     {
       id: 'doc-guitar-masterclass',
@@ -171,15 +287,32 @@ A 2D platformer where the player controls Blobbit, a sentient blob navigating a 
 ## Art Style
 Neon color palette, dark backgrounds, glowing outlines.
 
-## Key Design & Study Notes
-- Study layout mechanics and momentum curves
-- Analyze boss fight state machines
-- Review level pacing and reward structures
+## Todo
+- [ ] Design level 2 layout
+- [ ] Write boss fight logic
+- [ ] Create sound effects
 `,
+      studyQuiz: [
+        {
+          question: 'What are the core movement mechanics of Blobbit?',
+          answer: 'Stretch and compress to gain momentum, wall cling, double jump, and dash.',
+          userMastered: true,
+        },
+      ],
+      readingLogs: [
+        {
+          id: 'log_blobbit_1',
+          startedAt: t,
+          durationMinutes: 15,
+          timeOfDay: '2:00 PM',
+          notes: 'Drafted core mechanics and initial level sketches.',
+        },
+      ],
+      totalReadMinutes: 15,
     },
     {
       id: 'doc-blender-notes',
-      title: 'Blender Learning Notes & Hotkeys',
+      title: 'Blender Learning Notes',
       author: '3D Modeling Lab',
       status: 'active',
       category: 'learning',
@@ -191,10 +324,10 @@ Neon color palette, dark backgrounds, glowing outlines.
       tags: ['3d', 'blender', 'shortcuts', 'book'],
       createdAt: t,
       updatedAt: t,
-      content: `# Blender Learning Notes & Hotkeys
+      content: `# Blender Learning Notes
 
 ## Key Shortcuts
-- **G** — Grab / move
+- **G** — Grab/move
 - **R** — Rotate
 - **S** — Scale
 - **X** — Delete
@@ -202,20 +335,37 @@ Neon color palette, dark backgrounds, glowing outlines.
 
 ## Workflow Tips
 - Always apply transforms before exporting (\`Ctrl + A\`)
-- Use N-panel for precision values and orientation
-- Shade smooth + Auto Smooth for clean topology meshes
+- Use N-panel for precision values
+- Shade smooth + Auto Smooth for clean meshes
 
-## Recommended Study Resources
-- Blender Guru Donut tutorial series
-- Hard-surface modeling fundamentals
+## Resources
+- Blender Guru Donut tutorial
+- CG Cookie fundamentals
 `,
+      studyQuiz: [
+        {
+          question: 'What shortcut in Blender is used to toggle between Object Mode and Edit Mode?',
+          answer: 'Tab.',
+          userMastered: true,
+        },
+      ],
+      readingLogs: [
+        {
+          id: 'log_blender_1',
+          startedAt: t,
+          durationMinutes: 20,
+          timeOfDay: '3:30 PM',
+          notes: 'Reviewed viewport navigation and object transformation shortcuts.',
+        },
+      ],
+      totalReadMinutes: 20,
     },
     {
       id: 'doc-business-ideas',
-      title: 'Business Ideas & Creative Projects',
+      title: 'Business Ideas',
       author: 'Product Strategy Guide',
       status: 'active',
-      category: 'learning',
+      category: 'ideas',
       docType: 'document',
       readStatus: 'reading',
       currentPage: 1,
@@ -224,21 +374,37 @@ Neon color palette, dark backgrounds, glowing outlines.
       tags: ['business', 'ideas', 'startups', 'book'],
       createdAt: t,
       updatedAt: t,
-      content: `# Business Ideas & Creative Projects
+      content: `# Business Ideas
 
 ## Software Products
 - Personal finance tracker with envelope budgeting
 - Simple invoice generator for freelancers
-- Smart study companion for ADHD learners
 
-## Creative Ventures
-- 3D assets on digital marketplaces
-- Interactive study templates and custom sound kits
+## Creative
+- Sell 3D assets on markets like Fab or Sketchfab
+- Commission character designs
 
-## Evaluation Framework
-- What problem am I uniquely able to solve?
-- What has the lowest startup friction and highest leverage?
+## Questions to Answer
+- What pain point am I uniquely able to solve?
+- What has the lowest startup cost?
 `,
+      studyQuiz: [
+        {
+          question: 'What are the two core questions to answer when evaluating a business idea?',
+          answer: 'What pain point am I uniquely able to solve, and what has the lowest startup cost?',
+          userMastered: true,
+        },
+      ],
+      readingLogs: [
+        {
+          id: 'log_ideas_1',
+          startedAt: t,
+          durationMinutes: 15,
+          timeOfDay: '11:00 AM',
+          notes: 'Brainstormed software and digital creative product opportunities.',
+        },
+      ],
+      totalReadMinutes: 15,
     },
   ];
 }
@@ -266,13 +432,6 @@ const KnowledgeContext = createContext<KnowledgeContextValue | undefined>(undefi
 export function isTrueBookOrVideo(item: any): boolean {
   if (!item || typeof item !== 'object') return false;
   if (!item.id || typeof item.id !== 'string') return false;
-
-  // Reject system manuals if obsolete
-  const obsoleteIds = new Set([
-    'doc-sariling-mundo-manual',
-    'doc-life-os-manual',
-  ]);
-  if (obsoleteIds.has(item.id)) return false;
 
   // Strictly reject tasks
   if (item.id.startsWith('task_') || item.id.startsWith('t_')) return false;
@@ -316,14 +475,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   docsRef.current = docs;
 
   const sanitizeDoc = useCallback((doc: KnowledgeDocument): KnowledgeDocument => {
-    let content = doc.content || '';
-    if (content.includes('video-lesson-block') || content.includes('video-lesson-frame-wrap') || content.includes(':::video-lesson')) {
-      content = cleanDocumentContent(content);
-    }
-    const isVideo = isDocVideoLesson({ ...doc, content });
+    const isVideo = isDocVideoLesson(doc);
     return {
       ...doc,
-      content,
+      content: doc.content || '',
       status: doc.status || 'active',
       docType: doc.docType || (isVideo ? 'video-lesson' : 'document'),
       tags: Array.isArray(doc.tags) ? doc.tags.filter(Boolean) : [],
@@ -419,9 +574,11 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
               } else {
                 const idbLen = (d.content || '').length;
                 const existLen = (existing.content || '').length;
-                const idbTime = new Date(d.updatedAt || 0).getTime();
-                const existTime = new Date(existing.updatedAt || 0).getTime();
-                if (idbLen >= existLen || idbTime >= existTime) {
+                const existingIsTruncated = (existing.content || '').includes('[...Full');
+                const idbIsTruncated = (d.content || '').includes('[...Full');
+                if (existingIsTruncated && !idbIsTruncated) {
+                  map.set(d.id, d);
+                } else if (!idbIsTruncated && idbLen >= existLen) {
                   map.set(d.id, d);
                 }
               }
@@ -446,27 +603,47 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
             } else {
               const idbLen = (d.content || '').length;
               const existLen = (existing.content || '').length;
-              if (idbLen > existLen) map.set(d.id, d);
+              const existingIsTruncated = (existing.content || '').includes('[...Full');
+              const idbIsTruncated = (d.content || '').includes('[...Full');
+              if (existingIsTruncated && !idbIsTruncated) {
+                map.set(d.id, d);
+              } else if (!idbIsTruncated && idbLen > existLen) {
+                map.set(d.id, d);
+              }
             }
           }
         });
       });
     } catch {}
 
-    // 4. Defaults & User Books preservation:
+    // 4. Defaults & User Books preservation and healing:
     const defaults = defaultDocs();
-    if (map.size === 0) {
-      defaults.forEach((d) => map.set(d.id, d));
-    } else {
-      defaults.forEach((d) => {
-        if (!map.has(d.id)) {
-          const hasMatchingTitle = Array.from(map.values()).some((existing) => existing.title === d.title);
-          if (!hasMatchingTitle) {
-            map.set(d.id, d);
-          }
+    defaults.forEach((d) => {
+      const existing = map.get(d.id);
+      if (!existing) {
+        const hasMatchingTitle = Array.from(map.values()).some((e) => e.title === d.title);
+        if (!hasMatchingTitle) {
+          map.set(d.id, d);
         }
-      });
-    }
+      } else {
+        const existContent = existing.content || '';
+        const defaultContent = d.content || '';
+        // If content was truncated, stripped, or shortened, heal it back to complete content!
+        if (
+          existContent.includes('[...Full book content preserved') ||
+          existContent.includes('[...Full document saved') ||
+          (defaultContent.length > existContent.length && existContent.length < 150)
+        ) {
+          existing.content = defaultContent;
+        }
+        if ((!existing.studyQuiz || existing.studyQuiz.length === 0) && d.studyQuiz && d.studyQuiz.length > 0) {
+          existing.studyQuiz = d.studyQuiz;
+        }
+        if ((!existing.readingLogs || existing.readingLogs.length === 0) && d.readingLogs && d.readingLogs.length > 0) {
+          existing.readingLogs = d.readingLogs;
+        }
+      }
+    });
 
     // 5. Ensure no non-book objects leaked into the library
     for (const [id, item] of Array.from(map.entries())) {
@@ -481,7 +658,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     isLoadedRef.current = true;
     setIsLoaded(true);
 
-    // 4. Critical: Persist the full merged books library back to BOTH IndexedDB & LocalStorage
+    // 6. Critical: Persist full merged books library to IndexedDB
     void idbSet(STORAGE_KEY, merged);
     void idbSet('life_os_knowledge_docs_backup', merged);
 
@@ -493,21 +670,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(STORAGE_KEY, newRaw);
           localStorage.setItem(INITIALIZED_KEY, 'true');
         }
-      } catch {
-        // If full content exceeds localStorage 5MB quota, save lightweight summary while IndexedDB retains full text
-        try {
-          const lightDocs = merged.map((d) => {
-            if ((d.content || '').length > 30000) {
-              return {
-                ...d,
-                content: d.content.slice(0, 10000) + '\n\n[...Full book content preserved in local device storage...]',
-              };
-            }
-            return d;
-          });
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
-          localStorage.setItem(INITIALIZED_KEY, 'true');
-        } catch {}
+      } catch (quotaErr) {
+        console.warn('[KnowledgeContext] LocalStorage full; IndexedDB retains complete full content:', quotaErr);
       }
     }
   }, [sanitizeDoc]);
@@ -543,21 +707,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (quotaErr) {
-      console.warn('[KnowledgeContext] localStorage quota exceeded, saving lightweight index while IndexedDB retains full content:', quotaErr);
-      try {
-        const lightDocs = next.map((d) => {
-          if ((d.content || '').length > 30000) {
-            return {
-              ...d,
-              content: d.content.slice(0, 10000) + '\n\n[...Full document saved in local high-capacity storage...]',
-            };
-          }
-          return d;
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightDocs));
-      } catch {
-        /* noop */
-      }
+      console.warn('[KnowledgeContext] localStorage quota exceeded, full content preserved in IndexedDB:', quotaErr);
     }
   }, []);
 
@@ -842,13 +992,34 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     let countRestored = 0;
 
     for (const d of defaults) {
-      if (!currentMap.has(d.id)) {
-        const hasMatchingTitle = Array.from(currentMap.values()).some((existing) => existing.title === d.title);
+      const existing = currentMap.get(d.id);
+      if (!existing) {
+        const hasMatchingTitle = Array.from(currentMap.values()).some((e) => e.title === d.title);
         if (!hasMatchingTitle) {
           currentMap.set(d.id, d);
           countRestored++;
           if (uidRef.current) {
             void saveBookToCloud(uidRef.current, d);
+          }
+        }
+      } else {
+        const existContent = existing.content || '';
+        const defaultContent = d.content || '';
+        if (
+          existContent.includes('[...Full book content preserved') ||
+          existContent.includes('[...Full document saved') ||
+          (defaultContent.length > existContent.length && existContent.length < 150)
+        ) {
+          const healed = {
+            ...existing,
+            content: defaultContent,
+            studyQuiz: existing.studyQuiz?.length ? existing.studyQuiz : d.studyQuiz,
+            readingLogs: existing.readingLogs?.length ? existing.readingLogs : d.readingLogs,
+          };
+          currentMap.set(d.id, healed);
+          countRestored++;
+          if (uidRef.current) {
+            void saveBookToCloud(uidRef.current, healed);
           }
         }
       }

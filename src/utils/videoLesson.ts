@@ -208,8 +208,6 @@ export function extractVideoLessonNotes(content: string): string {
     // Clean up stray timestamp chips or stuck badges
     .replace(/<button[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/button>/gi, '')
     .replace(/<span[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
-    .replace(/\[00:00\]/g, '')
-    .replace(/(?:--\s*){3,}/g, '')
     .trim();
 
   if (!notes) {
@@ -491,12 +489,5 @@ export function transformVideoLessonsInHtml(
  * Sanitizes and deduplicates document content.
  */
 export function cleanDocumentContent(content: string): string {
-  if (!content) return '';
-  let result = transformVideoLessonsInHtml(content, false);
-  result = result
-    .replace(/<button[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/button>/gi, '')
-    .replace(/<span[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
-    .replace(/\[00:00\]/g, '')
-    .replace(/(?:--\s*){3,}/g, '');
-  return result;
+  return content || '';
 }
