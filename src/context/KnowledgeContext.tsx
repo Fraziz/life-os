@@ -140,6 +140,106 @@ Welcome to the lead guitar study module. Follow the embedded video lesson below,
       ],
       totalReadMinutes: 25,
     },
+    {
+      id: 'doc-game-blobbit',
+      title: 'Game Design Document — Blobbit',
+      author: 'Game Design Workshop',
+      status: 'active',
+      category: 'learning',
+      docType: 'document',
+      readStatus: 'reading',
+      currentPage: 1,
+      totalPages: 12,
+      readProgress: 8,
+      tags: ['gamedev', 'design', 'blobbit', 'book'],
+      createdAt: t,
+      updatedAt: t,
+      content: `# Blobbit — Game Design Document
+
+## Concept
+A 2D platformer where the player controls Blobbit, a sentient blob navigating a neon world.
+
+## Core Mechanics
+- **Movement**: Stretch and compress to gain momentum
+- **Abilities**: Wall cling, double jump, dash
+
+## Levels
+1. Tutorial Caverns
+2. Neon City
+3. Final Boss: The Void
+
+## Art Style
+Neon color palette, dark backgrounds, glowing outlines.
+
+## Key Design & Study Notes
+- Study layout mechanics and momentum curves
+- Analyze boss fight state machines
+- Review level pacing and reward structures
+`,
+    },
+    {
+      id: 'doc-blender-notes',
+      title: 'Blender Learning Notes & Hotkeys',
+      author: '3D Modeling Lab',
+      status: 'active',
+      category: 'learning',
+      docType: 'document',
+      readStatus: 'reading',
+      currentPage: 1,
+      totalPages: 15,
+      readProgress: 10,
+      tags: ['3d', 'blender', 'shortcuts', 'book'],
+      createdAt: t,
+      updatedAt: t,
+      content: `# Blender Learning Notes & Hotkeys
+
+## Key Shortcuts
+- **G** — Grab / move
+- **R** — Rotate
+- **S** — Scale
+- **X** — Delete
+- **Tab** — Edit mode toggle
+
+## Workflow Tips
+- Always apply transforms before exporting (\`Ctrl + A\`)
+- Use N-panel for precision values and orientation
+- Shade smooth + Auto Smooth for clean topology meshes
+
+## Recommended Study Resources
+- Blender Guru Donut tutorial series
+- Hard-surface modeling fundamentals
+`,
+    },
+    {
+      id: 'doc-business-ideas',
+      title: 'Business Ideas & Creative Projects',
+      author: 'Product Strategy Guide',
+      status: 'active',
+      category: 'learning',
+      docType: 'document',
+      readStatus: 'reading',
+      currentPage: 1,
+      totalPages: 8,
+      readProgress: 12,
+      tags: ['business', 'ideas', 'startups', 'book'],
+      createdAt: t,
+      updatedAt: t,
+      content: `# Business Ideas & Creative Projects
+
+## Software Products
+- Personal finance tracker with envelope budgeting
+- Simple invoice generator for freelancers
+- Smart study companion for ADHD learners
+
+## Creative Ventures
+- 3D assets on digital marketplaces
+- Interactive study templates and custom sound kits
+
+## Evaluation Framework
+- What problem am I uniquely able to solve?
+- What has the lowest startup friction and highest leverage?
+`,
+    },
   ];
 }
 
@@ -158,6 +258,7 @@ interface KnowledgeContextValue {
   toggleDocReminder: (id: string) => void;
   createProblemSolvingDoc: (problemTitle?: string, initialDescription?: string) => KnowledgeDocument;
   resetToDefaultDocs: () => void;
+  restoreStarterBooks: () => void;
 }
 
 const KnowledgeContext = createContext<KnowledgeContextValue | undefined>(undefined);
@@ -166,26 +267,29 @@ export function isTrueBookOrVideo(item: any): boolean {
   if (!item || typeof item !== 'object') return false;
   if (!item.id || typeof item.id !== 'string') return false;
 
+  // Reject system manuals if obsolete
   const obsoleteIds = new Set([
     'doc-sariling-mundo-manual',
     'doc-life-os-manual',
-    'doc-business-ideas',
-    'doc-game-blobbit',
-    'doc-blender-notes',
   ]);
   if (obsoleteIds.has(item.id)) return false;
 
-  // Reject tasks
-  if (item.subtasks !== undefined || item.dueDate !== undefined || item.estimatedDuration !== undefined || item.actualDuration !== undefined) return false;
-  if (item.priority === 'urgent' || item.priority === 'high' || item.priority === 'medium' || item.priority === 'low') return false;
-  if (item.status === 'todo' || item.status === 'in_progress' || item.status === 'done') return false;
+  // Strictly reject tasks
   if (item.id.startsWith('task_') || item.id.startsWith('t_')) return false;
+  if (Array.isArray(item.subtasks) && (item.dueDate !== undefined || item.priority !== undefined)) return false;
+  if (item.priority === 'urgent' || item.priority === 'high' || item.priority === 'medium' || item.priority === 'low') return false;
+  if (item.status === 'todo' || item.status === 'in_progress') return false;
 
-  // Reject inbox / idea parking items
+  // Strictly reject inbox / idea parking items
   if (item.id.startsWith('inbox_') || item.id.startsWith('thought_') || item.id.startsWith('dump_')) return false;
-  if (item.convertedTo !== undefined || item.isApplied !== undefined || item.reminderTime !== undefined) return false;
+  if (item.convertedTo !== undefined || item.reminderTime !== undefined) return false;
 
-  // Reject goals, dreams, habits, workouts, projects
+  // Strictly reject goals, dreams, habits, workouts, life areas, milestones
+  if (item.id.startsWith('goal_') || item.id.startsWith('g_')) return false;
+  if (item.id.startsWith('dream_') || item.id.startsWith('d_')) return false;
+  if (item.id.startsWith('habit_') || item.id.startsWith('h_')) return false;
+  if (item.id.startsWith('workout_') || item.id.startsWith('routine_') || item.id.startsWith('exercise_')) return false;
+  if (item.id.startsWith('area_') || item.id.startsWith('milestone_')) return false;
   if (item.horizon !== undefined || item.targetDate !== undefined || item.quarter !== undefined) return false;
   if (item.whyItMatters !== undefined || item.visionPrompt !== undefined) return false;
   if (item.streak !== undefined || item.completedDates !== undefined || item.frequency !== undefined) return false;
@@ -229,7 +333,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const reloadFromStorage = useCallback(async (isCloudSyncEvent: boolean = false) => {
     const map = new Map<string, KnowledgeDocument>();
 
-    // 1. Recover from specific book storage keys ONLY (no tasks, no inbox items)
+    // 1. Recover from specific book storage keys
     const bookKeys = [
       STORAGE_KEY,
       'life_os_knowledge_docs_backup',
@@ -237,6 +341,9 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       'life_os_books',
       'life_os_knowledge_docs',
       'knowledge_docs',
+      'life_os_study_docs',
+      'life_os_docs',
+      'life_os_imported_books',
     ];
 
     for (const key of bookKeys) {
@@ -267,7 +374,39 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 2. Recover from IndexedDB book keys ONLY
+    // 2. Safe scan across localStorage for any other user-imported or saved books
+    if (typeof localStorage !== 'undefined') {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (k.startsWith('task') || k.startsWith('inbox') || k.startsWith('habit') || k.startsWith('goal') || k.startsWith('dream') || k.startsWith('workout')) continue;
+          if (k.includes('doc') || k.includes('book') || k.includes('knowledge') || k.includes('study') || k.includes('imported')) {
+            const raw = localStorage.getItem(k);
+            if (raw && (raw.startsWith('[') || raw.startsWith('{'))) {
+              try {
+                const parsed = JSON.parse(raw);
+                const items = Array.isArray(parsed) ? parsed : [parsed];
+                items.forEach((d) => {
+                  if (isTrueBookOrVideo(d)) {
+                    const existing = map.get(d.id);
+                    if (!existing) {
+                      map.set(d.id, d);
+                    } else {
+                      const newLen = (d.content || '').length;
+                      const existLen = (existing.content || '').length;
+                      if (newLen > existLen) map.set(d.id, d);
+                    }
+                  }
+                });
+              } catch {}
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // 3. Recover from IndexedDB book keys & safe scan
     for (const key of bookKeys) {
       try {
         const idbDocs = await idbGet<KnowledgeDocument[]>(key);
@@ -294,7 +433,27 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 3. Defaults & User Books preservation:
+    // Comprehensive scan across IndexedDB values via idbGetAll to rescue any user-imported files
+    try {
+      const allIdbEntries = await idbGetAll<unknown>();
+      allIdbEntries.forEach((entry) => {
+        const items = Array.isArray(entry) ? entry : [entry];
+        items.forEach((d) => {
+          if (isTrueBookOrVideo(d)) {
+            const existing = map.get(d.id);
+            if (!existing) {
+              map.set(d.id, d);
+            } else {
+              const idbLen = (d.content || '').length;
+              const existLen = (existing.content || '').length;
+              if (idbLen > existLen) map.set(d.id, d);
+            }
+          }
+        });
+      });
+    } catch {}
+
+    // 4. Defaults & User Books preservation:
     const defaults = defaultDocs();
     if (map.size === 0) {
       defaults.forEach((d) => map.set(d.id, d));
@@ -309,7 +468,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // 4. Ensure no non-book objects leaked into the library
+    // 5. Ensure no non-book objects leaked into the library
     for (const [id, item] of Array.from(map.entries())) {
       if (!isTrueBookOrVideo(item)) {
         map.delete(id);
@@ -471,9 +630,15 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         const filteredRemote = remoteDocs.filter(isTrueBookOrVideo);
         const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));
 
-        // Delete any rogue non-book items mistakenly uploaded to Firestore books collection
+        // Delete only confirmed rogue tasks or inbox items mistakenly uploaded to Firestore books collection
         for (const remote of remoteDocs) {
-          if (!isTrueBookOrVideo(remote)) {
+          const isExplicitTaskOrInbox =
+            remote.id.startsWith('task_') ||
+            remote.id.startsWith('t_') ||
+            remote.id.startsWith('inbox_') ||
+            remote.id.startsWith('thought_') ||
+            remote.id.startsWith('dump_');
+          if (isExplicitTaskOrInbox) {
             void deleteBookFromCloud(uid, remote.id);
           }
         }
@@ -671,6 +836,30 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     }
   }, [saveDocs]);
 
+  const restoreStarterBooks = useCallback(() => {
+    const defaults = defaultDocs();
+    const currentMap = new Map(docsRef.current.map((d) => [d.id, d]));
+    let countRestored = 0;
+
+    for (const d of defaults) {
+      if (!currentMap.has(d.id)) {
+        const hasMatchingTitle = Array.from(currentMap.values()).some((existing) => existing.title === d.title);
+        if (!hasMatchingTitle) {
+          currentMap.set(d.id, d);
+          countRestored++;
+          if (uidRef.current) {
+            void saveBookToCloud(uidRef.current, d);
+          }
+        }
+      }
+    }
+
+    if (countRestored > 0) {
+      const merged = Array.from(currentMap.values()).map(sanitizeDoc);
+      saveDocs(merged);
+    }
+  }, [sanitizeDoc, saveDocs]);
+
   return (
     <KnowledgeContext.Provider value={{
       docs,
@@ -684,6 +873,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
       toggleDocReminder,
       createProblemSolvingDoc,
       resetToDefaultDocs,
+      restoreStarterBooks,
     }}>
       {children}
     </KnowledgeContext.Provider>

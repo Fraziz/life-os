@@ -308,6 +308,9 @@ export async function migrateLegacyBooksFromKv(uid: string): Promise<KnowledgeDo
     'life_os_books_v1',
     'life_os_books',
     'knowledge_docs',
+    'life_os_study_docs',
+    'life_os_docs',
+    'life_os_imported_books',
   ];
 
   const map = new Map<string, KnowledgeDocument>();

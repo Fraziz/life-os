@@ -746,7 +746,7 @@ function MarkdownToolbar({
 export default function KnowledgePage() {
   const router = useRouter();
   const { selectFocusDoc } = useFocus();
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs } = useKnowledge();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -1273,7 +1273,7 @@ export default function KnowledgePage() {
       });
       setSelectedId(newDoc.id);
       setIsCreating(false);
-      setTypeFilter('videos');
+      setTypeFilter('all');
       setEditorMode('book');
       setMobileTab('editor');
       setPasteToast('New Video Lesson created & saved!');
@@ -1870,9 +1870,7 @@ export default function KnowledgePage() {
       }
       const preferredInitialDoc = docs.find((d) => 
         !d.id.startsWith('doc-sariling-mundo') && 
-        !d.id.startsWith('doc-game-blobbit') && 
-        !d.id.startsWith('doc-blender-notes') && 
-        !d.id.startsWith('doc-business-ideas')
+        !d.id.startsWith('doc-life-os')
       ) || docs[0];
       setSelectedId((prev) => prev || preferredInitialDoc.id);
     }
@@ -1899,6 +1897,15 @@ export default function KnowledgePage() {
 
   // Helper to switch documents and update browser URL without locking state
   const handleSelectDoc = (docId: string) => {
+    const targetDoc = docs.find((d) => d.id === docId);
+    if (targetDoc) {
+      const isVideo = isDocVideoLesson(targetDoc);
+      if (typeFilter === 'videos' && !isVideo) {
+        setTypeFilter('all');
+      } else if (typeFilter === 'documents' && isVideo) {
+        setTypeFilter('all');
+      }
+    }
     setSelectedId(docId);
     setIsCreating(false);
     setMobileTab('editor');
@@ -3727,7 +3734,7 @@ export default function KnowledgePage() {
   // Material Type Counts: strictly Books and Video Lessons
   const allMaterialsCount = docs.length;
   const videoLessonsCount = docs.filter((d) => isDocVideoLesson(d)).length;
-  const booksCount = docs.filter((d) => !isDocVideoLesson(d)).length;
+  const booksCount = docs.filter((d) => !isDocVideoLesson(d) || d.docType === 'document' || Boolean(d.fileName || d.fileUrl)).length;
 
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
@@ -3735,7 +3742,9 @@ export default function KnowledgePage() {
     .filter((d) => {
       if (readFilter !== 'all' && (d.readStatus || 'reading') !== readFilter) return false;
       const isVideo = isDocVideoLesson(d);
-      if (typeFilter === 'documents' && isVideo) return false;
+      const isBook = !isVideo || d.docType === 'document' || Boolean(d.fileName || d.fileUrl) || (Array.isArray(d.tags) && d.tags.some(t => ['book','reading','imported','pdf','epub'].includes((t||'').toLowerCase())));
+
+      if (typeFilter === 'documents' && !isBook) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
       if (q && !d.title.toLowerCase().includes(q) && !(d.content || '').toLowerCase().includes(q)) return false;
       return true;
@@ -4175,6 +4184,27 @@ export default function KnowledgePage() {
                   </div>
                 </button>
 
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
+                    restoreStarterBooks();
+                    setTypeFilter('all');
+                    setPasteToast('Original starter books restored to your library!');
+                    setTimeout(() => setPasteToast(null), 3500);
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: 'var(--color-accent-light)', background: 'rgba(124, 106, 255, 0.1)' }}>
+                    <BookOpen size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>Restore Original Books</span>
+                    <span className={styles.actionMenuHint}>Recover starter books &amp; templates without losing your files</span>
+                  </div>
+                </button>
+
                 <div className={styles.actionMenuDivider} />
 
                 <button
@@ -4312,26 +4342,80 @@ export default function KnowledgePage() {
                 {typeFilter === 'videos' ? (
                   <>
                     <Video size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
-                    <p>No video lessons found</p>
-                    <button
-                      type="button"
-                      className={styles.emptyAddBtn}
-                      onClick={() => handleOpenVideoLessonModal('create')}
-                    >
-                      <Video size={13} /> + New Video Lesson
-                    </button>
+                    <p>No video lessons match your filter</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
+                      {allMaterialsCount > 0 && (
+                        <button
+                          type="button"
+                          className={styles.emptyAddBtn}
+                          onClick={() => setTypeFilter('all')}
+                        >
+                          Show All Books ({allMaterialsCount})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={() => handleOpenVideoLessonModal('create')}
+                      >
+                        <Video size={13} /> + New Video Lesson
+                      </button>
+                    </div>
+                  </>
+                ) : typeFilter === 'documents' ? (
+                  <>
+                    <BookOpen size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <p>No books match your filter</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
+                      {allMaterialsCount > 0 && (
+                        <button
+                          type="button"
+                          className={styles.emptyAddBtn}
+                          onClick={() => setTypeFilter('all')}
+                        >
+                          Show All Materials ({allMaterialsCount})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={handleNewDoc}
+                      >
+                        <Plus size={13} /> + New Book
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
                     <BookOpen size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
-                    <p>No books found</p>
-                    <button
-                      type="button"
-                      className={styles.emptyAddBtn}
-                      onClick={handleNewDoc}
-                    >
-                      <Plus size={13} /> + New Book
-                    </button>
+                    <p>No books or video lessons found</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={handleNewDoc}
+                      >
+                        <Plus size={13} /> + New Book
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={() => importFileRef.current?.click()}
+                      >
+                        <FileUp size={13} /> Import File
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={() => {
+                          restoreStarterBooks();
+                          setPasteToast('Original starter books restored to your library!');
+                          setTimeout(() => setPasteToast(null), 3500);
+                        }}
+                      >
+                        <BookOpen size={13} /> Restore Original Books
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
