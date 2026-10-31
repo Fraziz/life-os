@@ -304,15 +304,15 @@ function renderMarkdown(md: string): string {
   html = html.replace(/\s*->\s*/g, ' &rarr; ');
 
   // 15. Checkboxes (before list items)
-  html = html.replace(/^- \[x\] (.+)$/gm, '<div class="md-check done">&#10003; $1</div>');
-  html = html.replace(/^- \[ \] (.+)$/gm, '<div class="md-check">&#9633; $1</div>');
+  html = html.replace(/^[ \t]*- \[x\] (.+)$/gm, '<div class="md-check done">&#10003; $1</div>');
+  html = html.replace(/^[ \t]*- \[ \] (.+)$/gm, '<div class="md-check">&#9633; $1</div>');
 
   // 16. Numbered list items
-  html = html.replace(/^(\d+)[\.\)]\s+(.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
+  html = html.replace(/^[ \t]*(\d+)[\.\)]\s+(.+)$/gm, '<li class="ol-item"><span class="ol-num">$1.</span>$2</li>');
   html = html.replace(/(<li class="ol-item">[\s\S]*?<\/li>\n?)+/g, '<ol>$&</ol>');
 
   // 17. Unordered list items
-  html = html.replace(/^([•\*\-])\s+(.+)$/gm, '<li>$2</li>');
+  html = html.replace(/^[ \t]*([•\*\-])\s+(.+)$/gm, '<li>$2</li>');
   html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
   // 18. Blockquotes
@@ -332,7 +332,7 @@ function renderMarkdown(md: string): string {
     if (!trimmed) return '';
     if (/^<(h[1-6]|ul|ol|hr|div|pre|blockquote|table)/.test(trimmed)) return trimmed;
     if (trimmed.startsWith('<div class="table-container"')) return trimmed;
-    return `<p>${trimmed}</p>`;
+    return `<p>${trimmed.replace(/\n/g, '<br/>')}</p>`;
   }).filter(Boolean).join('\n');
 
   return html;
@@ -4680,6 +4680,18 @@ export default function KnowledgePage() {
                     >
                       <Bell size={13} style={selectedDoc.isReminder ? { color: 'var(--color-warning, #f59e0b)' } : undefined} />
                       <span>Reminder</span>
+                    </button>
+                  )}
+
+                  {(editorMode === 'book' || editorMode === 'word') && (
+                    <button
+                      type="button"
+                      className={`${styles.headerGhostBtn} ${isCompanionOpen ? styles.headerActiveBtn : ''}`}
+                      onClick={handleToggleCompanion}
+                      title={isCompanionOpen ? 'Hide Reading Tools companion' : 'Show Reading Tools (timer, typography, auto-scroll)'}
+                    >
+                      <SlidersHorizontal size={13} style={isCompanionOpen ? { color: 'var(--color-accent-light)' } : undefined} />
+                      <span>{isCompanionOpen ? 'Reading Tools' : 'Tools'}</span>
                     </button>
                   )}
 

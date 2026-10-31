@@ -884,6 +884,8 @@
   flex-direction: column;
   min-height: 100%;
   width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   overflow: visible;
 }
 
@@ -1033,6 +1035,13 @@
   background: var(--color-surface-2) !important;
   border-color: rgba(245, 158, 11, 0.35) !important;
   color: var(--color-warning, #f59e0b) !important;
+}
+
+.headerGhostBtnActive,
+.headerActiveBtn {
+  background: var(--color-surface-2) !important;
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent-light) !important;
 }
 
 .headerAiBtn {
@@ -3474,18 +3483,19 @@
 
 .wordDocumentSheet {
   width: 100%;
-  max-width: 860px;
-  min-height: 1050px;
+  max-width: clamp(780px, 92vw, 1060px);
+  min-height: 1000px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 4px);
-  padding: 56px 64px;
+  border-radius: var(--radius-lg, 12px);
+  padding: clamp(28px, 4vw, 56px) clamp(24px, 4.5vw, 64px);
   box-shadow: 0 4px 28px rgba(0, 0, 0, 0.22);
   box-sizing: border-box;
+  margin: 0 auto;
   position: relative;
   font-family: inherit;
   color: var(--color-text);
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 :global([data-theme='light']) .wordDocumentSheet {
@@ -3567,6 +3577,42 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin: 20px 0 10px;
+}
+
+.wordDocumentBody ul,
+.wordDocumentBody ol {
+  margin: 14px 0 18px 24px;
+  padding: 0;
+}
+
+.wordDocumentBody li {
+  margin-bottom: 8px;
+  line-height: 1.7;
+}
+
+.wordDocumentBody :global(.ol-item) {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  line-height: 1.7;
+}
+
+.wordDocumentBody :global(.ol-num) {
+  color: var(--color-accent);
+  font-weight: 700;
+  min-width: 22px;
+  flex-shrink: 0;
+}
+
+.wordDocumentBody :global(blockquote.callout) {
+  margin: 20px 0;
+  padding: 14px 18px;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-2);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-style: italic;
+  color: var(--color-text-secondary);
 }
 
 .wordDocumentFooter {
@@ -3894,6 +3940,8 @@
   gap: var(--space-5);
   align-items: start;
   width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   box-sizing: border-box;
   padding-bottom: 80px;
   position: relative;
@@ -3911,6 +3959,8 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
   box-sizing: border-box;
   padding-bottom: 80px;
   position: relative;

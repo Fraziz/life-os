@@ -997,11 +997,11 @@ export function cleanAndFormatPastedText(
     }
 
     // Check if lines are a bulleted or numbered list
-    const isListBlock = lines.every((l) => /^([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(l));
+    const isListBlock = lines.every((l) => /^[ \t]*([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(l));
     if (isListBlock) {
-      const isNumbered = /^\d+[\.\)]\s+/.test(lines[0]);
+      const isNumbered = /^[ \t]*\d+[\.\)]\s+/.test(lines[0]);
       const listItems = lines.map((l, i) => {
-        const text = l.replace(/^([•\-*–—▪\u2022]|\d+[\.\)])\s+/, '').trim();
+        const text = l.replace(/^[ \t]*([•\-*–—▪\u2022]|\d+[\.\)])\s+/, '').trim();
         return isNumbered ? `${i + 1}. ${text}` : `- ${text}`;
       });
       formattedBlocks.push(listItems.join('\n'));
@@ -1023,6 +1023,16 @@ export function cleanAndFormatPastedText(
     let para = '';
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      const isListItem = /^[ \t]*([•\-*–—▪\u2022]|\d+[\.\)])\s+/.test(line);
+      if (isListItem) {
+        if (para) {
+          formattedBlocks.push(para);
+          para = '';
+        }
+        formattedBlocks.push(line);
+        continue;
+      }
+
       const defMatch = line.match(/^([A-Za-z\s]{2,25}):\s+(.+)$/);
       if (defMatch && line.length < 80 && lines.length > 1) {
         if (para) {

@@ -147,20 +147,115 @@ Every action in Sariling Mundo cascades downwards from long-term vision to daily
       createdAt: t,
       updatedAt: t,
       content: `# Atomic Habits — James Clear
+*An Easy & Proven Way to Build Good Habits & Break Bad Ones*
 
-## Core Principles
-- **1% Better Every Day**: Small compounding habits create massive results over time.
-- **The Four Laws of Behavior Change**:
-  1. Make it obvious (Cue)
-  2. Make it attractive (Craving)
-  3. Make it easy (Response)
-  4. Make it satisfying (Reward)
+## Executive Summary
+Small habits do not simply add up; they compound. If you can get 1% better each day for one year, you will end up 37 times better by the time you are done. Conversely, if you get 1% worse each day for one year, you will decline nearly down to zero.
 
-## Identity-Based Habits
-The ultimate form of intrinsic motivation is when a habit becomes part of your identity. Not "I want to read", but "I am a reader."
+---
 
-## Key Quotes
+## 1. The Fundamentals: Why Tiny Changes Make a Big Difference
+
+### The Plateau of Latent Potential
+Habits often appear to make no difference until you cross a critical threshold—the **Plateau of Latent Potential**.
+- Work is not wasted; it is simply being stored.
+- Results lag behind effort; breakthroughs are the result of many prior compounding actions.
+
+### Forget Goals, Focus on Systems
+- **Goals** are about the results you want to achieve.
+- **Systems** are about the processes that lead to those results.
+- Problems arise when you spend too much time thinking about your goals and not enough time designing your systems.
 > "You do not rise to the level of your goals. You fall to the level of your systems."
+
+### Identity-Based Habits: The 3 Layers of Behavior Change
+1. **Outcomes** (What you get) — losing weight, publishing a book, winning a race.
+2. **Processes** (What you do) — implementing a new workout routine, cleaning your desk.
+3. **Identity** (What you believe) — your worldviews, your self-image, your beliefs about what you are capable of.
+- The goal is not to read a book; the goal is to **become a reader**.
+- The goal is not to run a marathon; the goal is to **become a runner**.
+- Every action you take is a vote for the type of person you wish to become.
+
+---
+
+## 2. The Habit Loop & The Four Laws of Behavior Change
+
+Every habit is governed by a neurological feedback loop:
+**Cue** -> **Craving** -> **Response** -> **Reward**
+
+| Phase | Problem Phase | Solution Phase |
+| :--- | :--- | :--- |
+| **How to Create a Good Habit** | 1. Make it obvious | 2. Make it attractive | 3. Make it easy | 4. Make it satisfying |
+| **How to Break a Bad Habit** | 1. Make it invisible | 2. Make it unattractive | 3. Make it difficult | 4. Make it unsatisfying |
+
+---
+
+## 3. The 1st Law: Make It Obvious
+
+### Implementation Intentions
+State clearly when and where you will perform the habit:
+> "I will [BEHAVIOR] at [TIME] in [LOCATION]."
+
+### Habit Stacking
+Pair a new habit with an existing current habit:
+> "After [CURRENT HABIT], I will [NEW HABIT]."
+- *Example*: "After I pour my morning cup of coffee, I will meditate for 60 seconds."
+- *Example*: "After I close my laptop for the day, I will write down tomorrow's 3 priority tasks."
+
+### Environment Design
+- Visual cues are the greatest catalyst of behavior.
+- Make the cues of good habits prominent and visible in your space.
+- Inversely, make the cues of bad habits invisible: hide snacks, place phone in another room during focus blocks.
+- **One space, one use**: Dedicate specific desks or rooms for work, reading, or rest.
+
+---
+
+## 4. The 2nd Law: Make It Attractive
+
+### Temptation Bundling
+Link an action you *need* to do with an action you *want* to do:
+> "After [HABIT I NEED], I will [HABIT I WANT]."
+- *Example*: "After I finish 25 minutes of deep focus study, I will check sports scores."
+
+### The Power of Social Norms
+Join a culture where:
+1. Your desired behavior is the normal behavior.
+2. You already have something in common with the group.
+
+---
+
+## 5. The 3rd Law: Make It Easy
+
+### Reduce Friction
+- Prime your environment to make future actions easier.
+- Lay out workout clothes the night before.
+- Set up your Life OS dashboard with your top focus task before logging off.
+
+### The Two-Minute Rule
+When you start a new habit, it should take less than two minutes to do.
+- "Read before bed each night" becomes "Read one page."
+- "Do thirty minutes of yoga" becomes "Take out my yoga mat."
+- "Study for class" becomes "Open my notes."
+- Optimize for the starting line. Standardize before you optimize.
+
+---
+
+## 6. The 4th Law: Make It Satisfying
+
+### The Cardinal Rule of Behavior Change
+What is immediately rewarded is repeated. What is immediately punished is avoided.
+- Use immediate reinforcement to feel good right now.
+
+### Habit Trackers & "Never Miss Twice"
+- Tracking creates a visual cue that reminds you to act.
+- Making progress is inherently satisfying.
+- **Rule**: If you miss one day due to an emergency or fatigue, never miss two days in a row. Missing once is an accident; missing twice is the start of a new habit.
+
+---
+
+## Key Takeaways to Apply in Sariling Mundo
+1. **Focus Mode**: Leverage 25-minute Pomodoro sprints to eliminate the friction of starting.
+2. **Brain Dump**: Capture loose ideas immediately so mental friction does not hijack your workflow.
+3. **Daily Habit Checklist**: Check off tiny votes for your identity every morning and evening.
 `,
       studyQuiz: [
         {
