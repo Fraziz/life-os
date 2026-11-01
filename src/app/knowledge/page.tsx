@@ -4873,7 +4873,6 @@ export default function KnowledgePage() {
                         onClick={() => setEditorMode('book')}
                         title="Video Lesson Studio"
                       >
-                        <Video size={12} />
                         <span>Video Lesson</span>
                       </button>
                       <button
@@ -4882,7 +4881,6 @@ export default function KnowledgePage() {
                         onClick={handleOpenAddVideoPart}
                         title="Add more videos or next lesson part to this tutorial"
                       >
-                        <Plus size={12} />
                         <span>Add Video Link</span>
                       </button>
                       <button
@@ -4891,7 +4889,6 @@ export default function KnowledgePage() {
                         onClick={() => handleEditCurrentVideoLesson(safeActiveIndex)}
                         title="Edit active video link and lesson name"
                       >
-                        <Edit2 size={12} />
                         <span>Edit Link &amp; Name</span>
                       </button>
                     </div>
@@ -5021,11 +5018,11 @@ export default function KnowledgePage() {
                   <div className={styles.bookInfoLeft}>
                     {isCurrentVideo ? (
                       <span className={styles.bookInfoTypeBadgeVideo}>
-                        <Video size={12} /> Video Lesson
+                        Video Lesson
                       </span>
                     ) : (
                       <span className={styles.bookInfoTypeBadgeBook}>
-                        <BookOpen size={12} /> Book
+                        Book
                       </span>
                     )}
                     {selectedDoc.author && (
@@ -5202,7 +5199,6 @@ export default function KnowledgePage() {
                         <div className={styles.videoPlaylistCard}>
                           <div className={styles.videoPlaylistHeader}>
                             <div className={styles.videoPlaylistHeaderLeft}>
-                              <ListVideo size={16} style={{ color: 'var(--color-accent)' }} />
                               <h4 className={styles.videoPlaylistTitle}>
                                 <span>Videos in this Lesson</span>
                                 <span className={styles.videoPlaylistCountBadge}>
@@ -5216,7 +5212,6 @@ export default function KnowledgePage() {
                               onClick={handleOpenAddVideoPart}
                               title="Add more videos or next lesson part to this tutorial"
                             >
-                              <Plus size={13} />
                               <span>Add Video Link</span>
                             </button>
                           </div>
@@ -5236,7 +5231,7 @@ export default function KnowledgePage() {
                                     title={isActive ? 'Currently playing' : `Switch to ${item.title || `Lesson ${idx + 1}`}`}
                                   >
                                     <span className={`${styles.videoLessonNumberPill} ${isActive ? styles.videoLessonNumberPillActive : ''}`}>
-                                      {isActive ? `▶ Part ${idx + 1}` : `Part ${idx + 1}`}
+                                      {isActive ? `Part ${idx + 1}` : `Part ${idx + 1}`}
                                     </span>
                                     <div className={styles.videoPlaylistItemInfo}>
                                       <div className={styles.videoPlaylistItemTitle}>
@@ -5261,7 +5256,7 @@ export default function KnowledgePage() {
                                         onClick={() => setActiveVideoIndex(idx)}
                                         title="Play this video in theater above"
                                       >
-                                        <Play size={11} /> Play
+                                        Play
                                       </button>
                                     )}
                                     <button
@@ -5284,7 +5279,7 @@ export default function KnowledgePage() {
                                         className={styles.videoPlaylistBtn}
                                         title="Open video on provider site"
                                       >
-                                        Open <ExternalLink size={10} />
+                                        Open ↗
                                       </a>
                                     )}
                                     <button
@@ -5293,7 +5288,7 @@ export default function KnowledgePage() {
                                       onClick={() => handleEditCurrentVideoLesson(idx)}
                                       title="Edit video link and title"
                                     >
-                                      <Edit2 size={11} />
+                                      Edit
                                     </button>
                                     {currentVideoLessons.length > 1 && (
                                       <>
@@ -5305,7 +5300,7 @@ export default function KnowledgePage() {
                                           title="Move up in playlist"
                                           style={idx === 0 ? { opacity: 0.3, cursor: 'default' } : undefined}
                                         >
-                                          <ArrowUp size={11} />
+                                          ↑
                                         </button>
                                         <button
                                           type="button"
@@ -5315,7 +5310,7 @@ export default function KnowledgePage() {
                                           title="Move down in playlist"
                                           style={idx === currentVideoLessons.length - 1 ? { opacity: 0.3, cursor: 'default' } : undefined}
                                         >
-                                          <ArrowDown size={11} />
+                                          ↓
                                         </button>
                                         <button
                                           type="button"
@@ -5323,7 +5318,7 @@ export default function KnowledgePage() {
                                           onClick={() => handleDeleteVideoPart(idx)}
                                           title="Remove from playlist"
                                         >
-                                          <Trash2 size={11} />
+                                          Delete
                                         </button>
                                       </>
                                     )}

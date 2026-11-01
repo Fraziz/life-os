@@ -1067,7 +1067,7 @@ export default function FocusPage() {
                   <div className={styles.focusVideoHeader}>
                     <div className={styles.focusVideoHeaderLeft}>
                       <span className={styles.focusVideoBadge}>
-                        <Video size={12} /> Video Lesson
+                        Video Lesson
                       </span>
                       <h2 className={styles.focusVideoTitle}>{activeDoc.title}</h2>
                     </div>

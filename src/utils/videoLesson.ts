@@ -414,26 +414,22 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
     return `<div class="video-lesson-block video-lesson-edit" contenteditable="false" data-video-lesson="true" data-video-id="${videoId}" data-url="${safeUrl}" data-title="${safeTitle}" data-start="${startTime}" data-platform="${platform}">
   <div class="video-lesson-header">
     <div class="video-lesson-info-left">
-      <span class="video-lesson-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-        ${platformName} Lesson
-      </span>
+      <span class="video-lesson-badge">${platformName} Lesson</span>
       <strong class="video-lesson-title">${safeTitle}</strong>
     </div>
     <div class="video-lesson-tools">
       <button type="button" class="video-lesson-open-link" data-action="popout-video" data-url="${safeUrl}" title="Watch in floating companion window with your full login session">
-        <span>Pop-out ⧉</span>
+        <span>Pop-out</span>
       </button>
       <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="video-lesson-open-link" title="Open ${platformName} directly in browser or app">
-        <span>Open ${platformName} ↗</span>
+        <span>Open ${platformName}</span>
       </a>
       <button type="button" class="video-lesson-action-btn" data-action="focus-view" data-video-id="${videoId}" data-url="${safeUrl}" data-title="${safeTitle}" data-start="${startTime}" data-platform="${platform}" title="Open Focus View in Focus Space">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
         Focus View
       </button>
       <button type="button" class="video-lesson-tool-btn" data-action="move-up-video" title="Move Video Up">↑</button>
       <button type="button" class="video-lesson-tool-btn" data-action="move-down-video" title="Move Video Down">↓</button>
-      <button type="button" class="video-lesson-tool-btn" data-action="edit-video" title="Edit Video Title or URL">✎ Edit</button>
+      <button type="button" class="video-lesson-tool-btn" data-action="edit-video" title="Edit Video Title or URL">Edit</button>
       <button type="button" class="video-lesson-tool-btn video-lesson-tool-danger" data-action="delete-video" title="Delete Video Lesson">✕</button>
     </div>
   </div>
@@ -441,7 +437,7 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
     ${innerMediaHtml}
   </div>
   <div class="video-lesson-sub-hint">
-    <span>If playback is restricted by the video creator, click <strong>Pop-out ⧉</strong> or <strong>Open ${platformName} ↗</strong> above to watch.</span>
+    <span>If playback is restricted by the video creator, click <strong>Pop-out</strong> or <strong>Open ${platformName}</strong> above to watch.</span>
   </div>
 </div>`;
   }
@@ -449,33 +445,28 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
   // Reader / Book Mode
   const actionButtonHtml = isFocusSpace
     ? `<button type="button" class="video-lesson-action-btn" data-action="switch-target" title="Switch focus target">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>
         <span>Switch Target</span>
       </button>`
     : `<button type="button" class="video-lesson-action-btn" data-action="focus-view" data-video-id="${videoId}" data-url="${safeUrl}" data-title="${safeTitle}" data-start="${startTime}" data-platform="${platform}" title="Open Focus View in Focus Space">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
         <span>Focus View</span>
       </button>`;
 
   return `<div class="video-lesson-block video-lesson-reader" contenteditable="false" data-video-lesson="true" data-video-id="${videoId}" data-url="${safeUrl}" data-title="${safeTitle}" data-start="${startTime}" data-platform="${platform}">
   <div class="video-lesson-header">
     <div class="video-lesson-info-left">
-      <span class="video-lesson-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-        ${platformName} Lesson
-      </span>
+      <span class="video-lesson-badge">${platformName} Lesson</span>
       <h3 class="video-lesson-title">${safeTitle}</h3>
     </div>
     <div class="video-lesson-tools">
       ${actionButtonHtml}
       <button type="button" class="video-lesson-open-link" data-action="popout-video" data-url="${safeUrl}" title="Watch in floating companion window with your full login session">
-        <span>Pop-out ⧉</span>
+        <span>Pop-out</span>
       </button>
       <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="video-lesson-open-link" title="Open ${platformName} directly in browser or app">
-        <span>Open ${platformName} ↗</span>
+        <span>Open ${platformName}</span>
       </a>
       <button type="button" class="video-lesson-open-link" data-action="edit-video" data-url="${safeUrl}" data-title="${safeTitle}" data-video-id="${videoId}" title="Edit video link and lesson name">
-        <span>Edit ✎</span>
+        <span>Edit</span>
       </button>
     </div>
   </div>
@@ -483,7 +474,7 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
     ${innerMediaHtml}
   </div>
   <div class="video-lesson-sub-hint">
-    <span>If playback is restricted by the video creator, click <strong>Pop-out ⧉</strong> or <strong>Open ${platformName} ↗</strong> above to watch.</span>
+    <span>If playback is restricted by the video creator, click <strong>Pop-out</strong> or <strong>Open ${platformName}</strong> above to watch.</span>
   </div>
 </div>`;
 }

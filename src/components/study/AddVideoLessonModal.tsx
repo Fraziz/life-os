@@ -108,7 +108,6 @@ export default function AddVideoLessonModal({
       >
         <div className={styles.modalHeader}>
           <h3 id="video-modal-title" className={styles.modalTitle}>
-            <Video size={16} style={{ color: 'var(--color-accent-light)' }} />
             <span>
               {mode === 'edit'
                 ? 'Edit Video Lesson'
@@ -213,7 +212,6 @@ export default function AddVideoLessonModal({
                     padding: '2px 0',
                   }}
                 >
-                  <Sparkles size={11} />
                   <span>Use suggested: &ldquo;{parsed.titleHint}&rdquo;</span>
                 </button>
               )}

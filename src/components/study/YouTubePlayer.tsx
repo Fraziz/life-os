@@ -116,8 +116,7 @@ export default function YouTubePlayer({
         </p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button type="button" onClick={handlePopout} className={styles.openYoutubeBtn}>
-            <Maximize2 size={13} />
-            <span>Watch in Pop-out Window ⧉</span>
+            <span>Watch in Pop-out Window</span>
           </button>
           {externalLink && (
             <a
@@ -127,7 +126,6 @@ export default function YouTubePlayer({
               className={styles.openYoutubeBtn}
             >
               <span>Open on {platformName}</span>
-              <ExternalLink size={13} />
             </a>
           )}
         </div>
@@ -151,8 +149,7 @@ export default function YouTubePlayer({
             onClick={handlePopout}
             title="Open in floating side-by-side companion window (keeps your login session)"
           >
-            <Maximize2 size={11} />
-            <span>Pop-out ⧉</span>
+            <span>Pop-out</span>
           </button>
           {externalLink && (
             <a
@@ -162,8 +159,7 @@ export default function YouTubePlayer({
               className={styles.topBarBtn}
               title={`Open directly on ${platformName}`}
             >
-              <ExternalLink size={11} />
-              <span>Open ↗</span>
+              <span>Open</span>
             </a>
           )}
           <button
@@ -172,7 +168,6 @@ export default function YouTubePlayer({
             onClick={handleCopy}
             title="Copy video link"
           >
-            {isCopied ? <Check size={11} style={{ color: 'var(--color-success)' }} /> : <Copy size={11} />}
             <span>{isCopied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
