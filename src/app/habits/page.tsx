@@ -16,12 +16,15 @@ import {
   Zap,
   Bookmark,
   Calendar,
+  CheckSquare,
 } from 'lucide-react';
 import { useHabits } from '@/context/HabitContext';
 import { useGoals } from '@/context/GoalContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import EntityFiles from '@/components/files/EntityFiles';
 import AutoLinkText from '@/components/ui/AutoLinkText';
@@ -65,6 +68,31 @@ export default function HabitsPage() {
 
   // Habits Filter State for clean, organized viewing
   const [habitFilter, setHabitFilter] = useState<'all' | 'pending' | 'daily' | 'weekly'>('all');
+
+  // Multi-selection for bulk delete
+  const [selectedHabitIds, setSelectedHabitIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectHabit = (id: string) => {
+    setSelectedHabitIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllHabits = () => {
+    setSelectedHabitIds(new Set(filteredHabits.map((h) => h.id)));
+  };
+
+  const handleDeselectAllHabits = () => {
+    setSelectedHabitIds(new Set());
+  };
+
+  const handleBatchDeleteHabits = () => {
+    selectedHabitIds.forEach((id) => deleteHabit(id));
+    setSelectedHabitIds(new Set());
+  };
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -246,6 +274,18 @@ export default function HabitsPage() {
         >
           Weekly ({habits.filter((h) => h.frequency === 'weekly' || h.frequency === 'custom').length})
         </button>
+        <button
+          type="button"
+          className={`${styles.filterTab} ${selectedHabitIds.size > 0 ? styles.filterTabActive : ''}`}
+          onClick={() => {
+            if (selectedHabitIds.size > 0) handleDeselectAllHabits();
+            else handleSelectAllHabits();
+          }}
+          title="Select all habits for bulk delete"
+        >
+          <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+          {selectedHabitIds.size > 0 ? `${selectedHabitIds.size} Selected` : 'Select All'}
+        </button>
       </div>
 
       {/* ── Habits Grid ── */}
@@ -265,24 +305,37 @@ export default function HabitsPage() {
 
           const accentColor = habit.color || 'var(--color-accent)';
 
+          const isSelected = selectedHabitIds.has(habit.id);
+
           return (
             <article
               key={habit.id}
               className={styles.habitCard}
               style={{
-                background: completedToday
+                background: isSelected
+                  ? 'var(--color-surface-2)'
+                  : completedToday
                   ? `linear-gradient(135deg, var(--color-surface) 0%, rgba(34,211,165,0.06) 100%)`
                   : habit.color
                   ? `linear-gradient(135deg, var(--color-surface) 0%, ${habit.color}10 100%)`
                   : undefined,
+                boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
+                borderColor: isSelected ? 'var(--color-accent)' : undefined,
               }}
             >
               <div className={styles.cardTop}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                  <div className={styles.habitTitleRow}>
-                    <h2 className={styles.habitTitle}><AutoLinkText text={habit.title} /></h2>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1 }}>
+                  <SelectCheckbox
+                    checked={isSelected}
+                    onToggle={() => toggleSelectHabit(habit.id)}
+                    ariaLabel={`Select habit ${habit.title}`}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <div className={styles.habitTitleRow}>
+                      <h2 className={styles.habitTitle}><AutoLinkText text={habit.title} /></h2>
+                    </div>
+                    {habit.description && <p className={styles.habitDesc}><AutoLinkText text={habit.description} /></p>}
                   </div>
-                  {habit.description && <p className={styles.habitDesc}><AutoLinkText text={habit.description} /></p>}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -590,6 +643,15 @@ export default function HabitsPage() {
           </div>
         </div>
       )}
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedHabitIds.size}
+        totalCount={filteredHabits.length}
+        itemLabel="habits"
+        onSelectAll={handleSelectAllHabits}
+        onDeselectAll={handleDeselectAllHabits}
+        onDelete={handleBatchDeleteHabits}
+      />
     </div>
   );
 }

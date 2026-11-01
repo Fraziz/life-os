@@ -24,6 +24,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -61,6 +63,40 @@ export default function DreamsPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Multi-selection for bulk delete/archive
+  const [selectedDreamIds, setSelectedDreamIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectDream = (id: string) => {
+    setSelectedDreamIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllDreams = () => {
+    setSelectedDreamIds(new Set(filteredDreams.map((d) => d.id)));
+  };
+
+  const handleDeselectAllDreams = () => {
+    setSelectedDreamIds(new Set());
+  };
+
+  const handleBatchDeleteDreams = () => {
+    const count = selectedDreamIds.size;
+    selectedDreamIds.forEach((id) => deleteDream(id));
+    setSelectedDreamIds(new Set());
+    showToast(`Deleted ${count} dreams`);
+  };
+
+  const handleBatchArchiveDreams = () => {
+    const count = selectedDreamIds.size;
+    selectedDreamIds.forEach((id) => updateDream(id, { status: 'archived' as any }));
+    setSelectedDreamIds(new Set());
+    showToast(`Archived ${count} dreams`);
   };
 
   const openBridge = (type: 'goal' | 'task', dream: Dream) => {
@@ -251,6 +287,18 @@ export default function DreamsPage() {
           >
             Archived ({dreams.filter((d) => d.status === 'archived').length})
           </button>
+          <button
+            type="button"
+            className={`${styles.tab} ${selectedDreamIds.size > 0 ? styles.activeTab : ''}`}
+            onClick={() => {
+              if (selectedDreamIds.size > 0) handleDeselectAllDreams();
+              else handleSelectAllDreams();
+            }}
+            title="Select all dreams for bulk delete/archive"
+          >
+            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+            {selectedDreamIds.size > 0 ? `${selectedDreamIds.size} Selected` : 'Select All'}
+          </button>
         </div>
       </div>
 
@@ -276,17 +324,34 @@ export default function DreamsPage() {
             const area = activeAreas.find((a) => a.id === d.lifeAreaId);
             const statusInfo = STATUS_CONFIG[d.status] || STATUS_CONFIG.dream;
 
+            const isSelected = selectedDreamIds.has(d.id);
+
             return (
-              <article key={d.id} className={styles.dreamCard}>
+              <article
+                key={d.id}
+                className={styles.dreamCard}
+                style={{
+                  background: isSelected ? 'var(--color-surface-2)' : undefined,
+                  boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
+                  borderColor: isSelected ? 'var(--color-accent)' : undefined,
+                }}
+              >
                 {d.imageUrl && (
                   <img src={d.imageUrl} alt={d.title} className={styles.cardCover} />
                 )}
 
                 <div className={styles.cardBody}>
                   <div className={styles.cardTopRow}>
-                    <span className={`${styles.statusBadge} ${statusInfo.className}`}>
-                      {statusInfo.label}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <SelectCheckbox
+                        checked={isSelected}
+                        onToggle={() => toggleSelectDream(d.id)}
+                        ariaLabel={`Select dream ${d.title}`}
+                      />
+                      <span className={`${styles.statusBadge} ${statusInfo.className}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
 
                     <div className={styles.cardActions}>
                       <EntityFiles
@@ -654,6 +719,18 @@ export default function DreamsPage() {
       <AdhdHierarchyModal
         isOpen={adhdGuideOpen}
         onClose={() => setAdhdGuideOpen(false)}
+      />
+
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedDreamIds.size}
+        totalCount={filteredDreams.length}
+        itemLabel="dreams"
+        onSelectAll={handleSelectAllDreams}
+        onDeselectAll={handleDeselectAllDreams}
+        onDelete={handleBatchDeleteDreams}
+        onArchive={handleBatchArchiveDreams}
+        archiveLabel="Archive"
       />
     </div>
   );

@@ -161,7 +161,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteProject = (id: string) => {
-    const target = projects.find((p) => p.id !== id);
+    const target = projects.find((p) => p.id === id);
     const updated = projects.filter((p) => p.id !== id);
     saveProjects(updated);
     if (target) {

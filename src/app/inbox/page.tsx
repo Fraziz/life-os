@@ -64,6 +64,8 @@ import { processBrainDumpWithAI, breakdownThoughtWithAI, type ThoughtBreakdownRe
 import type { BrainDumpClassification } from '@/utils/aiEngine';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import ContextualTourBanner from '@/components/tour/ContextualTourBanner';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -321,6 +323,40 @@ export default function InboxPage() {
   const [reminderTime, setReminderTimeInput] = useState('');
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
+
+  // Multi-selection for bulk delete/archive
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllItems = () => {
+    setSelectedItemIds(new Set(currentList.map((i) => i.id)));
+  };
+
+  const handleDeselectAllItems = () => {
+    setSelectedItemIds(new Set());
+  };
+
+  const handleBatchDeleteItems = () => {
+    const count = selectedItemIds.size;
+    selectedItemIds.forEach((id) => deleteInboxItem(id));
+    setSelectedItemIds(new Set());
+    showToast(`Deleted ${count} ideas`);
+  };
+
+  const handleBatchArchiveItems = () => {
+    const count = selectedItemIds.size;
+    selectedItemIds.forEach((id) => updateInboxItem(id, { status: 'archived', isApplied: true }));
+    setSelectedItemIds(new Set());
+    showToast(`Archived ${count} ideas`);
+  };
 
   // AI Brain Dump Processor state
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -824,6 +860,18 @@ export default function InboxPage() {
           >
             Converted ({convertedItems.length})
           </button>
+          <button
+            type="button"
+            className={`${styles.tab} ${selectedItemIds.size > 0 ? styles.activeTab : ''}`}
+            onClick={() => {
+              if (selectedItemIds.size > 0) handleDeselectAllItems();
+              else handleSelectAllItems();
+            }}
+            title="Select all items for bulk delete/archive"
+          >
+            <CheckSquare size={13} style={{ marginRight: '5px', verticalAlign: '-1px' }} />
+            {selectedItemIds.size > 0 ? `${selectedItemIds.size} Selected` : 'Select All'}
+          </button>
         </div>
 
         {filterTab === 'important' && isVaultUnlocked && (
@@ -1006,13 +1054,25 @@ export default function InboxPage() {
             </p>
           </div>
         ) : (
-          currentList.map((item, index) => (
+          currentList.map((item, index) => {
+            const isSelected = selectedItemIds.has(item.id);
+            return (
             <article
               key={item.id}
               data-tour={index === 0 ? 'inbox-first-card' : undefined}
               className={`${styles.inboxItemCard} ${item.color && (styles as any)[`cardColor_${item.color}`] ? (styles as any)[`cardColor_${item.color}`] : ''}`}
+              style={{
+                background: isSelected ? 'var(--color-surface-2)' : undefined,
+                boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
+                borderColor: isSelected ? 'var(--color-accent)' : undefined,
+              }}
             >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
+                <SelectCheckbox
+                  checked={isSelected}
+                  onToggle={() => toggleSelectItem(item.id)}
+                  ariaLabel="Select idea"
+                />
                 {!(item.isImportant || filterTab === 'important') && (
                   <button
                     type="button"
@@ -1608,8 +1668,9 @@ export default function InboxPage() {
                 )}
               </div>
             </article>
-          ))
-        )}
+          );
+        })
+      )}
       </div>
     )}
 
@@ -2046,6 +2107,18 @@ export default function InboxPage() {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedItemIds.size}
+        totalCount={currentList.length}
+        itemLabel="ideas"
+        onSelectAll={handleSelectAllItems}
+        onDeselectAll={handleDeselectAllItems}
+        onDelete={handleBatchDeleteItems}
+        onArchive={handleBatchArchiveItems}
+        archiveLabel="Archive"
+      />
     </div>
   );
 }

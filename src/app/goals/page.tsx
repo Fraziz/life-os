@@ -34,6 +34,8 @@ import {
   Zap,
 } from 'lucide-react';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -78,6 +80,40 @@ export default function GoalsPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Multi-selection for bulk delete/archive
+  const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectGoal = (id: string) => {
+    setSelectedGoalIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllGoals = () => {
+    setSelectedGoalIds(new Set(filteredGoals.map((g) => g.id)));
+  };
+
+  const handleDeselectAllGoals = () => {
+    setSelectedGoalIds(new Set());
+  };
+
+  const handleBatchDeleteGoals = () => {
+    const count = selectedGoalIds.size;
+    selectedGoalIds.forEach((id) => deleteGoal(id));
+    setSelectedGoalIds(new Set());
+    showToast(`Deleted ${count} goals`);
+  };
+
+  const handleBatchArchiveGoals = () => {
+    const count = selectedGoalIds.size;
+    selectedGoalIds.forEach((id) => updateGoal(id, { status: 'archived' as any }));
+    setSelectedGoalIds(new Set());
+    showToast(`Archived ${count} goals`);
   };
 
   const openBridge = (type: 'project' | 'task', goal: Goal) => {
@@ -338,6 +374,20 @@ export default function GoalsPage() {
               </option>
             ))}
           </select>
+
+          <button
+            type="button"
+            className={styles.filterBtn}
+            style={selectedGoalIds.size > 0 ? { background: 'var(--color-surface-2)', borderColor: 'var(--color-accent)' } : undefined}
+            onClick={() => {
+              if (selectedGoalIds.size > 0) handleDeselectAllGoals();
+              else handleSelectAllGoals();
+            }}
+            title="Select all visible goals for bulk actions"
+          >
+            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+            {selectedGoalIds.size > 0 ? `${selectedGoalIds.size} Selected` : 'Select All'}
+          </button>
         </div>
       </div>
 
@@ -369,6 +419,8 @@ export default function GoalsPage() {
             const completedProjects = linkedProjects.filter((p) => p.status === 'completed' || p.progress === 100);
             const doneTasks = directTasks.filter((t) => t.status === 'done');
 
+            const isSelected = selectedGoalIds.has(goal.id);
+
             return (
               <article
                 key={goal.id}
@@ -376,8 +428,9 @@ export default function GoalsPage() {
                 className={styles.goalCard}
                 style={{
                   transition: 'all 0.2s ease',
-                  boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-                  borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+                  background: isSelected ? 'var(--color-surface-2)' : undefined,
+                  boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+                  borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
                 }}
               >
                 {/* ── Hierarchy Eyebrow (Dream -> Goal) ── */}
@@ -390,6 +443,11 @@ export default function GoalsPage() {
 
                 <div className={styles.cardTopRow}>
                   <div className={styles.tagsRow}>
+                    <SelectCheckbox
+                      checked={isSelected}
+                      onToggle={() => toggleSelectGoal(goal.id)}
+                      ariaLabel={`Select goal ${goal.title}`}
+                    />
                     <span className={styles.horizonBadge}>
                       {HORIZON_LABELS[goal.horizon] || goal.horizon}
                     </span>
@@ -879,6 +937,18 @@ export default function GoalsPage() {
       <AdhdHierarchyModal
         isOpen={adhdGuideOpen}
         onClose={() => setAdhdGuideOpen(false)}
+      />
+
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedGoalIds.size}
+        totalCount={filteredGoals.length}
+        itemLabel="goals"
+        onSelectAll={handleSelectAllGoals}
+        onDeselectAll={handleDeselectAllGoals}
+        onDelete={handleBatchDeleteGoals}
+        onArchive={handleBatchArchiveGoals}
+        archiveLabel="Archive"
       />
     </div>
   );

@@ -27,8 +27,11 @@ import {
   Footprints,
   Scale,
   SlidersHorizontal,
+  CheckSquare,
 } from 'lucide-react';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -229,6 +232,35 @@ export default function WorkoutPage() {
   const [showScheduleEditor, setShowScheduleEditor] = useState(false);
   const [libraryFilter, setLibraryFilter] = useState<MuscleGroup | 'All'>('All');
   const [librarySearch, setLibrarySearch] = useState('');
+
+  // Multi-selection for bulk delete
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectSession = (id: string) => {
+    setSelectedSessionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllSessions = () => {
+    setSelectedSessionIds(new Set(sessions.map((s) => s.id)));
+  };
+
+  const handleDeselectAllSessions = () => {
+    setSelectedSessionIds(new Set());
+  };
+
+  const handleBatchDeleteSessions = () => {
+    const updated = sessions.filter((s) => !selectedSessionIds.has(s.id));
+    persistSessions(updated);
+    if (activeSessionId && selectedSessionIds.has(activeSessionId)) {
+      setActiveSessionId(null);
+    }
+    setSelectedSessionIds(new Set());
+  };
 
   // New session form
   const [newSessionName, setNewSessionName] = useState('');
@@ -1107,6 +1139,23 @@ export default function WorkoutPage() {
         {/* LOG TAB */}
         {activeTab === 'log' && (
           <div className={styles.logList}>
+            {sessions.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  style={{ fontSize: '12px', padding: '4px 10px', height: '28px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                  onClick={() => {
+                    if (selectedSessionIds.size > 0) handleDeselectAllSessions();
+                    else handleSelectAllSessions();
+                  }}
+                  title="Select all sessions for bulk delete"
+                >
+                  <CheckSquare size={13} />
+                  <span>{selectedSessionIds.size > 0 ? `${selectedSessionIds.size} Selected` : 'Select All'}</span>
+                </button>
+              </div>
+            )}
             {sessions.length === 0 ? (
               <div className={styles.emptyState}>
                 <BarChart2 size={36} strokeWidth={1.2} />
@@ -1117,15 +1166,26 @@ export default function WorkoutPage() {
                 .sort((a, b) => b.date.localeCompare(a.date))
                 .map((s) => {
                   const { totalSets, doneSets, pct } = getSessionProgress(s);
+                  const isSelected = selectedSessionIds.has(s.id);
                   return (
                     <div
                       key={s.id}
                       className={`${styles.logItem} ${s.completed ? styles.logItemDone : ''}`}
+                      style={{
+                        background: isSelected ? 'var(--color-surface-2)' : undefined,
+                        boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
+                        borderColor: isSelected ? 'var(--color-accent)' : undefined,
+                      }}
                       onClick={() => {
                         setActiveSessionId(s.id);
                         setActiveTab('today');
                       }}
                     >
+                      <SelectCheckbox
+                        checked={isSelected}
+                        onToggle={() => toggleSelectSession(s.id)}
+                        ariaLabel={`Select workout ${s.name}`}
+                      />
                       <div className={styles.logItemLeft}>
                         <div className={styles.logItemName}>{s.name}</div>
                         <div className={styles.logItemMeta}>
@@ -1415,6 +1475,15 @@ export default function WorkoutPage() {
           </div>
         </div>
       )}
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedSessionIds.size}
+        totalCount={sessions.length}
+        itemLabel="workouts"
+        onSelectAll={handleSelectAllSessions}
+        onDeselectAll={handleDeselectAllSessions}
+        onDelete={handleBatchDeleteSessions}
+      />
     </div>
   );
 }

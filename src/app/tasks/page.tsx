@@ -46,6 +46,8 @@ import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
 import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 
@@ -120,6 +122,37 @@ export default function TasksPage() {
 
   const toggleColumnCollapse = (colId: string) => {
     setCollapsedCols((prev) => ({ ...prev, [colId]: !prev[colId] }));
+  };
+
+  // Multi-selection for bulk delete/archive
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectTask = (id: string) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllTasks = () => {
+    const visibleTasks = filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter);
+    setSelectedTaskIds(new Set(visibleTasks.map((t) => t.id)));
+  };
+
+  const handleDeselectAllTasks = () => {
+    setSelectedTaskIds(new Set());
+  };
+
+  const handleBatchDeleteTasks = () => {
+    selectedTaskIds.forEach((id) => deleteTask(id));
+    setSelectedTaskIds(new Set());
+  };
+
+  const handleBatchArchiveTasks = () => {
+    selectedTaskIds.forEach((id) => updateTaskStatus(id, 'done'));
+    setSelectedTaskIds(new Set());
   };
 
   // Breakdown Modal State
@@ -416,16 +449,24 @@ export default function TasksPage() {
       : '';
     const isHighlighted = highlightId === task.id;
 
+    const isCompactSelected = selectedTaskIds.has(task.id);
+
     return (
       <div
         key={task.id}
         id={`task-card-${task.id}`}
         className={styles.compactDoneRow}
         style={{
-          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+          boxShadow: isCompactSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+          borderColor: isCompactSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
+          background: isCompactSelected ? 'var(--color-surface-2)' : undefined,
         }}
       >
+        <SelectCheckbox
+          checked={isCompactSelected}
+          onToggle={() => toggleSelectTask(task.id)}
+          ariaLabel={`Select task ${task.title}`}
+        />
         <button
           className={`${styles.checkboxBtn} ${styles.checked}`}
           onClick={(e) => handleTaskToggle(e, task.id)}
@@ -503,6 +544,7 @@ export default function TasksPage() {
       : undefined;
 
     const isHighlighted = highlightId === task.id;
+    const isSelected = selectedTaskIds.has(task.id);
 
     return (
       <article
@@ -510,13 +552,18 @@ export default function TasksPage() {
         id={`task-card-${task.id}`}
         className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
         style={{
-          background: cardBg,
-          boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-          borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+          background: isSelected ? 'var(--color-surface-2)' : cardBg,
+          boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+          borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
         }}
       >
         <div className={styles.taskTopRow}>
           <div className={styles.checkTitleRow}>
+            <SelectCheckbox
+              checked={isSelected}
+              onToggle={() => toggleSelectTask(task.id)}
+              ariaLabel={`Select task ${task.title}`}
+            />
             <button
               className={`${styles.checkboxBtn} ${isDone ? styles.checked : ''}`}
               onClick={(e) => handleTaskToggle(e, task.id)}
@@ -1057,6 +1104,24 @@ export default function TasksPage() {
             >
               {hideDone ? <EyeOff size={12} /> : <Eye size={12} />}
               <span>{hideDone ? 'Done Hidden' : 'Hide Done'}</span>
+            </button>
+
+            {/* Multi-Select Toggle Pill */}
+            <button
+              type="button"
+              className={`${styles.filterPillBtn} ${selectedTaskIds.size > 0 ? styles.filterPillBtnActive : ''}`}
+              onClick={() => {
+                if (selectedTaskIds.size > 0) {
+                  handleDeselectAllTasks();
+                } else {
+                  handleSelectAllTasks();
+                }
+              }}
+              title={selectedTaskIds.size > 0 ? 'Deselect all tasks' : 'Select all visible tasks for bulk actions'}
+              aria-label="Select tasks"
+            >
+              <CheckSquare size={12} />
+              <span>{selectedTaskIds.size > 0 ? `${selectedTaskIds.size} Selected` : 'Select All'}</span>
             </button>
           </div>
 
@@ -1696,6 +1761,17 @@ export default function TasksPage() {
           onCancel={() => setConfirmDialog(null)}
         />
       )}
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedTaskIds.size}
+        totalCount={filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter).length}
+        itemLabel="tasks"
+        onSelectAll={handleSelectAllTasks}
+        onDeselectAll={handleDeselectAllTasks}
+        onDelete={handleBatchDeleteTasks}
+        onArchive={handleBatchArchiveTasks}
+        archiveLabel="Mark Done"
+      />
     </div>
   );
 }

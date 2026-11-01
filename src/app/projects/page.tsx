@@ -32,6 +32,8 @@ import {
   Bell,
 } from 'lucide-react';
 import styles from './page.module.css';
+import BulkActionBar from '@/components/ui/BulkActionBar';
+import SelectCheckbox from '@/components/ui/SelectCheckbox';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -68,6 +70,8 @@ function ProjectRow({
   compact,
   highlightId,
   onAddBridgeTask,
+  isSelected,
+  onToggleSelect,
 }: {
   project: Project;
   onEdit: (p: Project) => void;
@@ -77,6 +81,8 @@ function ProjectRow({
   compact?: boolean;
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const { toggleProjectReminder } = useProjects();
   const { tasks } = useTasks();
@@ -99,14 +105,21 @@ function ProjectRow({
         gap: '12px',
         padding: compact ? '10px 14px' : '14px 18px',
         border: '1px solid var(--color-border-subtle)',
-        background: 'var(--color-surface)',
+        background: isSelected ? 'var(--color-surface-2)' : 'var(--color-surface)',
         borderRadius: compact ? '10px' : '12px',
         marginBottom: compact ? '6px' : '8px',
         transition: 'all 0.2s ease',
-        boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-        borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+        boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+        borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
       }}
     >
+      {onToggleSelect && (
+        <SelectCheckbox
+          checked={Boolean(isSelected)}
+          onToggle={onToggleSelect}
+          ariaLabel={`Select project ${project.title}`}
+        />
+      )}
       {/* Main Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -254,7 +267,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 /** ── Notes / Masonry Grid View (Google Keep-style, auto-adjusting rows & columns) ── */
-function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
+function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -262,6 +275,8 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   onProgressChange: (id: string, v: number) => void;
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   const { toggleProjectReminder } = useProjects();
   const { tasks } = useTasks();
@@ -280,19 +295,28 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
         const accent = p.color || cfg.color;
         const parentGoal = goals.find((g) => g.id === p.goalId);
         const isHighlighted = highlightId === p.id;
+        const isSelected = selectedIds?.has(p.id);
         return (
           <article
             key={p.id}
             id={`project-card-${p.id}`}
             className={styles.projectCard}
             style={{
-              boxShadow: isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
-              borderColor: isHighlighted ? 'var(--color-accent)' : undefined,
+              background: isSelected ? 'var(--color-surface-2)' : undefined,
+              boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
+              borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
             }}
           >
             {/* Top header row: tags + actions */}
             <div className={styles.cardHeader}>
               <div className={styles.tagsRow}>
+                {onToggleSelect && (
+                  <SelectCheckbox
+                    checked={Boolean(isSelected)}
+                    onToggle={() => onToggleSelect(p.id)}
+                    ariaLabel={`Select project ${p.title}`}
+                  />
+                )}
                 <span
                   className={`${styles.statusBadge} ${styles[p.status === 'on-hold' ? 'onHold' : p.status] || ''}`}
                   style={{ background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}35` }}
@@ -426,7 +450,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
 }
 
 /** ── List View (flat rows fallback) ── */
-function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
+function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -434,6 +458,8 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
   onProgressChange: (id: string, v: number) => void;
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   if (projects.length === 0) return <EmptyState />;
   return (
@@ -448,6 +474,8 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
           parentGoalTitle={goals.find((g) => g.id === p.goalId)?.title}
           highlightId={highlightId}
           onAddBridgeTask={onAddBridgeTask}
+          isSelected={selectedIds?.has(p.id)}
+          onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
         />
       ))}
     </div>
@@ -455,7 +483,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
 }
 
 /** ── Board View ── */
-function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask }: {
+function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -463,6 +491,8 @@ function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   onProgressChange: (id: string, v: number) => void;
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', overflowX: 'auto' }}>
@@ -502,6 +532,8 @@ function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   compact
                   highlightId={highlightId}
                   onAddBridgeTask={onAddBridgeTask}
+                  isSelected={selectedIds?.has(p.id)}
+                  onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
                 />
               ))
             )}
@@ -740,6 +772,40 @@ export default function ProjectsPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Multi-selection for bulk delete/archive
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectProject = (id: string) => {
+    setSelectedProjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllProjects = () => {
+    setSelectedProjectIds(new Set(filteredProjects.map((p) => p.id)));
+  };
+
+  const handleDeselectAllProjects = () => {
+    setSelectedProjectIds(new Set());
+  };
+
+  const handleBatchDeleteProjects = () => {
+    const count = selectedProjectIds.size;
+    selectedProjectIds.forEach((id) => deleteProject(id));
+    setSelectedProjectIds(new Set());
+    showToast(`Deleted ${count} projects`);
+  };
+
+  const handleBatchArchiveProjects = () => {
+    const count = selectedProjectIds.size;
+    selectedProjectIds.forEach((id) => updateProject(id, { status: 'completed' }));
+    setSelectedProjectIds(new Set());
+    showToast(`Archived ${count} projects`);
+  };
+
   const openBridgeTask = (project: Project) => {
     setQuickBridgeTask(project);
     setBridgeTaskTitle(`15m step: ${project.title}`);
@@ -972,6 +1038,20 @@ export default function ProjectsPage() {
               </select>
               <ChevronDown size={11} className={styles.selectFilterChevron} />
             </div>
+
+            {/* Multi-Select Toggle */}
+            <button
+              type="button"
+              className={`${styles.filterPillBtn} ${selectedProjectIds.size > 0 ? styles.filterPillBtnActive : ''}`}
+              onClick={() => {
+                if (selectedProjectIds.size > 0) handleDeselectAllProjects();
+                else handleSelectAllProjects();
+              }}
+              title="Select all projects for bulk actions"
+            >
+              <CheckSquare size={12} />
+              <span>{selectedProjectIds.size > 0 ? `${selectedProjectIds.size} Selected` : 'Select All'}</span>
+            </button>
           </div>
 
           <div className={styles.toolbarDivider} />
@@ -1010,6 +1090,8 @@ export default function ProjectsPage() {
           onProgressChange={updateProjectProgress}
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
+          selectedIds={selectedProjectIds}
+          onToggleSelect={toggleSelectProject}
         />
       )}
 
@@ -1022,6 +1104,8 @@ export default function ProjectsPage() {
           onProgressChange={updateProjectProgress}
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
+          selectedIds={selectedProjectIds}
+          onToggleSelect={toggleSelectProject}
         />
       )}
 
@@ -1034,6 +1118,8 @@ export default function ProjectsPage() {
           onProgressChange={updateProjectProgress}
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
+          selectedIds={selectedProjectIds}
+          onToggleSelect={toggleSelectProject}
         />
       )}
 
@@ -1259,6 +1345,18 @@ export default function ProjectsPage() {
       <AdhdHierarchyModal
         isOpen={adhdGuideOpen}
         onClose={() => setAdhdGuideOpen(false)}
+      />
+
+      {/* ── Professional Bulk Action Bar ── */}
+      <BulkActionBar
+        selectedCount={selectedProjectIds.size}
+        totalCount={filteredProjects.length}
+        itemLabel="projects"
+        onSelectAll={handleSelectAllProjects}
+        onDeselectAll={handleDeselectAllProjects}
+        onDelete={handleBatchDeleteProjects}
+        onArchive={handleBatchArchiveProjects}
+        archiveLabel="Mark Completed"
       />
     </div>
   );
