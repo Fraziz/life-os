@@ -346,6 +346,7 @@ export default function DreamsPage() {
                       <SelectCheckbox
                         checked={isSelected}
                         onToggle={() => toggleSelectDream(d.id)}
+                        selectionMode={selectedDreamIds.size > 0}
                         ariaLabel={`Select dream ${d.title}`}
                       />
                       <span className={`${styles.statusBadge} ${statusInfo.className}`}>

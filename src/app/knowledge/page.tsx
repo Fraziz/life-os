@@ -4485,6 +4485,7 @@ export default function KnowledgePage() {
                           <SelectCheckbox
                             checked={selectedDocIds.has(doc.id)}
                             onToggle={() => toggleSelectDoc(doc.id)}
+                            selectionMode={selectedDocIds.size > 0}
                             ariaLabel={`Select book ${doc.title}`}
                           />
                           {doc.isPinned && <Pin size={11} className={styles.pinnedIcon} />}

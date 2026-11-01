@@ -1184,6 +1184,7 @@ export default function WorkoutPage() {
                       <SelectCheckbox
                         checked={isSelected}
                         onToggle={() => toggleSelectSession(s.id)}
+                        selectionMode={selectedSessionIds.size > 0}
                         ariaLabel={`Select workout ${s.name}`}
                       />
                       <div className={styles.logItemLeft}>

@@ -465,6 +465,7 @@ export default function TasksPage() {
         <SelectCheckbox
           checked={isCompactSelected}
           onToggle={() => toggleSelectTask(task.id)}
+          selectionMode={selectedTaskIds.size > 0}
           ariaLabel={`Select task ${task.title}`}
         />
         <button
@@ -562,6 +563,7 @@ export default function TasksPage() {
             <SelectCheckbox
               checked={isSelected}
               onToggle={() => toggleSelectTask(task.id)}
+              selectionMode={selectedTaskIds.size > 0}
               ariaLabel={`Select task ${task.title}`}
             />
             <button

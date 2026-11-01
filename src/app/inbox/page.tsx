@@ -1071,9 +1071,10 @@ export default function InboxPage() {
                 <SelectCheckbox
                   checked={isSelected}
                   onToggle={() => toggleSelectItem(item.id)}
+                  selectionMode={selectedItemIds.size > 0}
                   ariaLabel="Select idea"
                 />
-                {!(item.isImportant || filterTab === 'important') && (
+                {item.isApplied && !(item.isImportant || filterTab === 'important') && (
                   <button
                     type="button"
                     onClick={() => handleToggleItemApplied(item)}
@@ -1082,12 +1083,12 @@ export default function InboxPage() {
                       border: 'none',
                       cursor: 'pointer',
                       padding: 0,
-                      color: item.isApplied ? 'var(--color-success)' : 'var(--color-text-faint)',
+                      color: 'var(--color-success)',
                       marginTop: '2px',
                     }}
-                    title={item.isApplied ? 'Mark as Not Done' : 'Mark as Done / Applied'}
+                    title="Mark as Not Done"
                   >
-                    {item.isApplied ? <CheckSquare size={18} /> : <Square size={18} />}
+                    <CheckSquare size={16} />
                   </button>
                 )}
 

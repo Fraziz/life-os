@@ -328,6 +328,7 @@ export default function HabitsPage() {
                   <SelectCheckbox
                     checked={isSelected}
                     onToggle={() => toggleSelectHabit(habit.id)}
+                    selectionMode={selectedHabitIds.size > 0}
                     ariaLabel={`Select habit ${habit.title}`}
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>

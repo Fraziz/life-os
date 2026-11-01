@@ -446,6 +446,7 @@ export default function GoalsPage() {
                     <SelectCheckbox
                       checked={isSelected}
                       onToggle={() => toggleSelectGoal(goal.id)}
+                      selectionMode={selectedGoalIds.size > 0}
                       ariaLabel={`Select goal ${goal.title}`}
                     />
                     <span className={styles.horizonBadge}>

@@ -71,6 +71,7 @@ function ProjectRow({
   highlightId,
   onAddBridgeTask,
   isSelected,
+  selectionMode,
   onToggleSelect,
 }: {
   project: Project;
@@ -82,6 +83,7 @@ function ProjectRow({
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
   isSelected?: boolean;
+  selectionMode?: boolean;
   onToggleSelect?: () => void;
 }) {
   const { toggleProjectReminder } = useProjects();
@@ -117,6 +119,7 @@ function ProjectRow({
         <SelectCheckbox
           checked={Boolean(isSelected)}
           onToggle={onToggleSelect}
+          selectionMode={selectionMode}
           ariaLabel={`Select project ${project.title}`}
         />
       )}
@@ -314,6 +317,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   <SelectCheckbox
                     checked={Boolean(isSelected)}
                     onToggle={() => onToggleSelect(p.id)}
+                    selectionMode={(selectedIds?.size || 0) > 0}
                     ariaLabel={`Select project ${p.title}`}
                   />
                 )}
@@ -475,6 +479,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
           highlightId={highlightId}
           onAddBridgeTask={onAddBridgeTask}
           isSelected={selectedIds?.has(p.id)}
+          selectionMode={(selectedIds?.size || 0) > 0}
           onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
         />
       ))}
@@ -533,6 +538,7 @@ function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   highlightId={highlightId}
                   onAddBridgeTask={onAddBridgeTask}
                   isSelected={selectedIds?.has(p.id)}
+                  selectionMode={(selectedIds?.size || 0) > 0}
                   onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
                 />
               ))

@@ -9,6 +9,7 @@ export interface SelectCheckboxProps {
   onToggle: () => void;
   ariaLabel?: string;
   className?: string;
+  selectionMode?: boolean;
 }
 
 export default function SelectCheckbox({
@@ -16,11 +17,13 @@ export default function SelectCheckbox({
   onToggle,
   ariaLabel = 'Select item',
   className = '',
+  selectionMode = false,
 }: SelectCheckboxProps) {
+  const isVisible = checked || selectionMode;
   return (
     <button
       type="button"
-      className={`${styles.selectBtn} ${checked ? styles.checked : ''} ${className}`}
+      className={`${styles.selectBtn} ${checked ? styles.checked : ''} ${isVisible ? styles.visible : styles.hoverOnly} ${className}`}
       onClick={(e) => {
         e.stopPropagation();
         onToggle();
