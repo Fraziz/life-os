@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useKnowledge, isTrueBookOrVideo } from '@/context/KnowledgeContext';
 import { useFocus } from '@/context/FocusContext';
 import { useGoals } from '@/context/GoalContext';
@@ -85,6 +85,7 @@ import {
   SlidersHorizontal,
   Minimize2,
   Video,
+  ListVideo,
   Bell,
 } from 'lucide-react';
 import styles from './page.module.css';
@@ -106,6 +107,8 @@ import {
   isDocBookOrDocument,
   extractVideoLessonData,
   extractVideoLessonNotes,
+  extractAllVideoLessons,
+  type VideoLessonItem,
 } from '@/utils/videoLesson';
 import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
 import FocusViewWorkspace from '@/components/study/FocusViewWorkspace';
@@ -1031,30 +1034,129 @@ export default function KnowledgePage() {
     bookTitle?: string;
   } | null>(null);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [videoModalMode, setVideoModalMode] = useState<'insert' | 'create' | 'edit'>('insert');
+  const [videoModalMode, setVideoModalMode] = useState<'insert' | 'create' | 'edit' | 'add-part'>('insert');
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
 
-  const handleOpenVideoLessonModal = (mode: 'insert' | 'create' | 'edit' = 'insert') => {
-    setVideoModalMode(mode);
-    setEditingVideoBlockTarget(null);
-    setVideoModalOpen(true);
-  };
+  // Reset active video index when changing document selection
+  useEffect(() => {
+    setActiveVideoIndex(0);
+  }, [selectedId]);
+
   const [editingVideoBlockTarget, setEditingVideoBlockTarget] = useState<{
     element?: HTMLElement | null;
     initialUrl: string;
     initialTitle: string;
     docId?: string;
+    partIndex?: number;
   } | null>(null);
 
-  const handleEditCurrentVideoLesson = () => {
+  // Multi-video lessons in active document
+  const currentVideoLessons = useMemo<VideoLessonItem[]>(() => {
+    return extractAllVideoLessons(
+      selectedDoc?.content || fContent || '',
+      selectedDoc?.videoLessons,
+      selectedDoc?.title || fTitle
+    );
+  }, [selectedDoc?.content, selectedDoc?.videoLessons, selectedDoc?.title, fContent, fTitle]);
+
+  const safeActiveIndex = Math.min(Math.max(0, activeVideoIndex), Math.max(0, currentVideoLessons.length - 1));
+  const activeVideoLesson = currentVideoLessons[safeActiveIndex] || null;
+
+  const handleOpenVideoLessonModal = (mode: 'insert' | 'create' | 'edit' | 'add-part' = 'insert') => {
+    setVideoModalMode(mode);
+    setEditingVideoBlockTarget(null);
+    setVideoModalOpen(true);
+  };
+
+  const handleOpenAddVideoPart = () => {
     if (!selectedDoc) return;
-    const videoData = extractVideoLessonData(selectedDoc.content || '');
+    setEditingVideoBlockTarget(null);
+    setVideoModalMode('add-part');
+    setVideoModalOpen(true);
+  };
+
+  const handleEditCurrentVideoLesson = (partIndex?: number) => {
+    if (!selectedDoc) return;
+    const idx = typeof partIndex === 'number' ? partIndex : safeActiveIndex;
+    const targetVideo = currentVideoLessons[idx];
     setEditingVideoBlockTarget({
-      initialUrl: videoData?.url || '',
-      initialTitle: selectedDoc.title || videoData?.title || '',
+      initialUrl: targetVideo?.url || '',
+      initialTitle: targetVideo?.title || selectedDoc.title || 'Video Lesson',
       docId: selectedDoc.id,
+      partIndex: idx,
     });
     setVideoModalMode('edit');
     setVideoModalOpen(true);
+  };
+
+  const handleDeleteVideoPart = (partIndex: number) => {
+    if (!selectedDoc) return;
+    if (currentVideoLessons.length <= 1) {
+      if (confirm('Delete this video lesson?')) {
+        deleteDoc(selectedDoc.id);
+        setSelectedId(null);
+      }
+      return;
+    }
+    const partToDelete = currentVideoLessons[partIndex];
+    if (!confirm(`Remove "${partToDelete.title || `Lesson ${partIndex + 1}`}" from this lesson playlist?`)) {
+      return;
+    }
+    const updated = currentVideoLessons.filter((_, i) => i !== partIndex);
+    const notes = extractVideoLessonNotes(selectedDoc.content || fContent || '');
+    const allBlocksHtml = updated.map((l) => generateVideoBlockHtml({
+      videoId: l.videoId,
+      url: l.url,
+      title: l.title,
+      startTime: l.startTime || 0,
+      isEditMode: false,
+    })).join('\n\n');
+    const updatedContent = `${allBlocksHtml}\n\n${notes}`;
+
+    updateDoc(selectedDoc.id, {
+      videoLessons: updated,
+      content: updatedContent,
+      title: updated[0]?.title || selectedDoc.title,
+    });
+    setFContent(updatedContent);
+    if (activeVideoIndex >= updated.length) {
+      setActiveVideoIndex(Math.max(0, updated.length - 1));
+    }
+    setPasteToast('Video removed from playlist');
+    setTimeout(() => setPasteToast(null), 2500);
+  };
+
+  const handleMoveVideoPart = (partIndex: number, direction: 'up' | 'down') => {
+    if (!selectedDoc) return;
+    const targetIndex = direction === 'up' ? partIndex - 1 : partIndex + 1;
+    if (targetIndex < 0 || targetIndex >= currentVideoLessons.length) return;
+
+    const updated = [...currentVideoLessons];
+    const temp = updated[partIndex];
+    updated[partIndex] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    const notes = extractVideoLessonNotes(selectedDoc.content || fContent || '');
+    const allBlocksHtml = updated.map((l) => generateVideoBlockHtml({
+      videoId: l.videoId,
+      url: l.url,
+      title: l.title,
+      startTime: l.startTime || 0,
+      isEditMode: false,
+    })).join('\n\n');
+    const updatedContent = `${allBlocksHtml}\n\n${notes}`;
+
+    updateDoc(selectedDoc.id, {
+      videoLessons: updated,
+      content: updatedContent,
+      title: updated[0]?.title || selectedDoc.title,
+    });
+    setFContent(updatedContent);
+    if (activeVideoIndex === partIndex) {
+      setActiveVideoIndex(targetIndex);
+    } else if (activeVideoIndex === targetIndex) {
+      setActiveVideoIndex(partIndex);
+    }
   };
   const [detectedPastedYouTube, setDetectedPastedYouTube] = useState<{
     parsed: NonNullable<ReturnType<typeof parseYouTubeUrl>>;
@@ -1305,6 +1407,15 @@ export default function KnowledgePage() {
         category: 'learning',
         tags: ['video-lesson'],
         docType: 'video-lesson',
+        videoLessons: [
+          {
+            id: `vid-${Date.now()}`,
+            title: lessonTitle,
+            url,
+            videoId,
+            startTime,
+          },
+        ],
         isPinned: false,
         readStatus: 'reading',
         readProgress: 0,
@@ -1314,9 +1425,45 @@ export default function KnowledgePage() {
       setTypeFilter('all');
       setEditorMode('book');
       setMobileTab('editor');
+      setActiveVideoIndex(0);
       setPasteToast('New Video Lesson created & saved!');
       setTimeout(() => setPasteToast(null), 3000);
       return;
+    }
+
+    if (videoModalMode === 'add-part') {
+      const targetDoc = selectedDoc;
+      if (targetDoc) {
+        const lessonTitle = title.trim() || `Lesson ${currentVideoLessons.length + 1}`;
+        const newPart: VideoLessonItem = {
+          id: `vid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: lessonTitle,
+          url,
+          videoId,
+          startTime,
+        };
+        const updated = [...currentVideoLessons, newPart];
+        const notes = extractVideoLessonNotes(targetDoc.content || fContent || '');
+        const allBlocksHtml = updated.map((l) => generateVideoBlockHtml({
+          videoId: l.videoId,
+          url: l.url,
+          title: l.title,
+          startTime: l.startTime || 0,
+          isEditMode: false,
+        })).join('\n\n');
+        const updatedContent = `${allBlocksHtml}\n\n${notes}`;
+
+        updateDoc(targetDoc.id, {
+          videoLessons: updated,
+          content: updatedContent,
+          docType: 'video-lesson',
+        });
+        setFContent(updatedContent);
+        setActiveVideoIndex(updated.length - 1);
+        setPasteToast(`Added "${lessonTitle}" to playlist!`);
+        setTimeout(() => setPasteToast(null), 3000);
+        return;
+      }
     }
 
     if (videoModalMode === 'edit' || editingVideoBlockTarget?.docId) {
@@ -1324,23 +1471,50 @@ export default function KnowledgePage() {
       const targetDoc = targetDocId ? docs.find((d) => d.id === targetDocId) || selectedDoc : selectedDoc;
 
       if (targetDoc) {
+        const partIdx = editingVideoBlockTarget?.partIndex ?? safeActiveIndex;
         const lessonTitle = title.trim() || targetDoc.title || 'Video Lesson';
-        const notes = extractVideoLessonNotes(targetDoc.content || '');
-        const newBlockHtml = generateVideoBlockHtml({
-          videoId,
-          url,
-          title: lessonTitle,
-          startTime,
-          isEditMode: false,
-        });
-        const updatedContent = `${newBlockHtml}\n\n${notes}`;
 
-        updateDoc(targetDoc.id, {
-          title: lessonTitle,
+        const existing = extractAllVideoLessons(targetDoc.content || '', targetDoc.videoLessons, targetDoc.title);
+        let updated = [...existing];
+        if (updated.length > 0 && partIdx >= 0 && partIdx < updated.length) {
+          updated[partIdx] = {
+            ...updated[partIdx],
+            title: lessonTitle,
+            url,
+            videoId,
+            startTime,
+          };
+        } else {
+          updated = [{
+            id: `vid-${Date.now()}`,
+            title: lessonTitle,
+            url,
+            videoId,
+            startTime,
+          }];
+        }
+
+        const notes = extractVideoLessonNotes(targetDoc.content || '');
+        const allBlocksHtml = updated.map((l) => generateVideoBlockHtml({
+          videoId: l.videoId,
+          url: l.url,
+          title: l.title,
+          startTime: l.startTime || 0,
+          isEditMode: false,
+        })).join('\n\n');
+        const updatedContent = `${allBlocksHtml}\n\n${notes}`;
+
+        const updates: any = {
+          videoLessons: updated,
           content: updatedContent,
           docType: 'video-lesson',
-        });
-        setFTitle(lessonTitle);
+        };
+        if (partIdx === 0) {
+          updates.title = lessonTitle;
+          setFTitle(lessonTitle);
+        }
+
+        updateDoc(targetDoc.id, updates);
         setFContent(updatedContent);
         setEditorMode('book');
         setEditingVideoBlockTarget(null);
@@ -4705,8 +4879,17 @@ export default function KnowledgePage() {
                       <button
                         type="button"
                         className={styles.segmentBtn}
-                        onClick={handleEditCurrentVideoLesson}
-                        title="Edit video link and lesson name"
+                        onClick={handleOpenAddVideoPart}
+                        title="Add more videos or next lesson part to this tutorial"
+                      >
+                        <Plus size={12} />
+                        <span>Add Video Link</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.segmentBtn}
+                        onClick={() => handleEditCurrentVideoLesson(safeActiveIndex)}
+                        title="Edit active video link and lesson name"
                       >
                         <Edit2 size={12} />
                         <span>Edit Link &amp; Name</span>
@@ -4988,6 +5171,7 @@ export default function KnowledgePage() {
                     {isCurrentVideo ? (
                       /* ── Executive Video Lesson Studio Layout (Wide Theater Canvas) ── */
                       <div className={styles.videoLessonStudioSheet}>
+                        {/* 1. Active Video Player Block (Wide Theater Player) */}
                         <div
                           ref={(el) => {
                             (bookEditorRef as any).current = el;
@@ -5000,7 +5184,169 @@ export default function KnowledgePage() {
                           style={{
                             color: readingTextColor !== 'default' ? readingTextColor : undefined,
                           }}
-                          dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                          dangerouslySetInnerHTML={{
+                            __html: activeVideoLesson
+                              ? generateVideoBlockHtml({
+                                  videoId: activeVideoLesson.videoId,
+                                  url: activeVideoLesson.url,
+                                  title: activeVideoLesson.title || selectedDoc?.title || fTitle || 'Video Lesson',
+                                  startTime: activeVideoLesson.startTime || 0,
+                                  platform: activeVideoLesson.platform,
+                                  isEditMode: false,
+                                })
+                              : getRichHtml(selectedDoc?.content || fContent || ''),
+                          }}
+                        />
+
+                        {/* 2. Lesson Videos & Playlist (Bottom Multi-Video Bar) */}
+                        <div className={styles.videoPlaylistCard}>
+                          <div className={styles.videoPlaylistHeader}>
+                            <div className={styles.videoPlaylistHeaderLeft}>
+                              <ListVideo size={16} style={{ color: 'var(--color-accent)' }} />
+                              <h4 className={styles.videoPlaylistTitle}>
+                                <span>Videos in this Lesson</span>
+                                <span className={styles.videoPlaylistCountBadge}>
+                                  {currentVideoLessons.length} {currentVideoLessons.length === 1 ? 'Part' : 'Parts'}
+                                </span>
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.videoPlaylistAddBtn}
+                              onClick={handleOpenAddVideoPart}
+                              title="Add more videos or next lesson part to this tutorial"
+                            >
+                              <Plus size={13} />
+                              <span>Add Video Link</span>
+                            </button>
+                          </div>
+
+                          <div className={styles.videoPlaylistList}>
+                            {currentVideoLessons.map((item, idx) => {
+                              const isActive = idx === safeActiveIndex;
+                              const platformLabel = (item.platform || 'video').toUpperCase();
+                              return (
+                                <div
+                                  key={item.id || idx}
+                                  className={`${styles.videoPlaylistItem} ${isActive ? styles.videoPlaylistItemActive : ''}`}
+                                >
+                                  <div
+                                    className={styles.videoPlaylistItemLeft}
+                                    onClick={() => setActiveVideoIndex(idx)}
+                                    title={isActive ? 'Currently playing' : `Switch to ${item.title || `Lesson ${idx + 1}`}`}
+                                  >
+                                    <span className={`${styles.videoLessonNumberPill} ${isActive ? styles.videoLessonNumberPillActive : ''}`}>
+                                      {isActive ? `▶ Part ${idx + 1}` : `Part ${idx + 1}`}
+                                    </span>
+                                    <div className={styles.videoPlaylistItemInfo}>
+                                      <div className={styles.videoPlaylistItemTitle}>
+                                        {item.title || `Lesson ${idx + 1}`}
+                                      </div>
+                                      <div className={styles.videoPlaylistItemMeta}>
+                                        <span>{platformLabel}</span>
+                                        {isActive && (
+                                          <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
+                                            • Now Playing
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className={styles.videoPlaylistItemRight}>
+                                    {!isActive && (
+                                      <button
+                                        type="button"
+                                        className={styles.videoPlaylistBtn}
+                                        onClick={() => setActiveVideoIndex(idx)}
+                                        title="Play this video in theater above"
+                                      >
+                                        <Play size={11} /> Play
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className={styles.videoPlaylistBtn}
+                                      onClick={() => {
+                                        if (item.url) {
+                                          window.open(item.url, 'LifeOSVideoPlayer', 'width=880,height=580,resizable=yes');
+                                        }
+                                      }}
+                                      title="Pop-out player in floating window"
+                                    >
+                                      Pop-out ⧉
+                                    </button>
+                                    {item.url && (
+                                      <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.videoPlaylistBtn}
+                                        title="Open video on provider site"
+                                      >
+                                        Open <ExternalLink size={10} />
+                                      </a>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className={styles.videoPlaylistBtn}
+                                      onClick={() => handleEditCurrentVideoLesson(idx)}
+                                      title="Edit video link and title"
+                                    >
+                                      <Edit2 size={11} />
+                                    </button>
+                                    {currentVideoLessons.length > 1 && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          className={styles.videoPlaylistBtn}
+                                          onClick={() => handleMoveVideoPart(idx, 'up')}
+                                          disabled={idx === 0}
+                                          title="Move up in playlist"
+                                          style={idx === 0 ? { opacity: 0.3, cursor: 'default' } : undefined}
+                                        >
+                                          <ArrowUp size={11} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={styles.videoPlaylistBtn}
+                                          onClick={() => handleMoveVideoPart(idx, 'down')}
+                                          disabled={idx === currentVideoLessons.length - 1}
+                                          title="Move down in playlist"
+                                          style={idx === currentVideoLessons.length - 1 ? { opacity: 0.3, cursor: 'default' } : undefined}
+                                        >
+                                          <ArrowDown size={11} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={`${styles.videoPlaylistBtn} ${styles.videoPlaylistBtnDanger}`}
+                                          onClick={() => handleDeleteVideoPart(idx)}
+                                          title="Remove from playlist"
+                                        >
+                                          <Trash2 size={11} />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 3. Practice & Study Notes (Chords, Tabs, Notes) */}
+                        <div
+                          contentEditable={false}
+                          onClick={handleContentClick}
+                          onKeyDown={handleLockedKeyDown}
+                          className={`${styles.wordDocumentBody} ${styles.videoLessonStudioBody}`}
+                          style={{
+                            color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                            marginTop: '16px',
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: renderMarkdown(extractVideoLessonNotes(selectedDoc?.content || fContent || '')),
+                          }}
                         />
                       </div>
                     ) : (
@@ -6021,6 +6367,7 @@ export default function KnowledgePage() {
         initialUrl={editingVideoBlockTarget?.initialUrl}
         initialTitle={editingVideoBlockTarget?.initialTitle}
         mode={videoModalMode}
+        lessonNumber={videoModalMode === 'add-part' ? currentVideoLessons.length + 1 : undefined}
       />
 
       {/* Floating Prompt on Pasting Standalone YouTube URL */}

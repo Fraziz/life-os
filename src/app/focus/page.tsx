@@ -38,6 +38,7 @@ import {
   generateVideoBlockHtml,
   extractVideoLessonData,
   extractVideoLessonNotes,
+  extractAllVideoLessons,
 } from '@/utils/videoLesson';
 import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
 import YouTubePlayer from '@/components/study/YouTubePlayer';
@@ -144,6 +145,15 @@ export default function FocusPage() {
   const [targetTab, setTargetTab] = useState<'tasks' | 'knowledge' | 'videos'>('tasks');
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [targetSearchQuery, setTargetSearchQuery] = useState('');
+  const [activeFocusVideoIndex, setActiveFocusVideoIndex] = useState(0);
+
+  const focusVideoLessons = useMemo(() => {
+    if (!activeDoc) return [];
+    return extractAllVideoLessons(activeDoc.content || '', activeDoc.videoLessons, activeDoc.title);
+  }, [activeDoc?.content, activeDoc?.videoLessons, activeDoc?.title]);
+
+  const safeFocusVideoIndex = Math.min(Math.max(0, activeFocusVideoIndex), Math.max(0, focusVideoLessons.length - 1));
+  const activeFocusVideo = focusVideoLessons[safeFocusVideoIndex] || null;
 
   const [focusViewMode, setFocusViewMode] = useState<'timer' | 'book'>('book');
   const [customMinInput, setCustomMinInput] = useState('30');
@@ -1083,12 +1093,37 @@ export default function FocusPage() {
                     </div>
                   </div>
 
+                  {focusVideoLessons.length > 1 && (
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '8px 16px', background: 'var(--color-surface-2)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                      {focusVideoLessons.map((item, idx) => (
+                        <button
+                          key={item.id || idx}
+                          type="button"
+                          onClick={() => setActiveFocusVideoIndex(idx)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '5px',
+                            fontSize: '0.74rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            border: '1px solid var(--color-border-subtle)',
+                            background: idx === safeFocusVideoIndex ? 'var(--color-accent)' : 'var(--color-surface)',
+                            color: idx === safeFocusVideoIndex ? '#ffffff' : 'var(--color-text)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {idx === safeFocusVideoIndex ? '▶ ' : ''}{item.title || `Part ${idx + 1}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   <div className={styles.focusVideoFrame}>
                     <YouTubePlayer
-                      videoId={extractVideoLessonData(activeDoc.content || '')?.videoId || ''}
-                      url={extractVideoLessonData(activeDoc.content || '')?.url || ''}
-                      startTime={extractVideoLessonData(activeDoc.content || '')?.startTime || 0}
-                      title={activeDoc.title}
+                      videoId={activeFocusVideo?.videoId || extractVideoLessonData(activeDoc.content || '')?.videoId || ''}
+                      url={activeFocusVideo?.url || extractVideoLessonData(activeDoc.content || '')?.url || ''}
+                      startTime={activeFocusVideo?.startTime || extractVideoLessonData(activeDoc.content || '')?.startTime || 0}
+                      title={activeFocusVideo?.title || activeDoc.title}
                     />
                   </div>
                 </div>

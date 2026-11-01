@@ -7,6 +7,8 @@
  */
 
 import { parseUniversalVideoUrl, extractYouTubeVideoDetails } from './universalVideo';
+import type { VideoLessonItem } from '@/types';
+export type { VideoLessonItem };
 
 export interface VideoLessonData {
   videoId: string;
@@ -29,9 +31,11 @@ export function isDocVideoLesson(doc: {
   tags?: string[];
   content?: string;
   title?: string;
+  videoLessons?: any[];
 } | null | undefined): boolean {
   if (!doc) return false;
   if (doc.docType === 'video-lesson') return true;
+  if (Array.isArray(doc.videoLessons) && doc.videoLessons.length > 0) return true;
   if (Array.isArray(doc.tags) && doc.tags.some((t) => {
     const lower = (t || '').toLowerCase();
     return lower === 'video-lesson' || lower === 'video' || lower === 'video lesson';
@@ -80,6 +84,123 @@ export function isDocBookOrDocument(doc: {
     return true;
   }
   return false;
+}
+
+/**
+ * Extracts all video lessons / parts from a document.
+ * Returns existing doc.videoLessons if present, or extracts all video blocks
+ * from markdown/HTML content, with fallback to primary video.
+ */
+export function extractAllVideoLessons(
+  content: string,
+  existingVideoLessons?: VideoLessonItem[],
+  fallbackTitle?: string
+): VideoLessonItem[] {
+  if (Array.isArray(existingVideoLessons) && existingVideoLessons.length > 0) {
+    return existingVideoLessons.map((item, idx) => ({
+      ...item,
+      id: item.id || `video-${idx}`,
+      title: item.title || `Lesson ${idx + 1}`,
+    }));
+  }
+
+  const lessons: VideoLessonItem[] = [];
+  const seen = new Set<string>();
+
+  // 1. Markdown custom syntax: :::video-lesson{...}:::
+  const mdMatches = Array.from((content || '').matchAll(/:::video-lesson\{([^}]+)\}:::/g));
+  for (const match of mdMatches) {
+    const attrs = match[1];
+    const idMatch = attrs.match(/id="([^"]+)"/);
+    const urlMatch = attrs.match(/url="([^"]+)"/);
+    const titleMatch = attrs.match(/title="([^"]+)"/);
+    const startMatch = attrs.match(/start="([^"]+)"/);
+    const platformMatch = attrs.match(/platform="([^"]+)"/);
+
+    let rawId = idMatch ? idMatch[1] : '';
+    let rawUrl = urlMatch ? urlMatch[1] : (rawId && !rawId.startsWith('custom-') ? `https://www.youtube.com/watch?v=${rawId}` : '');
+    let platform = platformMatch ? platformMatch[1] : undefined;
+
+    const yt = extractYouTubeVideoDetails(rawUrl) || extractYouTubeVideoDetails(rawId);
+    if (yt) {
+      rawId = yt.videoId;
+      platform = 'youtube';
+      if (!rawUrl || rawUrl.includes('custom-')) rawUrl = `https://www.youtube.com/watch?v=${yt.videoId}`;
+    }
+
+    const key = rawId || rawUrl;
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      lessons.push({
+        id: `vid-${lessons.length}`,
+        videoId: rawId,
+        url: rawUrl,
+        title: titleMatch ? titleMatch[1] : (lessons.length === 0 ? (fallbackTitle || 'Lesson 1') : `Lesson ${lessons.length + 1}`),
+        startTime: startMatch ? parseInt(startMatch[1], 10) : (yt?.startTime || 0),
+        platform,
+      });
+    }
+  }
+
+  // 2. HTML block matches: class="video-lesson-block" or data-video-lesson="true"
+  if (typeof window !== 'undefined' && typeof DOMParser !== 'undefined' && content) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const blocks = Array.from(doc.querySelectorAll<HTMLElement>('.video-lesson-block, [data-video-lesson="true"]'));
+      for (const block of blocks) {
+        let videoId = block.getAttribute('data-video-id') || '';
+        let url = block.getAttribute('data-url') || '';
+        const title = block.getAttribute('data-title') || '';
+        const startTime = parseInt(block.getAttribute('data-start') || '0', 10);
+        let platform = block.getAttribute('data-platform') || undefined;
+
+        if (!url) {
+          const a = block.querySelector<HTMLAnchorElement>('a[href]');
+          if (a?.href) url = a.href;
+        }
+
+        const yt = extractYouTubeVideoDetails(url) || extractYouTubeVideoDetails(videoId);
+        if (yt) {
+          videoId = yt.videoId;
+          platform = 'youtube';
+          if (!url || url.includes('custom-')) url = `https://www.youtube.com/watch?v=${yt.videoId}`;
+        }
+
+        const key = videoId || url;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          lessons.push({
+            id: `vid-${lessons.length}`,
+            videoId,
+            url,
+            title: title || (lessons.length === 0 ? (fallbackTitle || 'Lesson 1') : `Lesson ${lessons.length + 1}`),
+            startTime,
+            platform,
+          });
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+  }
+
+  // 3. Fallback to single primary video if nothing found yet
+  if (lessons.length === 0) {
+    const single = extractVideoLessonData(content);
+    if (single && (single.videoId || single.url)) {
+      lessons.push({
+        id: 'vid-0',
+        videoId: single.videoId,
+        url: single.url,
+        title: single.title || fallbackTitle || 'Lesson 1',
+        startTime: single.startTime || 0,
+        platform: single.platform,
+      });
+    }
+  }
+
+  return lessons;
 }
 
 /**

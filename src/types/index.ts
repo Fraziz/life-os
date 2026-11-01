@@ -410,6 +410,15 @@ export interface ReadingLogItem {
   notes?: string;
 }
 
+export interface VideoLessonItem {
+  id: string;
+  title: string;
+  url: string;
+  videoId: string;
+  platform?: string;
+  startTime?: number;
+}
+
 export interface KnowledgeDocument {
   id: string;
   title: string;
@@ -417,6 +426,7 @@ export interface KnowledgeDocument {
   status: DocumentStatus;
   category?: DocumentCategory;
   docType?: 'document' | 'video-lesson';
+  videoLessons?: VideoLessonItem[]; // Multi-video playlist support for lessons/courses
   author?: string;             // Book author or course instructor
   fileUrl?: string;            // Direct URL/Blob to attached PDF, EPUB, or media file
   fileName?: string;           // Original attached file name (e.g. "Atomic_Habits.pdf")

@@ -17,7 +17,8 @@ interface AddVideoLessonModalProps {
   }) => void;
   initialUrl?: string;
   initialTitle?: string;
-  mode?: 'insert' | 'create' | 'edit';
+  mode?: 'insert' | 'create' | 'edit' | 'add-part';
+  lessonNumber?: number;
 }
 
 export default function AddVideoLessonModal({
@@ -27,6 +28,7 @@ export default function AddVideoLessonModal({
   initialUrl = '',
   initialTitle = '',
   mode = 'insert',
+  lessonNumber,
 }: AddVideoLessonModalProps) {
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
@@ -112,6 +114,8 @@ export default function AddVideoLessonModal({
                 ? 'Edit Video Lesson'
                 : mode === 'create'
                 ? 'New Video Lesson'
+                : mode === 'add-part'
+                ? (lessonNumber ? `Add Lesson ${lessonNumber} Video` : 'Add Video Link to Lesson')
                 : 'Add Video Lesson'}
             </span>
           </h3>
@@ -130,6 +134,11 @@ export default function AddVideoLessonModal({
             {mode === 'edit' && (
               <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
                 Change the video link or lesson name. Your existing practice and study notes will be safely preserved.
+              </p>
+            )}
+            {mode === 'add-part' && (
+              <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                Add another video link (e.g. Lesson {lessonNumber || 2}, Solo Tutorial, Backing Track) to this tutorial playlist.
               </p>
             )}
 
@@ -224,6 +233,8 @@ export default function AddVideoLessonModal({
                 ? 'Save Changes'
                 : mode === 'create'
                 ? 'Create Video Lesson'
+                : mode === 'add-part'
+                ? 'Add Video to Lesson'
                 : 'Add Video'}
             </button>
           </div>
