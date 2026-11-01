@@ -28,3 +28,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 * **Framework**: Next.js App Router (TypeScript, React 19).
 * **State Management**: React Context providers with clean synchronization to local storage / cloud sync.
 * **Performance**: Animate only GPU-accelerated properties (`opacity`, `transform`). No layout shifts.
+
+## 4. Git & Workflow Rules
+* **No Auto-Push**: NEVER automatically run `git push`. Keep all changes committed locally and only push to remote when the user explicitly instructs to do so (e.g. "push", "push it now", "go push").
