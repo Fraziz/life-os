@@ -14,6 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 * **Executive Aesthetics**: Calm, warm, high-craft visual design. Minimalist and distraction-free.
 * **No Icon Bloat / Emojis**: Never use loud, tacky emoji headers or cluttered icon soup in navigation. Use clean typography, crisp borders, and subtle micro-dots (e.g. status indicators).
 * **No Left-Side Border Stripes / Box Colors**: Never use colored left-side borders or stripes (`border-left: 2px/3px solid ...`) on cards, boxes, banners, or list rows. All containers and cards must have clean, uniform, all-around subtle borders (`border: 1px solid var(--color-border-subtle)`), using subtle background highlights (`var(--color-surface-2)`) for active states instead.
+* **No Dashed or Dotted Borders ("Cut Cut Lines")**: Never use dashed or dotted borders (`border: ... dashed` or `border: ... dotted`). All buttons, containers, cards, tags, and inputs must have clean, solid, crisp borders (`border: 1px solid var(--color-border-subtle)`).
 * **Styling Technology**: Use **CSS Modules** (`*.module.css`) and native CSS custom properties defined in `src/app/globals.css`. **Do NOT use TailwindCSS**.
 * **Color Harmony & Tokens**: Use existing theme tokens (`--color-bg`, `--color-surface`, `--color-border`, `--color-accent`, etc.) to support all themes (`nature`, `light`, `dark`, `cyber`).
 * **Responsiveness**: Always use fluid containers, intrinsic CSS Grid (`minmax(min(100%, 280px), 1fr)`), and responsive padding with `clamp()`.
