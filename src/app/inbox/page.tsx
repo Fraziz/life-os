@@ -326,6 +326,7 @@ export default function InboxPage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectItem = (id: string) => {
     setSelectedItemIds((prev) => {
@@ -338,6 +339,7 @@ export default function InboxPage() {
 
   const handleSelectAllItems = () => {
     setSelectedItemIds(new Set(currentList.map((i) => i.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllItems = () => {
@@ -348,6 +350,7 @@ export default function InboxPage() {
     const count = selectedItemIds.size;
     selectedItemIds.forEach((id) => deleteInboxItem(id));
     setSelectedItemIds(new Set());
+    setIsSelectMode(false);
     showToast(`Deleted ${count} ideas`);
   };
 
@@ -355,6 +358,7 @@ export default function InboxPage() {
     const count = selectedItemIds.size;
     selectedItemIds.forEach((id) => updateInboxItem(id, { status: 'archived', isApplied: true }));
     setSelectedItemIds(new Set());
+    setIsSelectMode(false);
     showToast(`Archived ${count} ideas`);
   };
 
@@ -860,18 +864,43 @@ export default function InboxPage() {
           >
             Converted ({convertedItems.length})
           </button>
-          <button
-            type="button"
-            className={`${styles.tab} ${selectedItemIds.size > 0 ? styles.activeTab : ''}`}
-            onClick={() => {
-              if (selectedItemIds.size > 0) handleDeselectAllItems();
-              else handleSelectAllItems();
-            }}
-            title="Select all items for bulk delete/archive"
-          >
-            <CheckSquare size={13} style={{ marginRight: '5px', verticalAlign: '-1px' }} />
-            {selectedItemIds.size > 0 ? `${selectedItemIds.size} Selected` : 'Select All'}
-          </button>
+          {!isSelectMode && selectedItemIds.size === 0 ? (
+            <button
+              type="button"
+              className={styles.tab}
+              onClick={() => setIsSelectMode(true)}
+              title="Select items to delete or organize"
+            >
+              <CheckSquare size={13} style={{ marginRight: '5px', verticalAlign: '-1px' }} />
+              Select
+            </button>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                type="button"
+                className={`${styles.tab} ${selectedItemIds.size > 0 ? styles.activeTab : ''}`}
+                onClick={() => {
+                  if (selectedItemIds.size === currentList.length) handleDeselectAllItems();
+                  else handleSelectAllItems();
+                }}
+                title="Select all items for bulk delete/archive"
+              >
+                <CheckSquare size={13} style={{ marginRight: '5px', verticalAlign: '-1px' }} />
+                {selectedItemIds.size > 0 ? `${selectedItemIds.size} Selected` : 'Select All'}
+              </button>
+              <button
+                type="button"
+                className={styles.tab}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  handleDeselectAllItems();
+                }}
+                title="Exit selection mode"
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
 
         {filterTab === 'important' && isVaultUnlocked && (
@@ -1071,7 +1100,7 @@ export default function InboxPage() {
                 <SelectCheckbox
                   checked={isSelected}
                   onToggle={() => toggleSelectItem(item.id)}
-                  selectionMode={selectedItemIds.size > 0}
+                  selectionMode={isSelectMode || selectedItemIds.size > 0}
                   ariaLabel="Select idea"
                 />
                 {item.isApplied && !(item.isImportant || filterTab === 'important') && (
@@ -2115,7 +2144,10 @@ export default function InboxPage() {
         totalCount={currentList.length}
         itemLabel="ideas"
         onSelectAll={handleSelectAllItems}
-        onDeselectAll={handleDeselectAllItems}
+        onDeselectAll={() => {
+          handleDeselectAllItems();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteItems}
         onArchive={handleBatchArchiveItems}
         archiveLabel="Archive"

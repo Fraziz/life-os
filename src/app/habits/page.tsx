@@ -71,6 +71,7 @@ export default function HabitsPage() {
 
   // Multi-selection for bulk delete
   const [selectedHabitIds, setSelectedHabitIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectHabit = (id: string) => {
     setSelectedHabitIds((prev) => {
@@ -83,6 +84,7 @@ export default function HabitsPage() {
 
   const handleSelectAllHabits = () => {
     setSelectedHabitIds(new Set(filteredHabits.map((h) => h.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllHabits = () => {
@@ -92,6 +94,7 @@ export default function HabitsPage() {
   const handleBatchDeleteHabits = () => {
     selectedHabitIds.forEach((id) => deleteHabit(id));
     setSelectedHabitIds(new Set());
+    setIsSelectMode(false);
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -274,18 +277,43 @@ export default function HabitsPage() {
         >
           Weekly ({habits.filter((h) => h.frequency === 'weekly' || h.frequency === 'custom').length})
         </button>
-        <button
-          type="button"
-          className={`${styles.filterTab} ${selectedHabitIds.size > 0 ? styles.filterTabActive : ''}`}
-          onClick={() => {
-            if (selectedHabitIds.size > 0) handleDeselectAllHabits();
-            else handleSelectAllHabits();
-          }}
-          title="Select all habits for bulk delete"
-        >
-          <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-          {selectedHabitIds.size > 0 ? `${selectedHabitIds.size} Selected` : 'Select All'}
-        </button>
+        {!isSelectMode && selectedHabitIds.size === 0 ? (
+          <button
+            type="button"
+            className={styles.filterTab}
+            onClick={() => setIsSelectMode(true)}
+            title="Select habits to delete"
+          >
+            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+            Select
+          </button>
+        ) : (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <button
+              type="button"
+              className={`${styles.filterTab} ${selectedHabitIds.size > 0 ? styles.filterTabActive : ''}`}
+              onClick={() => {
+                if (selectedHabitIds.size === filteredHabits.length) handleDeselectAllHabits();
+                else handleSelectAllHabits();
+              }}
+              title="Select all habits for bulk delete"
+            >
+              <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              {selectedHabitIds.size > 0 ? `${selectedHabitIds.size} Selected` : 'Select All'}
+            </button>
+            <button
+              type="button"
+              className={styles.filterTab}
+              onClick={() => {
+                setIsSelectMode(false);
+                handleDeselectAllHabits();
+              }}
+              title="Exit selection mode"
+            >
+              Done
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Habits Grid ── */}
@@ -328,7 +356,7 @@ export default function HabitsPage() {
                   <SelectCheckbox
                     checked={isSelected}
                     onToggle={() => toggleSelectHabit(habit.id)}
-                    selectionMode={selectedHabitIds.size > 0}
+                    selectionMode={isSelectMode || selectedHabitIds.size > 0}
                     ariaLabel={`Select habit ${habit.title}`}
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
@@ -650,7 +678,10 @@ export default function HabitsPage() {
         totalCount={filteredHabits.length}
         itemLabel="habits"
         onSelectAll={handleSelectAllHabits}
-        onDeselectAll={handleDeselectAllHabits}
+        onDeselectAll={() => {
+          handleDeselectAllHabits();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteHabits}
       />
     </div>

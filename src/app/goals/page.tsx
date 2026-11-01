@@ -84,6 +84,7 @@ export default function GoalsPage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectGoal = (id: string) => {
     setSelectedGoalIds((prev) => {
@@ -96,6 +97,7 @@ export default function GoalsPage() {
 
   const handleSelectAllGoals = () => {
     setSelectedGoalIds(new Set(filteredGoals.map((g) => g.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllGoals = () => {
@@ -106,6 +108,7 @@ export default function GoalsPage() {
     const count = selectedGoalIds.size;
     selectedGoalIds.forEach((id) => deleteGoal(id));
     setSelectedGoalIds(new Set());
+    setIsSelectMode(false);
     showToast(`Deleted ${count} goals`);
   };
 
@@ -113,6 +116,7 @@ export default function GoalsPage() {
     const count = selectedGoalIds.size;
     selectedGoalIds.forEach((id) => updateGoal(id, { status: 'archived' as any }));
     setSelectedGoalIds(new Set());
+    setIsSelectMode(false);
     showToast(`Archived ${count} goals`);
   };
 
@@ -375,19 +379,44 @@ export default function GoalsPage() {
             ))}
           </select>
 
-          <button
-            type="button"
-            className={styles.filterBtn}
-            style={selectedGoalIds.size > 0 ? { background: 'var(--color-surface-2)', borderColor: 'var(--color-accent)' } : undefined}
-            onClick={() => {
-              if (selectedGoalIds.size > 0) handleDeselectAllGoals();
-              else handleSelectAllGoals();
-            }}
-            title="Select all visible goals for bulk actions"
-          >
-            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-            {selectedGoalIds.size > 0 ? `${selectedGoalIds.size} Selected` : 'Select All'}
-          </button>
+          {!isSelectMode && selectedGoalIds.size === 0 ? (
+            <button
+              type="button"
+              className={styles.filterBtn}
+              onClick={() => setIsSelectMode(true)}
+              title="Select goals to delete or organize"
+            >
+              <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Select
+            </button>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                type="button"
+                className={styles.filterBtn}
+                style={selectedGoalIds.size > 0 ? { background: 'var(--color-surface-2)', borderColor: 'var(--color-accent)' } : undefined}
+                onClick={() => {
+                  if (selectedGoalIds.size === filteredGoals.length) handleDeselectAllGoals();
+                  else handleSelectAllGoals();
+                }}
+                title="Select all visible goals for bulk actions"
+              >
+                <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                {selectedGoalIds.size > 0 ? `${selectedGoalIds.size} Selected` : 'Select All'}
+              </button>
+              <button
+                type="button"
+                className={styles.filterBtn}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  handleDeselectAllGoals();
+                }}
+                title="Exit selection mode"
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -446,7 +475,7 @@ export default function GoalsPage() {
                     <SelectCheckbox
                       checked={isSelected}
                       onToggle={() => toggleSelectGoal(goal.id)}
-                      selectionMode={selectedGoalIds.size > 0}
+                      selectionMode={isSelectMode || selectedGoalIds.size > 0}
                       ariaLabel={`Select goal ${goal.title}`}
                     />
                     <span className={styles.horizonBadge}>
@@ -946,7 +975,10 @@ export default function GoalsPage() {
         totalCount={filteredGoals.length}
         itemLabel="goals"
         onSelectAll={handleSelectAllGoals}
-        onDeselectAll={handleDeselectAllGoals}
+        onDeselectAll={() => {
+          handleDeselectAllGoals();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteGoals}
         onArchive={handleBatchArchiveGoals}
         archiveLabel="Archive"

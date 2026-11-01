@@ -220,6 +220,7 @@
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -488,10 +489,12 @@
     align-items: stretch;
     gap: 8px;
   }
+
   .taskTabsSwitcher {
     width: 100%;
     justify-content: flex-start;
   }
+
   .controlsRightGroup {
     width: 100%;
     justify-content: space-between;
@@ -520,7 +523,7 @@
   align-items: start;
 }
 
-.notesMasonryGrid > * {
+.notesMasonryGrid>* {
   margin: 0;
   width: 100%;
   box-sizing: border-box;
@@ -549,7 +552,7 @@
   align-items: start;
 }
 
-.kanbanGridSingleCol .taskList > * {
+.kanbanGridSingleCol .taskList>* {
   margin: 0;
   width: 100%;
   box-sizing: border-box;
@@ -723,6 +726,7 @@
   .column {
     min-height: auto;
   }
+
   .taskList {
     max-height: calc(100dvh - 190px);
   }
@@ -1836,4 +1840,3 @@
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
-

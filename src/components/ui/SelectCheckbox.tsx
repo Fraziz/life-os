@@ -20,10 +20,12 @@ export default function SelectCheckbox({
   selectionMode = false,
 }: SelectCheckboxProps) {
   const isVisible = checked || selectionMode;
+  if (!isVisible) return null;
+
   return (
     <button
       type="button"
-      className={`${styles.selectBtn} ${checked ? styles.checked : ''} ${isVisible ? styles.visible : styles.hoverOnly} ${className}`}
+      className={`${styles.selectBtn} ${checked ? styles.checked : ''} ${className}`}
       onClick={(e) => {
         e.stopPropagation();
         onToggle();

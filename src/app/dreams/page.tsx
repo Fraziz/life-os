@@ -67,6 +67,7 @@ export default function DreamsPage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedDreamIds, setSelectedDreamIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectDream = (id: string) => {
     setSelectedDreamIds((prev) => {
@@ -79,6 +80,7 @@ export default function DreamsPage() {
 
   const handleSelectAllDreams = () => {
     setSelectedDreamIds(new Set(filteredDreams.map((d) => d.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllDreams = () => {
@@ -89,6 +91,7 @@ export default function DreamsPage() {
     const count = selectedDreamIds.size;
     selectedDreamIds.forEach((id) => deleteDream(id));
     setSelectedDreamIds(new Set());
+    setIsSelectMode(false);
     showToast(`Deleted ${count} dreams`);
   };
 
@@ -96,6 +99,7 @@ export default function DreamsPage() {
     const count = selectedDreamIds.size;
     selectedDreamIds.forEach((id) => updateDream(id, { status: 'archived' as any }));
     setSelectedDreamIds(new Set());
+    setIsSelectMode(false);
     showToast(`Archived ${count} dreams`);
   };
 
@@ -287,18 +291,43 @@ export default function DreamsPage() {
           >
             Archived ({dreams.filter((d) => d.status === 'archived').length})
           </button>
-          <button
-            type="button"
-            className={`${styles.tab} ${selectedDreamIds.size > 0 ? styles.activeTab : ''}`}
-            onClick={() => {
-              if (selectedDreamIds.size > 0) handleDeselectAllDreams();
-              else handleSelectAllDreams();
-            }}
-            title="Select all dreams for bulk delete/archive"
-          >
-            <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-            {selectedDreamIds.size > 0 ? `${selectedDreamIds.size} Selected` : 'Select All'}
-          </button>
+          {!isSelectMode && selectedDreamIds.size === 0 ? (
+            <button
+              type="button"
+              className={styles.tab}
+              onClick={() => setIsSelectMode(true)}
+              title="Select dreams to delete or organize"
+            >
+              <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+              Select
+            </button>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                type="button"
+                className={`${styles.tab} ${selectedDreamIds.size > 0 ? styles.activeTab : ''}`}
+                onClick={() => {
+                  if (selectedDreamIds.size === filteredDreams.length) handleDeselectAllDreams();
+                  else handleSelectAllDreams();
+                }}
+                title="Select all visible dreams for bulk actions"
+              >
+                <CheckSquare size={13} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                {selectedDreamIds.size > 0 ? `${selectedDreamIds.size} Selected` : 'Select All'}
+              </button>
+              <button
+                type="button"
+                className={styles.tab}
+                onClick={() => {
+                  setIsSelectMode(false);
+                  handleDeselectAllDreams();
+                }}
+                title="Exit selection mode"
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,7 +375,7 @@ export default function DreamsPage() {
                       <SelectCheckbox
                         checked={isSelected}
                         onToggle={() => toggleSelectDream(d.id)}
-                        selectionMode={selectedDreamIds.size > 0}
+                        selectionMode={isSelectMode || selectedDreamIds.size > 0}
                         ariaLabel={`Select dream ${d.title}`}
                       />
                       <span className={`${styles.statusBadge} ${statusInfo.className}`}>
@@ -728,7 +757,10 @@ export default function DreamsPage() {
         totalCount={filteredDreams.length}
         itemLabel="dreams"
         onSelectAll={handleSelectAllDreams}
-        onDeselectAll={handleDeselectAllDreams}
+        onDeselectAll={() => {
+          handleDeselectAllDreams();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteDreams}
         onArchive={handleBatchArchiveDreams}
         archiveLabel="Archive"

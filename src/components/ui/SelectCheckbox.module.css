@@ -50,49 +50,5 @@
   background: var(--color-surface-2);
   border-color: var(--color-accent);
   color: var(--color-accent);
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-/* Hover-only mode: invisible until parent or element is hovered or focused */
-.hoverOnly {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* When parent card or row is hovered or focused within, reveal smoothly */
-:global(article):hover .hoverOnly,
-:global(article):focus-within .hoverOnly,
-:global([data-selectable]):hover .hoverOnly,
-:global([data-selectable]):focus-within .hoverOnly,
-:global(.selectable-row):hover .hoverOnly,
-:global(div[class*="Card"]):hover .hoverOnly,
-:global(div[class*="Card"]):focus-within .hoverOnly,
-:global(div[class*="card"]):hover .hoverOnly,
-:global(div[class*="card"]):focus-within .hoverOnly,
-:global(div[class*="task"]):hover .hoverOnly,
-:global(div[class*="task"]):focus-within .hoverOnly,
-:global(div[class*="Row"]):hover .hoverOnly,
-:global(div[class*="row"]):hover .hoverOnly,
-:global(div[class*="item"]):hover .hoverOnly,
-:global(div[class*="Item"]):hover .hoverOnly,
-:global(li):hover .hoverOnly,
-:global(li):focus-within .hoverOnly {
-  opacity: 0.85;
-  pointer-events: auto;
-}
-
-:global(article):hover .hoverOnly:hover,
-:global(div[class*="Card"]):hover .hoverOnly:hover,
-:global(div[class*="card"]):hover .hoverOnly:hover,
-:global(div[class*="task"]):hover .hoverOnly:hover {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Active or checked: permanently visible */
-.visible {
-  opacity: 1 !important;
-  pointer-events: auto !important;
 }
 

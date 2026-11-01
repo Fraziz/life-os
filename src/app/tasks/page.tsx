@@ -126,6 +126,7 @@ export default function TasksPage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectTask = (id: string) => {
     setSelectedTaskIds((prev) => {
@@ -139,6 +140,7 @@ export default function TasksPage() {
   const handleSelectAllTasks = () => {
     const visibleTasks = filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter);
     setSelectedTaskIds(new Set(visibleTasks.map((t) => t.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllTasks = () => {
@@ -148,11 +150,13 @@ export default function TasksPage() {
   const handleBatchDeleteTasks = () => {
     selectedTaskIds.forEach((id) => deleteTask(id));
     setSelectedTaskIds(new Set());
+    setIsSelectMode(false);
   };
 
   const handleBatchArchiveTasks = () => {
     selectedTaskIds.forEach((id) => updateTaskStatus(id, 'done'));
     setSelectedTaskIds(new Set());
+    setIsSelectMode(false);
   };
 
   // Breakdown Modal State
@@ -465,7 +469,7 @@ export default function TasksPage() {
         <SelectCheckbox
           checked={isCompactSelected}
           onToggle={() => toggleSelectTask(task.id)}
-          selectionMode={selectedTaskIds.size > 0}
+          selectionMode={isSelectMode || selectedTaskIds.size > 0}
           ariaLabel={`Select task ${task.title}`}
         />
         <button
@@ -563,7 +567,7 @@ export default function TasksPage() {
             <SelectCheckbox
               checked={isSelected}
               onToggle={() => toggleSelectTask(task.id)}
-              selectionMode={selectedTaskIds.size > 0}
+              selectionMode={isSelectMode || selectedTaskIds.size > 0}
               ariaLabel={`Select task ${task.title}`}
             />
             <button
@@ -1109,22 +1113,46 @@ export default function TasksPage() {
             </button>
 
             {/* Multi-Select Toggle Pill */}
-            <button
-              type="button"
-              className={`${styles.filterPillBtn} ${selectedTaskIds.size > 0 ? styles.filterPillBtnActive : ''}`}
-              onClick={() => {
-                if (selectedTaskIds.size > 0) {
-                  handleDeselectAllTasks();
-                } else {
-                  handleSelectAllTasks();
-                }
-              }}
-              title={selectedTaskIds.size > 0 ? 'Deselect all tasks' : 'Select all visible tasks for bulk actions'}
-              aria-label="Select tasks"
-            >
-              <CheckSquare size={12} />
-              <span>{selectedTaskIds.size > 0 ? `${selectedTaskIds.size} Selected` : 'Select All'}</span>
-            </button>
+            {!isSelectMode && selectedTaskIds.size === 0 ? (
+              <button
+                type="button"
+                className={styles.filterPillBtn}
+                onClick={() => setIsSelectMode(true)}
+                title="Select tasks to delete or mark completed"
+                aria-label="Enter selection mode"
+              >
+                <CheckSquare size={12} />
+                <span>Select</span>
+              </button>
+            ) : (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  type="button"
+                  className={`${styles.filterPillBtn} ${selectedTaskIds.size > 0 ? styles.filterPillBtnActive : ''}`}
+                  onClick={() => {
+                    const visibleTasks = filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter);
+                    if (selectedTaskIds.size === visibleTasks.length) handleDeselectAllTasks();
+                    else handleSelectAllTasks();
+                  }}
+                  title="Select all visible tasks"
+                  aria-label="Select all tasks"
+                >
+                  <CheckSquare size={12} />
+                  <span>{selectedTaskIds.size > 0 ? `${selectedTaskIds.size} Selected` : 'Select All'}</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.filterPillBtn}
+                  onClick={() => {
+                    setIsSelectMode(false);
+                    handleDeselectAllTasks();
+                  }}
+                  title="Exit selection mode"
+                >
+                  <span>Done</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className={styles.toolbarDivider} />
@@ -1769,7 +1797,10 @@ export default function TasksPage() {
         totalCount={filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter).length}
         itemLabel="tasks"
         onSelectAll={handleSelectAllTasks}
-        onDeselectAll={handleDeselectAllTasks}
+        onDeselectAll={() => {
+          handleDeselectAllTasks();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteTasks}
         onArchive={handleBatchArchiveTasks}
         archiveLabel="Mark Done"

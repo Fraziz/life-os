@@ -760,6 +760,7 @@ export default function KnowledgePage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectDoc = (id: string) => {
     setSelectedDocIds((prev) => {
@@ -772,6 +773,7 @@ export default function KnowledgePage() {
 
   const handleSelectAllDocs = () => {
     setSelectedDocIds(new Set(filteredDocs.map((d) => d.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllDocs = () => {
@@ -783,11 +785,13 @@ export default function KnowledgePage() {
     if (ids.length === 0) return;
     deleteDocs(ids);
     setSelectedDocIds(new Set());
+    setIsSelectMode(false);
   };
 
   const handleBatchArchiveDocs = () => {
     selectedDocIds.forEach((id) => updateDoc(id, { status: 'archived' }));
     setSelectedDocIds(new Set());
+    setIsSelectMode(false);
   };
   const [readFilter, setReadFilter] = useState<'all' | 'reading' | 'to-read' | 'completed'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'documents' | 'videos'>('all');
@@ -4367,18 +4371,43 @@ export default function KnowledgePage() {
                   {rf.label}
                 </button>
               ))}
-              <button
-                type="button"
-                className={`${styles.statusChip} ${selectedDocIds.size > 0 ? styles.statusChipActive : ''}`}
-                onClick={() => {
-                  if (selectedDocIds.size > 0) handleDeselectAllDocs();
-                  else handleSelectAllDocs();
-                }}
-                title="Select all visible books for bulk actions"
-              >
-                <CheckSquare size={11} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-                {selectedDocIds.size > 0 ? `${selectedDocIds.size} Selected` : 'Select All'}
-              </button>
+              {!isSelectMode && selectedDocIds.size === 0 ? (
+                <button
+                  type="button"
+                  className={styles.statusChip}
+                  onClick={() => setIsSelectMode(true)}
+                  title="Select books to delete or archive"
+                >
+                  <CheckSquare size={11} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                  Select
+                </button>
+              ) : (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    type="button"
+                    className={`${styles.statusChip} ${selectedDocIds.size > 0 ? styles.statusChipActive : ''}`}
+                    onClick={() => {
+                      if (selectedDocIds.size === filteredDocs.length) handleDeselectAllDocs();
+                      else handleSelectAllDocs();
+                    }}
+                    title="Select all visible books for bulk actions"
+                  >
+                    <CheckSquare size={11} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                    {selectedDocIds.size > 0 ? `${selectedDocIds.size} Selected` : 'Select All'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.statusChip}
+                    onClick={() => {
+                      setIsSelectMode(false);
+                      handleDeselectAllDocs();
+                    }}
+                    title="Exit selection mode"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -4485,7 +4514,7 @@ export default function KnowledgePage() {
                           <SelectCheckbox
                             checked={selectedDocIds.has(doc.id)}
                             onToggle={() => toggleSelectDoc(doc.id)}
-                            selectionMode={selectedDocIds.size > 0}
+                            selectionMode={isSelectMode || selectedDocIds.size > 0}
                             ariaLabel={`Select book ${doc.title}`}
                           />
                           {doc.isPinned && <Pin size={11} className={styles.pinnedIcon} />}
@@ -6022,7 +6051,10 @@ export default function KnowledgePage() {
         totalCount={filteredDocs.length}
         itemLabel="books"
         onSelectAll={handleSelectAllDocs}
-        onDeselectAll={handleDeselectAllDocs}
+        onDeselectAll={() => {
+          handleDeselectAllDocs();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteDocs}
         onArchive={handleBatchArchiveDocs}
         archiveLabel="Archive"

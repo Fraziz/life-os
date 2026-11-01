@@ -235,6 +235,7 @@ export default function WorkoutPage() {
 
   // Multi-selection for bulk delete
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectSession = (id: string) => {
     setSelectedSessionIds((prev) => {
@@ -247,6 +248,7 @@ export default function WorkoutPage() {
 
   const handleSelectAllSessions = () => {
     setSelectedSessionIds(new Set(sessions.map((s) => s.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllSessions = () => {
@@ -260,6 +262,7 @@ export default function WorkoutPage() {
       setActiveSessionId(null);
     }
     setSelectedSessionIds(new Set());
+    setIsSelectMode(false);
   };
 
   // New session form
@@ -1141,19 +1144,46 @@ export default function WorkoutPage() {
           <div className={styles.logList}>
             {sessions.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  style={{ fontSize: '12px', padding: '4px 10px', height: '28px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                  onClick={() => {
-                    if (selectedSessionIds.size > 0) handleDeselectAllSessions();
-                    else handleSelectAllSessions();
-                  }}
-                  title="Select all sessions for bulk delete"
-                >
-                  <CheckSquare size={13} />
-                  <span>{selectedSessionIds.size > 0 ? `${selectedSessionIds.size} Selected` : 'Select All'}</span>
-                </button>
+                {!isSelectMode && selectedSessionIds.size === 0 ? (
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    style={{ fontSize: '12px', padding: '4px 10px', height: '28px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    onClick={() => setIsSelectMode(true)}
+                    title="Select sessions to delete"
+                  >
+                    <CheckSquare size={13} />
+                    <span>Select</span>
+                  </button>
+                ) : (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      style={{ fontSize: '12px', padding: '4px 10px', height: '28px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      onClick={() => {
+                        if (selectedSessionIds.size === sessions.length) handleDeselectAllSessions();
+                        else handleSelectAllSessions();
+                      }}
+                      title="Select all sessions for bulk delete"
+                    >
+                      <CheckSquare size={13} />
+                      <span>{selectedSessionIds.size > 0 ? `${selectedSessionIds.size} Selected` : 'Select All'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      style={{ fontSize: '12px', padding: '4px 10px', height: '28px' }}
+                      onClick={() => {
+                        setIsSelectMode(false);
+                        handleDeselectAllSessions();
+                      }}
+                      title="Exit selection mode"
+                    >
+                      <span>Done</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {sessions.length === 0 ? (
@@ -1184,7 +1214,7 @@ export default function WorkoutPage() {
                       <SelectCheckbox
                         checked={isSelected}
                         onToggle={() => toggleSelectSession(s.id)}
-                        selectionMode={selectedSessionIds.size > 0}
+                        selectionMode={isSelectMode || selectedSessionIds.size > 0}
                         ariaLabel={`Select workout ${s.name}`}
                       />
                       <div className={styles.logItemLeft}>
@@ -1482,7 +1512,10 @@ export default function WorkoutPage() {
         totalCount={sessions.length}
         itemLabel="workouts"
         onSelectAll={handleSelectAllSessions}
-        onDeselectAll={handleDeselectAllSessions}
+        onDeselectAll={() => {
+          handleDeselectAllSessions();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteSessions}
       />
     </div>

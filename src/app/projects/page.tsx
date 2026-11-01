@@ -270,7 +270,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 /** ── Notes / Masonry Grid View (Google Keep-style, auto-adjusting rows & columns) ── */
-function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
+function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, isSelectMode, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -279,6 +279,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
   selectedIds?: Set<string>;
+  isSelectMode?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
   const { toggleProjectReminder } = useProjects();
@@ -317,7 +318,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   <SelectCheckbox
                     checked={Boolean(isSelected)}
                     onToggle={() => onToggleSelect(p.id)}
-                    selectionMode={(selectedIds?.size || 0) > 0}
+                    selectionMode={Boolean(isSelectMode || (selectedIds && selectedIds.size > 0))}
                     ariaLabel={`Select project ${p.title}`}
                   />
                 )}
@@ -454,7 +455,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
 }
 
 /** ── List View (flat rows fallback) ── */
-function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
+function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, isSelectMode, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -463,6 +464,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
   selectedIds?: Set<string>;
+  isSelectMode?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
   if (projects.length === 0) return <EmptyState />;
@@ -479,7 +481,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
           highlightId={highlightId}
           onAddBridgeTask={onAddBridgeTask}
           isSelected={selectedIds?.has(p.id)}
-          selectionMode={(selectedIds?.size || 0) > 0}
+          selectionMode={Boolean(isSelectMode || (selectedIds && selectedIds.size > 0))}
           onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
         />
       ))}
@@ -488,7 +490,7 @@ function ListView({ projects, goals, onEdit, onDelete, onProgressChange, highlig
 }
 
 /** ── Board View ── */
-function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, onToggleSelect }: {
+function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highlightId, onAddBridgeTask, selectedIds, isSelectMode, onToggleSelect }: {
   projects: Project[];
   goals: { id: string; title: string }[];
   onEdit: (p: Project) => void;
@@ -497,6 +499,7 @@ function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   highlightId?: string | null;
   onAddBridgeTask?: (p: Project) => void;
   selectedIds?: Set<string>;
+  isSelectMode?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
   return (
@@ -538,7 +541,7 @@ function BoardView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                   highlightId={highlightId}
                   onAddBridgeTask={onAddBridgeTask}
                   isSelected={selectedIds?.has(p.id)}
-                  selectionMode={(selectedIds?.size || 0) > 0}
+                  selectionMode={Boolean(isSelectMode || (selectedIds && selectedIds.size > 0))}
                   onToggleSelect={onToggleSelect ? () => onToggleSelect(p.id) : undefined}
                 />
               ))
@@ -780,6 +783,7 @@ export default function ProjectsPage() {
 
   // Multi-selection for bulk delete/archive
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   const toggleSelectProject = (id: string) => {
     setSelectedProjectIds((prev) => {
@@ -792,6 +796,7 @@ export default function ProjectsPage() {
 
   const handleSelectAllProjects = () => {
     setSelectedProjectIds(new Set(filteredProjects.map((p) => p.id)));
+    setIsSelectMode(true);
   };
 
   const handleDeselectAllProjects = () => {
@@ -802,6 +807,7 @@ export default function ProjectsPage() {
     const count = selectedProjectIds.size;
     selectedProjectIds.forEach((id) => deleteProject(id));
     setSelectedProjectIds(new Set());
+    setIsSelectMode(false);
     showToast(`Deleted ${count} projects`);
   };
 
@@ -809,6 +815,7 @@ export default function ProjectsPage() {
     const count = selectedProjectIds.size;
     selectedProjectIds.forEach((id) => updateProject(id, { status: 'completed' }));
     setSelectedProjectIds(new Set());
+    setIsSelectMode(false);
     showToast(`Archived ${count} projects`);
   };
 
@@ -1046,18 +1053,43 @@ export default function ProjectsPage() {
             </div>
 
             {/* Multi-Select Toggle */}
-            <button
-              type="button"
-              className={`${styles.filterPillBtn} ${selectedProjectIds.size > 0 ? styles.filterPillBtnActive : ''}`}
-              onClick={() => {
-                if (selectedProjectIds.size > 0) handleDeselectAllProjects();
-                else handleSelectAllProjects();
-              }}
-              title="Select all projects for bulk actions"
-            >
-              <CheckSquare size={12} />
-              <span>{selectedProjectIds.size > 0 ? `${selectedProjectIds.size} Selected` : 'Select All'}</span>
-            </button>
+            {!isSelectMode && selectedProjectIds.size === 0 ? (
+              <button
+                type="button"
+                className={styles.filterPillBtn}
+                onClick={() => setIsSelectMode(true)}
+                title="Select projects to delete or organize"
+              >
+                <CheckSquare size={12} />
+                <span>Select</span>
+              </button>
+            ) : (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  type="button"
+                  className={`${styles.filterPillBtn} ${selectedProjectIds.size > 0 ? styles.filterPillBtnActive : ''}`}
+                  onClick={() => {
+                    if (selectedProjectIds.size === filteredProjects.length) handleDeselectAllProjects();
+                    else handleSelectAllProjects();
+                  }}
+                  title="Select all projects for bulk actions"
+                >
+                  <CheckSquare size={12} />
+                  <span>{selectedProjectIds.size > 0 ? `${selectedProjectIds.size} Selected` : 'Select All'}</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.filterPillBtn}
+                  onClick={() => {
+                    setIsSelectMode(false);
+                    handleDeselectAllProjects();
+                  }}
+                  title="Exit selection mode"
+                >
+                  <span>Done</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className={styles.toolbarDivider} />
@@ -1097,6 +1129,7 @@ export default function ProjectsPage() {
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
           selectedIds={selectedProjectIds}
+          isSelectMode={isSelectMode}
           onToggleSelect={toggleSelectProject}
         />
       )}
@@ -1111,6 +1144,7 @@ export default function ProjectsPage() {
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
           selectedIds={selectedProjectIds}
+          isSelectMode={isSelectMode}
           onToggleSelect={toggleSelectProject}
         />
       )}
@@ -1125,6 +1159,7 @@ export default function ProjectsPage() {
           highlightId={highlightId}
           onAddBridgeTask={openBridgeTask}
           selectedIds={selectedProjectIds}
+          isSelectMode={isSelectMode}
           onToggleSelect={toggleSelectProject}
         />
       )}
@@ -1359,7 +1394,10 @@ export default function ProjectsPage() {
         totalCount={filteredProjects.length}
         itemLabel="projects"
         onSelectAll={handleSelectAllProjects}
-        onDeselectAll={handleDeselectAllProjects}
+        onDeselectAll={() => {
+          handleDeselectAllProjects();
+          setIsSelectMode(false);
+        }}
         onDelete={handleBatchDeleteProjects}
         onArchive={handleBatchArchiveProjects}
         archiveLabel="Mark Completed"
