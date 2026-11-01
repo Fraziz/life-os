@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useFocus } from '@/context/FocusContext';
 import { useGoals } from '@/context/GoalContext';
@@ -75,6 +75,7 @@ import {
   HelpCircle,
   ExternalLink,
   ChevronLeft,
+  ChevronRight,
   Table,
   Play,
   Pause,
@@ -93,6 +94,7 @@ import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import { useSettings } from '@/context/SettingsContext';
 import { useStudySession } from '@/context/StudySessionContext';
+import { paginateBook, type BookPage } from '@/utils/bookPaginator';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
 import { formatDocumentWithAI, formatDocumentLocally, type FormatResult } from '@/utils/smartDocumentFormatter';
@@ -965,6 +967,88 @@ export default function KnowledgePage() {
     setReadingTextColor(colorVal);
     if (typeof window !== 'undefined') localStorage.setItem('lifeos_reading_text_color', colorVal);
   };
+
+  // ── Real Book Paginated Reading Mode states ──────────────────────
+  const [bookViewMode, setBookViewMode] = useState<'paged' | 'scroll'>('paged');
+  const [activeBookPage, setActiveBookPage] = useState<number>(1);
+  const [tocOpen, setTocOpen] = useState(false);
+
+  // Compute paginated book pages (~280 words per page like a real book)
+  const bookPages = useMemo(() => {
+    return paginateBook(selectedDoc?.content || fContent || '', 280);
+  }, [selectedDoc?.content, fContent]);
+
+  // Sync active page when selected book changes
+  useEffect(() => {
+    if (selectedDoc) {
+      const savedPage = selectedDoc.currentPage && selectedDoc.currentPage > 0 ? selectedDoc.currentPage : 1;
+      const clamped = Math.min(Math.max(1, savedPage), Math.max(1, bookPages.length));
+      setActiveBookPage(clamped);
+    } else {
+      setActiveBookPage(1);
+    }
+  }, [selectedDoc?.id, bookPages.length]);
+
+  // Turn page handler (saves progress and bookmark)
+  const handleTurnPage = useCallback((newPage: number) => {
+    const total = bookPages.length || 1;
+    const clamped = Math.min(Math.max(1, newPage), total);
+    setActiveBookPage(clamped);
+    if (selectedDoc) {
+      const progress = Math.round((clamped / total) * 100);
+      updateDoc(selectedDoc.id, {
+        currentPage: clamped,
+        totalPages: total,
+        readProgress: progress,
+        readStatus: selectedDoc.readStatus === 'completed' && progress < 100 ? 'reading' : (progress >= 100 ? 'completed' : selectedDoc.readStatus || 'reading'),
+        lastReadAt: new Date().toISOString(),
+      });
+    }
+  }, [bookPages.length, selectedDoc, updateDoc]);
+
+  // Keyboard navigation for real book page turning (Arrow keys & Spacebar)
+  useEffect(() => {
+    if (editorMode !== 'book' && editorMode !== 'word') return;
+    if (bookViewMode !== 'paged') return;
+
+    const handleBookKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        handleTurnPage(activeBookPage + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        handleTurnPage(activeBookPage - 1);
+      } else if (e.key === ' ' && !e.shiftKey) {
+        e.preventDefault();
+        handleTurnPage(activeBookPage + 1);
+      } else if (e.key === ' ' && e.shiftKey) {
+        e.preventDefault();
+        handleTurnPage(activeBookPage - 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleBookKey);
+    return () => window.removeEventListener('keydown', handleBookKey);
+  }, [editorMode, bookViewMode, activeBookPage, handleTurnPage]);
+
+  // Extracted table of contents from chapters
+  const bookChapters = useMemo(() => {
+    const chapters: { title: string; pageNumber: number }[] = [];
+    const seen = new Set<string>();
+    bookPages.forEach((p) => {
+      if (p.chapterTitle && !seen.has(p.chapterTitle)) {
+        seen.add(p.chapterTitle);
+        chapters.push({ title: p.chapterTitle, pageNumber: p.pageNumber });
+      }
+    });
+    return chapters;
+  }, [bookPages]);
 
   // ── Smooth Auto-Scroll State & Effect ─────────────────────────────
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -4922,57 +5006,253 @@ export default function KnowledgePage() {
                         />
                       </div>
                     ) : (
-                      /* ── Formal Microsoft Word Paper Sheet (Books & Standard Documents) ── */
-                      <div className={styles.wordDocumentSheet}>
-                        <div className={styles.wordDocumentHeader}>
-                          <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Book'}</div>
-                          <div className={styles.wordDocumentMetaRow}>
-                            <div className={styles.wordDocumentBadges}>
-                              <span className={styles.wordDocumentBadge}>
-                                <BookOpen size={11} /> Book Reader
-                              </span>
-                              <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <Lock size={10} /> Locked (Read-Only)
-                              </span>
-                              {selectedDoc?.author && (
-                                <span className={styles.wordDocumentBadge}>
-                                  Author: {selectedDoc.author}
-                                </span>
-                              )}
-                              {selectedDoc?.totalPages && (
-                                <span className={styles.wordDocumentBadge}>
-                                  Pages: {selectedDoc.currentPage || 1} / {selectedDoc.totalPages}
-                                </span>
-                              )}
-                              <span className={styles.wordDocumentBadge} style={{ color: selectedDoc?.readStatus === 'completed' ? '#10b981' : 'var(--color-accent)' }}>
-                                {selectedDoc?.readStatus === 'completed' ? 'Completed' : selectedDoc?.readStatus === 'reading' ? 'Reading' : 'To Read'}
-                              </span>
+                      /* ── Executive Book Reader (Paginated Real Book or Continuous Scroll) ── */
+                      <div className={styles.realBookStage}>
+                        {/* Book Navigation Bar (Title, Chapter, Pages vs Scroll toggle, Table of Contents) */}
+                        <div className={styles.bookNavigationHeader}>
+                          <div className={styles.bookNavLeft}>
+                            <div className={styles.bookMetaPill} title={fTitle || 'Untitled Book'}>
+                              <BookOpen size={13} style={{ color: 'var(--color-accent)' }} />
+                              <span className={styles.bookMetaTitle}>{fTitle || 'Untitled Book'}</span>
                             </div>
-                            <div>
-                              {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            {bookPages[activeBookPage - 1]?.chapterTitle && (
+                              <div className={styles.bookChapterBadge} title={bookPages[activeBookPage - 1].chapterTitle}>
+                                <span>{bookPages[activeBookPage - 1].chapterTitle}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className={styles.bookNavRight}>
+                            {/* View Mode Toggle: Pages vs Scroll */}
+                            <div className={styles.bookViewToggle}>
+                              <button
+                                type="button"
+                                className={`${styles.bookViewBtn} ${bookViewMode === 'paged' ? styles.bookViewBtnActive : ''}`}
+                                onClick={() => setBookViewMode('paged')}
+                                title="Real Book Pages mode (Flip through pages like a real book)"
+                              >
+                                <BookOpen size={12} />
+                                <span>Pages</span>
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.bookViewBtn} ${bookViewMode === 'scroll' ? styles.bookViewBtnActive : ''}`}
+                                onClick={() => setBookViewMode('scroll')}
+                                title="Continuous Scroll document"
+                              >
+                                <SlidersHorizontal size={12} />
+                                <span>Scroll</span>
+                              </button>
                             </div>
+
+                            {/* Table of Contents / Chapters Dropdown */}
+                            {bookChapters.length > 1 && (
+                              <div className={styles.tocDropdownWrapper}>
+                                <button
+                                  type="button"
+                                  className={styles.bookTocBtn}
+                                  onClick={() => setTocOpen(!tocOpen)}
+                                  title="Table of Contents (Jump to chapter)"
+                                >
+                                  <List size={12} />
+                                  <span>Chapters ({bookChapters.length})</span>
+                                </button>
+                                {tocOpen && (
+                                  <div className={styles.tocDropdown}>
+                                    <div className={styles.tocDropdownHeader}>Table of Contents</div>
+                                    <div className={styles.tocList}>
+                                      {bookChapters.map((ch, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          className={`${styles.tocItem} ${activeBookPage >= ch.pageNumber ? styles.tocItemActive : ''}`}
+                                          onClick={() => {
+                                            handleTurnPage(ch.pageNumber);
+                                            setTocOpen(false);
+                                          }}
+                                        >
+                                          <span className={styles.tocChapterTitle}>{ch.title}</span>
+                                          <span className={styles.tocPageNum}>p. {ch.pageNumber}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        <div
-                          ref={(el) => {
-                            (bookEditorRef as any).current = el;
-                            (wordEditorRef as any).current = el;
-                          }}
-                          contentEditable={false}
-                          onClick={handleContentClick}
-                          onKeyDown={handleLockedKeyDown}
-                          className={`${styles.wordDocumentBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
-                          style={{
-                            color: readingTextColor !== 'default' ? readingTextColor : undefined,
-                          }}
-                          dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
-                        />
+                        {bookViewMode === 'paged' ? (
+                          /* ── Real Physical Book Pages View ── */
+                          <>
+                            <div className={styles.realBookDeck}>
+                              {/* Left Side Turn Page Paddle */}
+                              <button
+                                type="button"
+                                className={styles.realBookPaddle}
+                                onClick={() => handleTurnPage(activeBookPage - 1)}
+                                disabled={activeBookPage <= 1}
+                                title="Previous Page (or press Left Arrow / Page Up)"
+                              >
+                                <ChevronLeft size={20} />
+                                <span className={styles.paddleKeyHint}>Prev</span>
+                              </button>
 
-                        <div className={styles.wordDocumentFooter}>
-                          <span>Page 1 of 1 • Sariling Mundo Official Document</span>
-                          <span>Confidential &amp; Personal Knowledge Asset</span>
-                        </div>
+                              {/* Physical Book Paper Sheet */}
+                              <div className={styles.realBookSheet} key={`page_${activeBookPage}`}>
+                                <div className={styles.realBookGutter} />
+
+                                {/* Running Top Header */}
+                                <div className={styles.realBookRunningHeader}>
+                                  <span className={styles.runningHeaderLeft} title={bookPages[activeBookPage - 1]?.chapterTitle || fTitle}>
+                                    {bookPages[activeBookPage - 1]?.chapterTitle || fTitle || 'Book'}
+                                  </span>
+                                  <span className={styles.runningHeaderRight} title={fTitle}>
+                                    {fTitle || 'Sariling Mundo'}
+                                  </span>
+                                </div>
+
+                                {/* Page Content */}
+                                <div
+                                  ref={(el) => {
+                                    (bookEditorRef as any).current = el;
+                                    (wordEditorRef as any).current = el;
+                                  }}
+                                  contentEditable={false}
+                                  onClick={handleContentClick}
+                                  onKeyDown={handleLockedKeyDown}
+                                  className={`${styles.realBookBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
+                                  style={{
+                                    color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                                  }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: getRichHtml(bookPages[activeBookPage - 1]?.content || '')
+                                  }}
+                                />
+
+                                {/* Running Page Footer */}
+                                <div className={styles.realBookRunningFooter}>
+                                  <span className={styles.footerPageNum}>
+                                    — Page {activeBookPage} of {bookPages.length} —
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right Side Turn Page Paddle */}
+                              <button
+                                type="button"
+                                className={styles.realBookPaddle}
+                                onClick={() => handleTurnPage(activeBookPage + 1)}
+                                disabled={activeBookPage >= bookPages.length}
+                                title="Next Page (or press Right Arrow / Space / Page Down)"
+                              >
+                                <ChevronRight size={20} />
+                                <span className={styles.paddleKeyHint}>Next</span>
+                              </button>
+                            </div>
+
+                            {/* Bottom Scrubber & Page Controls Bar */}
+                            <div className={styles.realBookBottomBar}>
+                              <div className={styles.bottomBarControls}>
+                                <button
+                                  type="button"
+                                  className={styles.pageNavBtn}
+                                  onClick={() => handleTurnPage(activeBookPage - 1)}
+                                  disabled={activeBookPage <= 1}
+                                  title="Previous Page [←]"
+                                >
+                                  <ChevronLeft size={14} />
+                                  <span>Prev</span>
+                                </button>
+
+                                <div className={styles.pageScrubber}>
+                                  <input
+                                    type="range"
+                                    min={1}
+                                    max={bookPages.length}
+                                    value={activeBookPage}
+                                    onChange={(e) => handleTurnPage(Number(e.target.value))}
+                                    className={styles.pageSlider}
+                                    title={`Slide to jump pages (1 - ${bookPages.length})`}
+                                  />
+                                  <span className={styles.pageIndicatorPill}>
+                                    p. {activeBookPage} of {bookPages.length}
+                                  </span>
+                                  <span className={styles.pagePercentPill}>
+                                    {Math.round((activeBookPage / bookPages.length) * 100)}%
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className={styles.pageNavBtn}
+                                  onClick={() => handleTurnPage(activeBookPage + 1)}
+                                  disabled={activeBookPage >= bookPages.length}
+                                  title="Next Page [→ or Space]"
+                                >
+                                  <span>Next</span>
+                                  <ChevronRight size={14} />
+                                </button>
+                              </div>
+
+                              <div className={styles.shortcutTip}>
+                                <span>← / → or Space to turn page</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* ── Continuous Scroll View ── */
+                          <div className={styles.wordDocumentSheet}>
+                            <div className={styles.wordDocumentHeader}>
+                              <div className={styles.wordDocumentTitle}>{fTitle || 'Untitled Book'}</div>
+                              <div className={styles.wordDocumentMetaRow}>
+                                <div className={styles.wordDocumentBadges}>
+                                  <span className={styles.wordDocumentBadge}>
+                                    <BookOpen size={11} /> Continuous Scroll
+                                  </span>
+                                  <span className={styles.wordDocumentBadge} style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Lock size={10} /> Locked (Read-Only)
+                                  </span>
+                                  {selectedDoc?.author && (
+                                    <span className={styles.wordDocumentBadge}>
+                                      Author: {selectedDoc.author}
+                                    </span>
+                                  )}
+                                  <span className={styles.wordDocumentBadge}>
+                                    {bookPages.length} Pages Total
+                                  </span>
+                                  <span className={styles.wordDocumentBadge} style={{ color: selectedDoc?.readStatus === 'completed' ? '#10b981' : 'var(--color-accent)' }}>
+                                    {selectedDoc?.readStatus === 'completed' ? 'Completed' : selectedDoc?.readStatus === 'reading' ? 'Reading' : 'To Read'}
+                                  </span>
+                                </div>
+                                <div>
+                                  {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div
+                              ref={(el) => {
+                                (bookEditorRef as any).current = el;
+                                (wordEditorRef as any).current = el;
+                              }}
+                              contentEditable={false}
+                              onClick={handleContentClick}
+                              onKeyDown={handleLockedKeyDown}
+                              className={`${styles.wordDocumentBody} ${readingFont === 'serif' ? styles.bookPageSerif : ''} ${styles['fontSize_' + readingFontSize]}`}
+                              style={{
+                                color: readingTextColor !== 'default' ? readingTextColor : undefined,
+                              }}
+                              dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
+                            />
+
+                            <div className={styles.wordDocumentFooter}>
+                              <span>End of Document • {bookPages.length} Pages</span>
+                              <span>Sariling Mundo Book Asset</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
