@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
-import { useKnowledge } from '@/context/KnowledgeContext';
+import { useKnowledge, isTrueBookOrVideo } from '@/context/KnowledgeContext';
 import { useFocus } from '@/context/FocusContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
@@ -748,7 +748,7 @@ function MarkdownToolbar({
 export default function KnowledgePage() {
   const router = useRouter();
   const { selectFocusDoc } = useFocus();
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, deleteDocs, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -779,7 +779,9 @@ export default function KnowledgePage() {
   };
 
   const handleBatchDeleteDocs = () => {
-    selectedDocIds.forEach((id) => deleteDoc(id));
+    const ids = Array.from(selectedDocIds);
+    if (ids.length === 0) return;
+    deleteDocs(ids);
     setSelectedDocIds(new Set());
   };
 
@@ -3763,14 +3765,15 @@ export default function KnowledgePage() {
     window.dispatchEvent(new CustomEvent('open-ai-chat'));
   };
 
-  // Material Type Counts: strictly Books and Video Lessons
-  const allMaterialsCount = docs.length;
-  const videoLessonsCount = docs.filter((d) => isDocVideoLesson(d)).length;
-  const booksCount = docs.filter((d) => !isDocVideoLesson(d) || d.docType === 'document' || Boolean(d.fileName || d.fileUrl)).length;
+  // Material Type Counts: strictly verified Books and Video Lessons
+  const validDocs = docs.filter(isTrueBookOrVideo);
+  const allMaterialsCount = validDocs.length;
+  const videoLessonsCount = validDocs.filter((d) => isDocVideoLesson(d)).length;
+  const booksCount = validDocs.filter((d) => !isDocVideoLesson(d) || d.docType === 'document' || Boolean(d.fileName || d.fileUrl)).length;
 
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
-  const filteredDocs = docs
+  const filteredDocs = validDocs
     .filter((d) => {
       if (readFilter !== 'all' && (d.readStatus || 'reading') !== readFilter) return false;
       const isVideo = isDocVideoLesson(d);

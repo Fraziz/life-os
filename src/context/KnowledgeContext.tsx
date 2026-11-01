@@ -16,7 +16,7 @@ import {
   wipeCloudBooks,
 } from '@/lib/bookCloudSync';
 
-import { idbGet, idbSet, idbGetAll } from '@/lib/idbStore';
+import { idbGet, idbSet } from '@/lib/idbStore';
 import { isDocVideoLesson, cleanDocumentContent } from '@/utils/videoLesson';
 
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
@@ -514,6 +514,7 @@ interface KnowledgeContextValue {
   addDoc: (input: CreateInput) => KnowledgeDocument;
   updateDoc: (id: string, input: UpdateInput) => void;
   deleteDoc: (id: string) => void;
+  deleteDocs: (ids: string[]) => void;
   restoreDoc: (doc: KnowledgeDocument) => void;
   togglePinDoc: (id: string) => void;
   toggleDocReminder: (id: string) => void;
@@ -528,30 +529,167 @@ export function isTrueBookOrVideo(item: any): boolean {
   if (!item || typeof item !== 'object') return false;
   if (!item.id || typeof item.id !== 'string') return false;
 
-  // Strictly reject tasks
-  if (item.id.startsWith('task_') || item.id.startsWith('t_')) return false;
-  if (Array.isArray(item.subtasks) && (item.dueDate !== undefined || item.priority !== undefined)) return false;
-  if (item.priority === 'urgent' || item.priority === 'high' || item.priority === 'medium' || item.priority === 'low') return false;
-  if (item.status === 'todo' || item.status === 'in_progress') return false;
+  const id = item.id.toLowerCase();
 
-  // Strictly reject inbox / idea parking items
-  if (item.id.startsWith('inbox_') || item.id.startsWith('thought_') || item.id.startsWith('dump_')) return false;
-  if (item.convertedTo !== undefined || item.reminderTime !== undefined) return false;
+  // 1. Strictly reject Inbox / Idea Parking / Brain Dump items
+  if (
+    id.startsWith('inbox') ||
+    id.startsWith('thought') ||
+    id.startsWith('dump') ||
+    id.startsWith('idea')
+  ) {
+    return false;
+  }
+  if (
+    item.itemType === 'thought' ||
+    item.itemType === 'reminder' ||
+    item.convertedTo !== undefined ||
+    item.convertedPriority !== undefined ||
+    item.convertedEntityId !== undefined ||
+    item.isApplied !== undefined ||
+    item.appliedAt !== undefined ||
+    item.reminderTime !== undefined
+  ) {
+    return false;
+  }
+  if (item.status === 'inbox' || item.status === 'converted' || item.status === 'someday') {
+    return false;
+  }
 
-  // Strictly reject goals, dreams, habits, workouts, life areas, milestones
-  if (item.id.startsWith('goal_') || item.id.startsWith('g_')) return false;
-  if (item.id.startsWith('dream_') || item.id.startsWith('d_')) return false;
-  if (item.id.startsWith('habit_') || item.id.startsWith('h_')) return false;
-  if (item.id.startsWith('workout_') || item.id.startsWith('routine_') || item.id.startsWith('exercise_')) return false;
-  if (item.id.startsWith('area_') || item.id.startsWith('milestone_')) return false;
-  if (item.horizon !== undefined || item.targetDate !== undefined || item.quarter !== undefined) return false;
-  if (item.whyItMatters !== undefined || item.visionPrompt !== undefined) return false;
-  if (item.streak !== undefined || item.completedDates !== undefined || item.frequency !== undefined) return false;
-  if (item.exercises !== undefined || item.routineId !== undefined) return false;
-  if (item.columns !== undefined) return false;
+  // 2. Strictly reject Tasks & Subtasks
+  if (
+    id.startsWith('task') ||
+    id.startsWith('t_') ||
+    id.startsWith('t-') ||
+    id.startsWith('subtask')
+  ) {
+    return false;
+  }
+  if (
+    item.status === 'backlog' ||
+    item.status === 'todo' ||
+    item.status === 'doing' ||
+    item.status === 'done'
+  ) {
+    return false;
+  }
+  if (Array.isArray(item.subtasks) || item.isCompound !== undefined || item.parentTaskId !== undefined) {
+    return false;
+  }
+  if (item.estimatedDuration !== undefined || item.actualDuration !== undefined) {
+    return false;
+  }
+  if (item.dueDate !== undefined) {
+    return false;
+  }
+  if (item.projectId !== undefined || item.goalId !== undefined || item.lifeAreaId !== undefined) {
+    return false;
+  }
 
-  // Must have a title or content
-  if (!item.title && !item.content) return false;
+  // 3. Strictly reject Goals, Milestones, Dreams, Life Areas
+  if (
+    id.startsWith('goal') ||
+    id.startsWith('g_') ||
+    id.startsWith('g-') ||
+    id.startsWith('milestone') ||
+    id.startsWith('dream') ||
+    id.startsWith('d_') ||
+    id.startsWith('d-') ||
+    id.startsWith('area')
+  ) {
+    return false;
+  }
+  if (item.horizon !== undefined || item.why !== undefined || item.parentDreamId !== undefined) {
+    return false;
+  }
+  if (item.whyItMatters !== undefined || item.visionPrompt !== undefined) {
+    return false;
+  }
+
+  // 4. Strictly reject Projects
+  if (
+    id.startsWith('project') ||
+    id.startsWith('p_') ||
+    id.startsWith('p-')
+  ) {
+    return false;
+  }
+  if (
+    item.status === 'planning' ||
+    item.status === 'on-hold' ||
+    item.status === 'cancelled' ||
+    item.startDate !== undefined ||
+    item.milestoneId !== undefined
+  ) {
+    return false;
+  }
+
+  // 5. Strictly reject Habits, Workouts, Routines, Reviews, Calendar Events, Settings
+  if (
+    id.startsWith('habit') ||
+    id.startsWith('h_') ||
+    id.startsWith('h-') ||
+    id.startsWith('workout') ||
+    id.startsWith('routine') ||
+    id.startsWith('exercise') ||
+    id.startsWith('review') ||
+    id.startsWith('event') ||
+    id.startsWith('setting') ||
+    id.startsWith('user') ||
+    id.startsWith('block')
+  ) {
+    return false;
+  }
+  if (
+    item.streak !== undefined ||
+    item.completedDates !== undefined ||
+    item.frequency !== undefined ||
+    item.exercises !== undefined ||
+    item.routineId !== undefined ||
+    item.columns !== undefined
+  ) {
+    return false;
+  }
+
+  // 6. Must have either a valid title or non-empty content
+  const hasTitle = typeof item.title === 'string' && item.title.trim().length > 0;
+  const hasContent = typeof item.content === 'string' && item.content.trim().length > 0;
+  if (!hasTitle && !hasContent) return false;
+
+  // 7. Positive Book / Document Confirmation Check:
+  const isExplicitDocType = item.docType === 'document' || item.docType === 'video-lesson';
+  const hasDocId = id.startsWith('doc') || id.startsWith('book');
+  const hasBookProps =
+    item.readStatus !== undefined ||
+    Array.isArray(item.studyQuiz) ||
+    Array.isArray(item.readingLogs) ||
+    typeof item.totalPages === 'number' ||
+    typeof item.currentPage === 'number' ||
+    typeof item.readProgress === 'number' ||
+    typeof item.totalReadMinutes === 'number' ||
+    item.fileUrl !== undefined ||
+    item.fileName !== undefined ||
+    item.fileType !== undefined ||
+    item.author !== undefined ||
+    item.preferredReadingTime !== undefined;
+
+  const validCategories = [
+    'personal', 'work', 'learning', 'archive', 'reference',
+    'study-guide', 'problem-solving', 'guides', 'systems',
+    'business', 'creative', 'health', 'finance', 'mindset', 'tech'
+  ];
+  const hasDocCategory = typeof item.category === 'string' && validCategories.includes(item.category);
+
+  const hasBookTags =
+    Array.isArray(item.tags) &&
+    item.tags.some((t: any) =>
+      typeof t === 'string' &&
+      ['book', 'reading', 'manual', 'guide', 'study', 'notes', 'doc', 'document', 'lesson', 'summary'].includes(t.toLowerCase())
+    );
+
+  if (!isExplicitDocType && !hasDocId && !hasBookProps && !hasDocCategory && !hasBookTags) {
+    return false;
+  }
 
   return true;
 }
@@ -624,39 +762,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 2. Safe scan across localStorage for any other user-imported or saved books
-    if (typeof localStorage !== 'undefined') {
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (!k) continue;
-          if (k.startsWith('task') || k.startsWith('inbox') || k.startsWith('habit') || k.startsWith('goal') || k.startsWith('dream') || k.startsWith('workout')) continue;
-          if (k.includes('doc') || k.includes('book') || k.includes('knowledge') || k.includes('study') || k.includes('imported')) {
-            const raw = localStorage.getItem(k);
-            if (raw && (raw.startsWith('[') || raw.startsWith('{'))) {
-              try {
-                const parsed = JSON.parse(raw);
-                const items = Array.isArray(parsed) ? parsed : [parsed];
-                items.forEach((d) => {
-                  if (isTrueBookOrVideo(d)) {
-                    const existing = map.get(d.id);
-                    if (!existing) {
-                      map.set(d.id, d);
-                    } else {
-                      const newLen = (d.content || '').length;
-                      const existLen = (existing.content || '').length;
-                      if (newLen > existLen) map.set(d.id, d);
-                    }
-                  }
-                });
-              } catch {}
-            }
-          }
-        }
-      } catch {}
-    }
-
-    // 3. Recover from IndexedDB book keys & safe scan
+    // 2. Recover from IndexedDB book keys (strictly dedicated book keys)
     for (const key of bookKeys) {
       try {
         const idbDocs = await idbGet<KnowledgeDocument[]>(key);
@@ -684,32 +790,6 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         console.warn(`[KnowledgeContext] IDB read error for ${key}:`, idbErr);
       }
     }
-
-    // Comprehensive scan across IndexedDB values via idbGetAll to rescue any user-imported files
-    try {
-      const allIdbEntries = await idbGetAll<unknown>();
-      allIdbEntries.forEach((entry) => {
-        const items = Array.isArray(entry) ? entry : [entry];
-        items.forEach((d) => {
-          if (isTrueBookOrVideo(d)) {
-            const existing = map.get(d.id);
-            if (!existing) {
-              map.set(d.id, d);
-            } else {
-              const idbLen = (d.content || '').length;
-              const existLen = (existing.content || '').length;
-              const existingIsTruncated = (existing.content || '').includes('[...Full');
-              const idbIsTruncated = (d.content || '').includes('[...Full');
-              if (existingIsTruncated && !idbIsTruncated) {
-                map.set(d.id, d);
-              } else if (!idbIsTruncated && idbLen > existLen) {
-                map.set(d.id, d);
-              }
-            }
-          }
-        });
-      });
-    } catch {}
 
     // 4. Defaults & User Books preservation and healing:
     const defaults = defaultDocs();
@@ -875,15 +955,9 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         const filteredRemote = remoteDocs.filter(isTrueBookOrVideo);
         const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));
 
-        // Delete only confirmed rogue tasks or inbox items mistakenly uploaded to Firestore books collection
+        // Delete ANY confirmed non-book entity mistakenly uploaded to Firestore books collection
         for (const remote of remoteDocs) {
-          const isExplicitTaskOrInbox =
-            remote.id.startsWith('task_') ||
-            remote.id.startsWith('t_') ||
-            remote.id.startsWith('inbox_') ||
-            remote.id.startsWith('thought_') ||
-            remote.id.startsWith('dump_');
-          if (isExplicitTaskOrInbox) {
+          if (!isTrueBookOrVideo(remote)) {
             void deleteBookFromCloud(uid, remote.id);
           }
         }
@@ -1046,10 +1120,39 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
     }
   }, [saveDocs]);
 
+  const purgeIdsFromAllBookBackups = (ids: string[]) => {
+    const idSet = new Set(ids);
+    const backupKeys = [
+      'life_os_knowledge_docs_backup',
+      'life_os_books_v1',
+      'life_os_books',
+      'life_os_knowledge_docs',
+      'knowledge_docs',
+      'life_os_study_docs',
+      'life_os_docs',
+      'life_os_imported_books',
+    ];
+    if (typeof window !== 'undefined') {
+      backupKeys.forEach((k) => {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const cleaned = parsed.filter((item: any) => item && !idSet.has(item.id));
+              localStorage.setItem(k, JSON.stringify(cleaned));
+            }
+          }
+        } catch {}
+      });
+    }
+  };
+
   const deleteDoc = useCallback((id: string) => {
     const target = docsRef.current.find((d) => d.id === id);
     const next = docsRef.current.filter((d) => d.id !== id);
     saveDocs(next);
+    purgeIdsFromAllBookBackups([id]);
 
     if (uidRef.current) {
       void deleteBookFromCloud(uidRef.current, id);
@@ -1065,6 +1168,34 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
         },
         redelete: () => {
           deleteDoc(id);
+        },
+      });
+    }
+  }, [saveDocs, restoreDoc]);
+
+  const deleteDocs = useCallback((ids: string[]) => {
+    if (!ids || ids.length === 0) return;
+    const idSet = new Set(ids);
+    const deletedItems = docsRef.current.filter((d) => idSet.has(d.id));
+    const next = docsRef.current.filter((d) => !idSet.has(d.id));
+    saveDocs(next);
+    purgeIdsFromAllBookBackups(ids);
+
+    if (uidRef.current) {
+      ids.forEach((id) => {
+        void deleteBookFromCloud(uidRef.current!, id);
+      });
+    }
+
+    if (deletedItems.length > 0) {
+      notifyItemDeleted({
+        type: 'Document',
+        title: deletedItems.length === 1 ? deletedItems[0].title : `${deletedItems.length} books`,
+        restore: () => {
+          deletedItems.forEach((doc) => restoreDoc(doc));
+        },
+        redelete: () => {
+          deleteDocs(ids);
         },
       });
     }
@@ -1134,6 +1265,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
       addDoc,
       updateDoc,
       deleteDoc,
+      deleteDocs,
       restoreDoc,
       togglePinDoc,
       toggleDocReminder,
