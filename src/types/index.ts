@@ -570,4 +570,7 @@ export interface LifeFile {
   createdAt: string;
 }
 
+// Re-export Growth System types
+export * from './growth';
+
 

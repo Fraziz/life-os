@@ -27,6 +27,7 @@ import {
   RotateCcw,
   TrendingUp,
   Zap,
+  Sprout,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -48,6 +49,7 @@ const NAV_ICON_MAP: Record<string, React.ComponentType<{ size?: number; classNam
   dreams: Cloud,
   goals: Target,
   projects: Folder,
+  growth: Sprout,
   knowledge: BookOpen,
   habits: Repeat,
   workout: Dumbbell,

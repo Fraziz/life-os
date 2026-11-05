@@ -221,6 +221,17 @@ export default function CommandPalette() {
       },
     },
     {
+      id: 'nav-growth',
+      category: 'Navigation',
+      title: 'Growth System',
+      subtitle: '/growth',
+      keywords: ['growth', 'mastery', 'sprint', 'interests', 'exploration', '90-day', 'discipline'],
+      onSelect: () => {
+        router.push('/growth');
+        closePalette();
+      },
+    },
+    {
       id: 'nav-knowledge',
       category: 'Navigation',
       title: 'Study & Books',
