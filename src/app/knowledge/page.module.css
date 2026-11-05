@@ -884,8 +884,7 @@
   flex-direction: column;
   min-height: 100%;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: 100%;
   overflow: visible;
 }
 
@@ -3644,8 +3643,7 @@
    ========================================================================== */
 .videoLessonStudioSheet {
   width: 100%;
-  max-width: 1200px;
-  background: var(--color-surface);
+  max-width: 100%; background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-xl, 14px);
   padding: clamp(18px, 3.2vw, 36px);
@@ -4152,8 +4150,7 @@
   gap: var(--space-5);
   align-items: start;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 80px;
   position: relative;
