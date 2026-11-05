@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Zap,
   Sprout,
+  Sparkles,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -81,7 +82,7 @@ export default function Sidebar({
   onOpenNextAction,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { settings } = useSettings();
+  const { settings, toggleSimpleMode } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
   const { startTour } = useTour();
 
@@ -104,7 +105,12 @@ export default function Sidebar({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const displayedSections = settings.simpleMode
-    ? NAV_SECTIONS.filter((s) => s.id === 'daily')
+    ? NAV_SECTIONS.filter((s) => s.id === 'daily' || s.id === 'growth')
+        .map((s) =>
+          s.id === 'growth'
+            ? { ...s, items: s.items.filter((item) => item.id === 'growth-system') }
+            : s
+        )
     : NAV_SECTIONS;
 
   // An expanded sidebar is active when either mobile drawer is open, pinned open, or hovered
@@ -334,6 +340,17 @@ export default function Sidebar({
                 <Settings size={14} />
                 <span>Settings</span>
               </Link>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  toggleSimpleMode();
+                }}
+              >
+                <Sparkles size={14} color="var(--color-accent)" />
+                <span>{settings.simpleMode ? 'Switch to Full Mode' : 'Switch to Simple Mode'}</span>
+              </button>
               <button
                 type="button"
                 className={styles.dropdownItem}

@@ -24,7 +24,7 @@
   }
 }
 
-/* ── Minimalist Executive Header (Clean, borderless, spacious) ── */
+/* ── Minimalist Executive Header ── */
 .header {
   display: flex;
   align-items: flex-start;
@@ -88,6 +88,44 @@
   flex-wrap: wrap;
 }
 
+/* Mode Switcher in Header (Simple Mode vs Full Strategy) */
+.modeToggleGroup {
+  display: inline-flex;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.modePill {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.modePill:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.modePillActive {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* ── Theme-Synced Action Buttons ── */
 .primaryBtn {
   display: inline-flex;
@@ -136,7 +174,7 @@
   border-color: var(--color-border-focus);
 }
 
-/* ── Minimalist Info & Live Metrics Bar (No heavy box, clean seamless strip) ── */
+/* ── Minimalist Info & Live Metrics Bar ── */
 .infoStrip {
   display: flex;
   align-items: center;
@@ -204,7 +242,7 @@
   border-color: rgba(99, 102, 241, 0.28);
 }
 
-/* ── Clean Underline Segmented Nav (No heavy boxes) ── */
+/* ── Segmented Nav ── */
 .segmentedNav {
   display: flex;
   align-items: center;
@@ -247,7 +285,238 @@
   font-weight: 600;
 }
 
-/* ── 3 Levels of Focus (Wide 3-Column Layout without outer box cage) ── */
+/* ============================================================
+   ENHANCED SIMPLE MODE STYLES (ADHD ZERO-OVERWHELM LAYOUT)
+   ============================================================ */
+.simpleContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Instant Distraction Parking Bar */
+.instantParkBar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.instantParkBar:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.instantParkInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 13.5px;
+  color: var(--color-text);
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+}
+
+.instantParkInput::placeholder {
+  color: var(--color-text-faint, #9ca3af);
+}
+
+.parkBtn {
+  min-height: 32px;
+  padding: 0 12px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.12s ease;
+}
+
+.parkBtn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  transform: translateY(-0.5px);
+}
+
+.parkToast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  animation: fadeIn 0.15s ease forwards;
+}
+
+/* Primary Mastery Hero (Single focal anchor) */
+.primaryHero {
+  background: var(--color-mint-card);
+  border: 1px solid var(--color-mint-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: clamp(20px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.primaryHeroTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.heroTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.primaryHeroTitle {
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.primaryHeroNotes {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  max-width: 800px;
+  margin: 0;
+}
+
+.primaryHeroActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.focusLaunchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 20px;
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.focusLaunchBtn:hover {
+  transform: translateY(-1px);
+  opacity: 0.94;
+}
+
+/* Simple 90-Day Sprint Pulse Card */
+.sprintPulse {
+  background: var(--color-cyan-card, var(--color-surface-2));
+  border: 1px solid var(--color-cyan-border, var(--color-border));
+  border-radius: var(--radius-md, 10px);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sprintPulseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sprintPulseTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Secondary Focus Row */
+.secondaryRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+
+.secondaryCard {
+  background: var(--color-lavender-card);
+  border: 1px solid var(--color-lavender-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Parked Curiosity Accordion */
+.parkedSummary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.parkedToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ============================================================
+   DEEP STRATEGY MODE (FULL 3-COLUMN GRID & ARCHITECTURE)
+   ============================================================ */
 .levelsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -261,23 +530,19 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: transform 0.15s ease;
   border: 1px solid transparent;
 }
 
-/* Color Identity for Column 1: Primary Mastery (Mint/Emerald) */
 .colPrimary {
   background: var(--color-mint-card);
   border-color: var(--color-mint-border);
 }
 
-/* Color Identity for Column 2: Secondary Development (Lavender/Indigo) */
 .colSecondary {
   background: var(--color-lavender-card);
   border-color: var(--color-lavender-border);
 }
 
-/* Color Identity for Column 3: Exploration Backlog (Amber/Gold) */
 .colExploration {
   background: var(--color-amber-card);
   border-color: var(--color-amber-border);
@@ -355,7 +620,6 @@
   min-height: 70px;
 }
 
-/* Individual Interest Cards (Clean, calm, high-contrast) */
 .interestCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -485,7 +749,7 @@
   line-height: 1.4;
 }
 
-/* ── 90-Day Sprint Commitment Card (Vibrant, high craft) ── */
+/* 90-Day Sprint Card (Full Mode) */
 .sprintCard {
   background: var(--color-cyan-card, var(--color-surface-2));
   border: 1px solid var(--color-cyan-border, var(--color-border));
@@ -565,7 +829,6 @@
   margin-bottom: 4px;
 }
 
-/* 13-Week Checkpoints Grid */
 .weeksGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
@@ -622,7 +885,6 @@
   border-color: #10b981;
 }
 
-/* Sprint Milestones */
 .sprintMilestones {
   display: flex;
   flex-direction: column;
@@ -654,7 +916,7 @@
   color: var(--color-text-muted);
 }
 
-/* ── Live Life OS Hierarchy Connection (6 Vibrant Steps) ── */
+/* 6-Step Hierarchy Pipeline */
 .hierarchyGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
@@ -707,7 +969,7 @@
   line-height: 1.35;
 }
 
-/* ── Mindset Comparison (Curiosity vs Mastery) ── */
+/* Mindset Comparison */
 .comparisonGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -771,7 +1033,7 @@
   text-align: center;
 }
 
-/* ── Diagnostic Questionnaire ── */
+/* Diagnostic Questionnaire */
 .diagnosticGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
@@ -875,7 +1137,7 @@
   border-color: var(--color-border-focus);
 }
 
-/* ── Modals ── */
+/* Modals */
 .modalBackdrop {
   position: fixed;
   inset: 0;
