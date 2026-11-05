@@ -2,28 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Compass,
-  Target,
-  Sparkles,
-  Layers,
-  Calendar,
-  CheckCircle2,
-  Circle,
-  Clock,
-  ArrowRight,
-  TrendingUp,
-  X,
-  Plus,
-  Trash2,
-  HelpCircle,
-  Award,
-  Play,
-  Bookmark,
-  Send,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
 import { useGrowth } from '@/context/GrowthContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
@@ -139,9 +117,8 @@ export default function GrowthContent() {
   const { milestones } = useMilestones();
   const { projects } = useProjects();
   const { tasks } = useTasks();
-  const { settings, toggleSimpleMode } = useSettings();
+  const { settings } = useSettings();
 
-  // Local view mode: defaults to settings.simpleMode if true, or can be toggled directly
   const [isSimpleMode, setIsSimpleMode] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'interests' | 'sprint' | 'hierarchy' | 'diagnostic' | 'all'>('interests');
 
@@ -192,7 +169,7 @@ export default function GrowthContent() {
 
     const parkedTitle = quickParkText.trim();
     setQuickParkText('');
-    setParkToast(`✓ Parked "${parkedTitle}" safely in Exploration! Back to work.`);
+    setParkToast(`Parked "${parkedTitle}" in Exploration. Back to your focus.`);
     setTimeout(() => setParkToast(null), 4000);
   };
 
@@ -318,7 +295,7 @@ export default function GrowthContent() {
 
   return (
     <div className={styles.page}>
-      {/* ── MINIMALIST EXECUTIVE HEADER ── */}
+      {/* ── MINIMALIST EXECUTIVE HEADER (NO ICONS) ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <div className={styles.badgeRow}>
@@ -334,14 +311,13 @@ export default function GrowthContent() {
         </div>
 
         <div className={styles.headerActions}>
-          {/* Prominent Simple / Easy Mode Switcher */}
-          <div className={styles.modeToggleGroup} title="Toggle between Simple Focus Mode and Full Strategy Mode">
+          {/* Simple Mode / Full Strategy Switcher */}
+          <div className={styles.modeToggleGroup}>
             <button
               type="button"
               className={`${styles.modePill} ${isSimpleMode ? styles.modePillActive : ''}`}
               onClick={() => setIsSimpleMode(true)}
             >
-              <Sparkles size={13} />
               Simple Mode
             </button>
             <button
@@ -349,27 +325,31 @@ export default function GrowthContent() {
               className={`${styles.modePill} ${!isSimpleMode ? styles.modePillActive : ''}`}
               onClick={() => setIsSimpleMode(false)}
             >
-              <Layers size={13} />
               Full Strategy
             </button>
           </div>
 
           <button
             type="button"
-            className={styles.secondaryBtn}
+            className={styles.primaryBtn}
             onClick={() => openAddInterestModal()}
           >
-            <Plus size={14} />
             Add Interest
           </button>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => setSprintModalOpen(true)}
+          >
+            New 90-Day Sprint
+          </button>
           <Link href="/roadmap" className={styles.secondaryBtn}>
-            <TrendingUp size={14} />
             Roadmap
           </Link>
         </div>
       </header>
 
-      {/* ── SEAMLESS INFO & LIVE METRICS STRIP ── */}
+      {/* ── SEAMLESS INFO & LIVE METRICS STRIP (NO ICONS / NO EMOJIS) ── */}
       <div className={styles.infoStrip}>
         <p className={styles.infoPrinciple}>
           <span className={styles.principleTag}>Focus Rule:</span> You don&apos;t have to pursue everything today. Master 1 thing at a time.
@@ -377,49 +357,48 @@ export default function GrowthContent() {
 
         <div className={styles.liveMetricsGroup}>
           <span className={`${styles.metricChip} ${styles.chipMint}`}>
-            ● Primary: {primaryInterests.length}/1
+            Primary: {primaryInterests.length}/1
           </span>
           <span className={`${styles.metricChip} ${styles.chipLavender}`}>
-            ● Secondary: {secondaryInterests.length}/2
+            Secondary: {secondaryInterests.length}/2
           </span>
           <span className={`${styles.metricChip} ${styles.chipAmber}`}>
-            ● Exploration: {explorationInterests.length}
+            Exploration: {explorationInterests.length}
           </span>
           {activeSprint && (
             <span className={`${styles.metricChip} ${styles.chipSprint}`}>
-              <Clock size={12} /> {daysRemaining}d Sprint Left
+              Sprint: {daysRemaining}d Left
             </span>
           )}
         </div>
       </div>
 
       {/* ============================================================
-          VIEW 1: ENHANCED SIMPLE MODE (ADHD ZERO-OVERWHELM COMMAND CENTER)
+          VIEW 1: ENHANCED SIMPLE MODE (CLEAN, NO ICONS, NO CLUTTER)
           ============================================================ */}
       {isSimpleMode ? (
         <div className={styles.simpleContainer}>
-          {/* 1. INSTANT DISTRACTION PARKING (Zero-friction ADHD Capture) */}
+          {/* 1. INSTANT DISTRACTION PARKING */}
           <form className={styles.instantParkBar} onSubmit={handleQuickParkSubmit}>
             <input
               type="text"
               className={styles.instantParkInput}
-              placeholder="Had a random shiny idea or hobby in mind? Type here and press Enter to park it safely..."
+              placeholder="Had a random new idea or hobby in mind? Type here and press Enter to park safely..."
               value={quickParkText}
               onChange={(e) => setQuickParkText(e.target.value)}
             />
             <button type="submit" className={styles.parkBtn}>
-              <Send size={12} />
               Park Idea
             </button>
           </form>
 
           {parkToast && <div className={styles.parkToast}>{parkToast}</div>}
 
-          {/* 2. PRIMARY MASTERY HERO CARD (The Single Focal Anchor) */}
+          {/* 2. PRIMARY MASTERY HERO CARD */}
           {primaryItem ? (
             <div className={styles.primaryHero}>
               <div className={styles.primaryHeroTop}>
-                <span className={styles.heroTag}>🎯 Current Season Primary Mastery</span>
+                <span className={styles.heroTag}>Primary Mastery · Season Focus</span>
                 {primaryItem.category && (
                   <span
                     className={styles.categoryTag}
@@ -438,20 +417,17 @@ export default function GrowthContent() {
               {primaryItem.linkedGoalId && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className={styles.interestLinkedGoal}>
-                    <Bookmark size={11} />
-                    Linked Goal: {goals.find((g) => g.id === primaryItem.linkedGoalId)?.title}
+                    Goal: {goals.find((g) => g.id === primaryItem.linkedGoalId)?.title}
                   </span>
                 </div>
               )}
 
               <div className={styles.primaryHeroActions}>
                 <Link href="/focus" className={styles.focusLaunchBtn}>
-                  <Play size={16} fill="currentColor" />
                   Start 25m Focus Session
                 </Link>
                 <Link href="/tasks" className={styles.secondaryBtn}>
                   Open Related Tasks
-                  <ArrowRight size={13} />
                 </Link>
                 <button
                   type="button"
@@ -469,7 +445,7 @@ export default function GrowthContent() {
                   No Primary Mastery Set
                 </span>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '480px' }}>
-                  ADHD rule: choose exactly 1 core craft to receive 70%+ of your daily deep work.
+                  Choose exactly 1 core discipline to receive 70%+ of your daily deep work.
                 </p>
                 <button
                   type="button"
@@ -477,14 +453,13 @@ export default function GrowthContent() {
                   onClick={() => openAddInterestModal('primary')}
                   style={{ marginTop: '8px' }}
                 >
-                  <Plus size={14} />
                   Choose Primary Focus
                 </button>
               </div>
             </div>
           )}
 
-          {/* 3. ACTIVE 90-DAY SPRINT (Current Week Focus Only — No 13 Checkbox Clutter) */}
+          {/* 3. ACTIVE 90-DAY SPRINT (Current Week Focus Only) */}
           {activeSprint && (
             <div className={styles.sprintPulse}>
               <div className={styles.sprintPulseHeader}>
@@ -496,7 +471,6 @@ export default function GrowthContent() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className={styles.statusPill}>
-                    <Calendar size={12} color="#38bdf8" />
                     {daysRemaining} Days Left
                   </span>
                   {currentWeekCheckpoint && (
@@ -510,13 +484,13 @@ export default function GrowthContent() {
                       }}
                       onClick={() => toggleCheckpoint(activeSprint.id, currentSprintWeek)}
                     >
-                      {currentWeekCheckpoint.completed ? '✓ Week Done' : 'Mark Week Done'}
+                      {currentWeekCheckpoint.completed ? 'Week Done' : 'Mark Week Done'}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Smooth Progress Bar */}
+              {/* Progress Bar */}
               <div style={{ height: '4px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
                 <div
                   style={{
@@ -530,7 +504,7 @@ export default function GrowthContent() {
             </div>
           )}
 
-          {/* 4. SECONDARY FOCUSES (Max 2 supporting daily habits) */}
+          {/* 4. SECONDARY FOCUSES */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -542,7 +516,7 @@ export default function GrowthContent() {
                   className={styles.miniBtn}
                   onClick={() => openAddInterestModal('secondary')}
                 >
-                  + Add Secondary
+                  Add Secondary
                 </button>
               )}
             </div>
@@ -576,30 +550,26 @@ export default function GrowthContent() {
             </div>
           </div>
 
-          {/* 5. CURIOSITY BACKLOG ACCORDION (Keeps shiny ideas hidden unless browsed) */}
+          {/* 5. CURIOSITY BACKLOG ACCORDION */}
           <div className={styles.parkedSummary}>
             <button
               type="button"
               className={styles.parkedToggleBtn}
               onClick={() => setShowParkedList(!showParkedList)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#fbbf24' }}>💡</span>
-                <span>
-                  {explorationInterests.length} Ideas Parked in Curiosity Sandbox
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                <span>{showParkedList ? 'Hide' : 'View Parked'}</span>
-                {showParkedList ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </div>
+              <span>
+                {explorationInterests.length} Ideas Parked in Curiosity Sandbox
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                {showParkedList ? '[Hide]' : '[View Parked]'}
+              </span>
             </button>
 
             {showParkedList && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
                 {explorationInterests.length === 0 ? (
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                    No parked ideas yet. Use the top bar to park shiny ideas without guilt.
+                    No parked ideas yet. Use the top bar to park ideas without guilt.
                   </p>
                 ) : (
                   explorationInterests.map((item) => (
@@ -623,7 +593,7 @@ export default function GrowthContent() {
                         onClick={() => deleteInterest(item.id)}
                         title="Remove"
                       >
-                        <Trash2 size={12} />
+                        Remove
                       </button>
                     </div>
                   ))
@@ -634,17 +604,15 @@ export default function GrowthContent() {
         </div>
       ) : (
         /* ============================================================
-           VIEW 2: FULL DEEP STRATEGY MODE (ALL 3 LEVELS, 13 WEEKS, LIVE HIERARCHY, DIAGNOSTIC)
+           VIEW 2: FULL DEEP STRATEGY MODE (NO ICONS / PURE TYPOGRAPHY)
            ============================================================ */
         <>
-          {/* Segmented Nav for Full Strategy */}
           <nav className={styles.segmentedNav} aria-label="Strategy sections">
             <button
               type="button"
               className={`${styles.segmentBtn} ${activeTab === 'interests' ? styles.segmentBtnActive : ''}`}
               onClick={() => setActiveTab('interests')}
             >
-              <Layers size={14} />
               3 Levels of Focus ({interests.length})
             </button>
             <button
@@ -652,7 +620,6 @@ export default function GrowthContent() {
               className={`${styles.segmentBtn} ${activeTab === 'sprint' ? styles.segmentBtnActive : ''}`}
               onClick={() => setActiveTab('sprint')}
             >
-              <Clock size={14} />
               90-Day Sprint {activeSprint ? `(${daysRemaining}d)` : ''}
             </button>
             <button
@@ -660,15 +627,13 @@ export default function GrowthContent() {
               className={`${styles.segmentBtn} ${activeTab === 'hierarchy' ? styles.segmentBtnActive : ''}`}
               onClick={() => setActiveTab('hierarchy')}
             >
-              <TrendingUp size={14} />
-              Growth Hierarchy (Live)
+              Growth Hierarchy
             </button>
             <button
               type="button"
               className={`${styles.segmentBtn} ${activeTab === 'diagnostic' ? styles.segmentBtnActive : ''}`}
               onClick={() => setActiveTab('diagnostic')}
             >
-              <HelpCircle size={14} />
               Mindset & Reflection
             </button>
             <button
@@ -700,7 +665,7 @@ export default function GrowthContent() {
                         className={styles.miniBtn}
                         onClick={() => openAddInterestModal('primary')}
                       >
-                        + Add
+                        Add
                       </button>
                     )}
                   </div>
@@ -744,7 +709,7 @@ export default function GrowthContent() {
                         className={styles.miniBtn}
                         onClick={() => openAddInterestModal('secondary')}
                       >
-                        + Add
+                        Add
                       </button>
                     )}
                   </div>
@@ -787,7 +752,7 @@ export default function GrowthContent() {
                       className={styles.miniBtn}
                       onClick={() => openAddInterestModal('exploration')}
                     >
-                      + Park
+                      Park
                     </button>
                   </div>
                 </div>
@@ -827,11 +792,9 @@ export default function GrowthContent() {
                   {activeSprint && (
                     <>
                       <span className={styles.statusPill}>
-                        <Calendar size={13} color="#38bdf8" />
                         {daysRemaining} Days Remaining
                       </span>
                       <span className={styles.statusPill}>
-                        <CheckCircle2 size={13} color="#10b981" />
                         {completedWeeks} of 13 Weeks Checked
                       </span>
                       <button
@@ -839,7 +802,6 @@ export default function GrowthContent() {
                         className={styles.secondaryBtn}
                         onClick={() => setEvaluationModalOpen(true)}
                       >
-                        <Award size={14} />
                         Evaluate Sprint
                       </button>
                     </>
@@ -849,7 +811,6 @@ export default function GrowthContent() {
                     className={styles.primaryBtn}
                     onClick={() => setSprintModalOpen(true)}
                   >
-                    <Plus size={14} />
                     New Sprint
                   </button>
                 </div>
@@ -890,7 +851,7 @@ export default function GrowthContent() {
                         >
                           <span className={styles.weekLabel}>W{cp.week}</span>
                           <div className={`${styles.checkIndicator} ${cp.completed ? styles.checkIndicatorDone : ''}`}>
-                            {cp.completed ? '✓' : ''}
+                            {cp.completed ? 'Done' : ''}
                           </div>
                         </div>
                       ))}
@@ -905,7 +866,7 @@ export default function GrowthContent() {
             </div>
           )}
 
-          {/* HIERARCHY PIPELINE */}
+          {/* HIERARCHY PIPELINE (PURE TYPOGRAPHY) */}
           {(activeTab === 'hierarchy' || activeTab === 'all') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
@@ -919,7 +880,6 @@ export default function GrowthContent() {
                 </div>
                 <Link href="/roadmap" className={styles.secondaryBtn}>
                   Full Node Roadmap
-                  <ArrowRight size={13} />
                 </Link>
               </div>
 
@@ -964,7 +924,7 @@ export default function GrowthContent() {
                 <Link href="/focus" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #f43f5e' }}>
                   <span className={styles.stepNumber} style={{ color: '#f43f5e' }}>Layer 6</span>
                   <h4 className={styles.stepTitle}>FOCUS</h4>
-                  <div className={styles.stepCount} style={{ color: '#f43f5e' }}><Play size={18} /></div>
+                  <div className={styles.stepCount} style={{ color: '#f43f5e' }}>Active</div>
                   <span className={styles.stepQuestion}>Remove noise & do the work</span>
                 </Link>
               </div>
@@ -977,7 +937,7 @@ export default function GrowthContent() {
               <div className={styles.comparisonGrid}>
                 <div className={styles.comparisonBoxCuriosity}>
                   <h3 className={styles.comparisonTitle} style={{ color: '#fbbf24' }}>
-                    ✦ Exploration — Curiosity
+                    Exploration — Curiosity
                   </h3>
                   <p className={styles.comparisonDesc}>
                     Learning purely because you are curious. Zero obligation to monetize or become an expert.
@@ -986,7 +946,7 @@ export default function GrowthContent() {
 
                 <div className={styles.comparisonBoxMastery}>
                   <h3 className={styles.comparisonTitle} style={{ color: '#34d399' }}>
-                    ★ Mastery — Deliberate Practice
+                    Mastery — Deliberate Practice
                   </h3>
                   <p className={styles.comparisonDesc}>
                     Deliberately practicing a discipline over time, receiving feedback, and pushing through plateaus.
@@ -1041,7 +1001,6 @@ export default function GrowthContent() {
                 {reflection && (
                   <div className={styles.insightCard}>
                     <h4 className={styles.insightTitle} style={{ color: '#c084fc' }}>
-                      <Sparkles size={16} />
                       Your Tailored Growth Architecture
                     </h4>
                     <div className={styles.insightBody} style={{ whiteSpace: 'pre-line' }}>
@@ -1066,7 +1025,7 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setInterestModalOpen(false)}
               >
-                <X size={16} />
+                Close
               </button>
             </div>
 
@@ -1163,7 +1122,7 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setSprintModalOpen(false)}
               >
-                <X size={16} />
+                Close
               </button>
             </div>
 
@@ -1246,7 +1205,7 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setEvaluationModalOpen(false)}
               >
-                <X size={16} />
+                Close
               </button>
             </div>
 
@@ -1270,17 +1229,17 @@ export default function GrowthContent() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Rating (1 - 5 Stars)</label>
+                <label className={styles.formLabel}>Rating (1 - 5 Scale)</label>
                 <select
                   className={styles.formSelect}
                   value={evalRating}
                   onChange={(e) => setEvalRating(Number(e.target.value))}
                 >
-                  <option value={5}>⭐⭐⭐⭐⭐ (5/5 Exceptional consistency & breakthrough)</option>
-                  <option value={4}>⭐⭐⭐⭐ (4/5 Solid progress with minor resistance)</option>
-                  <option value={3}>⭐⭐⭐ (3/5 Moderate consistency, learned a lot)</option>
-                  <option value={2}>⭐⭐ (2/5 Struggled with follow-through)</option>
-                  <option value={1}>⭐ (1/5 Lost momentum early)</option>
+                  <option value={5}>5/5 - Exceptional consistency & breakthrough</option>
+                  <option value={4}>4/5 - Solid progress with minor resistance</option>
+                  <option value={3}>3/5 - Moderate consistency, learned a lot</option>
+                  <option value={2}>2/5 - Struggled with follow-through</option>
+                  <option value={1}>1/5 - Lost momentum early</option>
                 </select>
               </div>
 
@@ -1314,7 +1273,7 @@ export default function GrowthContent() {
   );
 }
 
-// ── Subcomponent for individual interest card ──
+// ── Subcomponent for individual interest card (NO ICONS) ──
 function InterestCardItem({
   interest,
   linkedGoalTitle,
@@ -1343,8 +1302,7 @@ function InterestCardItem({
 
       {linkedGoalTitle && (
         <span className={styles.interestLinkedGoal} title={`Linked to goal: ${linkedGoalTitle}`}>
-          <Bookmark size={11} />
-          {linkedGoalTitle}
+          Goal: {linkedGoalTitle}
         </span>
       )}
 
@@ -1358,7 +1316,7 @@ function InterestCardItem({
               title="Promote to Primary Focus"
               style={{ color: '#10b981' }}
             >
-              → Primary
+              Primary
             </button>
           )}
           {interest.level !== 'secondary' && (
@@ -1369,7 +1327,7 @@ function InterestCardItem({
               title="Move to Secondary Focus"
               style={{ color: '#818cf8' }}
             >
-              → Secondary
+              Secondary
             </button>
           )}
           {interest.level !== 'exploration' && (
@@ -1380,7 +1338,7 @@ function InterestCardItem({
               title="Move to Exploration Backlog"
               style={{ color: '#f59e0b' }}
             >
-              → Explore
+              Explore
             </button>
           )}
         </div>
@@ -1392,7 +1350,7 @@ function InterestCardItem({
           title="Delete interest"
           aria-label={`Delete ${interest.title}`}
         >
-          <Trash2 size={13} />
+          Remove
         </button>
       </div>
     </div>
