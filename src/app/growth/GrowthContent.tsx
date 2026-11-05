@@ -20,6 +20,7 @@ import {
   Award,
   Play,
   Bookmark,
+  Zap,
 } from 'lucide-react';
 import { useGrowth } from '@/context/GrowthContext';
 import { useGoals } from '@/context/GoalContext';
@@ -34,6 +35,58 @@ import type {
   IdentityOption,
 } from '@/types/growth';
 import styles from './GrowthContent.module.css';
+
+// Semantic category colors for tags
+function getCategoryTagStyle(category?: string) {
+  if (!category) {
+    return {
+      background: 'rgba(148, 163, 184, 0.12)',
+      color: '#94a3b8',
+      border: '1px solid rgba(148, 163, 184, 0.22)',
+    };
+  }
+  const cat = category.toLowerCase();
+  if (cat.includes('eng') || cat.includes('code') || cat.includes('tech') || cat.includes('soft') || cat.includes('dev')) {
+    return {
+      background: 'rgba(56, 189, 248, 0.14)',
+      color: '#38bdf8',
+      border: '1px solid rgba(56, 189, 248, 0.3)',
+    };
+  }
+  if (cat.includes('creat') || cat.includes('music') || cat.includes('guitar') || cat.includes('sound') || cat.includes('write')) {
+    return {
+      background: 'rgba(192, 132, 252, 0.14)',
+      color: '#c084fc',
+      border: '1px solid rgba(192, 132, 252, 0.3)',
+    };
+  }
+  if (cat.includes('health') || cat.includes('fit') || cat.includes('body') || cat.includes('sport') || cat.includes('gym')) {
+    return {
+      background: 'rgba(52, 211, 153, 0.14)',
+      color: '#34d399',
+      border: '1px solid rgba(52, 211, 153, 0.3)',
+    };
+  }
+  if (cat.includes('design') || cat.includes('graph') || cat.includes('3d') || cat.includes('art') || cat.includes('ui')) {
+    return {
+      background: 'rgba(251, 146, 60, 0.14)',
+      color: '#fb923c',
+      border: '1px solid rgba(251, 146, 60, 0.3)',
+    };
+  }
+  if (cat.includes('psych') || cat.includes('mind') || cat.includes('learn') || cat.includes('sci')) {
+    return {
+      background: 'rgba(244, 114, 182, 0.14)',
+      color: '#f472b6',
+      border: '1px solid rgba(244, 114, 182, 0.3)',
+    };
+  }
+  return {
+    background: 'rgba(250, 204, 21, 0.14)',
+    color: '#facc15',
+    border: '1px solid rgba(250, 204, 21, 0.3)',
+  };
+}
 
 // Educational diagnosis advice matrix (ADHD-friendly, grounded, practical)
 const STRUGGLE_ADVICE: Record<StruggleOption, string> = {
@@ -268,31 +321,31 @@ export default function GrowthContent() {
         </div>
       </header>
 
-      {/* ── MINIMALIST PHILOSOPHY & METRIC ANCHOR BANNER ── */}
-      <div className={styles.philosophyBanner}>
-        <p className={styles.philosophyText}>
-          <span className={styles.philosophyQuote}>Focus Rule:</span> You don&apos;t have to pursue everything today. You have a lifetime to learn, but you need a system to direct your attention.
+      {/* ── SEAMLESS INFO & LIVE METRICS STRIP (No heavy box) ── */}
+      <div className={styles.infoStrip}>
+        <p className={styles.infoPrinciple}>
+          <span className={styles.principleTag}>Focus Rule:</span> You don&apos;t have to pursue everything today. You have a lifetime to learn.
         </p>
 
-        <div className={styles.quickStatsRow}>
-          <span className={styles.quickStatItem}>
-            Primary: <span className={styles.statValue}>{primaryInterests.length}/1</span>
+        <div className={styles.liveMetricsGroup}>
+          <span className={`${styles.metricChip} ${styles.chipMint}`}>
+            ● Primary: {primaryInterests.length}/1
           </span>
-          <span className={styles.quickStatItem}>
-            Secondary: <span className={styles.statValue}>{secondaryInterests.length}/2</span>
+          <span className={`${styles.metricChip} ${styles.chipLavender}`}>
+            ● Secondary: {secondaryInterests.length}/2
           </span>
-          <span className={styles.quickStatItem}>
-            Exploration: <span className={styles.statValue}>{explorationInterests.length}</span>
+          <span className={`${styles.metricChip} ${styles.chipAmber}`}>
+            ● Exploration: {explorationInterests.length}
           </span>
           {activeSprint && (
-            <span className={styles.quickStatItem}>
-              Sprint: <span className={styles.statValue}>{daysRemaining}d left</span>
+            <span className={`${styles.metricChip} ${styles.chipSprint}`}>
+              <Clock size={12} /> {daysRemaining}d Sprint Left
             </span>
           )}
         </div>
       </div>
 
-      {/* ── CALMING SEGMENTED VIEW SWITCHER ── */}
+      {/* ── CLEAN UNDERLINE SEGMENTED VIEW SWITCHER ── */}
       <nav className={styles.segmentedNav} aria-label="Growth sections">
         <button
           type="button"
@@ -308,7 +361,7 @@ export default function GrowthContent() {
           onClick={() => setActiveTab('sprint')}
         >
           <Clock size={14} />
-          90-Day Sprint {activeSprint ? `(${daysRemaining}d left)` : ''}
+          90-Day Sprint {activeSprint ? `(${daysRemaining}d)` : ''}
         </button>
         <button
           type="button"
@@ -335,226 +388,198 @@ export default function GrowthContent() {
         </button>
       </nav>
 
-      {/* ── SECTION B: THE THREE LEVELS OF INTEREST (WIDE 3-COLUMN GRID) ── */}
+      {/* ── SECTION B: THE THREE LEVELS OF INTEREST (COLOR-CODED WIDE GRID, NO OUTER BOX CAGE) ── */}
       {(activeTab === 'interests' || activeTab === 'all') && (
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleGroup}>
-              <h2 className={styles.sectionTitle}>
-                <Layers size={18} />
-                Three Levels of Focus (Focus Governor)
-              </h2>
-              <p className={styles.sectionDesc}>
-                Protect cognitive bandwidth. One primary craft receives main energy; curiosity ideas are safely parked without guilt.
-              </p>
-            </div>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() => openAddInterestModal()}
-            >
-              <Plus size={14} />
-              Add Interest
-            </button>
-          </div>
-
-          <div className={styles.levelsGrid}>
-            {/* 1. PRIMARY FOCUS */}
-            <div className={styles.levelColumn}>
-              <div className={styles.levelHeader}>
-                <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 1</span>
-                  <h3 className={styles.levelName}>Primary Focus</h3>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={styles.countIndicator}>{primaryInterests.length}/1</span>
-                  {primaryInterests.length === 0 && (
-                    <button
-                      type="button"
-                      className={styles.miniBtn}
-                      onClick={() => openAddInterestModal('primary')}
-                      title="Set Primary Focus"
-                    >
-                      + Add
-                    </button>
-                  )}
-                </div>
+        <div className={styles.levelsGrid}>
+          {/* 1. PRIMARY FOCUS (Mint / Emerald identity) */}
+          <div className={`${styles.levelColumn} ${styles.colPrimary}`}>
+            <div className={styles.levelHeader}>
+              <div className={styles.levelTitleWrap}>
+                <span className={styles.levelBadgeMint}>Level 1</span>
+                <h3 className={styles.levelName}>Primary Focus</h3>
               </div>
-              <p className={styles.levelRuleText}>
-                The 1 major discipline receiving 70%+ of your daily deep work.
-              </p>
-              <div className={styles.interestList}>
-                {primaryInterests.length === 0 ? (
-                  <div className={styles.emptyStateSlot}>
-                    No primary focus active. Promote an interest below or add one.
-                  </div>
-                ) : (
-                  primaryInterests.map((interest) => (
-                    <InterestCardItem
-                      key={interest.id}
-                      interest={interest}
-                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
-                      onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
-                      onDelete={() => deleteInterest(interest.id)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* 2. SECONDARY FOCUS */}
-            <div className={styles.levelColumn}>
-              <div className={styles.levelHeader}>
-                <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 2</span>
-                  <h3 className={styles.levelName}>Secondary Focus</h3>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={styles.countIndicator}>{secondaryInterests.length}/2</span>
-                  {secondaryInterests.length < 2 && (
-                    <button
-                      type="button"
-                      className={styles.miniBtn}
-                      onClick={() => openAddInterestModal('secondary')}
-                      title="Add Secondary Focus"
-                    >
-                      + Add
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p className={styles.levelRuleText}>
-                Up to 2 supporting interests developed steadily (e.g. 20–30m daily).
-              </p>
-              <div className={styles.interestList}>
-                {secondaryInterests.length === 0 ? (
-                  <div className={styles.emptyStateSlot}>
-                    No secondary interests active.
-                  </div>
-                ) : (
-                  secondaryInterests.map((interest) => (
-                    <InterestCardItem
-                      key={interest.id}
-                      interest={interest}
-                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
-                      onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
-                      onDelete={() => deleteInterest(interest.id)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* 3. EXPLORATION */}
-            <div className={styles.levelColumn}>
-              <div className={styles.levelHeader}>
-                <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 3</span>
-                  <h3 className={styles.levelName}>Exploration Backlog</h3>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={styles.countIndicator}>{explorationInterests.length}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#34d399' }}>
+                  {primaryInterests.length}/1
+                </span>
+                {primaryInterests.length === 0 && (
                   <button
                     type="button"
                     className={styles.miniBtn}
-                    onClick={() => openAddInterestModal('exploration')}
-                    title="Park new idea"
+                    onClick={() => openAddInterestModal('primary')}
+                    title="Set Primary Focus"
                   >
-                    + Park
+                    + Add
                   </button>
-                </div>
-              </div>
-              <p className={styles.levelRuleText}>
-                Curiosity sandbox. Park shiny ideas here without guilt or pressure.
-              </p>
-              <div className={styles.interestList}>
-                {explorationInterests.length === 0 ? (
-                  <div className={styles.emptyStateSlot}>
-                    Curiosity backlog is empty. Park new hobbies or skills here.
-                  </div>
-                ) : (
-                  explorationInterests.map((interest) => (
-                    <InterestCardItem
-                      key={interest.id}
-                      interest={interest}
-                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
-                      onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
-                      onDelete={() => deleteInterest(interest.id)}
-                    />
-                  ))
                 )}
               </div>
             </div>
+            <p className={styles.levelRuleText}>
+              The 1 major discipline receiving 70%+ of your daily deep work and practice.
+            </p>
+            <div className={styles.interestList}>
+              {primaryInterests.length === 0 ? (
+                <div className={styles.emptyStateSlot}>
+                  No primary focus active. Promote an interest below or add one.
+                </div>
+              ) : (
+                primaryInterests.map((interest) => (
+                  <InterestCardItem
+                    key={interest.id}
+                    interest={interest}
+                    linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
+                    onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
+                    onDelete={() => deleteInterest(interest.id)}
+                  />
+                ))
+              )}
+            </div>
           </div>
-        </section>
+
+          {/* 2. SECONDARY FOCUS (Lavender / Indigo identity) */}
+          <div className={`${styles.levelColumn} ${styles.colSecondary}`}>
+            <div className={styles.levelHeader}>
+              <div className={styles.levelTitleWrap}>
+                <span className={styles.levelBadgeLavender}>Level 2</span>
+                <h3 className={styles.levelName}>Secondary Focus</h3>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#a5b4fc' }}>
+                  {secondaryInterests.length}/2
+                </span>
+                {secondaryInterests.length < 2 && (
+                  <button
+                    type="button"
+                    className={styles.miniBtn}
+                    onClick={() => openAddInterestModal('secondary')}
+                    title="Add Secondary Focus"
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className={styles.levelRuleText}>
+              Up to 2 supporting interests developed steadily (e.g. 20–30m daily).
+            </p>
+            <div className={styles.interestList}>
+              {secondaryInterests.length === 0 ? (
+                <div className={styles.emptyStateSlot}>
+                  No secondary interests active.
+                </div>
+              ) : (
+                secondaryInterests.map((interest) => (
+                  <InterestCardItem
+                    key={interest.id}
+                    interest={interest}
+                    linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
+                    onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
+                    onDelete={() => deleteInterest(interest.id)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 3. EXPLORATION BACKLOG (Warm Amber / Gold identity) */}
+          <div className={`${styles.levelColumn} ${styles.colExploration}`}>
+            <div className={styles.levelHeader}>
+              <div className={styles.levelTitleWrap}>
+                <span className={styles.levelBadgeAmber}>Level 3</span>
+                <h3 className={styles.levelName}>Exploration Backlog</h3>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#fbbf24' }}>
+                  {explorationInterests.length}
+                </span>
+                <button
+                  type="button"
+                  className={styles.miniBtn}
+                  onClick={() => openAddInterestModal('exploration')}
+                  title="Park new idea"
+                >
+                  + Park
+                </button>
+              </div>
+            </div>
+            <p className={styles.levelRuleText}>
+              Curiosity sandbox. Park shiny ideas here without guilt or pressure.
+            </p>
+            <div className={styles.interestList}>
+              {explorationInterests.length === 0 ? (
+                <div className={styles.emptyStateSlot}>
+                  Curiosity backlog is empty. Park new hobbies or skills here.
+                </div>
+              ) : (
+                explorationInterests.map((interest) => (
+                  <InterestCardItem
+                    key={interest.id}
+                    interest={interest}
+                    linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
+                    onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
+                    onDelete={() => deleteInterest(interest.id)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── SECTION C: THE 90-DAY RULE (COMMITMENT SPRINT) ── */}
       {(activeTab === 'sprint' || activeTab === 'all') && (
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleGroup}>
-              <h2 className={styles.sectionTitle}>
-                <Clock size={18} />
-                The 90-Day Rule (Quarterly Commitment System)
-              </h2>
-              <p className={styles.sectionDesc}>
-                Lock into a direction for 90 continuous days before evaluating whether to continue, adjust, or pivot.
-              </p>
+        <div className={styles.sprintCard}>
+          <div className={styles.sprintTopMeta}>
+            <div className={styles.sprintTitleGroup}>
+              <span className={styles.sprintLabel}>90-Day Commitment Sprint</span>
+              <h3 className={styles.sprintTitle}>{activeSprint?.title || 'No Active Sprint'}</h3>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className={styles.sprintPills}>
               {activeSprint && (
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  onClick={() => setEvaluationModalOpen(true)}
-                >
-                  <Award size={15} />
-                  Evaluate Sprint
-                </button>
+                <>
+                  <span className={styles.statusPill}>
+                    <Calendar size={13} color="#38bdf8" />
+                    {daysRemaining} Days Remaining
+                  </span>
+                  <span className={styles.statusPill}>
+                    <CheckCircle2 size={13} color="#10b981" />
+                    {completedWeeks} of 13 Weeks Checked
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => setEvaluationModalOpen(true)}
+                  >
+                    <Award size={14} />
+                    Evaluate Sprint
+                  </button>
+                </>
               )}
               <button
                 type="button"
                 className={styles.primaryBtn}
                 onClick={() => setSprintModalOpen(true)}
               >
-                <Plus size={15} />
+                <Plus size={14} />
                 New Sprint
               </button>
             </div>
           </div>
 
           {activeSprint ? (
-            <div className={styles.sprintCard}>
-              <div className={styles.sprintTopMeta}>
-                <div className={styles.sprintTitleGroup}>
-                  <span className={styles.sprintLabel}>Active 90-Day Commitment</span>
-                  <h3 className={styles.sprintTitle}>{activeSprint.title}</h3>
-                </div>
-                <div className={styles.sprintPills}>
-                  <span className={styles.statusPill}>
-                    <Calendar size={13} />
-                    {daysRemaining} Days Remaining
-                  </span>
-                  <span className={styles.statusPill}>
-                    <CheckCircle2 size={13} />
-                    {completedWeeks} of 13 Weeks Checked
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <>
+              {/* Vibrant Gradient Progress bar */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
-                  <span>Sprint Timeline</span>
-                  <span>{sprintProgressPct}%</span>
+                  <span>Sprint Progress</span>
+                  <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{sprintProgressPct}%</span>
                 </div>
-                <div style={{ height: '4px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ height: '5px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
                       width: `${sprintProgressPct}%`,
-                      background: 'var(--color-accent)',
+                      background: 'linear-gradient(90deg, #6366f1, #38bdf8, #10b981)',
                       transition: 'width 0.3s ease',
                     }}
                   />
@@ -599,7 +624,7 @@ export default function GrowthContent() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {m.completed ? (
-                            <CheckCircle2 size={15} color="var(--color-success)" />
+                            <CheckCircle2 size={15} color="#10b981" />
                           ) : (
                             <Circle size={15} color="var(--color-text-muted)" />
                           )}
@@ -617,26 +642,25 @@ export default function GrowthContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           ) : (
             <div className={styles.emptyStateSlot}>
-              No active 90-day sprint found. Click &ldquo;New Sprint&rdquo; to lock in your quarterly commitment.
+              No active 90-day sprint found. Click &ldquo;New Sprint&rdquo; above to commit to a quarterly cycle.
             </div>
           )}
-        </section>
+        </div>
       )}
 
-      {/* ── SECTION D: THE GROWTH HIERARCHY (WIDE LIVE PIPELINE) ── */}
+      {/* ── SECTION D: THE GROWTH HIERARCHY (6 VIBRANT STEPS) ── */}
       {(activeTab === 'hierarchy' || activeTab === 'all') && (
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleGroup}>
-              <h2 className={styles.sectionTitle}>
-                <TrendingUp size={18} />
-                The Growth Hierarchy (Live Life OS Pipeline)
-              </h2>
-              <p className={styles.sectionDesc}>
-                Your entire execution pipeline from identity down to current focus. Click any layer to jump straight to work.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                Live Life OS Architecture
+              </h3>
+              <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
+                Your unified execution pipeline from identity down to current focus.
               </p>
             </div>
             <Link href="/roadmap" className={styles.secondaryBtn}>
@@ -646,69 +670,61 @@ export default function GrowthContent() {
           </div>
 
           <div className={styles.hierarchyGrid}>
-            <Link href="/dreams" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 1</span>
+            <Link href="/dreams" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #c084fc' }}>
+              <span className={styles.stepNumber} style={{ color: '#c084fc' }}>Layer 1</span>
               <h4 className={styles.stepTitle}>DREAM</h4>
-              <div className={styles.stepCount}>{dreams.length}</div>
+              <div className={styles.stepCount} style={{ color: '#c084fc' }}>{dreams.length}</div>
               <span className={styles.stepQuestion}>What person do I want to become?</span>
             </Link>
 
-            <Link href="/goals" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 2</span>
+            <Link href="/goals" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #818cf8' }}>
+              <span className={styles.stepNumber} style={{ color: '#818cf8' }}>Layer 2</span>
               <h4 className={styles.stepTitle}>GOAL</h4>
-              <div className={styles.stepCount}>{goals.length}</div>
+              <div className={styles.stepCount} style={{ color: '#818cf8' }}>{goals.length}</div>
               <span className={styles.stepQuestion}>What do I want to accomplish?</span>
             </Link>
 
-            <Link href="/milestones" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 3</span>
+            <Link href="/milestones" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #2dd4bf' }}>
+              <span className={styles.stepNumber} style={{ color: '#2dd4bf' }}>Layer 3</span>
               <h4 className={styles.stepTitle}>MILESTONE</h4>
-              <div className={styles.stepCount}>{milestones.length}</div>
+              <div className={styles.stepCount} style={{ color: '#2dd4bf' }}>{milestones.length}</div>
               <span className={styles.stepQuestion}>Measurable progress markers</span>
             </Link>
 
-            <Link href="/projects" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 4</span>
+            <Link href="/projects" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #38bdf8' }}>
+              <span className={styles.stepNumber} style={{ color: '#38bdf8' }}>Layer 4</span>
               <h4 className={styles.stepTitle}>PROJECT</h4>
-              <div className={styles.stepCount}>{projects.length}</div>
+              <div className={styles.stepCount} style={{ color: '#38bdf8' }}>{projects.length}</div>
               <span className={styles.stepQuestion}>Specific work moving me forward</span>
             </Link>
 
-            <Link href="/tasks" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 5</span>
+            <Link href="/tasks" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #fbbf24' }}>
+              <span className={styles.stepNumber} style={{ color: '#fbbf24' }}>Layer 5</span>
               <h4 className={styles.stepTitle}>TASK</h4>
-              <div className={styles.stepCount}>{tasks.filter((t) => t.status !== 'done').length}</div>
+              <div className={styles.stepCount} style={{ color: '#fbbf24' }}>
+                {tasks.filter((t) => t.status !== 'done').length}
+              </div>
               <span className={styles.stepQuestion}>Action to complete today</span>
             </Link>
 
-            <Link href="/focus" className={styles.hierarchyStepCard}>
-              <span className={styles.stepNumber}>Layer 6</span>
+            <Link href="/focus" className={styles.hierarchyStepCard} style={{ borderTop: '2px solid #f43f5e' }}>
+              <span className={styles.stepNumber} style={{ color: '#f43f5e' }}>Layer 6</span>
               <h4 className={styles.stepTitle}>FOCUS</h4>
-              <div className={styles.stepCount}><Play size={16} /></div>
+              <div className={styles.stepCount} style={{ color: '#f43f5e' }}><Play size={18} /></div>
               <span className={styles.stepQuestion}>Remove noise & do the work</span>
             </Link>
           </div>
-        </section>
+        </div>
       )}
 
-      {/* ── SECTION E & F: MINDSET & PERSONAL REFLECTION ── */}
+      {/* ── SECTION E & F: MINDSET & PERSONAL REFLECTION (VIBRANT CARDS) ── */}
       {(activeTab === 'diagnostic' || activeTab === 'all') && (
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleGroup}>
-              <h2 className={styles.sectionTitle}>
-                <Sparkles size={18} />
-                Exploration vs. Mastery & Reflection
-              </h2>
-              <p className={styles.sectionDesc}>
-                Understanding the two modes protects against guilt, burnout, and scattered energy.
-              </p>
-            </div>
-          </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className={styles.comparisonGrid}>
-            <div className={styles.comparisonBox}>
-              <h3 className={styles.comparisonTitle}>Exploration — Curiosity</h3>
+            <div className={styles.comparisonBoxCuriosity}>
+              <h3 className={styles.comparisonTitle} style={{ color: '#fbbf24' }}>
+                ✦ Exploration — Curiosity
+              </h3>
               <p className={styles.comparisonDesc}>
                 Learning something purely because you are curious. Zero obligation to monetize, complete, or become an expert.
               </p>
@@ -719,8 +735,10 @@ export default function GrowthContent() {
               </ul>
             </div>
 
-            <div className={styles.comparisonBox}>
-              <h3 className={styles.comparisonTitle}>Mastery — Deliberate Practice</h3>
+            <div className={styles.comparisonBoxMastery}>
+              <h3 className={styles.comparisonTitle} style={{ color: '#34d399' }}>
+                ★ Mastery — Deliberate Practice
+              </h3>
               <p className={styles.comparisonDesc}>
                 Deliberately practicing a discipline over time, receiving feedback, and pushing through plateaus.
               </p>
@@ -737,7 +755,7 @@ export default function GrowthContent() {
           </div>
 
           {/* Interactive Diagnostic */}
-          <div className={styles.diagnosticGrid} style={{ marginTop: '8px' }}>
+          <div className={styles.diagnosticGrid}>
             {/* Question 1 */}
             <div className={styles.questionCard}>
               <h3 className={styles.questionPrompt}>1. What is your biggest struggle right now?</h3>
@@ -786,7 +804,7 @@ export default function GrowthContent() {
             {/* Personalized Guidance Card */}
             {reflection && (
               <div className={styles.insightCard}>
-                <h4 className={styles.insightTitle}>
+                <h4 className={styles.insightTitle} style={{ color: '#c084fc' }}>
                   <Sparkles size={16} />
                   Your Tailored Growth Architecture
                 </h4>
@@ -812,7 +830,7 @@ export default function GrowthContent() {
               </div>
             )}
           </div>
-        </section>
+        </div>
       )}
 
       {/* ── ADD INTEREST MODAL ── */}
@@ -1086,12 +1104,16 @@ function InterestCardItem({
   onMove: (level: InterestLevel) => void;
   onDelete: () => void;
 }) {
+  const tagStyle = getCategoryTagStyle(interest.category);
+
   return (
     <div className={styles.interestCard}>
       <div className={styles.interestTop}>
         <h4 className={styles.interestTitle}>{interest.title}</h4>
         {interest.category && (
-          <span className={styles.interestCategory}>{interest.category}</span>
+          <span className={styles.categoryTag} style={tagStyle}>
+            {interest.category}
+          </span>
         )}
       </div>
 
@@ -1112,6 +1134,7 @@ function InterestCardItem({
               className={styles.miniBtn}
               onClick={() => onMove('primary')}
               title="Promote to Primary Focus"
+              style={{ color: '#10b981' }}
             >
               → Primary
             </button>
@@ -1122,6 +1145,7 @@ function InterestCardItem({
               className={styles.miniBtn}
               onClick={() => onMove('secondary')}
               title="Move to Secondary Focus"
+              style={{ color: '#818cf8' }}
             >
               → Secondary
             </button>
@@ -1132,6 +1156,7 @@ function InterestCardItem({
               className={styles.miniBtn}
               onClick={() => onMove('exploration')}
               title="Move to Exploration Backlog"
+              style={{ color: '#f59e0b' }}
             >
               → Explore
             </button>

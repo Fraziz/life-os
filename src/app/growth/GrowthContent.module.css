@@ -1,6 +1,7 @@
 /* ============================================================
-   THE GROWTH SYSTEM — MINIMALIST & WIDE RESPONSIVE MODULE
+   THE GROWTH SYSTEM — MINIMALIST, COLORFUL & WIDE RESPONSIVE
    ADHD-optimized, executive aesthetic, seamless theme sync.
+   No excessive nesting/boxes. Vibrant semantic color harmony.
    ============================================================ */
 
 .page {
@@ -23,14 +24,13 @@
   }
 }
 
-/* ── Minimalist Executive Header (Standard Life OS Layout) ── */
+/* ── Minimalist Executive Header (Clean, borderless, spacious) ── */
 .header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4, 16px);
-  border-bottom: 1px solid var(--color-border-subtle);
-  padding-bottom: var(--space-4, 16px);
+  padding-bottom: var(--space-2, 8px);
   flex-wrap: wrap;
 }
 
@@ -51,31 +51,32 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-accent);
 }
 
 .microDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
 }
 
 .title {
-  font-size: clamp(20px, 2.4vw, 26px);
-  font-weight: 700;
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 800;
   color: var(--color-text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   margin: 0;
 }
 
 .subtitle {
   font-size: 13.5px;
   color: var(--color-text-muted);
-  max-width: 720px;
+  max-width: 740px;
   line-height: 1.5;
   margin: 0;
 }
@@ -87,13 +88,13 @@
   flex-wrap: wrap;
 }
 
-/* ── Standard Button Styles (Theme-synced) ── */
+/* ── Theme-Synced Action Buttons ── */
 .primaryBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 38px;
   padding: 0 16px;
   background: var(--color-accent);
   color: #ffffff;
@@ -102,8 +103,9 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.12s ease;
+  transition: opacity 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
   text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .primaryBtn:hover {
@@ -116,9 +118,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 38px;
   padding: 0 14px;
-  background: var(--color-surface-2);
+  background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
@@ -134,61 +136,82 @@
   border-color: var(--color-border-focus);
 }
 
-/* ── Minimalist Philosophy Anchor Banner ── */
-.philosophyBanner {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md, 8px);
-  padding: 12px 18px;
+/* ── Minimalist Info & Live Metrics Bar (No heavy box, clean seamless strip) ── */
+.infoStrip {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.philosophyText {
+.infoPrinciple {
   font-size: 13px;
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0;
-}
-
-.philosophyQuote {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.quickStatsRow {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.quickStatItem {
-  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.statValue {
+.principleTag {
   font-weight: 700;
   color: var(--color-text);
 }
 
-/* ── Calming Segmented View Switcher ── */
+.liveMetricsGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.metricChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.chipMint {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.chipLavender {
+  background: rgba(129, 140, 248, 0.12);
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.28);
+}
+
+.chipAmber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.chipSprint {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.28);
+}
+
+/* ── Clean Underline Segmented Nav (No heavy boxes) ── */
 .segmentedNav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm, 6px);
-  padding: 3px;
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
+  padding: 4px 0;
 }
 
 .segmentedNav::-webkit-scrollbar {
@@ -197,12 +220,12 @@
 
 .segmentBtn {
   min-height: 34px;
-  padding: 0 14px;
-  border-radius: 4px;
+  padding: 0 12px;
+  border-radius: 6px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -224,66 +247,40 @@
   font-weight: 600;
 }
 
-/* ── Section Wrapper ── */
-.sectionCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  padding: clamp(16px, 2.5vw, 24px);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 16px);
-  width: 100%;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--color-border-subtle);
-  padding-bottom: 12px;
-}
-
-.sectionTitleGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sectionTitle {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sectionDesc {
-  font-size: 12.5px;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-/* ── Three Levels of Interest (Wide 3-Column Grid) ── */
+/* ── 3 Levels of Focus (Wide 3-Column Layout without outer box cage) ── */
 .levelsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
   gap: 16px;
   width: 100%;
 }
 
 .levelColumn {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 14px;
+  border-radius: var(--radius-md, 10px);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  transition: transform 0.15s ease;
+  border: 1px solid transparent;
+}
+
+/* Color Identity for Column 1: Primary Mastery (Mint/Emerald) */
+.colPrimary {
+  background: var(--color-mint-card);
+  border-color: var(--color-mint-border);
+}
+
+/* Color Identity for Column 2: Secondary Development (Lavender/Indigo) */
+.colSecondary {
+  background: var(--color-lavender-card);
+  border-color: var(--color-lavender-border);
+}
+
+/* Color Identity for Column 3: Exploration Backlog (Amber/Gold) */
+.colExploration {
+  background: var(--color-amber-card);
+  border-color: var(--color-amber-border);
 }
 
 .levelHeader {
@@ -292,7 +289,7 @@
   justify-content: space-between;
   gap: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .levelTitleWrap {
@@ -301,38 +298,52 @@
   gap: 8px;
 }
 
-.levelBadge {
-  font-size: 10px;
+.levelBadgeMint {
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.levelBadgeLavender {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(129, 140, 248, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+}
+
+.levelBadgeAmber {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .levelName {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
 }
 
-.countIndicator {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-muted);
-}
-
 .levelRuleText {
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -344,19 +355,23 @@
   min-height: 70px;
 }
 
+/* Individual Interest Cards (Clean, calm, high-contrast) */
 .interestCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 11px 13px;
+  border-radius: var(--radius-sm, 8px);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .interestCard:hover {
   border-color: var(--color-border-focus);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .interestTop {
@@ -367,28 +382,26 @@
 }
 
 .interestTitle {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   color: var(--color-text);
   line-height: 1.35;
   margin: 0;
 }
 
-.interestCategory {
+.categoryTag {
   font-size: 10.5px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface-2);
-  padding: 2px 6px;
+  font-weight: 600;
+  padding: 2px 7px;
   border-radius: 4px;
-  border: 1px solid var(--color-border-subtle);
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .interestNotes {
   font-size: 12px;
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.45;
   margin: 0;
 }
 
@@ -409,7 +422,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  margin-top: 4px;
   padding-top: 6px;
   border-top: 1px solid var(--color-border-subtle);
 }
@@ -424,7 +436,7 @@
   min-height: 26px;
   padding: 0 8px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
@@ -436,6 +448,7 @@
 .miniBtn:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border);
+  transform: translateY(-0.5px);
 }
 
 .deleteMiniBtn {
@@ -450,7 +463,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s ease;
+  transition: color 0.12s ease, background 0.12s ease;
 }
 
 .deleteMiniBtn:hover {
@@ -468,16 +481,16 @@
   color: var(--color-text-muted);
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
+  border-radius: 8px;
   line-height: 1.4;
 }
 
-/* ── 90-Day Sprint Commitment Card ── */
+/* ── 90-Day Sprint Commitment Card (Vibrant, high craft) ── */
 .sprintCard {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 16px;
+  background: var(--color-cyan-card, var(--color-surface-2));
+  border: 1px solid var(--color-cyan-border, var(--color-border));
+  border-radius: var(--radius-md, 10px);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -502,12 +515,12 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  color: #38bdf8;
 }
 
 .sprintTitle {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
@@ -524,7 +537,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -536,9 +549,9 @@
 .whyContractBox {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 12.5px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--color-text);
 }
@@ -547,7 +560,7 @@
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--color-text-muted);
   margin-bottom: 4px;
 }
@@ -563,7 +576,7 @@
 .weekCheckCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 6px 4px;
   display: flex;
   flex-direction: column;
@@ -581,8 +594,8 @@
 }
 
 .weekCheckActive {
-  background: var(--color-surface-hover);
-  border-color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: #10b981;
 }
 
 .weekLabel {
@@ -594,7 +607,7 @@
 .checkIndicator {
   width: 18px;
   height: 18px;
-  border-radius: 3px;
+  border-radius: 4px;
   border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -605,8 +618,8 @@
 }
 
 .checkIndicatorDone {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: #10b981;
+  border-color: #10b981;
 }
 
 /* Sprint Milestones */
@@ -622,10 +635,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12.5px;
   color: var(--color-text);
   cursor: pointer;
@@ -641,50 +654,49 @@
   color: var(--color-text-muted);
 }
 
-/* ── Live Life OS Hierarchy Connection (Wide 6-Step Horizontal Pipeline) ── */
+/* ── Live Life OS Hierarchy Connection (6 Vibrant Steps) ── */
 .hierarchyGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 
 .hierarchyStepCard {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 12px 14px;
+  border-radius: var(--radius-md, 8px);
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   text-decoration: none;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .hierarchyStepCard:hover {
-  border-color: var(--color-accent);
-  background: var(--color-surface-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: var(--color-border-focus);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 .stepNumber {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .stepTitle {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
 }
 
 .stepCount {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: var(--color-text);
   margin: 2px 0;
 }
@@ -695,26 +707,36 @@
   line-height: 1.35;
 }
 
-/* ── Exploration vs Mastery Comparison ── */
+/* ── Mindset Comparison (Curiosity vs Mastery) ── */
 .comparisonGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  gap: 14px;
+  gap: 16px;
   width: 100%;
 }
 
-.comparisonBox {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 16px;
+.comparisonBoxCuriosity {
+  background: var(--color-amber-card);
+  border: 1px solid var(--color-amber-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comparisonBoxMastery {
+  background: var(--color-mint-card);
+  border: 1px solid var(--color-mint-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .comparisonTitle {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
@@ -739,16 +761,17 @@
 }
 
 .ruleHighlight {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 12.5px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
+  text-align: center;
 }
 
-/* ── Personal Reflection & Diagnostic ── */
+/* ── Diagnostic Questionnaire ── */
 .diagnosticGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
@@ -757,10 +780,10 @@
 }
 
 .questionCard {
-  background: var(--color-surface-2);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 14px;
+  border-radius: var(--radius-md, 10px);
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -781,10 +804,10 @@
 
 .optionBtn {
   text-align: left;
-  background: var(--color-surface);
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 4px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 9px 12px;
   font-size: 12.5px;
   color: var(--color-text);
   cursor: pointer;
@@ -801,7 +824,7 @@
 }
 
 .optionBtnSelected {
-  background: var(--color-surface-hover);
+  background: rgba(99, 102, 241, 0.15);
   border-color: var(--color-accent);
   color: var(--color-text);
   font-weight: 600;
@@ -809,10 +832,10 @@
 
 .insightCard {
   grid-column: 1 / -1;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  padding: 16px;
+  background: var(--color-lavender-card);
+  border: 1px solid var(--color-lavender-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -839,7 +862,7 @@
   min-height: 60px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 8px 10px;
   font-size: 12.5px;
   color: var(--color-text);
@@ -868,14 +891,14 @@
 .modalWindow {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md, 10px);
   width: 100%;
   max-width: 480px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.25));
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.3));
   animation: fadeIn 0.15s ease forwards;
 }
 
@@ -929,7 +952,7 @@
   padding: 6px 10px;
   border: 1px solid var(--color-border);
   background: var(--color-surface-2);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 13px;
   color: var(--color-text);
   font-family: inherit;
@@ -950,7 +973,7 @@
 .errorBanner {
   background: var(--color-danger-dim);
   border: 1px solid var(--color-danger);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
   color: var(--color-danger);
