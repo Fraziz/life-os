@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Compass,
@@ -16,13 +16,10 @@ import {
   X,
   Plus,
   Trash2,
-  ChevronRight,
   HelpCircle,
-  Flame,
   Award,
-  RefreshCw,
   Play,
-  RotateCcw,
+  Bookmark,
 } from 'lucide-react';
 import { useGrowth } from '@/context/GrowthContext';
 import { useGoals } from '@/context/GoalContext';
@@ -38,7 +35,7 @@ import type {
 } from '@/types/growth';
 import styles from './GrowthContent.module.css';
 
-// Educational diagnosis advice matrix
+// Educational diagnosis advice matrix (ADHD-friendly, grounded, practical)
 const STRUGGLE_ADVICE: Record<StruggleOption, string> = {
   shiny_object:
     'The "Honeymoon Effect" is natural for curious minds. Novelty releases rapid dopamine, while execution requires discipline. Guardrail: When an exciting new topic emerges, place it into your Exploration sandbox with a mandatory 7-day cooldown before taking action.',
@@ -72,7 +69,6 @@ export default function GrowthContent() {
     addInterest,
     deleteInterest,
     moveInterestLevel,
-    sprints,
     activeSprint,
     createSprint,
     toggleCheckpoint,
@@ -88,7 +84,7 @@ export default function GrowthContent() {
   const { projects } = useProjects();
   const { tasks } = useTasks();
 
-  const [activeTab, setActiveTab] = useState<'all' | 'interests' | 'sprint' | 'hierarchy' | 'diagnostic'>('all');
+  const [activeTab, setActiveTab] = useState<'interests' | 'sprint' | 'hierarchy' | 'diagnostic' | 'all'>('interests');
   const [interestModalOpen, setInterestModalOpen] = useState(false);
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
@@ -114,12 +110,10 @@ export default function GrowthContent() {
   const [evalRating, setEvalRating] = useState(4);
   const [evalReflection, setEvalReflection] = useState('');
 
-  // Quick anchor scroll ref
-  const focusSectionRef = useRef<HTMLDivElement>(null);
-
-  const scrollToFocusSection = () => {
-    setActiveTab('interests');
-    focusSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const openAddInterestModal = (prefillLevel?: InterestLevel) => {
+    setErrorMessage(null);
+    if (prefillLevel) setNewLevel(prefillLevel);
+    setInterestModalOpen(true);
   };
 
   const handleAddInterestSubmit = (e: React.FormEvent) => {
@@ -156,7 +150,6 @@ export default function GrowthContent() {
     end.setDate(end.getDate() + 90);
     const endDateStr = end.toISOString().split('T')[0];
 
-    // Generate 13 checkpoints
     const checkpoints = Array.from({ length: 13 }, (_, i) => ({
       week: i + 1,
       completed: false,
@@ -170,7 +163,7 @@ export default function GrowthContent() {
       linkedGoalId: sprintLinkedGoalId || undefined,
       weeklyCheckpoints: checkpoints,
       milestones: [
-        { id: `sm-${Date.now()}-1`, title: 'Week 4 Milestone Checkpoint', completed: false, targetWeek: 4 },
+        { id: `sm-${Date.now()}-1`, title: 'Week 4 Foundation Checkpoint', completed: false, targetWeek: 4 },
         { id: `sm-${Date.now()}-2`, title: 'Week 8 Mid-Sprint Retrospective', completed: false, targetWeek: 8 },
         { id: `sm-${Date.now()}-3`, title: 'Week 13 Final Polish & Evaluation', completed: false, targetWeek: 13 },
       ],
@@ -197,7 +190,6 @@ export default function GrowthContent() {
     setEvaluationModalOpen(false);
   };
 
-  // Diagnostic questionnaire selection
   const handleStruggleSelect = (st: StruggleOption) => {
     const currentIdentity = reflection?.aspirationalIdentity || 'synthesizer';
     saveReflection({
@@ -236,110 +228,132 @@ export default function GrowthContent() {
   const completedWeeks = activeSprint?.weeklyCheckpoints.filter((c) => c.completed).length || 0;
 
   return (
-    <div className={styles.pageContainer}>
-      {/* ── SECTION A: HERO ── */}
-      <section className={styles.heroCard}>
-        <div className={styles.heroTopRow}>
-          <div className={styles.systemBadge}>
-            <span className={styles.badgeDot} />
-            Deliberate Mastery Engine
+    <div className={styles.page}>
+      {/* ── MINIMALIST EXECUTIVE HEADER ── */}
+      <header className={styles.header}>
+        <div className={styles.titleArea}>
+          <div className={styles.badgeRow}>
+            <span className={styles.microBadge}>
+              <span className={styles.microDot} />
+              Growth System
+            </span>
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-            Sariling Mundo · Growth System
-          </span>
+          <h1 className={styles.title}>Growth & Deliberate Mastery</h1>
+          <p className={styles.subtitle}>
+            Direct your attention intentionally. 1 Primary Focus, 2 Secondary, and the rest safely parked in Exploration.
+          </p>
         </div>
 
-        <h1 className={styles.heroHeading}>THE GROWTH SYSTEM</h1>
-        <p className={styles.heroSubtitle}>
-          Build yourself deliberately. Explore endlessly. Master intentionally. Organize your ambitions,
-          develop meaningful disciplines, and make consistent progress without scattering your curiosity.
-        </p>
-
-        <div className={styles.heroPhilosophyQuote}>
-          &ldquo;You don&apos;t have to pursue everything simultaneously. You have a lifetime to learn, but you need a system to direct your attention.&rdquo;
-        </div>
-
-        <div className={styles.heroActions}>
+        <div className={styles.headerActions}>
           <button
             type="button"
             className={styles.primaryBtn}
-            onClick={scrollToFocusSection}
+            onClick={() => openAddInterestModal()}
           >
-            <Compass size={16} />
-            BUILD MY GROWTH SYSTEM
+            <Plus size={15} />
+            Add Interest
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => setSprintModalOpen(true)}
+          >
+            <Clock size={15} />
+            New 90-Day Sprint
           </button>
           <Link href="/roadmap" className={styles.secondaryBtn}>
-            <TrendingUp size={16} />
-            View Life Roadmap
-          </Link>
-          <Link href="/focus" className={styles.secondaryBtn}>
-            <Play size={15} />
-            Focus Space
+            <TrendingUp size={15} />
+            Roadmap
           </Link>
         </div>
-      </section>
+      </header>
 
-      {/* ── SECTION NAVIGATION PILLS ── */}
-      <nav className={styles.navPills} aria-label="Growth sections">
+      {/* ── MINIMALIST PHILOSOPHY & METRIC ANCHOR BANNER ── */}
+      <div className={styles.philosophyBanner}>
+        <p className={styles.philosophyText}>
+          <span className={styles.philosophyQuote}>Focus Rule:</span> You don&apos;t have to pursue everything today. You have a lifetime to learn, but you need a system to direct your attention.
+        </p>
+
+        <div className={styles.quickStatsRow}>
+          <span className={styles.quickStatItem}>
+            Primary: <span className={styles.statValue}>{primaryInterests.length}/1</span>
+          </span>
+          <span className={styles.quickStatItem}>
+            Secondary: <span className={styles.statValue}>{secondaryInterests.length}/2</span>
+          </span>
+          <span className={styles.quickStatItem}>
+            Exploration: <span className={styles.statValue}>{explorationInterests.length}</span>
+          </span>
+          {activeSprint && (
+            <span className={styles.quickStatItem}>
+              Sprint: <span className={styles.statValue}>{daysRemaining}d left</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── CALMING SEGMENTED VIEW SWITCHER ── */}
+      <nav className={styles.segmentedNav} aria-label="Growth sections">
         <button
           type="button"
-          className={`${styles.pillBtn} ${activeTab === 'all' ? styles.pillBtnActive : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          All Overview
-        </button>
-        <button
-          type="button"
-          className={`${styles.pillBtn} ${activeTab === 'interests' ? styles.pillBtnActive : ''}`}
+          className={`${styles.segmentBtn} ${activeTab === 'interests' ? styles.segmentBtnActive : ''}`}
           onClick={() => setActiveTab('interests')}
         >
-          3 Levels of Interest ({interests.length})
+          <Layers size={14} />
+          3 Levels of Focus ({interests.length})
         </button>
         <button
           type="button"
-          className={`${styles.pillBtn} ${activeTab === 'sprint' ? styles.pillBtnActive : ''}`}
+          className={`${styles.segmentBtn} ${activeTab === 'sprint' ? styles.segmentBtnActive : ''}`}
           onClick={() => setActiveTab('sprint')}
         >
-          90-Day Sprint Rule
+          <Clock size={14} />
+          90-Day Sprint {activeSprint ? `(${daysRemaining}d left)` : ''}
         </button>
         <button
           type="button"
-          className={`${styles.pillBtn} ${activeTab === 'hierarchy' ? styles.pillBtnActive : ''}`}
+          className={`${styles.segmentBtn} ${activeTab === 'hierarchy' ? styles.segmentBtnActive : ''}`}
           onClick={() => setActiveTab('hierarchy')}
         >
+          <TrendingUp size={14} />
           Growth Hierarchy (Live)
         </button>
         <button
           type="button"
-          className={`${styles.pillBtn} ${activeTab === 'diagnostic' ? styles.pillBtnActive : ''}`}
+          className={`${styles.segmentBtn} ${activeTab === 'diagnostic' ? styles.segmentBtnActive : ''}`}
           onClick={() => setActiveTab('diagnostic')}
         >
+          <HelpCircle size={14} />
           Mindset & Reflection
+        </button>
+        <button
+          type="button"
+          className={`${styles.segmentBtn} ${activeTab === 'all' ? styles.segmentBtnActive : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          All Sections
         </button>
       </nav>
 
-      {/* ── SECTION B: THE THREE LEVELS OF INTEREST ── */}
-      {(activeTab === 'all' || activeTab === 'interests') && (
-        <section className={styles.sectionCard} ref={focusSectionRef}>
+      {/* ── SECTION B: THE THREE LEVELS OF INTEREST (WIDE 3-COLUMN GRID) ── */}
+      {(activeTab === 'interests' || activeTab === 'all') && (
+        <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleArea}>
+            <div className={styles.sectionTitleGroup}>
               <h2 className={styles.sectionTitle}>
-                <Layers size={20} />
-                The Three Levels of Interest (Focus Governor)
+                <Layers size={18} />
+                Three Levels of Focus (Focus Governor)
               </h2>
               <p className={styles.sectionDesc}>
-                Prevent cognitive overload by enforcing strict WIP (work-in-progress) capacity. Focus energy where mastery happens.
+                Protect cognitive bandwidth. One primary craft receives main energy; curiosity ideas are safely parked without guilt.
               </p>
             </div>
             <button
               type="button"
-              className={styles.primaryBtn}
-              onClick={() => {
-                setErrorMessage(null);
-                setInterestModalOpen(true);
-              }}
+              className={styles.secondaryBtn}
+              onClick={() => openAddInterestModal()}
             >
-              <Plus size={16} />
+              <Plus size={14} />
               Add Interest
             </button>
           </div>
@@ -349,24 +363,37 @@ export default function GrowthContent() {
             <div className={styles.levelColumn}>
               <div className={styles.levelHeader}>
                 <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 1 · Max 1</span>
-                  <h3 className={styles.levelName}>Primary Focus — Mastery</h3>
+                  <span className={styles.levelBadge}>Level 1</span>
+                  <h3 className={styles.levelName}>Primary Focus</h3>
                 </div>
-                <span className={styles.countIndicator}>{primaryInterests.length}/1</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.countIndicator}>{primaryInterests.length}/1</span>
+                  {primaryInterests.length === 0 && (
+                    <button
+                      type="button"
+                      className={styles.miniBtn}
+                      onClick={() => openAddInterestModal('primary')}
+                      title="Set Primary Focus"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
               </div>
               <p className={styles.levelRuleText}>
-                The one major skill or discipline receiving 70%+ of your daily deep work and focus.
+                The 1 major discipline receiving 70%+ of your daily deep work.
               </p>
               <div className={styles.interestList}>
                 {primaryInterests.length === 0 ? (
                   <div className={styles.emptyStateSlot}>
-                    No primary focus selected. Promote an interest below or add one.
+                    No primary focus active. Promote an interest below or add one.
                   </div>
                 ) : (
                   primaryInterests.map((interest) => (
                     <InterestCardItem
                       key={interest.id}
                       interest={interest}
+                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
                       onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
                       onDelete={() => deleteInterest(interest.id)}
                     />
@@ -379,24 +406,37 @@ export default function GrowthContent() {
             <div className={styles.levelColumn}>
               <div className={styles.levelHeader}>
                 <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 2 · Max 2</span>
-                  <h3 className={styles.levelName}>Secondary Focus — Development</h3>
+                  <span className={styles.levelBadge}>Level 2</span>
+                  <h3 className={styles.levelName}>Secondary Focus</h3>
                 </div>
-                <span className={styles.countIndicator}>{secondaryInterests.length}/2</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.countIndicator}>{secondaryInterests.length}/2</span>
+                  {secondaryInterests.length < 2 && (
+                    <button
+                      type="button"
+                      className={styles.miniBtn}
+                      onClick={() => openAddInterestModal('secondary')}
+                      title="Add Secondary Focus"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
               </div>
               <p className={styles.levelRuleText}>
-                1 or 2 supporting interests developed consistently (e.g. daily 20–30m) without distracting from primary.
+                Up to 2 supporting interests developed steadily (e.g. 20–30m daily).
               </p>
               <div className={styles.interestList}>
                 {secondaryInterests.length === 0 ? (
                   <div className={styles.emptyStateSlot}>
-                    No secondary interests currently active.
+                    No secondary interests active.
                   </div>
                 ) : (
                   secondaryInterests.map((interest) => (
                     <InterestCardItem
                       key={interest.id}
                       interest={interest}
+                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
                       onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
                       onDelete={() => deleteInterest(interest.id)}
                     />
@@ -409,24 +449,35 @@ export default function GrowthContent() {
             <div className={styles.levelColumn}>
               <div className={styles.levelHeader}>
                 <div className={styles.levelTitleWrap}>
-                  <span className={styles.levelBadge}>Level 3 · Unlimited</span>
-                  <h3 className={styles.levelName}>Exploration — Curiosity Backlog</h3>
+                  <span className={styles.levelBadge}>Level 3</span>
+                  <h3 className={styles.levelName}>Exploration Backlog</h3>
                 </div>
-                <span className={styles.countIndicator}>{explorationInterests.length}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.countIndicator}>{explorationInterests.length}</span>
+                  <button
+                    type="button"
+                    className={styles.miniBtn}
+                    onClick={() => openAddInterestModal('exploration')}
+                    title="Park new idea"
+                  >
+                    + Park
+                  </button>
+                </div>
               </div>
               <p className={styles.levelRuleText}>
-                Curiosity sandbox. Other subjects and hobbies to explore later without guilt or active commitment.
+                Curiosity sandbox. Park shiny ideas here without guilt or pressure.
               </p>
               <div className={styles.interestList}>
                 {explorationInterests.length === 0 ? (
                   <div className={styles.emptyStateSlot}>
-                    Curiosity backlog is clear. Park ideas here.
+                    Curiosity backlog is empty. Park new hobbies or skills here.
                   </div>
                 ) : (
                   explorationInterests.map((interest) => (
                     <InterestCardItem
                       key={interest.id}
                       interest={interest}
+                      linkedGoalTitle={goals.find((g) => g.id === interest.linkedGoalId)?.title}
                       onMove={(lvl) => moveInterestLevel(interest.id, lvl)}
                       onDelete={() => deleteInterest(interest.id)}
                     />
@@ -439,16 +490,16 @@ export default function GrowthContent() {
       )}
 
       {/* ── SECTION C: THE 90-DAY RULE (COMMITMENT SPRINT) ── */}
-      {(activeTab === 'all' || activeTab === 'sprint') && (
+      {(activeTab === 'sprint' || activeTab === 'all') && (
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleArea}>
+            <div className={styles.sectionTitleGroup}>
               <h2 className={styles.sectionTitle}>
-                <Clock size={20} />
+                <Clock size={18} />
                 The 90-Day Rule (Quarterly Commitment System)
               </h2>
               <p className={styles.sectionDesc}>
-                Choose a clear direction and commit for 90 continuous days before evaluating whether to continue, adjust, or pivot.
+                Lock into a direction for 90 continuous days before evaluating whether to continue, adjust, or pivot.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -458,7 +509,7 @@ export default function GrowthContent() {
                   className={styles.secondaryBtn}
                   onClick={() => setEvaluationModalOpen(true)}
                 >
-                  <Award size={16} />
+                  <Award size={15} />
                   Evaluate Sprint
                 </button>
               )}
@@ -467,43 +518,43 @@ export default function GrowthContent() {
                 className={styles.primaryBtn}
                 onClick={() => setSprintModalOpen(true)}
               >
-                <Plus size={16} />
-                New 90-Day Sprint
+                <Plus size={15} />
+                New Sprint
               </button>
             </div>
           </div>
 
           {activeSprint ? (
-            <div className={styles.sprintBanner}>
+            <div className={styles.sprintCard}>
               <div className={styles.sprintTopMeta}>
-                <div>
-                  <span className={styles.contractLabel}>Active 90-Day Commitment</span>
+                <div className={styles.sprintTitleGroup}>
+                  <span className={styles.sprintLabel}>Active 90-Day Commitment</span>
                   <h3 className={styles.sprintTitle}>{activeSprint.title}</h3>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <div className={styles.countdownPill}>
-                    <Calendar size={14} />
-                    {daysRemaining} Days Left
-                  </div>
-                  <div className={styles.countdownPill}>
-                    <CheckCircle2 size={14} />
+                <div className={styles.sprintPills}>
+                  <span className={styles.statusPill}>
+                    <Calendar size={13} />
+                    {daysRemaining} Days Remaining
+                  </span>
+                  <span className={styles.statusPill}>
+                    <CheckCircle2 size={13} />
                     {completedWeeks} of 13 Weeks Checked
-                  </div>
+                  </span>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                  <span>Sprint Timeline Progress</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
+                  <span>Sprint Timeline</span>
                   <span>{sprintProgressPct}%</span>
                 </div>
-                <div style={{ height: '6px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ height: '4px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
                       width: `${sprintProgressPct}%`,
-                      background: 'var(--color-text)',
+                      background: 'var(--color-accent)',
                       transition: 'width 0.3s ease',
                     }}
                   />
@@ -511,7 +562,7 @@ export default function GrowthContent() {
               </div>
 
               <div className={styles.whyContractBox}>
-                <div className={styles.contractLabel}>Why this matters (The Commitment Pledge)</div>
+                <div className={styles.contractLabel}>Commitment Contract (Why This Direction?)</div>
                 <div>{activeSprint.why}</div>
               </div>
 
@@ -524,7 +575,7 @@ export default function GrowthContent() {
                       key={cp.week}
                       className={`${styles.weekCheckCard} ${cp.completed ? styles.weekCheckActive : ''}`}
                       onClick={() => toggleCheckpoint(activeSprint.id, cp.week)}
-                      title={`Week ${cp.week}: Click to toggle completion`}
+                      title={`Week ${cp.week}: Click to toggle`}
                     >
                       <span className={styles.weekLabel}>W{cp.week}</span>
                       <div className={`${styles.checkIndicator} ${cp.completed ? styles.checkIndicatorDone : ''}`}>
@@ -546,11 +597,11 @@ export default function GrowthContent() {
                         className={styles.milestoneRow}
                         onClick={() => toggleMilestone(activeSprint.id, m.id)}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {m.completed ? (
-                            <CheckCircle2 size={16} color="var(--color-success)" />
+                            <CheckCircle2 size={15} color="var(--color-success)" />
                           ) : (
-                            <Circle size={16} color="var(--color-text-muted)" />
+                            <Circle size={15} color="var(--color-text-muted)" />
                           )}
                           <span className={m.completed ? styles.milestoneDoneText : ''}>
                             {m.title}
@@ -569,28 +620,28 @@ export default function GrowthContent() {
             </div>
           ) : (
             <div className={styles.emptyStateSlot}>
-              No active 90-day sprint found. Click &ldquo;New 90-Day Sprint&rdquo; above to make your quarterly commitment.
+              No active 90-day sprint found. Click &ldquo;New Sprint&rdquo; to lock in your quarterly commitment.
             </div>
           )}
         </section>
       )}
 
-      {/* ── SECTION D: THE GROWTH HIERARCHY (CONNECTED TO LIFE OS) ── */}
-      {(activeTab === 'all' || activeTab === 'hierarchy') && (
+      {/* ── SECTION D: THE GROWTH HIERARCHY (WIDE LIVE PIPELINE) ── */}
+      {(activeTab === 'hierarchy' || activeTab === 'all') && (
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleArea}>
+            <div className={styles.sectionTitleGroup}>
               <h2 className={styles.sectionTitle}>
-                <TrendingUp size={20} />
-                The Growth Hierarchy (Live Life OS Architecture)
+                <TrendingUp size={18} />
+                The Growth Hierarchy (Live Life OS Pipeline)
               </h2>
               <p className={styles.sectionDesc}>
-                Your entire execution pipeline from identity down to current focus. Click any layer to open your live system.
+                Your entire execution pipeline from identity down to current focus. Click any layer to jump straight to work.
               </p>
             </div>
             <Link href="/roadmap" className={styles.secondaryBtn}>
-              Open Full Node Roadmap
-              <ArrowRight size={14} />
+              Full Node Roadmap
+              <ArrowRight size={13} />
             </Link>
           </div>
 
@@ -613,7 +664,7 @@ export default function GrowthContent() {
               <span className={styles.stepNumber}>Layer 3</span>
               <h4 className={styles.stepTitle}>MILESTONE</h4>
               <div className={styles.stepCount}>{milestones.length}</div>
-              <span className={styles.stepQuestion}>Measurable signs of progress</span>
+              <span className={styles.stepQuestion}>Measurable progress markers</span>
             </Link>
 
             <Link href="/projects" className={styles.hierarchyStepCard}>
@@ -633,54 +684,50 @@ export default function GrowthContent() {
             <Link href="/focus" className={styles.hierarchyStepCard}>
               <span className={styles.stepNumber}>Layer 6</span>
               <h4 className={styles.stepTitle}>FOCUS</h4>
-              <div className={styles.stepCount}><Play size={18} /></div>
+              <div className={styles.stepCount}><Play size={16} /></div>
               <span className={styles.stepQuestion}>Remove noise & do the work</span>
             </Link>
           </div>
         </section>
       )}
 
-      {/* ── SECTION E: EXPLORATION VS MASTERY ── */}
-      {(activeTab === 'all' || activeTab === 'diagnostic') && (
+      {/* ── SECTION E & F: MINDSET & PERSONAL REFLECTION ── */}
+      {(activeTab === 'diagnostic' || activeTab === 'all') && (
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleArea}>
+            <div className={styles.sectionTitleGroup}>
               <h2 className={styles.sectionTitle}>
-                <Sparkles size={20} />
-                Exploration vs. Mastery
+                <Sparkles size={18} />
+                Exploration vs. Mastery & Reflection
               </h2>
               <p className={styles.sectionDesc}>
-                Understanding the two modes protects you from burnout and guilt.
+                Understanding the two modes protects against guilt, burnout, and scattered energy.
               </p>
             </div>
           </div>
 
           <div className={styles.comparisonGrid}>
             <div className={styles.comparisonBox}>
-              <div className={styles.comparisonHeader}>
-                <h3 className={styles.comparisonTitle}>Exploration — Curiosity</h3>
-              </div>
+              <h3 className={styles.comparisonTitle}>Exploration — Curiosity</h3>
               <p className={styles.comparisonDesc}>
-                Learning something purely because you are curious. You have zero obligation to monetize, complete, or become an expert in everything you discover.
+                Learning something purely because you are curious. Zero obligation to monetize, complete, or become an expert.
               </p>
               <ul className={styles.bulletList}>
-                <li>Wide breadth of low-friction exposure</li>
-                <li>Playful discovery with no performance anxiety</li>
+                <li>Wide breadth with playful discovery</li>
                 <li>Safe parking spot for shiny ideas in your backlog</li>
+                <li>Zero performance anxiety or timeline pressure</li>
               </ul>
             </div>
 
             <div className={styles.comparisonBox}>
-              <div className={styles.comparisonHeader}>
-                <h3 className={styles.comparisonTitle}>Mastery — Deliberate Practice</h3>
-              </div>
+              <h3 className={styles.comparisonTitle}>Mastery — Deliberate Practice</h3>
               <p className={styles.comparisonDesc}>
-                Deliberately practicing a discipline over time, receiving feedback, correcting weaknesses, and progressively increasing difficulty.
+                Deliberately practicing a discipline over time, receiving feedback, and pushing through plateaus.
               </p>
               <ul className={styles.bulletList}>
-                <li>Narrow depth: strictly 1 primary focus</li>
-                <li>Repetition through resistance and plateau periods</li>
+                <li>Strictly 1 Primary Focus at a time</li>
                 <li>90-day unbroken cycles of commitment</li>
+                <li>Repetition through resistance and plateau periods</li>
               </ul>
             </div>
           </div>
@@ -688,25 +735,9 @@ export default function GrowthContent() {
           <div className={styles.ruleHighlight}>
             Key Principle: &ldquo;You can explore many things while developing mastery in a few.&rdquo;
           </div>
-        </section>
-      )}
 
-      {/* ── SECTION F: PERSONAL REFLECTION & DIAGNOSTIC ── */}
-      {(activeTab === 'all' || activeTab === 'diagnostic') && (
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitleArea}>
-              <h2 className={styles.sectionTitle}>
-                <HelpCircle size={20} />
-                Personal Reflection & Diagnostic Compass
-              </h2>
-              <p className={styles.sectionDesc}>
-                Calibrate your cognitive strategy based on your true friction point and aspirational archetype.
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.diagnosticGrid}>
+          {/* Interactive Diagnostic */}
+          <div className={styles.diagnosticGrid} style={{ marginTop: '8px' }}>
             {/* Question 1 */}
             <div className={styles.questionCard}>
               <h3 className={styles.questionPrompt}>1. What is your biggest struggle right now?</h3>
@@ -756,18 +787,18 @@ export default function GrowthContent() {
             {reflection && (
               <div className={styles.insightCard}>
                 <h4 className={styles.insightTitle}>
-                  <Sparkles size={18} />
+                  <Sparkles size={16} />
                   Your Tailored Growth Architecture
                 </h4>
                 <div className={styles.insightBody} style={{ whiteSpace: 'pre-line' }}>
                   {reflection.reflectionAdvice}
                 </div>
 
-                <div className={styles.formGroup} style={{ marginTop: '8px' }}>
-                  <label className={styles.formLabel}>Personal Reflection Notes / Realizations</label>
+                <div className={styles.formGroup} style={{ marginTop: '6px' }}>
+                  <label className={styles.formLabel}>Personal Realizations & Strategic Notes</label>
                   <textarea
                     className={styles.notesInput}
-                    placeholder="Write down any notes, commitments, or realizations..."
+                    placeholder="Write down any personal notes or commitments..."
                     value={reflection.personalNotes || ''}
                     onChange={(e) =>
                       saveReflection({
@@ -795,19 +826,19 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setInterestModalOpen(false)}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             {errorMessage && <div className={styles.errorBanner}>{errorMessage}</div>}
 
-            <form onSubmit={handleAddInterestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleAddInterestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Interest / Skill Title *</label>
                 <input
                   type="text"
                   className={styles.formInput}
-                  placeholder="e.g. Systems Architecture, Spanish, 3D Modeling"
+                  placeholder="e.g. Systems Architecture, Guitar, Blender 3D"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   required
@@ -855,16 +886,16 @@ export default function GrowthContent() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Notes & Focus Intention</label>
+                <label className={styles.formLabel}>Notes & Schedule Intention</label>
                 <textarea
                   className={styles.formTextarea}
-                  placeholder="Why this matters, intended schedule or practice constraints..."
+                  placeholder="Practice constraints, why this matters, or notes..."
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
                   className={styles.secondaryBtn}
@@ -892,11 +923,11 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setSprintModalOpen(false)}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSprintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleCreateSprintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Sprint Focus / Main Goal *</label>
                 <input
@@ -940,14 +971,14 @@ export default function GrowthContent() {
                 <label className={styles.formLabel}>The Commitment Contract (Why This Direction?) *</label>
                 <textarea
                   className={styles.formTextarea}
-                  placeholder="Write your personal reason for committing for 90 continuous days without quitting..."
+                  placeholder="Why commit to this for 90 continuous days without quitting?"
                   value={sprintWhy}
                   onChange={(e) => setSprintWhy(e.target.value)}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
                   className={styles.secondaryBtn}
@@ -975,14 +1006,14 @@ export default function GrowthContent() {
                 className={styles.closeBtn}
                 onClick={() => setEvaluationModalOpen(false)}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleEvaluationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleEvaluationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <span className={styles.contractLabel}>Evaluating Sprint</span>
-                <p style={{ margin: '4px 0', fontWeight: 600, color: 'var(--color-text)' }}>{activeSprint.title}</p>
+                <p style={{ margin: '2px 0', fontWeight: 600, color: 'var(--color-text)' }}>{activeSprint.title}</p>
               </div>
 
               <div className={styles.formGroup}>
@@ -1017,13 +1048,13 @@ export default function GrowthContent() {
                 <label className={styles.formLabel}>Final Retrospective & Reflections</label>
                 <textarea
                   className={styles.formTextarea}
-                  placeholder="What did you learn about yourself? What were your key wins and friction points?"
+                  placeholder="What did you learn? What were key wins and friction points?"
                   value={evalReflection}
                   onChange={(e) => setEvalReflection(e.target.value)}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
                   className={styles.secondaryBtn}
@@ -1032,7 +1063,7 @@ export default function GrowthContent() {
                   Cancel
                 </button>
                 <button type="submit" className={styles.primaryBtn}>
-                  Finalize & Archive Sprint
+                  Finalize & Archive
                 </button>
               </div>
             </form>
@@ -1046,10 +1077,12 @@ export default function GrowthContent() {
 // ── Subcomponent for individual interest card ──
 function InterestCardItem({
   interest,
+  linkedGoalTitle,
   onMove,
   onDelete,
 }: {
   interest: Interest;
+  linkedGoalTitle?: string;
   onMove: (level: InterestLevel) => void;
   onDelete: () => void;
 }) {
@@ -1063,6 +1096,13 @@ function InterestCardItem({
       </div>
 
       {interest.notes && <p className={styles.interestNotes}>{interest.notes}</p>}
+
+      {linkedGoalTitle && (
+        <span className={styles.interestLinkedGoal} title={`Linked to goal: ${linkedGoalTitle}`}>
+          <Bookmark size={11} />
+          {linkedGoalTitle}
+        </span>
+      )}
 
       <div className={styles.interestActions}>
         <div className={styles.moveButtonGroup}>
@@ -1111,4 +1151,3 @@ function InterestCardItem({
     </div>
   );
 }
-
