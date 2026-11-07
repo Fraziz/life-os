@@ -398,7 +398,7 @@ export default function GrowthContent() {
 
   return (
     <div className={styles.page}>
-      {/* ── MINIMALIST EXECUTIVE HEADER (NO ICONS) ── */}
+      {/* ── CLEAN, EFFORTLESS EXECUTIVE HEADER ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <div className={styles.badgeRow}>
@@ -407,97 +407,70 @@ export default function GrowthContent() {
               Growth System
             </span>
           </div>
-          <h1 className={styles.title}>Growth & Deliberate Mastery</h1>
+          <h1 className={styles.title}>The 3 Levels of Focus</h1>
           <p className={styles.subtitle}>
-            Direct your attention intentionally. 1 Primary Focus, 2 Secondary, and the rest safely parked in Exploration.
+            1 main craft to master. 2 supporting habits. Park the rest without distraction.
           </p>
         </div>
 
         <div className={styles.headerActions}>
-          {/* Simple Mode / Full Strategy Switcher */}
-          <div className={styles.modeToggleGroup}>
-            <button
-              type="button"
-              className={`${styles.modePill} ${isSimpleMode ? styles.modePillActive : ''}`}
-              onClick={() => setIsSimpleMode(true)}
-            >
-              Simple Mode
-            </button>
-            <button
-              type="button"
-              className={`${styles.modePill} ${!isSimpleMode ? styles.modePillActive : ''}`}
-              onClick={() => setIsSimpleMode(false)}
-            >
-              Full Strategy
-            </button>
-          </div>
-
           <button
             type="button"
             className={styles.primaryBtn}
             onClick={() => openMasteryModal()}
           >
-            Craft Mastery
+            + Set Primary Craft
           </button>
           <button
             type="button"
             className={styles.secondaryBtn}
-            onClick={() => openAddInterestModal()}
+            onClick={() => openAddInterestModal('secondary')}
           >
-            Add Interest
+            + Add Habit
           </button>
           <button
             type="button"
             className={styles.secondaryBtn}
-            onClick={() => setSprintModalOpen(true)}
+            onClick={() => setIsSimpleMode(!isSimpleMode)}
           >
-            New 90-Day Sprint
+            {isSimpleMode ? 'Full Strategy View' : 'Simple Focus View'}
           </button>
-          <Link href="/roadmap" className={styles.secondaryBtn}>
-            Roadmap
-          </Link>
         </div>
       </header>
 
-      {/* ── SEAMLESS INFO & LIVE METRICS STRIP (NO ICONS / NO EMOJIS) ── */}
-      <div className={styles.infoStrip}>
-        <p className={styles.infoPrinciple}>
-          <span className={styles.principleTag}>Focus Rule:</span> You don&apos;t have to pursue everything today. Master 1 thing at a time.
-        </p>
-
-        <div className={styles.liveMetricsGroup}>
-          <span className={`${styles.metricChip} ${styles.chipMint}`}>
-            Primary: {primaryInterests.length}/1
-          </span>
-          <span className={`${styles.metricChip} ${styles.chipLavender}`}>
-            Secondary: {secondaryInterests.length}/2
-          </span>
-          <span className={`${styles.metricChip} ${styles.chipAmber}`}>
-            Exploration: {explorationInterests.length}
-          </span>
-          {activeSprint && (
-            <span className={`${styles.metricChip} ${styles.chipSprint}`}>
-              Sprint: {daysRemaining}d Left
-            </span>
-          )}
-        </div>
-      </div>
-
       {/* ============================================================
-          VIEW 1: ENHANCED EXECUTIVE COMMAND CENTER (SIMPLE / PRO MODE)
+          VIEW 1: CLEAN 3-TIER SIMPLE FLOW (EFFORTLESS & INTUITIVE)
           ============================================================ */}
       {isSimpleMode ? (
-        <div className={styles.commandGrid}>
-          {/* ── LEFT COLUMN: PRIMARY MASTERY COMMAND & 90-DAY EXECUTION ── */}
-          <div className={styles.mainColumn}>
-            {/* 1. PRIMARY MASTERY COMMAND CARD */}
+        <div className={styles.simpleStack}>
+          {/* ── LEVEL 1: PRIMARY FOCUS (MASTERY) ── */}
+          <section className={styles.sectionBlock}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTitleRow}>
+                <span className={styles.sectionNumBadge}>1</span>
+                <div>
+                  <h2 className={styles.sectionHeading}>Primary Focus — Deliberate Mastery</h2>
+                  <p className={styles.sectionSub}>The 1 skill or project receiving 70%+ of your daily deep work.</p>
+                </div>
+              </div>
+              {primaryItem && (
+                <button
+                  type="button"
+                  className={styles.miniBtn}
+                  onClick={() => openMasteryModal()}
+                >
+                  Change Craft
+                </button>
+              )}
+            </div>
+
             {primaryItem ? (
               <div className={styles.masteryCard}>
                 <div className={styles.masteryCardTop}>
                   <div className={styles.masteryMetaLeft}>
                     <span className={styles.masteryBadge}>
                       <span className={styles.masteryStatusDot} />
-                      Primary Mastery · Season Focus
+                      Active Craft
                     </span>
                     {primaryItem.category && (
                       <span
@@ -508,14 +481,11 @@ export default function GrowthContent() {
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className={styles.miniBtn}
-                    onClick={() => openMasteryModal()}
-                    title="Edit craft, notes, or linked goal"
-                  >
-                    Edit Mastery
-                  </button>
+                  {linkedGoal && (
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      Goal: <strong style={{ color: 'var(--color-text)' }}>{linkedGoal.title}</strong>
+                    </span>
+                  )}
                 </div>
 
                 <h2 className={styles.masteryTitle}>{primaryItem.title}</h2>
@@ -523,18 +493,13 @@ export default function GrowthContent() {
                   <p className={styles.masteryNotes}>{primaryItem.notes}</p>
                 )}
 
-                {/* Connected Life Goal Card / Live Progress */}
+                {/* Linked Life Goal Progress Bar */}
                 {linkedGoal ? (
                   <div className={styles.goalLinkCard}>
                     <div className={styles.goalLinkHeader}>
-                      <div className={styles.goalLinkTitleWrap}>
-                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.04em' }}>
-                          Life Goal:
-                        </span>
-                        <Link href="/goals" className={styles.goalLinkTitle}>
-                          {linkedGoal.title}
-                        </Link>
-                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text)' }}>
+                        Goal Life Progress
+                      </span>
                       <span className={styles.goalLinkPct}>
                         {linkedGoal.progress || 0}% Complete
                       </span>
@@ -545,16 +510,11 @@ export default function GrowthContent() {
                         style={{ width: `${linkedGoal.progress || 0}%` }}
                       />
                     </div>
-                    {activeGoalMilestone && (
-                      <div className={styles.goalLinkMilestone}>
-                        Active Milestone: {activeGoalMilestone.title}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className={styles.goalLinkCard} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      Not yet connected to a Life OS Goal
+                      Not yet linked to a Life OS Goal
                     </span>
                     <button
                       type="button"
@@ -566,28 +526,28 @@ export default function GrowthContent() {
                   </div>
                 )}
 
-                {/* Real Live Execution Tasks (from Life OS TaskContext) */}
+                {/* Immediate Next Action Execution */}
                 <div className={styles.executionSection}>
                   <div className={styles.executionHeader}>
-                    <span>Immediate Next Actions</span>
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'none', fontWeight: 500 }}>
-                      {pendingMasteryTasks.length} pending
+                    <span>Immediate Next Action</span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'none' }}>
+                      {pendingMasteryTasks.length} pending in Life OS
                     </span>
                   </div>
 
                   <div className={styles.taskList}>
                     {pendingMasteryTasks.length === 0 ? (
                       <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', padding: '4px 0' }}>
-                        No pending tasks yet. Add your next immediate step below.
+                        No pending tasks yet. Type your next immediate action step below.
                       </div>
                     ) : (
-                      pendingMasteryTasks.slice(0, 3).map((task) => (
+                      pendingMasteryTasks.slice(0, 2).map((task) => (
                         <div key={task.id} className={styles.taskRow}>
                           <button
                             type="button"
                             className={styles.taskCheckBtn}
                             onClick={() => handleTaskToggle(task.id)}
-                            title="Mark done (updates in Life OS)"
+                            title="Mark done in Life OS"
                             aria-label={`Mark done ${task.title}`}
                           />
                           <span className={styles.taskTitle}>{task.title}</span>
@@ -605,7 +565,7 @@ export default function GrowthContent() {
                     <input
                       type="text"
                       className={styles.quickTaskInput}
-                      placeholder="+ Add immediate next step to this mastery..."
+                      placeholder="+ Type immediate next step and press Enter..."
                       value={quickTaskTitle}
                       onChange={(e) => setQuickTaskTitle(e.target.value)}
                     />
@@ -617,7 +577,7 @@ export default function GrowthContent() {
                   </form>
                 </div>
 
-                {/* Mastery Action Row */}
+                {/* Action Buttons */}
                 <div className={styles.masteryActions}>
                   <Link
                     href={`/focus${primaryItem.linkedGoalId ? `?goalId=${primaryItem.linkedGoalId}` : ''}`}
@@ -638,12 +598,12 @@ export default function GrowthContent() {
                 </div>
               </div>
             ) : (
-              <div className={styles.emptyStateSlot} style={{ padding: '36px 24px', flexDirection: 'column', gap: '12px' }}>
-                <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                  No Primary Mastery Set
+              <div className={styles.emptyStateSlot} style={{ padding: '32px 20px', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>
+                  No Primary Craft Chosen
                 </span>
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '440px', lineHeight: 1.5 }}>
-                  Choose exactly 1 craft, discipline, or goal to receive the majority of your daily deep work and practice.
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '420px', lineHeight: 1.5 }}>
+                  What is the #1 skill or project you want to master right now?
                 </p>
                 <button
                   type="button"
@@ -651,64 +611,108 @@ export default function GrowthContent() {
                   onClick={() => openMasteryModal()}
                   style={{ marginTop: '4px' }}
                 >
-                  Craft Your Primary Mastery
+                  Set Your Primary Craft
                 </button>
               </div>
             )}
+          </section>
 
-            {/* 2. ACTIVE 90-DAY SPRINT */}
-            {activeSprint && (
-              <div className={styles.sprintCard}>
-                <div className={styles.sprintPulseHeader}>
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Active 90-Day Sprint · Week {currentSprintWeek} of 13
-                    </span>
-                    <h3 className={styles.sprintPulseTitle}>{activeSprint.title}</h3>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className={styles.statusPill}>
-                      {daysRemaining} Days Left
-                    </span>
-                    {currentWeekCheckpoint && (
-                      <button
-                        type="button"
-                        className={styles.miniBtn}
-                        style={{
-                          background: currentWeekCheckpoint.completed ? 'rgba(16, 185, 129, 0.15)' : 'var(--color-surface-2)',
-                          color: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-text)',
-                          borderColor: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-border)',
-                        }}
-                        onClick={() => toggleCheckpoint(activeSprint.id, currentSprintWeek)}
-                      >
-                        {currentWeekCheckpoint.completed ? 'Week Done' : 'Mark Week Done'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ height: '5px', background: 'var(--color-surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${sprintProgressPct}%`,
-                      background: 'linear-gradient(90deg, var(--color-accent), #10b981)',
-                      transition: 'width 0.3s ease',
-                    }}
-                  />
+          {/* ── LEVEL 2: SUPPORTING HABITS (MAX 2) ── */}
+          <section className={styles.sectionBlock}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTitleRow}>
+                <span className={styles.sectionNumBadge}>2</span>
+                <div>
+                  <h2 className={styles.sectionHeading}>Supporting Habits — Daily Practice (Max 2)</h2>
+                  <p className={styles.sectionSub}>1 or 2 small skills you practice 20–30m daily (e.g. workout, guitar, reading).</p>
                 </div>
               </div>
-            )}
-          </div>
+              {secondaryInterests.length < 2 && (
+                <button
+                  type="button"
+                  className={styles.miniBtn}
+                  onClick={() => openAddInterestModal('secondary')}
+                >
+                  + Add Habit
+                </button>
+              )}
+            </div>
 
-          {/* ── RIGHT COLUMN: GOVERNOR, PARKING & SECONDARY ── */}
-          <div className={styles.sideColumn}>
-            {/* 1. INSTANT DISTRACTION PARKING */}
+            <div className={styles.habitsGrid}>
+              {secondaryInterests.length === 0 ? (
+                <div className={styles.emptyStateSlot} style={{ gridColumn: '1 / -1' }}>
+                  No supporting habits set. Add 1 or 2 daily habits you want to keep alive alongside your main craft.
+                </div>
+              ) : (
+                secondaryInterests.map((sec) => (
+                  <div key={sec.id} className={styles.secondaryCard}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: 'var(--color-text)' }}>
+                        {sec.title}
+                      </h4>
+                      {sec.category && (
+                        <span className={styles.categoryTag} style={getCategoryTagStyle(sec.category)}>
+                          {sec.category}
+                        </span>
+                      )}
+                    </div>
+                    {sec.notes && (
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+                        {sec.notes}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid var(--color-border-subtle)', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className={styles.miniBtn}
+                          onClick={() => moveInterestLevel(sec.id, 'primary')}
+                          title="Promote to Primary Focus"
+                        >
+                          Make Primary
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.miniBtn}
+                          onClick={() => moveInterestLevel(sec.id, 'exploration')}
+                          title="Park in Ideas"
+                        >
+                          Park
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.deleteMiniBtn}
+                        onClick={() => deleteInterest(sec.id)}
+                        title="Remove"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* ── LEVEL 3: IDEA PARKING LOT (CURIOSITY SANDBOX) ── */}
+          <section className={styles.sectionBlock}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTitleRow}>
+                <span className={styles.sectionNumBadge}>3</span>
+                <div>
+                  <h2 className={styles.sectionHeading}>Idea Parking Lot — Curiosity Sandbox</h2>
+                  <p className={styles.sectionSub}>Had an exciting new hobby or project idea? Park it here so you never lose it, without interrupting your focus.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Parking Bar */}
             <form className={styles.instantParkBar} onSubmit={handleQuickParkSubmit}>
               <input
                 type="text"
                 className={styles.instantParkInput}
-                placeholder="Park a shiny idea or hobby (Enter to save safely)..."
+                placeholder="Type a new idea, hobby, or project here and press Enter to save..."
                 value={quickParkText}
                 onChange={(e) => setQuickParkText(e.target.value)}
               />
@@ -719,160 +723,58 @@ export default function GrowthContent() {
 
             {parkToast && <div className={styles.parkToast}>{parkToast}</div>}
 
-            {/* 2. SECONDARY FOCUS PURSUITS (MAX 2) */}
-            <div className={styles.sideSectionCard}>
-              <div className={styles.sideSectionHeader}>
-                <h3 className={styles.sideSectionTitle}>
-                  Secondary Focus (Daily 20–30m Habits · Max 2)
-                </h3>
-                {secondaryInterests.length < 2 && (
-                  <button
-                    type="button"
-                    className={styles.miniBtn}
-                    onClick={() => openAddInterestModal('secondary')}
-                  >
-                    + Add
-                  </button>
-                )}
-              </div>
-
-              <div className={styles.secondaryRow}>
-                {secondaryInterests.length === 0 ? (
-                  <div className={styles.emptyStateSlot}>
-                    No secondary pursuits active. Add 1 or 2 supporting daily habits (e.g. workout, guitar, reading).
-                  </div>
-                ) : (
-                  secondaryInterests.map((sec) => (
-                    <div key={sec.id} className={styles.secondaryCard}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
-                          {sec.title}
-                        </h4>
-                        {sec.category && (
-                          <span className={styles.categoryTag} style={getCategoryTagStyle(sec.category)}>
-                            {sec.category}
-                          </span>
-                        )}
-                      </div>
-                      {sec.notes && (
-                        <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
-                          {sec.notes}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid var(--color-border-subtle)' }}>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            type="button"
-                            className={styles.miniBtn}
-                            onClick={() => moveInterestLevel(sec.id, 'primary')}
-                            title="Promote to Primary Mastery"
-                          >
-                            Primary
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.miniBtn}
-                            onClick={() => moveInterestLevel(sec.id, 'exploration')}
-                            title="Park in Exploration"
-                          >
-                            Explore
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.deleteMiniBtn}
-                          onClick={() => deleteInterest(sec.id)}
-                          title="Remove"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* 3. CURIOSITY SANDBOX (PARKED IDEAS) */}
-            <div className={styles.parkedSummary}>
-              <button
-                type="button"
-                className={styles.parkedToggleBtn}
-                onClick={() => setShowParkedList(!showParkedList)}
-              >
-                <span>
-                  {explorationInterests.length} Ideas Parked in Curiosity Sandbox
-                </span>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                  {showParkedList ? '[Hide]' : '[View Parked]'}
-                </span>
-              </button>
-
-              {showParkedList && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
-                  {explorationInterests.length === 0 ? (
-                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      No parked ideas yet. Use the parking bar above to park ideas without guilt.
-                    </p>
-                  ) : (
-                    explorationInterests.map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '8px',
-                          padding: '6px 8px',
-                          borderRadius: '4px',
-                          background: 'var(--color-surface-2)',
-                          fontSize: '12px',
-                          color: 'var(--color-text)',
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                          <button
-                            type="button"
-                            className={styles.miniBtn}
-                            onClick={() => moveInterestLevel(item.id, 'secondary')}
-                            title="Promote to Secondary Focus"
-                          >
-                            + Secondary
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.deleteMiniBtn}
-                            onClick={() => deleteInterest(item.id)}
-                            title="Remove"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+            {/* Clean Grid of Parked Ideas */}
+            <div className={styles.parkedList}>
+              {explorationInterests.length === 0 ? (
+                <div className={styles.emptyStateSlot} style={{ gridColumn: '1 / -1' }}>
+                  No parked ideas yet. Whenever an exciting new hobby or project idea pops into your head, type it above to keep it safe.
                 </div>
+              ) : (
+                explorationInterests.map((item) => (
+                  <div key={item.id} className={styles.parkedItemCard}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.title}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        className={styles.miniBtn}
+                        onClick={() => moveInterestLevel(item.id, 'primary')}
+                        title="Promote to Primary Focus"
+                      >
+                        Make Primary
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.miniBtn}
+                        onClick={() => moveInterestLevel(item.id, 'secondary')}
+                        title="Move to Supporting Habits"
+                      >
+                        + Habit
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.deleteMiniBtn}
+                        onClick={() => deleteInterest(item.id)}
+                        title="Remove"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
+          </section>
 
-            {/* 4. DELIBERATE GROWTH PHILOSOPHY */}
-            <div className={styles.philosophyCard}>
-              <span className={styles.philosophyQuote}>
-                &ldquo;You don&apos;t have to pursue everything today. You have a lifetime to learn, but you need a system to direct your attention.&rdquo;
-              </span>
-              Park shiny distractions without guilt. Mastery thrives on single-pointed attention.
-            </div>
-
-            {/* 5. CLEAN BOARD / RESTORE DEFAULTS */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', fontSize: '11px', color: 'var(--color-text-muted)', paddingTop: '4px' }}>
+          {/* ── FOOTER UTILITIES (START FRESH / RESTORE) ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--color-border-subtle)', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+            <span>&ldquo;You don&apos;t have to pursue everything today. You have a lifetime to learn.&rdquo;</span>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="button"
                 style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '11px' }}
                 onClick={() => resetInterests(true)}
-                title="Clear all demo cards and start with a blank board"
               >
                 Clear Board (Start Fresh)
               </button>
@@ -881,7 +783,6 @@ export default function GrowthContent() {
                 type="button"
                 style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '11px' }}
                 onClick={() => resetInterests(false)}
-                title="Restore default growth system cards"
               >
                 Restore Defaults
               </button>
