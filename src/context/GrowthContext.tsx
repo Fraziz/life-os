@@ -113,9 +113,11 @@ interface GrowthContextType {
   secondaryInterests: Interest[];
   explorationInterests: Interest[];
   addInterest: (interest: Omit<Interest, 'id' | 'createdAt' | 'updatedAt'>) => { success: boolean; error?: string };
+  setPrimaryMastery: (data: { title: string; category?: string; notes?: string; linkedGoalId?: string }) => void;
   updateInterest: (id: string, updates: Partial<Interest>) => void;
   deleteInterest: (id: string) => void;
   moveInterestLevel: (id: string, newLevel: InterestLevel) => { success: boolean; error?: string };
+  resetInterests: (fresh?: boolean) => void;
   sprints: CommitmentSprint[];
   activeSprint: CommitmentSprint | null;
   createSprint: (sprint: Omit<CommitmentSprint, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -214,17 +216,28 @@ export function GrowthProvider({ children }: { children: React.ReactNode }) {
     if (!target) return { success: false, error: 'Interest not found' };
     if (target.level === newLevel) return { success: true };
 
-    if (newLevel === 'primary' && primaryInterests.length >= 1) {
-      return {
-        success: false,
-        error: 'You already have 1 Primary Focus. Swap or demote your current Primary Focus to Secondary or Exploration first.',
-      };
+    if (newLevel === 'primary') {
+      // Smooth auto-swap: If a primary already exists, demote it to secondary (if room) or exploration
+      const existingPrimary = interests.find((i) => i.level === 'primary');
+      const next = interests.map((item) => {
+        if (item.id === id) {
+          return { ...item, level: 'primary' as InterestLevel, updatedAt: new Date().toISOString() };
+        }
+        if (existingPrimary && item.id === existingPrimary.id) {
+          const currentSecCount = interests.filter((i) => i.level === 'secondary' && i.id !== id).length;
+          const demotedLevel: InterestLevel = currentSecCount < 2 ? 'secondary' : 'exploration';
+          return { ...item, level: demotedLevel, updatedAt: new Date().toISOString() };
+        }
+        return item;
+      });
+      saveInterests(next);
+      return { success: true };
     }
 
     if (newLevel === 'secondary' && secondaryInterests.length >= 2) {
       return {
         success: false,
-        error: 'You can only have up to 2 Secondary Focuses. Demote one to Exploration before moving another here.',
+        error: 'Secondary Focus is limited to 2 interests. Demote one to Exploration first.',
       };
     }
 
@@ -233,6 +246,50 @@ export function GrowthProvider({ children }: { children: React.ReactNode }) {
     );
     saveInterests(next);
     return { success: true };
+  };
+
+  const setPrimaryMastery = (data: {
+    title: string;
+    category?: string;
+    notes?: string;
+    linkedGoalId?: string;
+  }) => {
+    const currentPrimary = interests.find((i) => i.level === 'primary');
+    if (currentPrimary) {
+      const next = interests.map((item) =>
+        item.id === currentPrimary.id
+          ? {
+              ...item,
+              title: data.title.trim(),
+              category: data.category?.trim() || undefined,
+              notes: data.notes?.trim() || undefined,
+              linkedGoalId: data.linkedGoalId || undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      );
+      saveInterests(next);
+    } else {
+      const newPrimary: Interest = {
+        id: `interest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        title: data.title.trim(),
+        level: 'primary',
+        category: data.category?.trim() || undefined,
+        notes: data.notes?.trim() || undefined,
+        linkedGoalId: data.linkedGoalId || undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      saveInterests([newPrimary, ...interests]);
+    }
+  };
+
+  const resetInterests = (fresh?: boolean) => {
+    if (fresh) {
+      saveInterests([]);
+    } else {
+      saveInterests(DEFAULT_INTERESTS);
+    }
   };
 
   const activeSprint = sprints.find((s) => s.status === 'active') || null;
@@ -317,9 +374,11 @@ export function GrowthProvider({ children }: { children: React.ReactNode }) {
         secondaryInterests,
         explorationInterests,
         addInterest,
+        setPrimaryMastery,
         updateInterest,
         deleteInterest,
         moveInterestLevel,
+        resetInterests,
         sprints,
         activeSprint,
         createSprint,

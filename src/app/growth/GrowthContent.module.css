@@ -286,98 +286,53 @@
 }
 
 /* ============================================================
-   ENHANCED SIMPLE MODE STYLES (ADHD ZERO-OVERWHELM LAYOUT)
+   EXECUTIVE COMMAND CENTER LAYOUT (Wide-Responsive & Balanced)
+   ADHD-friendly 2-column layout on desktop, stacked on mobile.
+   Clean surfaces, subtle borders, micro-accents only.
    ============================================================ */
-.simpleContainer {
-  display: flex;
-  flex-direction: column;
+.commandGrid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 20px;
   width: 100%;
   animation: fadeIn 0.2s ease forwards;
 }
 
-/* Instant Distraction Parking Bar */
-.instantParkBar {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 10px);
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+@media (min-width: 960px) {
+  .commandGrid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
 }
 
-.instantParkBar:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-}
-
-.instantParkInput {
-  flex: 1;
-  background: transparent;
-  border: none;
-  font-size: 13.5px;
-  color: var(--color-text);
-  font-family: inherit;
-  outline: none;
-  min-width: 0;
-}
-
-.instantParkInput::placeholder {
-  color: var(--color-text-faint, #9ca3af);
-}
-
-.parkBtn {
-  min-height: 32px;
-  padding: 0 12px;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 6px;
-  color: #fbbf24;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.12s ease;
-}
-
-.parkBtn:hover {
-  background: rgba(245, 158, 11, 0.25);
-  transform: translateY(-0.5px);
-}
-
-.parkToast {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  animation: fadeIn 0.15s ease forwards;
-}
-
-/* Primary Mastery Hero (Single focal anchor) */
-.primaryHero {
-  background: var(--color-mint-card);
-  border: 1px solid var(--color-mint-border);
-  border-radius: var(--radius-lg, 12px);
-  padding: clamp(20px, 3vw, 28px);
+.mainColumn {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  position: relative;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  gap: 20px;
 }
 
-.primaryHeroTop {
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Primary Mastery Command Card ── */
+.masteryCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: clamp(20px, 2.5vw, 26px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s ease;
+}
+
+.masteryCardTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -385,77 +340,252 @@
   flex-wrap: wrap;
 }
 
-.heroTag {
+.masteryMetaLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.masteryBadge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.18);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-.primaryHeroTitle {
-  font-size: clamp(20px, 2.4vw, 24px);
-  font-weight: 800;
+.masteryStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.masteryTitle {
+  font-size: clamp(20px, 2.2vw, 24px);
+  font-weight: 700;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: 1.28;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.primaryHeroNotes {
+.masteryNotes {
   font-size: 13.5px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--color-text-muted);
-  max-width: 800px;
   margin: 0;
 }
 
-.primaryHeroActions {
+/* ── Connected Life Goal Link Card ── */
+.goalLinkCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goalLinkHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
   flex-wrap: wrap;
+}
+
+.goalLinkTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goalLinkTitle {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.goalLinkPct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.goalProgressBar {
+  height: 6px;
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.goalProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), #10b981);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.goalLinkMilestone {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+/* ── Real Live Execution Engine (Next Actions from TaskContext) ── */
+.executionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.executionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  transition: border-color 0.12s ease;
+}
+
+.taskRow:hover {
+  border-color: var(--color-border);
+}
+
+.taskCheckBtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+  font-size: 11px;
+}
+
+.taskCheckBtn:hover {
+  border-color: var(--color-accent);
+}
+
+.taskCheckBtnDone {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.taskTitle {
+  font-size: 13px;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskTitleDone {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.quickTaskForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
 }
 
-.focusLaunchBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 20px;
-  background: #10b981;
-  color: #ffffff;
-  border: 1px solid #10b981;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 700;
+.quickTaskInput {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--color-text);
+  font-family: inherit;
+  outline: none;
+}
+
+.quickTaskInput:focus {
+  border-color: var(--color-accent);
+}
+
+.quickTaskBtn {
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
   cursor: pointer;
-  text-decoration: none;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
-  transition: transform 0.12s ease, opacity 0.12s ease;
+  white-space: nowrap;
 }
 
-.focusLaunchBtn:hover {
-  transform: translateY(-1px);
-  opacity: 0.94;
+.quickTaskBtn:hover {
+  background: var(--color-surface-hover);
 }
 
-/* Simple 90-Day Sprint Pulse Card */
-.sprintPulse {
-  background: var(--color-cyan-card, var(--color-surface-2));
-  border: 1px solid var(--color-cyan-border, var(--color-border));
-  border-radius: var(--radius-md, 10px);
-  padding: 16px 20px;
+/* ── Mastery Actions Bar ── */
+.masteryActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* ── 90-Day Sprint Card (Executive Surface) ── */
+.sprintCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: clamp(16px, 2vw, 22px);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .sprintPulseHeader {
@@ -473,21 +603,118 @@
   margin: 0;
 }
 
-/* Secondary Focus Row */
+/* Instant Distraction Parking Bar */
+.instantParkBar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.instantParkBar:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.instantParkInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  color: var(--color-text);
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+}
+
+.instantParkInput::placeholder {
+  color: var(--color-text-faint, #9ca3af);
+}
+
+.parkBtn {
+  min-height: 32px;
+  padding: 0 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.parkBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+}
+
+.parkToast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  animation: fadeIn 0.15s ease forwards;
+}
+
+/* Secondary Focus Stack */
+.sideSectionCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sideSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sideSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 .secondaryRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .secondaryCard {
-  background: var(--color-lavender-card);
-  border: 1px solid var(--color-lavender-border);
-  border-radius: var(--radius-md, 10px);
-  padding: 14px 16px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: border-color 0.12s ease;
+}
+
+.secondaryCard:hover {
+  border-color: var(--color-border);
 }
 
 /* Parked Curiosity Accordion */
@@ -495,10 +722,11 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md, 10px);
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .parkedToggleBtn {
@@ -512,6 +740,24 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+}
+
+/* Philosophy Card */
+.philosophyCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.philosophyQuote {
+  font-style: italic;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  display: block;
 }
 
 /* ============================================================
@@ -530,22 +776,20 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 1px solid transparent;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .colPrimary {
-  background: var(--color-mint-card);
-  border-color: var(--color-mint-border);
+  border-top: 2px solid #10b981;
 }
 
 .colSecondary {
-  background: var(--color-lavender-card);
-  border-color: var(--color-lavender-border);
+  border-top: 2px solid #818cf8;
 }
 
 .colExploration {
-  background: var(--color-amber-card);
-  border-color: var(--color-amber-border);
+  border-top: 2px solid #f59e0b;
 }
 
 .levelHeader {

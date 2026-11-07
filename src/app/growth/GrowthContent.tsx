@@ -9,6 +9,7 @@ import { useMilestones } from '@/context/MilestoneContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { useSettings } from '@/context/SettingsContext';
+import { playSuccessChime } from '@/utils/soundAndDopamine';
 import type {
   Interest,
   InterestLevel,
@@ -101,8 +102,11 @@ export default function GrowthContent() {
     secondaryInterests,
     explorationInterests,
     addInterest,
+    setPrimaryMastery,
+    updateInterest,
     deleteInterest,
     moveInterestLevel,
+    resetInterests,
     activeSprint,
     createSprint,
     toggleCheckpoint,
@@ -116,7 +120,7 @@ export default function GrowthContent() {
   const { dreams } = useDreams();
   const { milestones } = useMilestones();
   const { projects } = useProjects();
-  const { tasks } = useTasks();
+  const { tasks, addTask, toggleTaskDone } = useTasks();
   const { settings } = useSettings();
 
   const [isSimpleMode, setIsSimpleMode] = useState<boolean>(true);
@@ -124,6 +128,7 @@ export default function GrowthContent() {
 
   // Modals
   const [interestModalOpen, setInterestModalOpen] = useState(false);
+  const [masteryModalOpen, setMasteryModalOpen] = useState(false);
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
   const [evaluationModalOpen, setEvaluationModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,7 +138,17 @@ export default function GrowthContent() {
   const [parkToast, setParkToast] = useState<string | null>(null);
   const [showParkedList, setShowParkedList] = useState(false);
 
-  // New Interest form state
+  // Mastery Form State (Manual Crafting & Goal Life Connection)
+  const [masteryFormTitle, setMasteryFormTitle] = useState('');
+  const [masteryFormCategory, setMasteryFormCategory] = useState('');
+  const [masteryFormNotes, setMasteryFormNotes] = useState('');
+  const [masteryFormGoalId, setMasteryFormGoalId] = useState('');
+  const [masteryFormNextTask, setMasteryFormNextTask] = useState('');
+
+  // Inline Quick Task input
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+
+  // New Interest form state (for secondary/exploration)
   const [newTitle, setNewTitle] = useState('');
   const [newLevel, setNewLevel] = useState<InterestLevel>('exploration');
   const [newCategory, setNewCategory] = useState('');
@@ -154,6 +169,94 @@ export default function GrowthContent() {
   const [evalReflection, setEvalReflection] = useState('');
 
   const primaryItem = primaryInterests[0] || null;
+  const linkedGoal = primaryItem?.linkedGoalId
+    ? goals.find((g) => g.id === primaryItem.linkedGoalId)
+    : null;
+  const activeGoalMilestone = linkedGoal
+    ? milestones.find((m) => m.goalId === linkedGoal.id && m.status !== 'completed')
+    : null;
+  const pendingMasteryTasks = primaryItem?.linkedGoalId
+    ? tasks.filter((t) => t.goalId === primaryItem.linkedGoalId && t.status !== 'done')
+    : [];
+
+  // Open Craft Mastery Modal (pre-fills with existing if present)
+  const openMasteryModal = () => {
+    if (primaryItem) {
+      setMasteryFormTitle(primaryItem.title);
+      setMasteryFormCategory(primaryItem.category || '');
+      setMasteryFormNotes(primaryItem.notes || '');
+      setMasteryFormGoalId(primaryItem.linkedGoalId || '');
+    } else {
+      setMasteryFormTitle('');
+      setMasteryFormCategory('');
+      setMasteryFormNotes('');
+      setMasteryFormGoalId('');
+    }
+    setMasteryFormNextTask('');
+    setErrorMessage(null);
+    setMasteryModalOpen(true);
+  };
+
+  // Save Primary Mastery (Manually Crafted & Connected to Life OS)
+  const handleSaveMasterySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!masteryFormTitle.trim()) return;
+
+    setPrimaryMastery({
+      title: masteryFormTitle.trim(),
+      category: masteryFormCategory.trim() || undefined,
+      notes: masteryFormNotes.trim() || undefined,
+      linkedGoalId: masteryFormGoalId || undefined,
+    });
+
+    if (masteryFormNextTask.trim()) {
+      addTask({
+        title: masteryFormNextTask.trim(),
+        description: `Deliberate practice task for primary mastery: ${masteryFormTitle.trim()}`,
+        status: 'todo',
+        priority: 'high',
+        goalId: masteryFormGoalId || undefined,
+        tags: ['mastery', masteryFormCategory.trim() || 'focus'],
+        subtasks: [],
+      });
+    }
+
+    try {
+      playSuccessChime();
+    } catch {}
+
+    setMasteryModalOpen(false);
+  };
+
+  // Add Inline Action Step to Mastery Goal
+  const handleInlineTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTaskTitle.trim() || !primaryItem) return;
+
+    addTask({
+      title: quickTaskTitle.trim(),
+      description: `Action step toward mastery: ${primaryItem.title}`,
+      status: 'todo',
+      priority: 'high',
+      goalId: primaryItem.linkedGoalId || undefined,
+      tags: ['mastery', primaryItem.category || 'focus'],
+      subtasks: [],
+    });
+
+    try {
+      playSuccessChime();
+    } catch {}
+
+    setQuickTaskTitle('');
+  };
+
+  // Toggle Task Done with Audio Feedback
+  const handleTaskToggle = (taskId: string) => {
+    toggleTaskDone(taskId);
+    try {
+      playSuccessChime();
+    } catch {}
+  };
 
   // Handle Instant Distraction Parking (Simple Mode ADHD Lifeline)
   const handleQuickParkSubmit = (e: React.FormEvent) => {
@@ -332,6 +435,13 @@ export default function GrowthContent() {
           <button
             type="button"
             className={styles.primaryBtn}
+            onClick={() => openMasteryModal()}
+          >
+            Craft Mastery
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
             onClick={() => openAddInterestModal()}
           >
             Add Interest
@@ -374,232 +484,408 @@ export default function GrowthContent() {
       </div>
 
       {/* ============================================================
-          VIEW 1: ENHANCED SIMPLE MODE (CLEAN, NO ICONS, NO CLUTTER)
+          VIEW 1: ENHANCED EXECUTIVE COMMAND CENTER (SIMPLE / PRO MODE)
           ============================================================ */}
       {isSimpleMode ? (
-        <div className={styles.simpleContainer}>
-          {/* 1. INSTANT DISTRACTION PARKING */}
-          <form className={styles.instantParkBar} onSubmit={handleQuickParkSubmit}>
-            <input
-              type="text"
-              className={styles.instantParkInput}
-              placeholder="Had a random new idea or hobby in mind? Type here and press Enter to park safely..."
-              value={quickParkText}
-              onChange={(e) => setQuickParkText(e.target.value)}
-            />
-            <button type="submit" className={styles.parkBtn}>
-              Park Idea
-            </button>
-          </form>
-
-          {parkToast && <div className={styles.parkToast}>{parkToast}</div>}
-
-          {/* 2. PRIMARY MASTERY HERO CARD */}
-          {primaryItem ? (
-            <div className={styles.primaryHero}>
-              <div className={styles.primaryHeroTop}>
-                <span className={styles.heroTag}>Primary Mastery · Season Focus</span>
-                {primaryItem.category && (
-                  <span
-                    className={styles.categoryTag}
-                    style={getCategoryTagStyle(primaryItem.category)}
+        <div className={styles.commandGrid}>
+          {/* ── LEFT COLUMN: PRIMARY MASTERY COMMAND & 90-DAY EXECUTION ── */}
+          <div className={styles.mainColumn}>
+            {/* 1. PRIMARY MASTERY COMMAND CARD */}
+            {primaryItem ? (
+              <div className={styles.masteryCard}>
+                <div className={styles.masteryCardTop}>
+                  <div className={styles.masteryMetaLeft}>
+                    <span className={styles.masteryBadge}>
+                      <span className={styles.masteryStatusDot} />
+                      Primary Mastery · Season Focus
+                    </span>
+                    {primaryItem.category && (
+                      <span
+                        className={styles.categoryTag}
+                        style={getCategoryTagStyle(primaryItem.category)}
+                      >
+                        {primaryItem.category}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.miniBtn}
+                    onClick={() => openMasteryModal()}
+                    title="Edit craft, notes, or linked goal"
                   >
-                    {primaryItem.category}
-                  </span>
-                )}
-              </div>
-
-              <h2 className={styles.primaryHeroTitle}>{primaryItem.title}</h2>
-              {primaryItem.notes && (
-                <p className={styles.primaryHeroNotes}>{primaryItem.notes}</p>
-              )}
-
-              {primaryItem.linkedGoalId && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={styles.interestLinkedGoal}>
-                    Goal: {goals.find((g) => g.id === primaryItem.linkedGoalId)?.title}
-                  </span>
+                    Edit Mastery
+                  </button>
                 </div>
-              )}
 
-              <div className={styles.primaryHeroActions}>
-                <Link href="/focus" className={styles.focusLaunchBtn}>
-                  Start 25m Focus Session
-                </Link>
-                <Link href="/tasks" className={styles.secondaryBtn}>
-                  Open Related Tasks
-                </Link>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  onClick={() => openAddInterestModal('primary')}
-                >
-                  Change Primary
-                </button>
+                <h2 className={styles.masteryTitle}>{primaryItem.title}</h2>
+                {primaryItem.notes && (
+                  <p className={styles.masteryNotes}>{primaryItem.notes}</p>
+                )}
+
+                {/* Connected Life Goal Card / Live Progress */}
+                {linkedGoal ? (
+                  <div className={styles.goalLinkCard}>
+                    <div className={styles.goalLinkHeader}>
+                      <div className={styles.goalLinkTitleWrap}>
+                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.04em' }}>
+                          Life Goal:
+                        </span>
+                        <Link href="/goals" className={styles.goalLinkTitle}>
+                          {linkedGoal.title}
+                        </Link>
+                      </div>
+                      <span className={styles.goalLinkPct}>
+                        {linkedGoal.progress || 0}% Complete
+                      </span>
+                    </div>
+                    <div className={styles.goalProgressBar}>
+                      <div
+                        className={styles.goalProgressFill}
+                        style={{ width: `${linkedGoal.progress || 0}%` }}
+                      />
+                    </div>
+                    {activeGoalMilestone && (
+                      <div className={styles.goalLinkMilestone}>
+                        Active Milestone: {activeGoalMilestone.title}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={styles.goalLinkCard} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      Not yet connected to a Life OS Goal
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.miniBtn}
+                      onClick={() => openMasteryModal()}
+                    >
+                      Connect to Goal
+                    </button>
+                  </div>
+                )}
+
+                {/* Real Live Execution Tasks (from Life OS TaskContext) */}
+                <div className={styles.executionSection}>
+                  <div className={styles.executionHeader}>
+                    <span>Immediate Next Actions</span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'none', fontWeight: 500 }}>
+                      {pendingMasteryTasks.length} pending
+                    </span>
+                  </div>
+
+                  <div className={styles.taskList}>
+                    {pendingMasteryTasks.length === 0 ? (
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', padding: '4px 0' }}>
+                        No pending tasks yet. Add your next immediate step below.
+                      </div>
+                    ) : (
+                      pendingMasteryTasks.slice(0, 3).map((task) => (
+                        <div key={task.id} className={styles.taskRow}>
+                          <button
+                            type="button"
+                            className={styles.taskCheckBtn}
+                            onClick={() => handleTaskToggle(task.id)}
+                            title="Mark done (updates in Life OS)"
+                            aria-label={`Mark done ${task.title}`}
+                          />
+                          <span className={styles.taskTitle}>{task.title}</span>
+                          {task.priority === 'high' && (
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#f87171', textTransform: 'uppercase' }}>
+                              High
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <form onSubmit={handleInlineTaskSubmit} className={styles.quickTaskForm}>
+                    <input
+                      type="text"
+                      className={styles.quickTaskInput}
+                      placeholder="+ Add immediate next step to this mastery..."
+                      value={quickTaskTitle}
+                      onChange={(e) => setQuickTaskTitle(e.target.value)}
+                    />
+                    {quickTaskTitle.trim() && (
+                      <button type="submit" className={styles.quickTaskBtn}>
+                        Add Step
+                      </button>
+                    )}
+                  </form>
+                </div>
+
+                {/* Mastery Action Row */}
+                <div className={styles.masteryActions}>
+                  <Link
+                    href={`/focus${primaryItem.linkedGoalId ? `?goalId=${primaryItem.linkedGoalId}` : ''}`}
+                    className={styles.primaryBtn}
+                  >
+                    Start 25m Focus Session
+                  </Link>
+                  <Link href="/roadmap" className={styles.secondaryBtn}>
+                    View Roadmap
+                  </Link>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => openMasteryModal()}
+                  >
+                    Change Craft
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className={styles.emptyStateSlot} style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>
+            ) : (
+              <div className={styles.emptyStateSlot} style={{ padding: '36px 24px', flexDirection: 'column', gap: '12px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
                   No Primary Mastery Set
                 </span>
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '480px' }}>
-                  Choose exactly 1 core discipline to receive 70%+ of your daily deep work.
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '440px', lineHeight: 1.5 }}>
+                  Choose exactly 1 craft, discipline, or goal to receive the majority of your daily deep work and practice.
                 </p>
                 <button
                   type="button"
                   className={styles.primaryBtn}
-                  onClick={() => openAddInterestModal('primary')}
-                  style={{ marginTop: '8px' }}
+                  onClick={() => openMasteryModal()}
+                  style={{ marginTop: '4px' }}
                 >
-                  Choose Primary Focus
+                  Craft Your Primary Mastery
                 </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* 3. ACTIVE 90-DAY SPRINT (Current Week Focus Only) */}
-          {activeSprint && (
-            <div className={styles.sprintPulse}>
-              <div className={styles.sprintPulseHeader}>
-                <div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Active 90-Day Sprint · Week {currentSprintWeek} of 13
-                  </span>
-                  <h3 className={styles.sprintPulseTitle}>{activeSprint.title}</h3>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className={styles.statusPill}>
-                    {daysRemaining} Days Left
-                  </span>
-                  {currentWeekCheckpoint && (
-                    <button
-                      type="button"
-                      className={styles.miniBtn}
-                      style={{
-                        background: currentWeekCheckpoint.completed ? 'rgba(16, 185, 129, 0.2)' : 'var(--color-surface)',
-                        color: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-text)',
-                        borderColor: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-border)',
-                      }}
-                      onClick={() => toggleCheckpoint(activeSprint.id, currentSprintWeek)}
-                    >
-                      {currentWeekCheckpoint.completed ? 'Week Done' : 'Mark Week Done'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div style={{ height: '4px', background: 'var(--color-surface)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${sprintProgressPct}%`,
-                    background: 'linear-gradient(90deg, #6366f1, #10b981)',
-                    transition: 'width 0.3s ease',
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 4. SECONDARY FOCUSES */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Secondary Focus (Daily 20–30m Habits · Max 2)
-              </span>
-              {secondaryInterests.length < 2 && (
-                <button
-                  type="button"
-                  className={styles.miniBtn}
-                  onClick={() => openAddInterestModal('secondary')}
-                >
-                  Add Secondary
-                </button>
-              )}
-            </div>
-
-            <div className={styles.secondaryRow}>
-              {secondaryInterests.length === 0 ? (
-                <div className={styles.emptyStateSlot} style={{ gridColumn: '1 / -1' }}>
-                  No secondary pursuits active. Add 1 or 2 supporting skills (e.g. workout, guitar, reading).
-                </div>
-              ) : (
-                secondaryInterests.map((sec) => (
-                  <div key={sec.id} className={styles.secondaryCard}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 700, color: 'var(--color-text)' }}>
-                        {sec.title}
-                      </h4>
-                      {sec.category && (
-                        <span className={styles.categoryTag} style={getCategoryTagStyle(sec.category)}>
-                          {sec.category}
-                        </span>
-                      )}
-                    </div>
-                    {sec.notes && (
-                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        {sec.notes}
-                      </p>
-                    )}
+            {/* 2. ACTIVE 90-DAY SPRINT */}
+            {activeSprint && (
+              <div className={styles.sprintCard}>
+                <div className={styles.sprintPulseHeader}>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Active 90-Day Sprint · Week {currentSprintWeek} of 13
+                    </span>
+                    <h3 className={styles.sprintPulseTitle}>{activeSprint.title}</h3>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 5. CURIOSITY BACKLOG ACCORDION */}
-          <div className={styles.parkedSummary}>
-            <button
-              type="button"
-              className={styles.parkedToggleBtn}
-              onClick={() => setShowParkedList(!showParkedList)}
-            >
-              <span>
-                {explorationInterests.length} Ideas Parked in Curiosity Sandbox
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                {showParkedList ? '[Hide]' : '[View Parked]'}
-              </span>
-            </button>
-
-            {showParkedList && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
-                {explorationInterests.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                    No parked ideas yet. Use the top bar to park ideas without guilt.
-                  </p>
-                ) : (
-                  explorationInterests.map((item) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '6px 8px',
-                        borderRadius: '4px',
-                        background: 'var(--color-surface-2)',
-                        fontSize: '12.5px',
-                        color: 'var(--color-text)',
-                      }}
-                    >
-                      <span>{item.title}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={styles.statusPill}>
+                      {daysRemaining} Days Left
+                    </span>
+                    {currentWeekCheckpoint && (
                       <button
                         type="button"
-                        className={styles.deleteMiniBtn}
-                        onClick={() => deleteInterest(item.id)}
-                        title="Remove"
+                        className={styles.miniBtn}
+                        style={{
+                          background: currentWeekCheckpoint.completed ? 'rgba(16, 185, 129, 0.15)' : 'var(--color-surface-2)',
+                          color: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-text)',
+                          borderColor: currentWeekCheckpoint.completed ? '#10b981' : 'var(--color-border)',
+                        }}
+                        onClick={() => toggleCheckpoint(activeSprint.id, currentSprintWeek)}
                       >
-                        Remove
+                        {currentWeekCheckpoint.completed ? 'Week Done' : 'Mark Week Done'}
                       </button>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ height: '5px', background: 'var(--color-surface-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${sprintProgressPct}%`,
+                      background: 'linear-gradient(90deg, var(--color-accent), #10b981)',
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── RIGHT COLUMN: GOVERNOR, PARKING & SECONDARY ── */}
+          <div className={styles.sideColumn}>
+            {/* 1. INSTANT DISTRACTION PARKING */}
+            <form className={styles.instantParkBar} onSubmit={handleQuickParkSubmit}>
+              <input
+                type="text"
+                className={styles.instantParkInput}
+                placeholder="Park a shiny idea or hobby (Enter to save safely)..."
+                value={quickParkText}
+                onChange={(e) => setQuickParkText(e.target.value)}
+              />
+              <button type="submit" className={styles.parkBtn}>
+                Park Idea
+              </button>
+            </form>
+
+            {parkToast && <div className={styles.parkToast}>{parkToast}</div>}
+
+            {/* 2. SECONDARY FOCUS PURSUITS (MAX 2) */}
+            <div className={styles.sideSectionCard}>
+              <div className={styles.sideSectionHeader}>
+                <h3 className={styles.sideSectionTitle}>
+                  Secondary Focus (Daily 20–30m Habits · Max 2)
+                </h3>
+                {secondaryInterests.length < 2 && (
+                  <button
+                    type="button"
+                    className={styles.miniBtn}
+                    onClick={() => openAddInterestModal('secondary')}
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.secondaryRow}>
+                {secondaryInterests.length === 0 ? (
+                  <div className={styles.emptyStateSlot}>
+                    No secondary pursuits active. Add 1 or 2 supporting daily habits (e.g. workout, guitar, reading).
+                  </div>
+                ) : (
+                  secondaryInterests.map((sec) => (
+                    <div key={sec.id} className={styles.secondaryCard}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
+                          {sec.title}
+                        </h4>
+                        {sec.category && (
+                          <span className={styles.categoryTag} style={getCategoryTagStyle(sec.category)}>
+                            {sec.category}
+                          </span>
+                        )}
+                      </div>
+                      {sec.notes && (
+                        <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
+                          {sec.notes}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            type="button"
+                            className={styles.miniBtn}
+                            onClick={() => moveInterestLevel(sec.id, 'primary')}
+                            title="Promote to Primary Mastery"
+                          >
+                            Primary
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.miniBtn}
+                            onClick={() => moveInterestLevel(sec.id, 'exploration')}
+                            title="Park in Exploration"
+                          >
+                            Explore
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.deleteMiniBtn}
+                          onClick={() => deleteInterest(sec.id)}
+                          title="Remove"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
-            )}
+            </div>
+
+            {/* 3. CURIOSITY SANDBOX (PARKED IDEAS) */}
+            <div className={styles.parkedSummary}>
+              <button
+                type="button"
+                className={styles.parkedToggleBtn}
+                onClick={() => setShowParkedList(!showParkedList)}
+              >
+                <span>
+                  {explorationInterests.length} Ideas Parked in Curiosity Sandbox
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  {showParkedList ? '[Hide]' : '[View Parked]'}
+                </span>
+              </button>
+
+              {showParkedList && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                  {explorationInterests.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      No parked ideas yet. Use the parking bar above to park ideas without guilt.
+                    </p>
+                  ) : (
+                    explorationInterests.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          padding: '6px 8px',
+                          borderRadius: '4px',
+                          background: 'var(--color-surface-2)',
+                          fontSize: '12px',
+                          color: 'var(--color-text)',
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            className={styles.miniBtn}
+                            onClick={() => moveInterestLevel(item.id, 'secondary')}
+                            title="Promote to Secondary Focus"
+                          >
+                            + Secondary
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.deleteMiniBtn}
+                            onClick={() => deleteInterest(item.id)}
+                            title="Remove"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 4. DELIBERATE GROWTH PHILOSOPHY */}
+            <div className={styles.philosophyCard}>
+              <span className={styles.philosophyQuote}>
+                &ldquo;You don&apos;t have to pursue everything today. You have a lifetime to learn, but you need a system to direct your attention.&rdquo;
+              </span>
+              Park shiny distractions without guilt. Mastery thrives on single-pointed attention.
+            </div>
+
+            {/* 5. CLEAN BOARD / RESTORE DEFAULTS */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', fontSize: '11px', color: 'var(--color-text-muted)', paddingTop: '4px' }}>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '11px' }}
+                onClick={() => resetInterests(true)}
+                title="Clear all demo cards and start with a blank board"
+              >
+                Clear Board (Start Fresh)
+              </button>
+              <span>·</span>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '11px' }}
+                onClick={() => resetInterests(false)}
+                title="Restore default growth system cards"
+              >
+                Restore Defaults
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -1012,6 +1298,125 @@ export default function GrowthContent() {
             </div>
           )}
         </>
+      )}
+
+      {/* ── CRAFT YOUR PRIMARY MASTERY MODAL (PRO & CONNECTED TO LIFE GOALS) ── */}
+      {masteryModalOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setMasteryModalOpen(false)}>
+          <div className={styles.modalWindow} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Craft Your Primary Mastery</h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  Choose the 1 craft or goal receiving 70%+ of your daily deliberate attention.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.closeBtn}
+                onClick={() => setMasteryModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMasterySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '6px' }}>
+              {/* Option A: Connect to Life OS Goal */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Connect to Life OS Goal (Recommended)
+                </label>
+                <select
+                  className={styles.formSelect}
+                  value={masteryFormGoalId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setMasteryFormGoalId(selectedId);
+                    const selectedGoal = goals.find((g) => g.id === selectedId);
+                    if (selectedGoal) {
+                      setMasteryFormTitle(selectedGoal.title);
+                      if (!masteryFormNotes) setMasteryFormNotes(selectedGoal.why || selectedGoal.description || '');
+                      if (!masteryFormCategory && selectedGoal.lifeAreaId) {
+                        setMasteryFormCategory(selectedGoal.lifeAreaId.replace('area-', ''));
+                      }
+                    }
+                  }}
+                >
+                  <option value="">None / Standalone Craft (Manual)</option>
+                  {goals.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title} ({g.progress || 0}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Mastery / Skill Title *</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g. Full-Stack Software Architecture, Classical Guitar, Blender 3D"
+                  value={masteryFormTitle}
+                  onChange={(e) => setMasteryFormTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Category / Field</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g. Engineering, Creative, Health, Languages, Music"
+                  value={masteryFormCategory}
+                  onChange={(e) => setMasteryFormCategory(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Why This Mastery Matters (Deliberate Practice Purpose)
+                </label>
+                <textarea
+                  className={styles.formTextarea}
+                  placeholder="Why does this discipline matter to you? What kind of craftsman do you want to become?"
+                  value={masteryFormNotes}
+                  onChange={(e) => setMasteryFormNotes(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Immediate Next Step (Task in Life OS)
+                </label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g. 30m deliberate fretboard exercise, write prototype schema"
+                  value={masteryFormNextTask}
+                  onChange={(e) => setMasteryFormNextTask(e.target.value)}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px', display: 'block' }}>
+                  Creates an actionable task in your Life OS linked directly to this goal.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setMasteryModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.primaryBtn}>
+                  Save Primary Mastery
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* ── ADD INTEREST MODAL ── */}
