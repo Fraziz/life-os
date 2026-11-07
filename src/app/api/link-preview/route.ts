@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
 
 export interface LinkPreviewData {
   url: string;
@@ -24,17 +25,12 @@ function normalizeUrl(raw: string): string | null {
       clean = `https://${clean}`;
     }
     const parsed = new URL(clean);
-    // Block private IP ranges and localhost to prevent SSRF
-    const host = parsed.hostname.toLowerCase();
-    if (
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host === '0.0.0.0' ||
-      host.endsWith('.local') ||
-      /^10\./.test(host) ||
-      /^192\.168\./.test(host) ||
-      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
-    ) {
+    // Protocol must strictly be http: or https:
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    // Block private IP ranges, localhost, and cloud metadata services to prevent SSRF
+    if (isPrivateOrReservedHost(parsed.hostname)) {
       return null;
     }
     return parsed.href;
@@ -141,6 +137,16 @@ function getSmartFallback(urlStr: string): LinkPreviewData {
 }
 
 export async function GET(req: NextRequest) {
+  // Rate limiting: 60 link previews per minute per IP
+  const clientIp = getClientIp(req);
+  const rateCheck = checkRateLimit(`link-preview:${clientIp}`, 60, 60 * 1000);
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: 'Too many preview requests. Please wait a moment.' },
+      { status: 429, headers: { 'Retry-After': '60' } }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const rawUrl = searchParams.get('url');
 
@@ -171,15 +177,42 @@ export async function GET(req: NextRequest) {
       ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
       : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-    const response = await fetch(validUrl, {
+    let targetFetchUrl = validUrl;
+    let response = await fetch(targetFetchUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent': userAgent,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
+      redirect: 'manual', // Prevent SSRF via unchecked redirects
       next: { revalidate: 3600 },
     });
+
+    // Safely follow single redirect if validated against private IP blocklist
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (location) {
+        try {
+          const redirectResolved = new URL(location, targetFetchUrl).href;
+          const redirectValid = normalizeUrl(redirectResolved);
+          if (redirectValid) {
+            targetFetchUrl = redirectValid;
+            response = await fetch(targetFetchUrl, {
+              signal: controller.signal,
+              headers: {
+                'User-Agent': userAgent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+              },
+              redirect: 'error',
+            });
+          }
+        } catch {
+          // If redirect parsing fails, fall through to fallback
+        }
+      }
+    }
 
     clearTimeout(timeout);
 

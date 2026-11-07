@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting: max 25 AI generation requests per minute per IP
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`ai-chat:${clientIp}`, 25, 60 * 1000);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded: Please wait a moment before sending more AI requests.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
     const body = await request.json();
     const { prompt, systemPrompt = '', aiSettings } = body;
 
@@ -14,10 +25,41 @@ export async function POST(request: Request) {
     const provider = aiSettings.provider || 'gemini';
     const rawApiKey = (aiSettings.apiKey || '').trim();
 
-    // Fallback to server env keys for Groq if client key is blank
-    const envGroqKey1 = process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '';
-    const envGroqKey2 = process.env.NEXT_PUBLIC_GROQ_API_KEY_2 || '';
-    const effectiveApiKey = rawApiKey || (provider === 'groq' ? envGroqKey1 : '');
+    // Fallback to secure server env keys (supports server-only and legacy env formats)
+    const envGroqKey1 =
+      process.env.GROQ_API_KEY_1 ||
+      process.env.GROQ_API_KEY ||
+      process.env.NEXT_PUBLIC_GROQ_API_KEY_1 ||
+      process.env.NEXT_PUBLIC_GROQ_API_KEY ||
+      '';
+    const envGroqKey2 =
+      process.env.GROQ_API_KEY_2 ||
+      process.env.NEXT_PUBLIC_GROQ_API_KEY_2 ||
+      '';
+    const envGeminiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+      '';
+    const envOpenAIKey =
+      process.env.OPENAI_API_KEY ||
+      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
+      '';
+    const envAnthropicKey =
+      process.env.ANTHROPIC_API_KEY ||
+      process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY ||
+      '';
+
+    const effectiveApiKey =
+      rawApiKey ||
+      (provider === 'groq'
+        ? envGroqKey1
+        : provider === 'gemini'
+        ? envGeminiKey
+        : provider === 'openai'
+        ? envOpenAIKey
+        : provider === 'anthropic'
+        ? envAnthropicKey
+        : '');
 
     if (!effectiveApiKey && provider !== 'custom') {
       return NextResponse.json(
@@ -227,13 +269,25 @@ export async function POST(request: Request) {
       endpoint = 'https://api-inference.huggingface.co/v1/chat/completions';
       defaultModel = 'meta-llama/Llama-3.2-3B-Instruct';
     } else if (provider === 'custom') {
-      endpoint = aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions';
+      const candidateUrl = aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions';
+      try {
+        const parsed = new URL(candidateUrl);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return NextResponse.json({ error: 'Custom API endpoint must use http or https' }, { status: 400 });
+        }
+        // Protect against SSRF: block cloud metadata and internal subnets
+        const isDev = process.env.NODE_ENV !== 'production';
+        if (isPrivateOrReservedHost(parsed.hostname, isDev)) {
+          return NextResponse.json(
+            { error: 'Forbidden API endpoint: Private or cloud metadata addresses cannot be queried.' },
+            { status: 403 }
+          );
+        }
+        endpoint = candidateUrl;
+      } catch {
+        return NextResponse.json({ error: 'Invalid custom API endpoint URL' }, { status: 400 });
+      }
       defaultModel = 'llama3';
-    }
-
-    // ONLY custom provider should ever override the API endpoint with apiEndpoint
-    if (provider === 'custom' && aiSettings.apiEndpoint?.trim()) {
-      endpoint = aiSettings.apiEndpoint.trim();
     }
 
     const requestedModel = aiSettings.model?.trim() || defaultModel;
