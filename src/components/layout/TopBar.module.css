@@ -20,7 +20,7 @@
 :global([data-theme='dark']) .topBar,
 :global([data-theme='cyber']) .topBar,
 :global([data-theme='nature']) .topBar {
-  background: var(--color-surface, #0e1013);
+  background: var(--color-surface, #0a0a0a);
   border-bottom-color: var(--color-border);
 }
 

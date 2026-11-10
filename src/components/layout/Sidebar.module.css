@@ -207,8 +207,8 @@
 
 .pinActive {
   color: var(--color-accent);
-  background: rgba(212, 255, 0, 0.14);
-  border-color: rgba(212, 255, 0, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 /*  Life Domain Focus Bar Container  */
@@ -392,10 +392,10 @@
    Expanded: full row highlight.
 */
 .activeItem {
-  background-color: rgba(212, 255, 0, 0.12);
-  color: var(--color-accent, #d4ff00);
-  border: 1px solid rgba(212, 255, 0, 0.32);
-  box-shadow: 0 0 12px rgba(212, 255, 0, 0.12);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--color-accent, #ffffff);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
   font-weight: 600;
 }
 
@@ -403,16 +403,16 @@
 :global([data-theme='light']) .activeItem,
 :global([data-theme='cyber']) .activeItem,
 :global([data-theme='nature']) .activeItem {
-  background-color: rgba(212, 255, 0, 0.12);
-  color: #d4ff00;
-  border: 1px solid rgba(212, 255, 0, 0.32);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 :global([data-theme='dark']) .activeItem .navIcon,
 :global([data-theme='light']) .activeItem .navIcon,
 :global([data-theme='cyber']) .activeItem .navIcon,
 :global([data-theme='nature']) .activeItem .navIcon {
-  color: #d4ff00;
+  color: #ffffff;
 }
 
 .navIconBox {

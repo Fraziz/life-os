@@ -1,86 +1,86 @@
 /* ============================================================
-   LIFE OS — SARMAT ANALYTIX TACTICAL CYBER LIME DESIGN SYSTEM
-   Ultra-clean, high-contrast, distraction-free aesthetic with
-   pitch-black obsidian surfaces, Acid Volt Lime accents (#d4ff00),
-   solid crisp borders, and senior-developer architectural craft.
+   LIFE OS — MONOCHROME BLACK & WHITE DESIGN SYSTEM
+   Pure high-contrast black, gray, and white aesthetic.
+   Distraction-free, executive minimalism, crisp solid borders,
+   and senior-developer architectural craft.
    ============================================================ */
 
 /*  Google Fonts  */
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-/*  Design Tokens (SARMAT ANALYTIX — Single Unified Theme)  */
+/*  Design Tokens (MONOCHROME BLACK & WHITE — Single Unified Theme)  */
 :root {
-  /* Sarmat Analytix Void Black & Tactical Slate Surfaces */
-  --color-bg:             #08090a;
-  --color-surface:        #0e1013;
-  --color-surface-2:      #14171c;
-  --color-surface-3:      #1b2026;
-  --color-surface-hover:  #222831;
+  /* Pitch Black & Neutral Obsidian Surfaces */
+  --color-bg:             #000000;
+  --color-surface:        #0a0a0a;
+  --color-surface-2:      #121212;
+  --color-surface-3:      #1c1c1c;
+  --color-surface-hover:  #242424;
 
-  /* Borders — solid, crisp, clean 1px (never dashed/dotted, never left-side stripe) */
-  --color-border:         #222830;
-  --color-border-subtle:  #161a20;
-  --color-border-focus:   #d4ff00;
+  /* Borders — solid, crisp, clean 1px neutral borders */
+  --color-border:         #262626;
+  --color-border-subtle:  #181818;
+  --color-border-focus:   #ffffff;
 
-  /* Text — crisp high-contrast off-white and technical steel gray */
-  --color-text:           #f0f3f6;
-  --color-text-muted:     #8b95a5;
-  --color-text-faint:     #525c6a;
+  /* Text — pure high-contrast white and neutral steel grays */
+  --color-text:           #ffffff;
+  --color-text-muted:     #a1a1aa;
+  --color-text-faint:     #52525b;
   --color-text-inverse:   #000000;
 
-  /* Accent — High-voltage Acid Volt Lime */
-  --color-accent:         #d4ff00;
-  --color-accent-light:   #e2ff4d;
-  --color-accent-dim:     rgba(212, 255, 0, 0.12);
-  --color-accent-glow:    rgba(212, 255, 0, 0.28);
-  --color-accent-hover:   #bbee00;
+  /* Accent — Pure Crisp White */
+  --color-accent:         #ffffff;
+  --color-accent-light:   #f4f4f5;
+  --color-accent-dim:     rgba(255, 255, 255, 0.10);
+  --color-accent-glow:    rgba(255, 255, 255, 0.15);
+  --color-accent-hover:   #e4e4e7;
 
-  /* Badges & semantic feedback */
-  --color-badge-blue-bg:  rgba(0, 229, 255, 0.10);
-  --color-badge-blue-txt: #00e5ff;
-  --color-badge-purple-bg:rgba(168, 85, 247, 0.12);
-  --color-badge-purple-txt:#c084fc;
-  --color-badge-green-bg: rgba(212, 255, 0, 0.12);
-  --color-badge-green-txt:#d4ff00;
-  --color-badge-amber-bg: rgba(251, 191, 36, 0.12);
-  --color-badge-amber-txt:#fbbf24;
+  /* Badges & semantic feedback (Monochrome Grayscale) */
+  --color-badge-blue-bg:  rgba(255, 255, 255, 0.08);
+  --color-badge-blue-txt: #e4e4e7;
+  --color-badge-purple-bg:rgba(255, 255, 255, 0.08);
+  --color-badge-purple-txt:#e4e4e7;
+  --color-badge-green-bg: rgba(255, 255, 255, 0.10);
+  --color-badge-green-txt:#ffffff;
+  --color-badge-amber-bg: rgba(255, 255, 255, 0.08);
+  --color-badge-amber-txt:#e4e4e7;
 
-  --color-success:        #d4ff00;
-  --color-success-dim:    rgba(212, 255, 0, 0.14);
-  --color-warning:        #fbbf24;
-  --color-warning-dim:    rgba(251, 191, 36, 0.14);
-  --color-danger:         #f43f5e;
-  --color-danger-dim:     rgba(244, 63, 94, 0.14);
-  --color-info:           #00e5ff;
-  --color-info-dim:       rgba(0, 229, 255, 0.14);
+  --color-success:        #ffffff;
+  --color-success-dim:    rgba(255, 255, 255, 0.10);
+  --color-warning:        #d4d4d8;
+  --color-warning-dim:    rgba(255, 255, 255, 0.10);
+  --color-danger:         #e4e4e7;
+  --color-danger-dim:     rgba(255, 255, 255, 0.10);
+  --color-info:           #ffffff;
+  --color-info-dim:       rgba(255, 255, 255, 0.10);
 
-  /* Tactical Card Tints */
-  --color-lavender-card:  #13141f;
-  --color-lavender-border:rgba(168, 85, 247, 0.25);
-  --color-mint-card:      #0d1712;
-  --color-mint-border:    rgba(212, 255, 0, 0.25);
-  --color-amber-card:     #1a160d;
-  --color-amber-border:   rgba(251, 191, 36, 0.25);
-  --color-rose-card:      #1a0e12;
-  --color-rose-border:    rgba(244, 63, 94, 0.25);
-  --color-cyan-card:      #0a161a;
-  --color-cyan-border:    rgba(0, 229, 255, 0.25);
+  /* Monochrome Card Tints */
+  --color-lavender-card:  #0d0d0d;
+  --color-lavender-border:#262626;
+  --color-mint-card:      #0d0d0d;
+  --color-mint-border:    #262626;
+  --color-amber-card:     #0d0d0d;
+  --color-amber-border:   #262626;
+  --color-rose-card:      #0d0d0d;
+  --color-rose-border:    #262626;
+  --color-cyan-card:      #0d0d0d;
+  --color-cyan-border:    #262626;
 
   /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     rgba(212, 255, 0, 0.12);
-  --color-pill-action-text:   #d4ff00;
-  --color-pill-action-border: rgba(212, 255, 0, 0.35);
-  --color-pill-action-shadow: 0 0 14px rgba(212, 255, 0, 0.18);
+  --color-pill-action-bg:     rgba(255, 255, 255, 0.10);
+  --color-pill-action-text:   #ffffff;
+  --color-pill-action-border: rgba(255, 255, 255, 0.28);
+  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 
   /* "Do It Now" Daily Action Directive Tokens */
-  --color-doitnow-accent:        #d4ff00;
-  --color-doitnow-accent-hover:  #e2ff33;
-  --color-doitnow-bg:            rgba(212, 255, 0, 0.06);
-  --color-doitnow-border:        rgba(212, 255, 0, 0.28);
-  --color-doitnow-border-hover:  rgba(212, 255, 0, 0.45);
-  --color-doitnow-text:          #d4ff00;
-  --color-doitnow-badge-bg:      rgba(212, 255, 0, 0.12);
-  --color-doitnow-glow:          0 0 16px rgba(212, 255, 0, 0.2);
+  --color-doitnow-accent:        #ffffff;
+  --color-doitnow-accent-hover:  #e4e4e7;
+  --color-doitnow-bg:            rgba(255, 255, 255, 0.05);
+  --color-doitnow-border:        rgba(255, 255, 255, 0.25);
+  --color-doitnow-border-hover:  rgba(255, 255, 255, 0.45);
+  --color-doitnow-text:          #ffffff;
+  --color-doitnow-badge-bg:      rgba(255, 255, 255, 0.12);
+  --color-doitnow-glow:          transparent;
 
   /* Typography */
   --font-sans:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -130,12 +130,12 @@
   --radius-full: 9999px;
 
   /* Tactical Elevation Shadows */
-  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.6);
-  --shadow-md:   0 4px 14px rgba(0, 0, 0, 0.7);
-  --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.8);
-  --shadow-xl:   0 16px 50px rgba(0, 0, 0, 0.9);
-  --shadow-glow: 0 0 20px rgba(212, 255, 0, 0.22);
-  --shadow-glow-sm: 0 0 10px rgba(212, 255, 0, 0.18);
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.7);
+  --shadow-md:   0 4px 14px rgba(0, 0, 0, 0.8);
+  --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.9);
+  --shadow-xl:   0 16px 50px rgba(0, 0, 0, 0.95);
+  --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.12);
+  --shadow-glow-sm: 0 0 10px rgba(255, 255, 255, 0.08);
 
   /* Layout */
   --sidebar-width:          248px;
@@ -180,103 +180,103 @@
   --z-toast:    500;
 }
 
-/*  Unified Single Theme (Sarmat Analytix Tactical Cyber Lime Across All Selectors)  */
+/*  Unified Single Theme (Monochrome Black & White Across All Selectors)  */
 [data-theme='light'],
 [data-theme='dark'],
 [data-theme='cyber'],
 [data-theme='nature'] {
-  --color-bg:             #08090a;
-  --color-surface:        #0e1013;
-  --color-surface-2:      #14171c;
-  --color-surface-3:      #1b2026;
-  --color-surface-hover:  #222831;
+  --color-bg:             #000000;
+  --color-surface:        #0a0a0a;
+  --color-surface-2:      #121212;
+  --color-surface-3:      #1c1c1c;
+  --color-surface-hover:  #242424;
 
-  --color-border:         #222830;
-  --color-border-subtle:  #161a20;
-  --color-border-focus:   #d4ff00;
+  --color-border:         #262626;
+  --color-border-subtle:  #181818;
+  --color-border-focus:   #ffffff;
 
-  --color-text:           #f0f3f6;
-  --color-text-muted:     #8b95a5;
-  --color-text-faint:     #525c6a;
+  --color-text:           #ffffff;
+  --color-text-muted:     #a1a1aa;
+  --color-text-faint:     #52525b;
   --color-text-inverse:   #000000;
 
-  --color-accent:         #d4ff00;
-  --color-accent-light:   #e2ff4d;
-  --color-accent-dim:     rgba(212, 255, 0, 0.12);
-  --color-accent-glow:    rgba(212, 255, 0, 0.28);
-  --color-accent-hover:   #bbee00;
+  --color-accent:         #ffffff;
+  --color-accent-light:   #f4f4f5;
+  --color-accent-dim:     rgba(255, 255, 255, 0.10);
+  --color-accent-glow:    rgba(255, 255, 255, 0.15);
+  --color-accent-hover:   #e4e4e7;
 
-  --color-badge-blue-bg:  rgba(0, 229, 255, 0.10);
-  --color-badge-blue-txt: #00e5ff;
-  --color-badge-purple-bg:rgba(168, 85, 247, 0.12);
-  --color-badge-purple-txt:#c084fc;
-  --color-badge-green-bg: rgba(212, 255, 0, 0.12);
-  --color-badge-green-txt:#d4ff00;
-  --color-badge-amber-bg: rgba(251, 191, 36, 0.12);
-  --color-badge-amber-txt:#fbbf24;
+  --color-badge-blue-bg:  rgba(255, 255, 255, 0.08);
+  --color-badge-blue-txt: #e4e4e7;
+  --color-badge-purple-bg:rgba(255, 255, 255, 0.08);
+  --color-badge-purple-txt:#e4e4e7;
+  --color-badge-green-bg: rgba(255, 255, 255, 0.10);
+  --color-badge-green-txt:#ffffff;
+  --color-badge-amber-bg: rgba(255, 255, 255, 0.08);
+  --color-badge-amber-txt:#e4e4e7;
 
-  --color-success:        #d4ff00;
-  --color-success-dim:    rgba(212, 255, 0, 0.14);
-  --color-warning:        #fbbf24;
-  --color-warning-dim:    rgba(251, 191, 36, 0.14);
-  --color-danger:         #f43f5e;
-  --color-danger-dim:     rgba(244, 63, 94, 0.14);
-  --color-info:           #00e5ff;
-  --color-info-dim:       rgba(0, 229, 255, 0.14);
+  --color-success:        #ffffff;
+  --color-success-dim:    rgba(255, 255, 255, 0.10);
+  --color-warning:        #d4d4d8;
+  --color-warning-dim:    rgba(255, 255, 255, 0.10);
+  --color-danger:         #e4e4e7;
+  --color-danger-dim:     rgba(255, 255, 255, 0.10);
+  --color-info:           #ffffff;
+  --color-info-dim:       rgba(255, 255, 255, 0.10);
 
-  --color-lavender-card:  #13141f;
-  --color-lavender-border:rgba(168, 85, 247, 0.25);
-  --color-mint-card:      #0d1712;
-  --color-mint-border:    rgba(212, 255, 0, 0.25);
-  --color-amber-card:     #1a160d;
-  --color-amber-border:   rgba(251, 191, 36, 0.25);
-  --color-rose-card:      #1a0e12;
-  --color-rose-border:    rgba(244, 63, 94, 0.25);
-  --color-cyan-card:      #0a161a;
-  --color-cyan-border:    rgba(0, 229, 255, 0.25);
+  --color-lavender-card:  #0d0d0d;
+  --color-lavender-border:#262626;
+  --color-mint-card:      #0d0d0d;
+  --color-mint-border:    #262626;
+  --color-amber-card:     #0d0d0d;
+  --color-amber-border:   #262626;
+  --color-rose-card:      #0d0d0d;
+  --color-rose-border:    #262626;
+  --color-cyan-card:      #0d0d0d;
+  --color-cyan-border:    #262626;
 
-  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.6);
-  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.7);
-  --shadow-lg:            0 8px 30px rgba(0, 0, 0, 0.8);
-  --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.9);
-  --shadow-glow:          0 0 20px rgba(212, 255, 0, 0.22);
-  --shadow-glow-sm:       0 0 10px rgba(212, 255, 0, 0.18);
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.7);
+  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.8);
+  --shadow-lg:            0 8px 30px rgba(0, 0, 0, 0.9);
+  --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.95);
+  --shadow-glow:          0 0 20px rgba(255, 255, 255, 0.12);
+  --shadow-glow-sm:       0 0 10px rgba(255, 255, 255, 0.08);
 
-  --color-pill-action-bg:     rgba(212, 255, 0, 0.12);
-  --color-pill-action-text:   #d4ff00;
-  --color-pill-action-border: rgba(212, 255, 0, 0.35);
-  --color-pill-action-shadow: 0 0 14px rgba(212, 255, 0, 0.18);
+  --color-pill-action-bg:     rgba(255, 255, 255, 0.10);
+  --color-pill-action-text:   #ffffff;
+  --color-pill-action-border: rgba(255, 255, 255, 0.28);
+  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 
-  --color-doitnow-accent:        #d4ff00;
-  --color-doitnow-accent-hover:  #e2ff33;
-  --color-doitnow-bg:            rgba(212, 255, 0, 0.06);
-  --color-doitnow-border:        rgba(212, 255, 0, 0.28);
-  --color-doitnow-border-hover:  rgba(212, 255, 0, 0.45);
-  --color-doitnow-text:          #d4ff00;
-  --color-doitnow-badge-bg:      rgba(212, 255, 0, 0.12);
-  --color-doitnow-glow:          0 0 16px rgba(212, 255, 0, 0.2);
+  --color-doitnow-accent:        #ffffff;
+  --color-doitnow-accent-hover:  #e4e4e7;
+  --color-doitnow-bg:            rgba(255, 255, 255, 0.05);
+  --color-doitnow-border:        rgba(255, 255, 255, 0.25);
+  --color-doitnow-border-hover:  rgba(255, 255, 255, 0.45);
+  --color-doitnow-text:          #ffffff;
+  --color-doitnow-badge-bg:      rgba(255, 255, 255, 0.12);
+  --color-doitnow-glow:          transparent;
 }
 
-/*  OS light mode preference override — preserves the pro dark cyber aesthetic  */
+/*  OS light mode preference override — preserves the pro monochrome black & white aesthetic  */
 @media (prefers-color-scheme: light) {
   :root {
-    --color-bg:             #08090a;
-    --color-surface:        #0e1013;
-    --color-surface-2:      #14171c;
-    --color-surface-3:      #1b2026;
-    --color-surface-hover:  #222831;
-    --color-border:         #222830;
-    --color-border-subtle:  #161a20;
-    --color-border-focus:   #d4ff00;
-    --color-text:           #f0f3f6;
-    --color-text-muted:     #8b95a5;
-    --color-text-faint:     #525c6a;
+    --color-bg:             #000000;
+    --color-surface:        #0a0a0a;
+    --color-surface-2:      #121212;
+    --color-surface-3:      #1c1c1c;
+    --color-surface-hover:  #242424;
+    --color-border:         #262626;
+    --color-border-subtle:  #181818;
+    --color-border-focus:   #ffffff;
+    --color-text:           #ffffff;
+    --color-text-muted:     #a1a1aa;
+    --color-text-faint:     #52525b;
     --color-text-inverse:   #000000;
-    --color-accent:         #d4ff00;
-    --color-accent-light:   #e2ff4d;
-    --color-accent-dim:     rgba(212, 255, 0, 0.12);
-    --color-accent-glow:    rgba(212, 255, 0, 0.28);
-    --color-accent-hover:   #bbee00;
+    --color-accent:         #ffffff;
+    --color-accent-light:   #f4f4f5;
+    --color-accent-dim:     rgba(255, 255, 255, 0.10);
+    --color-accent-glow:    rgba(255, 255, 255, 0.15);
+    --color-accent-hover:   #e4e4e7;
   }
 }
 
@@ -536,8 +536,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Nature theme scrollbar */
-/* ── Scrollbars & Selection (Sarmat Analytix Tactical Cyber Lime) ── */
+/* ── Scrollbars & Selection (Monochrome Black & White) ── */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -553,25 +552,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent);
+  background: #52525b;
 }
 
 ::selection {
-  background: rgba(212, 255, 0, 0.25);
+  background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 
 /* Glass effect */
 .glass {
-  background: rgba(14, 16, 19, 0.82);
+  background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
 }
 
-/* Tactical Gradient text */
+/* Monochrome Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #d4ff00 0%, #bbee00 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

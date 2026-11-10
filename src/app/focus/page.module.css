@@ -168,8 +168,17 @@
 }
 
 @keyframes pulseGreenDot {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.3); }
+
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
 }
 
 .zenTimerDigits {
@@ -544,13 +553,17 @@
     padding: 10px 12px;
     gap: 8px;
   }
-  .zenTopLeft, .zenTopRight {
+
+  .zenTopLeft,
+  .zenTopRight {
     justify-content: space-between;
     flex-wrap: wrap;
   }
+
   .zenMode {
     padding: 140px 14px 30px;
   }
+
   .zenMode .focusBookPageCard {
     padding: 24px 20px;
   }
@@ -646,6 +659,7 @@
 }
 
 @media (max-width: 1024px) {
+
   .focusContainer,
   .focusContainerBook {
     grid-template-columns: 1fr;
@@ -817,18 +831,20 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 12px rgba(212, 255, 0, 0.25);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
   transition: all var(--transition-fast);
 }
 
 .btnStart:hover {
-  background: var(--color-accent-hover, #bbee00);
+  background: var(--color-accent-hover, #e4e4e7);
   transform: translateY(-2px);
-  box-shadow: 0 4px 18px rgba(212, 255, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.22);
 }
 
 .btnPause {
-  background: #f59e0b;
+  background: #1c1c1c;
+  color: #ffffff;
+  border: 1px solid #333333;
   color: #000;
   border: none;
   padding: var(--space-3) var(--space-8);
@@ -1171,14 +1187,14 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  box-shadow: 0 2px 10px rgba(212, 255, 0, 0.22);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.12);
   transition: all var(--transition-fast);
 }
 
 .bookBtnStart:hover {
-  background: var(--color-accent-hover, #bbee00);
+  background: var(--color-accent-hover, #e4e4e7);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(212, 255, 0, 0.32);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
 }
 
 .bookBtnPause {
@@ -1669,11 +1685,11 @@
 }
 
 .sideModeBtn.activeSideMode {
-  background: rgba(124, 106, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   border-color: var(--color-accent);
-  color: var(--color-accent-light);
+  color: #ffffff;
   font-weight: var(--weight-semibold);
-  box-shadow: 0 0 0 1px rgba(124, 106, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 /*  Side Session Controls  */
@@ -1691,14 +1707,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 10px rgba(212, 255, 0, 0.22);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.12);
   transition: all var(--transition-fast);
 }
 
 .sideBtnStart:hover {
-  background: var(--color-accent-hover, #bbee00);
+  background: var(--color-accent-hover, #e4e4e7);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(212, 255, 0, 0.32);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
 }
 
 .sideBtnPause {
@@ -2054,8 +2070,17 @@
 }
 
 @keyframes pulseDot {
-  0%, 100% { opacity: 0.4; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.15); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
 
 .ambientMuteBtn {
@@ -2180,9 +2205,20 @@
 }
 
 @keyframes bounceEq {
-  0% { height: 20%; opacity: 0.5; }
-  50% { height: 90%; opacity: 1; }
-  100% { height: 40%; opacity: 0.7; }
+  0% {
+    height: 20%;
+    opacity: 0.5;
+  }
+
+  50% {
+    height: 90%;
+    opacity: 1;
+  }
+
+  100% {
+    height: 40%;
+    opacity: 0.7;
+  }
 }
 
 /* Volume Slider */
@@ -2404,8 +2440,15 @@
 }
 
 @keyframes pulseGreen {
-  0%, 100% { box-shadow: 0 0 4px rgba(34, 211, 165, 0.2); }
-  50% { box-shadow: 0 0 12px rgba(34, 211, 165, 0.5); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(34, 211, 165, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 12px rgba(34, 211, 165, 0.5);
+  }
 }
 
 .timerDisplayWrap {
@@ -2723,8 +2766,15 @@
 }
 
 @keyframes popupScale {
-  from { opacity: 0; transform: scale(0.9) translateY(4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .floatingSwatch {
@@ -3583,5 +3633,3 @@
   border: 1px solid var(--color-border-subtle);
   white-space: nowrap;
 }
-
-

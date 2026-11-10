@@ -1137,11 +1137,11 @@ export default function SettingsPage() {
               <div className={styles.sectionBody}>
                 <div className={styles.themeGrid}>
                   {([
-                    { id: 'dark', label: 'Sarmat Analytix (Default)', desc: 'Obsidian Void & Acid Volt Lime', icon: <Sparkles size={14} /> },
-                    { id: 'cyber', label: 'Cyber Tech Pro', desc: 'Tactical Acid Lime High-Contrast', icon: <Moon size={14} /> },
-                    { id: 'light', label: 'Minimalist Tactical', desc: 'Distraction-Free Engineering Spec', icon: <Sliders size={14} /> },
-                    { id: 'nature', label: 'Tactical Obsidian', desc: 'Deep Space Pure Pitch Black', icon: <Leaf size={14} /> },
-                    { id: 'system', label: 'System Standard', desc: 'Unified Pro Senior Dev Aesthetic', icon: <Sliders size={14} /> },
+                    { id: 'dark', label: 'Monochrome B&W (Default)', desc: 'Pure Obsidian & Crisp White', icon: <Sparkles size={14} /> },
+                    { id: 'cyber', label: 'High-Contrast B&W', desc: 'Distraction-Free Engineering', icon: <Moon size={14} /> },
+                    { id: 'light', label: 'Minimalist Slate', desc: 'Single Theme Clean Architecture', icon: <Sliders size={14} /> },
+                    { id: 'nature', label: 'Deep Void Black', desc: 'Zero Color Pitch Black', icon: <Leaf size={14} /> },
+                    { id: 'system', label: 'System Auto-Sync', desc: 'Unified Monochrome Standard', icon: <Sliders size={14} /> },
                   ] as const).map((item) => (
                     <button
                       key={item.id}
