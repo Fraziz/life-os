@@ -77,7 +77,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   },
   simpleMode: false,
   starterPreset: 'default',
-  theme: 'light',
+  theme: 'dark',
   updatedAt: new Date().toISOString(),
 };
 

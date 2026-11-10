@@ -16,13 +16,12 @@
   gap: var(--space-2);
 }
 
-:global([data-theme='light']) .topBar {
-  background: var(--color-surface, #ffffff);
-}
-
+:global([data-theme='light']) .topBar,
+:global([data-theme='dark']) .topBar,
+:global([data-theme='cyber']) .topBar,
 :global([data-theme='nature']) .topBar {
-  background: var(--color-surface, #0e1c13);
-  border-bottom-color: rgba(74, 124, 89, 0.3);
+  background: var(--color-surface, #0e1013);
+  border-bottom-color: var(--color-border);
 }
 
 /* Visible on mobile and tablet (<= 1024px) */

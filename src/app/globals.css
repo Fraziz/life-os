@@ -1,79 +1,86 @@
 /* ============================================================
-   LIFE OS — ELEGANT WARM PAPER & CHARCOAL DESIGN SYSTEM
-   Modern, calm, distraction-free aesthetic with high contrast,
-   handcrafted details, and responsive layouts.
+   LIFE OS — SARMAT ANALYTIX TACTICAL CYBER LIME DESIGN SYSTEM
+   Ultra-clean, high-contrast, distraction-free aesthetic with
+   pitch-black obsidian surfaces, Acid Volt Lime accents (#d4ff00),
+   solid crisp borders, and senior-developer architectural craft.
    ============================================================ */
 
 /*  Google Fonts  */
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-/*  Design Tokens  */
+/*  Design Tokens (SARMAT ANALYTIX — Single Unified Theme)  */
 :root {
-  /* Warm cream paper theme (Default) */
-  --color-bg:             #f5f4ef;
-  --color-surface:        #ffffff;
-  --color-surface-2:      #f0eee6;
-  --color-surface-3:      #e7e3d8;
-  --color-surface-hover:  #eae6dc;
+  /* Sarmat Analytix Void Black & Tactical Slate Surfaces */
+  --color-bg:             #08090a;
+  --color-surface:        #0e1013;
+  --color-surface-2:      #14171c;
+  --color-surface-3:      #1b2026;
+  --color-surface-hover:  #222831;
 
-  /* Borders */
-  --color-border:         #e8e4dc;
-  --color-border-subtle:  #f0eee8;
-  --color-border-focus:   #2d3748;
+  /* Borders — solid, crisp, clean 1px (never dashed/dotted, never left-side stripe) */
+  --color-border:         #222830;
+  --color-border-subtle:  #161a20;
+  --color-border-focus:   #d4ff00;
 
-  /* Text — deep charcoal for effortless reading */
-  --color-text:           #1f2937;
-  --color-text-muted:     #6b7280;
-  --color-text-faint:     #9ca3af;
-  --color-text-inverse:   #ffffff;
+  /* Text — crisp high-contrast off-white and technical steel gray */
+  --color-text:           #f0f3f6;
+  --color-text-muted:     #8b95a5;
+  --color-text-faint:     #525c6a;
+  --color-text-inverse:   #000000;
 
-  /* Accent */
-  --color-accent:         #2d3748;
-  --color-accent-light:   #4a5568;
-  --color-accent-dim:     rgba(45, 55, 72, 0.08);
-  --color-accent-glow:    transparent;
-  --color-accent-hover:   #1a202c;
+  /* Accent — High-voltage Acid Volt Lime */
+  --color-accent:         #d4ff00;
+  --color-accent-light:   #e2ff4d;
+  --color-accent-dim:     rgba(212, 255, 0, 0.12);
+  --color-accent-glow:    rgba(212, 255, 0, 0.28);
+  --color-accent-hover:   #bbee00;
 
   /* Badges & semantic feedback */
-  --color-badge-blue-bg:  #dbeafe;
-  --color-badge-blue-txt: #1e40af;
-  --color-badge-purple-bg:#ede9fe;
-  --color-badge-purple-txt:#6b21a8;
-  --color-badge-green-bg: #dcfce7;
-  --color-badge-green-txt:#166534;
-  --color-badge-amber-bg: #fef3c7;
-  --color-badge-amber-txt:#92400e;
+  --color-badge-blue-bg:  rgba(0, 229, 255, 0.10);
+  --color-badge-blue-txt: #00e5ff;
+  --color-badge-purple-bg:rgba(168, 85, 247, 0.12);
+  --color-badge-purple-txt:#c084fc;
+  --color-badge-green-bg: rgba(212, 255, 0, 0.12);
+  --color-badge-green-txt:#d4ff00;
+  --color-badge-amber-bg: rgba(251, 191, 36, 0.12);
+  --color-badge-amber-txt:#fbbf24;
 
-  --color-success:        #10b981;
-  --color-success-dim:    rgba(16, 185, 129, 0.12);
-  --color-warning:        #f59e0b;
-  --color-warning-dim:    rgba(245, 158, 11, 0.12);
-  --color-danger:         #ef4444;
-  --color-danger-dim:     rgba(239, 68, 68, 0.12);
-  --color-info:           #3b82f6;
-  --color-info-dim:       rgba(59, 130, 246, 0.12);
+  --color-success:        #d4ff00;
+  --color-success-dim:    rgba(212, 255, 0, 0.14);
+  --color-warning:        #fbbf24;
+  --color-warning-dim:    rgba(251, 191, 36, 0.14);
+  --color-danger:         #f43f5e;
+  --color-danger-dim:     rgba(244, 63, 94, 0.14);
+  --color-info:           #00e5ff;
+  --color-info-dim:       rgba(0, 229, 255, 0.14);
 
-  /* Special Card Tints */
-  --color-lavender-card:  #f4f1fd;
-  --color-lavender-border:#e5defa;
-  --color-mint-card:      #effaf3;
-  --color-mint-border:    #d3f2e0;
+  /* Tactical Card Tints */
+  --color-lavender-card:  #13141f;
+  --color-lavender-border:rgba(168, 85, 247, 0.25);
+  --color-mint-card:      #0d1712;
+  --color-mint-border:    rgba(212, 255, 0, 0.25);
+  --color-amber-card:     #1a160d;
+  --color-amber-border:   rgba(251, 191, 36, 0.25);
+  --color-rose-card:      #1a0e12;
+  --color-rose-border:    rgba(244, 63, 94, 0.25);
+  --color-cyan-card:      #0a161a;
+  --color-cyan-border:    rgba(0, 229, 255, 0.25);
 
   /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     linear-gradient(135deg, rgba(45, 55, 72, 0.08), rgba(74, 85, 104, 0.12));
-  --color-pill-action-text:   #2d3748;
-  --color-pill-action-border: rgba(45, 55, 72, 0.28);
-  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --color-pill-action-bg:     rgba(212, 255, 0, 0.12);
+  --color-pill-action-text:   #d4ff00;
+  --color-pill-action-border: rgba(212, 255, 0, 0.35);
+  --color-pill-action-shadow: 0 0 14px rgba(212, 255, 0, 0.18);
 
-  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
-  --color-doitnow-accent:        #8d5b34;
-  --color-doitnow-accent-hover:  #784a28;
-  --color-doitnow-bg:            rgba(141, 91, 52, 0.035);
-  --color-doitnow-border:        rgba(141, 91, 52, 0.18);
-  --color-doitnow-border-hover:  rgba(141, 91, 52, 0.32);
-  --color-doitnow-text:          #784a28;
-  --color-doitnow-badge-bg:      rgba(141, 91, 52, 0.08);
-  --color-doitnow-glow:          transparent;
+  /* "Do It Now" Daily Action Directive Tokens */
+  --color-doitnow-accent:        #d4ff00;
+  --color-doitnow-accent-hover:  #e2ff33;
+  --color-doitnow-bg:            rgba(212, 255, 0, 0.06);
+  --color-doitnow-border:        rgba(212, 255, 0, 0.28);
+  --color-doitnow-border-hover:  rgba(212, 255, 0, 0.45);
+  --color-doitnow-text:          #d4ff00;
+  --color-doitnow-badge-bg:      rgba(212, 255, 0, 0.12);
+  --color-doitnow-glow:          0 0 16px rgba(212, 255, 0, 0.2);
 
   /* Typography */
   --font-sans:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -114,21 +121,21 @@
   --space-20:  5rem;     /* 80px */
   --space-24:  6rem;     /* 96px */
 
-  /* Border radii — friendly, organic soft corners */
-  --radius-sm:   0.375rem; /*  6px */
-  --radius-md:   0.625rem; /* 10px */
-  --radius-lg:   0.875rem; /* 14px */
-  --radius-xl:   1.125rem; /* 18px */
-  --radius-2xl:  1.5rem;   /* 24px */
+  /* Border radii — crisp technical radii */
+  --radius-sm:   0.25rem;  /*  4px */
+  --radius-md:   0.5rem;   /*  8px */
+  --radius-lg:   0.75rem;  /* 12px */
+  --radius-xl:   1rem;     /* 16px */
+  --radius-2xl:  1.25rem;  /* 20px */
   --radius-full: 9999px;
 
-  /* Calming shadows */
-  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md:   0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.55);
-  --shadow-xl:   0 16px 50px rgba(0, 0, 0, 0.65);
-  --shadow-glow: none;
-  --shadow-glow-sm: none;
+  /* Tactical Elevation Shadows */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md:   0 4px 14px rgba(0, 0, 0, 0.7);
+  --shadow-lg:   0 8px 30px rgba(0, 0, 0, 0.8);
+  --shadow-xl:   0 16px 50px rgba(0, 0, 0, 0.9);
+  --shadow-glow: 0 0 20px rgba(212, 255, 0, 0.22);
+  --shadow-glow-sm: 0 0 10px rgba(212, 255, 0, 0.18);
 
   /* Layout */
   --sidebar-width:          248px;
@@ -173,311 +180,103 @@
   --z-toast:    500;
 }
 
-/*  Light Theme (Crisp Luminous Slate & Electric Indigo)  */
-[data-theme='light'] {
-  --color-bg:             #f8fafc;
-  --color-surface:        #ffffff;
-  --color-surface-2:      #f1f5f9;
-  --color-surface-3:      #e2e8f0;
-  --color-surface-hover:  #f1f5f9;
-
-  --color-border:         #e2e8f0;
-  --color-border-subtle:  #f1f5f9;
-  --color-border-focus:   #6366f1;
-
-  --color-text:           #0f172a;
-  --color-text-muted:     #475569;
-  --color-text-faint:     #64748b;
-  --color-text-inverse:   #ffffff;
-
-  --color-accent:         #4f46e5;
-  --color-accent-light:   #6366f1;
-  --color-accent-dim:     rgba(79, 70, 229, 0.08);
-  --color-accent-glow:    transparent;
-  --color-accent-hover:   #4338ca;
-
-  /* Semantic Soft Card Tints (Milestones, Habits, Categories) */
-  --color-lavender-card:  #f5f3ff;
-  --color-lavender-border:#ddd6fe;
-  --color-mint-card:      #f0fdf4;
-  --color-mint-border:    #bbf7d0;
-  --color-amber-card:     #fffbeb;
-  --color-amber-border:   #fde68a;
-  --color-rose-card:      #fff1f2;
-  --color-rose-border:    #fecdd3;
-  --color-cyan-card:      #ecfeff;
-  --color-cyan-border:    #a5f3fc;
-
-  /* Soft, Layered Elevation Shadows */
-  --shadow-sm:            0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.02);
-  --shadow-md:            0 4px 14px -1px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg:            0 10px 25px -3px rgba(0, 0, 0, 0.07), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
-  --shadow-xl:            0 20px 40px -6px rgba(0, 0, 0, 0.08);
-  --shadow-glow:          none;
-  --shadow-glow-sm:       none;
-
-  /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     linear-gradient(135deg, rgba(79, 70, 229, 0.10), rgba(99, 102, 241, 0.14));
-  --color-pill-action-text:   #4338ca;
-  --color-pill-action-border: rgba(99, 102, 241, 0.32);
-  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-
-  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
-  --color-doitnow-accent:        #925f38;
-  --color-doitnow-accent-hover:  #7a4d2b;
-  --color-doitnow-bg:            rgba(146, 95, 56, 0.035);
-  --color-doitnow-border:        rgba(146, 95, 56, 0.18);
-  --color-doitnow-border-hover:  rgba(146, 95, 56, 0.32);
-  --color-doitnow-text:          #7a4d2b;
-  --color-doitnow-badge-bg:      rgba(146, 95, 56, 0.08);
-  --color-doitnow-glow:          transparent;
-}
-
-/*  Dark Theme (Google Keep Neutral Charcoal & Warm Amber)  */
-[data-theme='dark'] {
-  --color-bg:             #202124;
-  --color-surface:        #202124;
-  --color-surface-2:      #28292c;
-  --color-surface-3:      #303134;
-  --color-surface-hover:  #35363a;
-
-  --color-border:         #5f6368;
-  --color-border-subtle:  #3c4043;
-  --color-border-focus:   #6366f1;
-
-  --color-text:           #e8eaed;
-  --color-text-muted:     #9aa0a6;
-  --color-text-faint:     #80868b;
-  --color-text-inverse:   #202124;
-
-  --color-accent:         #6366f1;
-  --color-accent-light:   #818cf8;
-  --color-accent-dim:     rgba(99, 102, 241, 0.18);
-  --color-accent-glow:    transparent;
-  --color-accent-hover:   #4f46e5;
-
-  --color-lavender-card:  #2e2738;
-  --color-lavender-border:#4f3e63;
-  --color-mint-card:      #1c2e24;
-  --color-mint-border:    #325742;
-  --color-amber-card:     #41331c;
-  --color-amber-border:   #665027;
-  --color-rose-card:      #382025;
-  --color-rose-border:    #63333d;
-  --color-cyan-card:      #1b2c34;
-  --color-cyan-border:    #2d5161;
-
-  --color-success:        #81c995;
-  --color-success-dim:    rgba(129, 201, 149, 0.15);
-  --color-warning:        #fbbc04;
-  --color-warning-dim:    rgba(251, 188, 4, 0.15);
-  --color-danger:         #f28b82;
-  --color-danger-dim:     rgba(242, 139, 130, 0.15);
-  --color-info:           #8ab4f8;
-  --color-info-dim:       rgba(138, 180, 248, 0.15);
-
-  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg:            0 8px 30px rgba(0, 0, 0, 0.6);
-  --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.7);
-  --shadow-glow:          none;
-  --shadow-glow-sm:       none;
-
-  /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(139, 92, 246, 0.18));
-  --color-pill-action-text:   #c7d2fe;
-  --color-pill-action-border: rgba(99, 102, 241, 0.35);
-  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-
-  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
-  --color-doitnow-accent:        #d4a373;
-  --color-doitnow-accent-hover:  #e0b589;
-  --color-doitnow-bg:            rgba(212, 163, 115, 0.04);
-  --color-doitnow-border:        rgba(212, 163, 115, 0.18);
-  --color-doitnow-border-hover:  rgba(212, 163, 115, 0.32);
-  --color-doitnow-text:          #d4a373;
-  --color-doitnow-badge-bg:      rgba(212, 163, 115, 0.10);
-  --color-doitnow-glow:          transparent;
-}
-
-/*  Nature Theme (Organic Forest & Parchment)  */
+/*  Unified Single Theme (Sarmat Analytix Tactical Cyber Lime Across All Selectors)  */
+[data-theme='light'],
+[data-theme='dark'],
+[data-theme='cyber'],
 [data-theme='nature'] {
-  /* Backgrounds & Surfaces: subtle, translucent forest glass */
-  --color-bg:             #0a160f;
-  --color-surface:        rgba(16, 32, 23, 0.58);
-  --color-surface-2:      rgba(24, 44, 32, 0.65);
-  --color-surface-3:      rgba(32, 56, 40, 0.72);
-  --color-surface-hover:  rgba(40, 68, 49, 0.78);
+  --color-bg:             #08090a;
+  --color-surface:        #0e1013;
+  --color-surface-2:      #14171c;
+  --color-surface-3:      #1b2026;
+  --color-surface-hover:  #222831;
 
-  /* Borders: soft translucent sage line, clean and minimalist */
-  --color-border:         rgba(134, 239, 172, 0.12);
-  --color-border-subtle:  rgba(134, 239, 172, 0.07);
-  --color-border-focus:   #4ade80;
+  --color-border:         #222830;
+  --color-border-subtle:  #161a20;
+  --color-border-focus:   #d4ff00;
 
-  /* Text colors: high readability mint-white on deep organic forest */
-  --color-text:           #f0fdf4;
-  --color-text-muted:     rgba(187, 247, 208, 0.75);
-  --color-text-faint:     rgba(134, 239, 172, 0.48);
-  --color-text-inverse:   #052e16;
+  --color-text:           #f0f3f6;
+  --color-text-muted:     #8b95a5;
+  --color-text-faint:     #525c6a;
+  --color-text-inverse:   #000000;
 
-  /* Accent: calm natural leaf green */
-  --color-accent:         #4ade80;
-  --color-accent-light:   #86efac;
-  --color-accent-dim:     rgba(74, 222, 128, 0.12);
-  --color-accent-glow:    transparent;
-  --color-accent-hover:   #22c55e;
+  --color-accent:         #d4ff00;
+  --color-accent-light:   #e2ff4d;
+  --color-accent-dim:     rgba(212, 255, 0, 0.12);
+  --color-accent-glow:    rgba(212, 255, 0, 0.28);
+  --color-accent-hover:   #bbee00;
 
-  /* Semantic card tints: subtle organic translucent glass */
-  --color-lavender-card:  rgba(26, 44, 34, 0.60);
-  --color-lavender-border:rgba(147, 197, 253, 0.16);
-  --color-mint-card:      rgba(20, 46, 32, 0.62);
-  --color-mint-border:    rgba(134, 239, 172, 0.18);
-  --color-amber-card:     rgba(44, 38, 22, 0.60);
-  --color-amber-border:   rgba(253, 224, 71, 0.16);
-  --color-rose-card:      rgba(44, 24, 28, 0.60);
-  --color-rose-border:    rgba(253, 164, 175, 0.16);
-  --color-cyan-card:      rgba(20, 42, 46, 0.60);
-  --color-cyan-border:    rgba(103, 232, 249, 0.16);
+  --color-badge-blue-bg:  rgba(0, 229, 255, 0.10);
+  --color-badge-blue-txt: #00e5ff;
+  --color-badge-purple-bg:rgba(168, 85, 247, 0.12);
+  --color-badge-purple-txt:#c084fc;
+  --color-badge-green-bg: rgba(212, 255, 0, 0.12);
+  --color-badge-green-txt:#d4ff00;
+  --color-badge-amber-bg: rgba(251, 191, 36, 0.12);
+  --color-badge-amber-txt:#fbbf24;
 
-  /*  Semantic feedback */
-  --color-success:        #3a7d44;
-  --color-success-dim:    rgba(58, 125, 68, 0.12);
-  --color-warning:        #c8852a;
-  --color-warning-dim:    rgba(200, 133, 42, 0.12);
-  --color-danger:         #a83232;
-  --color-danger-dim:     rgba(168, 50, 50, 0.12);
-  --color-info:           #2c6e8a;
-  --color-info-dim:       rgba(44, 110, 138, 0.12);
-
-  /* Badge overrides */
-  --color-badge-green-bg: #d6edcc;
-  --color-badge-green-txt:#1e5c28;
-  --color-badge-amber-bg: #f5e8c0;
-  --color-badge-amber-txt:#7a4c10;
-
-  /*  Soft organic shadows */
-  --shadow-sm:            0 1px 3px rgba(28, 43, 30, 0.10);
-  --shadow-md:            0 4px 14px rgba(28, 43, 30, 0.12);
-  --shadow-lg:            0 8px 30px rgba(28, 43, 30, 0.16);
-  --shadow-xl:            0 16px 50px rgba(28, 43, 30, 0.20);
-  --shadow-glow:          none;
-  --shadow-glow-sm:       none;
-
-  /*  Nature-specific extra tokens */
-  --nature-leaf:          #5a8f6e;
-  --nature-bark:          #8b6347;
-  --nature-moss:          #3d6b45;
-  --nature-petal:         #d4a57a;
-  --nature-sky:           #7ab3c8;
-  --nature-gold:          #d4973b;
-  --nature-deep:          #1b3a27;
-  --nature-surface-card:  #f0edd8;
-  --nature-hero-overlay:  linear-gradient(to bottom, rgba(28, 43, 30, 0.18) 0%, rgba(28, 43, 30, 0.52) 100%);
-
-  /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(74, 222, 128, 0.18));
-  --color-pill-action-text:   #4ade80;
-  --color-pill-action-border: rgba(74, 222, 128, 0.32);
-  --color-pill-action-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-
-  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
-  --color-doitnow-accent:        #c89f6d;
-  --color-doitnow-accent-hover:  #d6b080;
-  --color-doitnow-bg:            rgba(200, 159, 109, 0.04);
-  --color-doitnow-border:        rgba(200, 159, 109, 0.18);
-  --color-doitnow-border-hover:  rgba(200, 159, 109, 0.30);
-  --color-doitnow-text:          #d6b080;
-  --color-doitnow-badge-bg:      rgba(200, 159, 109, 0.10);
-  --color-doitnow-glow:          transparent;
-}
-
-/*  Cyber Glow / Neon Deck Theme (Vibrant Glowing Midnight Sapphire from Reference)  */
-[data-theme='cyber'] {
-  --color-bg:             #070913;
-  --color-surface:        #0e1326;
-  --color-surface-2:      #151c38;
-  --color-surface-3:      #1e274c;
-  --color-surface-hover:  #263160;
-
-  --color-border:         rgba(99, 102, 241, 0.32);
-  --color-border-subtle:  rgba(99, 102, 241, 0.16);
-  --color-border-focus:   #00f0ff;
-
-  --color-text:           #f8fafc;
-  --color-text-muted:     #94a3b8;
-  --color-text-faint:     #64748b;
-  --color-text-inverse:   #070913;
-
-  --color-accent:         #6366f1;
-  --color-accent-light:   #38bdf8;
-  --color-accent-dim:     rgba(99, 102, 241, 0.22);
-  --color-accent-glow:    transparent;
-  --color-accent-hover:   #4f46e5;
-
-  --color-lavender-card:  #171336;
-  --color-lavender-border:rgba(168, 85, 247, 0.4);
-  --color-mint-card:      #0b2326;
-  --color-mint-border:    rgba(20, 184, 166, 0.4);
-  --color-amber-card:     #2b1805;
-  --color-amber-border:   rgba(245, 158, 11, 0.4);
-  --color-rose-card:      #2d0f20;
-  --color-rose-border:    rgba(244, 63, 94, 0.4);
-  --color-cyan-card:      #082032;
-  --color-cyan-border:    rgba(6, 182, 212, 0.45);
-
-  --color-success:        #10b981;
-  --color-success-dim:    rgba(16, 185, 129, 0.2);
-  --color-warning:        #f59e0b;
-  --color-warning-dim:    rgba(245, 158, 11, 0.2);
+  --color-success:        #d4ff00;
+  --color-success-dim:    rgba(212, 255, 0, 0.14);
+  --color-warning:        #fbbf24;
+  --color-warning-dim:    rgba(251, 191, 36, 0.14);
   --color-danger:         #f43f5e;
-  --color-danger-dim:     rgba(244, 63, 94, 0.2);
-  --color-info:           #06b6d4;
-  --color-info-dim:       rgba(6, 182, 212, 0.2);
+  --color-danger-dim:     rgba(244, 63, 94, 0.14);
+  --color-info:           #00e5ff;
+  --color-info-dim:       rgba(0, 229, 255, 0.14);
 
-  --shadow-sm:            0 2px 6px rgba(0, 0, 0, 0.5);
-  --shadow-md:            0 8px 24px rgba(0, 0, 0, 0.6);
-  --shadow-lg:            0 14px 40px rgba(0, 0, 0, 0.7);
-  --shadow-xl:            0 24px 60px rgba(0, 0, 0, 0.8);
-  --shadow-glow:          none;
-  --shadow-glow-sm:       none;
+  --color-lavender-card:  #13141f;
+  --color-lavender-border:rgba(168, 85, 247, 0.25);
+  --color-mint-card:      #0d1712;
+  --color-mint-border:    rgba(212, 255, 0, 0.25);
+  --color-amber-card:     #1a160d;
+  --color-amber-border:   rgba(251, 191, 36, 0.25);
+  --color-rose-card:      #1a0e12;
+  --color-rose-border:    rgba(244, 63, 94, 0.25);
+  --color-cyan-card:      #0a161a;
+  --color-cyan-border:    rgba(0, 229, 255, 0.25);
 
-  /* Action Pill (Focus Space & Life Domain) */
-  --color-pill-action-bg:     linear-gradient(135deg, rgba(6, 182, 212, 0.16), rgba(99, 102, 241, 0.18));
-  --color-pill-action-text:   #38bdf8;
-  --color-pill-action-border: rgba(6, 182, 212, 0.38);
-  --color-pill-action-shadow: 0 1px 6px rgba(6, 182, 212, 0.2);
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.7);
+  --shadow-lg:            0 8px 30px rgba(0, 0, 0, 0.8);
+  --shadow-xl:            0 16px 50px rgba(0, 0, 0, 0.9);
+  --shadow-glow:          0 0 20px rgba(212, 255, 0, 0.22);
+  --shadow-glow-sm:       0 0 10px rgba(212, 255, 0, 0.18);
 
-  /* "Do It Now" Daily Action Directive Tokens (Formal Minimalist Bronze) */
-  --color-doitnow-accent:        #d4a373;
-  --color-doitnow-accent-hover:  #e2b485;
-  --color-doitnow-bg:            rgba(212, 163, 115, 0.05);
-  --color-doitnow-border:        rgba(212, 163, 115, 0.20);
-  --color-doitnow-border-hover:  rgba(212, 163, 115, 0.35);
-  --color-doitnow-text:          #e2b485;
-  --color-doitnow-badge-bg:      rgba(212, 163, 115, 0.10);
-  --color-doitnow-glow:          transparent;
+  --color-pill-action-bg:     rgba(212, 255, 0, 0.12);
+  --color-pill-action-text:   #d4ff00;
+  --color-pill-action-border: rgba(212, 255, 0, 0.35);
+  --color-pill-action-shadow: 0 0 14px rgba(212, 255, 0, 0.18);
+
+  --color-doitnow-accent:        #d4ff00;
+  --color-doitnow-accent-hover:  #e2ff33;
+  --color-doitnow-bg:            rgba(212, 255, 0, 0.06);
+  --color-doitnow-border:        rgba(212, 255, 0, 0.28);
+  --color-doitnow-border-hover:  rgba(212, 255, 0, 0.45);
+  --color-doitnow-text:          #d4ff00;
+  --color-doitnow-badge-bg:      rgba(212, 255, 0, 0.12);
+  --color-doitnow-glow:          0 0 16px rgba(212, 255, 0, 0.2);
 }
 
-/*  System preference fallback  */
+/*  OS light mode preference override — preserves the pro dark cyber aesthetic  */
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) {
-    --color-bg:             #f8fafc;
-    --color-surface:        #ffffff;
-    --color-surface-2:      #f1f5f9;
-    --color-surface-3:      #e2e8f0;
-    --color-surface-hover:  #f1f5f9;
-    --color-border:         #e2e8f0;
-    --color-border-subtle:  #f1f5f9;
-    --color-border-focus:   #6366f1;
-    --color-text:           #0f172a;
-    --color-text-muted:     #475569;
-    --color-text-faint:     #64748b;
-    --color-text-inverse:   #ffffff;
-    --color-accent:         #4f46e5;
-    --color-accent-light:   #6366f1;
-    --color-accent-dim:     rgba(79, 70, 229, 0.08);
-    --color-accent-glow:    transparent;
-    --color-accent-hover:   #4338ca;
+  :root {
+    --color-bg:             #08090a;
+    --color-surface:        #0e1013;
+    --color-surface-2:      #14171c;
+    --color-surface-3:      #1b2026;
+    --color-surface-hover:  #222831;
+    --color-border:         #222830;
+    --color-border-subtle:  #161a20;
+    --color-border-focus:   #d4ff00;
+    --color-text:           #f0f3f6;
+    --color-text-muted:     #8b95a5;
+    --color-text-faint:     #525c6a;
+    --color-text-inverse:   #000000;
+    --color-accent:         #d4ff00;
+    --color-accent-light:   #e2ff4d;
+    --color-accent-dim:     rgba(212, 255, 0, 0.12);
+    --color-accent-glow:    rgba(212, 255, 0, 0.28);
+    --color-accent-hover:   #bbee00;
   }
 }
 
@@ -738,101 +537,51 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Nature theme scrollbar */
-[data-theme='nature'] ::-webkit-scrollbar-thumb {
-  background: #c8c3b0;
-}
-[data-theme='nature'] ::-webkit-scrollbar-thumb:hover {
-  background: #7a9078;
-}
-
-/* Nature theme selection */
-[data-theme='nature'] ::selection {
-  background: rgba(45, 90, 63, 0.18);
-  color: #1c2b1e;
+/* ── Scrollbars & Selection (Sarmat Analytix Tactical Cyber Lime) ── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
 }
 
-/* Nature theme glass effect */
-[data-theme='nature'] .glass {
-  background: rgba(240, 237, 216, 0.80);
-  border-color: #d4cfc0;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Nature gradient text */
-[data-theme='nature'] .gradient-text {
-  background: linear-gradient(135deg, #4a7c59, #2d5a3f, #1b3a27);
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+::selection {
+  background: rgba(212, 255, 0, 0.25);
+  color: #ffffff;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(14, 16, 19, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+}
+
+/* Tactical Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #d4ff00 0%, #bbee00 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ================================================================
-   NATURE THEME — IMMERSIVE BACKGROUND SYSTEM
-   Rich forest atmosphere with botanical SVG patterns, organic
-   gradients, and gentle animated elements that make every page
-   feel like you're working from inside a sunlit woodland.
-   ================================================================ */
-
-/* -- Root-level nature background on html element -- */
-[data-theme='nature'] {
-  background-color: #07120a;
-  background-image:
-    linear-gradient(180deg, rgba(7, 18, 10, 0.45) 0%, rgba(7, 18, 10, 0.72) 100%),
-    url('/nature-bg.jpg');
-  background-size: cover;
-  background-position: center center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-}
-
-/* -- Body in nature: stays transparent so html bg shows through -- */
-[data-theme='nature'] body {
-  background: transparent;
-}
-
-/* -- Shell, main, content: subtle frosted glass so bg stays visible -- */
-[data-theme='nature'] .shell {
-  background: transparent;
-  min-height: 100vh;
-}
-
-/* -- Nature cards & surfaces: clean organic glass background -- */
-[data-theme='nature'] .widgetCard {
-  background: var(--color-surface);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-color: var(--color-border);
-}
-
-/* ── Cloud Sync Dot animation ─────────────────────────────────── */
+/* ── Cloud Sync Dot animation ── */
 @keyframes pulse-ring {
   0%   { opacity: 1; }
   50%  { opacity: 0.35; }
   100% { opacity: 1; }
-}
-
-[data-theme='cyber'] {
-  background-color: #070913;
-  background-image: linear-gradient(180deg, #070913 0%, #0a0d1d 100%);
-  background-attachment: fixed;
-}
-
-[data-theme='cyber'] body {
-  background: transparent;
-}
-
-[data-theme='cyber'] ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
-  border-radius: 4px;
-}
-
-[data-theme='cyber'] ::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;
-  box-shadow: none;
-}
-
-[data-theme='cyber'] ::selection {
-  background: rgba(99, 102, 241, 0.35);
-  color: #00f0ff;
 }
 
 /* Literal Highlighter Marks & Font Color Spans (Zero Spacing Change, Fix Text Position) */

@@ -1137,11 +1137,11 @@ export default function SettingsPage() {
               <div className={styles.sectionBody}>
                 <div className={styles.themeGrid}>
                   {([
-                    { id: 'cyber', label: 'Cyber Glow', desc: 'Neon Violet & Electric Cyan', icon: <Sparkles size={14} /> },
-                    { id: 'nature', label: 'Nature Forest', desc: 'Organic Sage Glass & Timber', icon: <Leaf size={14} /> },
-                    { id: 'dark', label: 'Sleek Dark', desc: 'Refined Charcoal & Slate', icon: <Moon size={14} /> },
-                    { id: 'light', label: 'Clean Light', desc: 'Luminous Paper & Indigo', icon: <Sun size={14} /> },
-                    { id: 'system', label: 'System Sync', desc: 'Match Operating System', icon: <Sliders size={14} /> },
+                    { id: 'dark', label: 'Sarmat Analytix (Default)', desc: 'Obsidian Void & Acid Volt Lime', icon: <Sparkles size={14} /> },
+                    { id: 'cyber', label: 'Cyber Tech Pro', desc: 'Tactical Acid Lime High-Contrast', icon: <Moon size={14} /> },
+                    { id: 'light', label: 'Minimalist Tactical', desc: 'Distraction-Free Engineering Spec', icon: <Sliders size={14} /> },
+                    { id: 'nature', label: 'Tactical Obsidian', desc: 'Deep Space Pure Pitch Black', icon: <Leaf size={14} /> },
+                    { id: 'system', label: 'System Standard', desc: 'Unified Pro Senior Dev Aesthetic', icon: <Sliders size={14} /> },
                   ] as const).map((item) => (
                     <button
                       key={item.id}
