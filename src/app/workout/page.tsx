@@ -813,10 +813,7 @@ export default function WorkoutPage() {
       {/* ── Page Header ── */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleRow}>
-          <Dumbbell size={22} strokeWidth={1.8} className={styles.pageIcon} />
-          <div>
-            <h1 className={styles.pageTitle}>Workout Tracker</h1>
-          </div>
+          <h1 className={styles.pageTitle}>Workout Tracker</h1>
         </div>
         <button
           type="button"
