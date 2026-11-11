@@ -399,20 +399,24 @@
   font-weight: 600;
 }
 
-:global([data-theme='dark']) .activeItem,
-:global([data-theme='light']) .activeItem,
-:global([data-theme='cyber']) .activeItem,
-:global([data-theme='nature']) .activeItem {
+:global([data-theme='dark']) .activeItem {
   background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-:global([data-theme='dark']) .activeItem .navIcon,
-:global([data-theme='light']) .activeItem .navIcon,
-:global([data-theme='cyber']) .activeItem .navIcon,
-:global([data-theme='nature']) .activeItem .navIcon {
+:global([data-theme='dark']) .activeItem .navIcon {
   color: #ffffff;
+}
+
+:global([data-theme='light']) .activeItem {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #000000;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+}
+
+:global([data-theme='light']) .activeItem .navIcon {
+  color: #000000;
 }
 
 .navIconBox {
@@ -552,17 +556,13 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #fef3c7;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #d97706;
+  color: var(--color-text);
   flex-shrink: 0;
-}
-
-:global([data-theme='dark']) .userAvatar {
-  background-color: #3b2a1a;
-  color: #f59e0b;
 }
 
 .sunIcon {
@@ -683,54 +683,6 @@
   .footer {
     padding-top: 6px;
   }
-}
-
-/*  NATURE THEME OVERRIDES  */
-
-:global([data-theme='nature']) .sidebar {
-  background: rgba(14, 28, 19, 0.94);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right-color: rgba(74, 124, 89, 0.35);
-}
-
-:global([data-theme='nature']) .activeItem {
-  background: rgba(52, 211, 153, 0.22);
-  color: #6ee7b7;
-}
-
-:global([data-theme='nature']) .activeItem .navLabel {
-  font-weight: 600;
-  color: #f0fdf4;
-}
-
-:global([data-theme='nature']) .navItem {
-  color: #bbf7d0;
-}
-
-:global([data-theme='nature']) .navItem:hover {
-  background: rgba(52, 211, 153, 0.14);
-  color: #5eead4;
-}
-
-:global([data-theme='nature']) .domainBarWrap button {
-  border-color: rgba(52, 211, 153, 0.28);
-  color: #d1fae5;
-}
-
-:global([data-theme='nature']) .domainBarWrap button:hover {
-  background: rgba(52, 211, 153, 0.14);
-  border-color: rgba(52, 211, 153, 0.35);
-}
-
-:global([data-theme='nature']) .sectionTitle {
-  color: #86efac;
-}
-
-:global([data-theme='nature']) .userAvatar {
-  background: rgba(52, 211, 153, 0.18);
-  color: #6ee7b7;
-  border-color: rgba(52, 211, 153, 0.35);
 }
 
 .headerBtnGroup {

@@ -849,12 +849,8 @@ a.summaryPill:hover {
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
-.actionCard:hover,
-:global([data-theme='dark']) .actionCard:hover,
-:global([data-theme='light']) .actionCard:hover,
-:global([data-theme='cyber']) .actionCard:hover,
-:global([data-theme='nature']) .actionCard:hover {
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.08);
+.actionCard:hover {
+  box-shadow: var(--shadow-md);
   border-color: var(--color-accent);
 }
 
@@ -872,14 +868,10 @@ a.summaryPill:hover {
 .iconWrapSun,
 .iconWrapCheck,
 .iconWrapBrain,
-.iconWrapTarget,
-:global([data-theme='dark']) .iconWrapSun,
-:global([data-theme='dark']) .iconWrapCheck,
-:global([data-theme='dark']) .iconWrapBrain,
-:global([data-theme='dark']) .iconWrapTarget {
-  background-color: var(--color-surface-2, #121212);
-  color: #ffffff;
-  border: 1px solid var(--color-border, #262626);
+.iconWrapTarget {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .actionCardTitle {
@@ -1368,24 +1360,10 @@ a.summaryPill:hover {
 .tagDream,
 .tagStudy,
 .tagAi,
-.tagDefault,
-:global([data-theme='dark']) .tagProject,
-:global([data-theme='dark']) .tagSchool,
-:global([data-theme='dark']) .tagHealth,
-:global([data-theme='dark']) .tagGoal,
-:global([data-theme='dark']) .tagDream,
-:global([data-theme='dark']) .tagStudy,
-:global([data-theme='dark']) .tagAi,
-:global([data-theme='dark']) .tagDefault,
-:global([data-theme='nature']) .tagProject,
-:global([data-theme='nature']) .tagSchool,
-:global([data-theme='nature']) .tagHealth,
-:global([data-theme='nature']) .tagGoal,
-:global([data-theme='nature']) .tagDream,
-:global([data-theme='nature']) .tagStudy {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.tagDefault {
+  color: var(--color-text);
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
 }
 
 .chevronIcon {
@@ -2261,13 +2239,9 @@ a.summaryPill:hover {
   border-color: #94a3b8;
 }
 
-.habitCompleted,
-:global([data-theme='dark']) .habitCompleted,
-:global([data-theme='light']) .habitCompleted,
-:global([data-theme='cyber']) .habitCompleted,
-:global([data-theme='nature']) .habitCompleted {
-  background-color: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
+.habitCompleted {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
 }
 
 .habitPillTitle {
@@ -2276,16 +2250,12 @@ a.summaryPill:hover {
   color: var(--color-text);
 }
 
-.habitStreakBadge,
-:global([data-theme='dark']) .habitStreakBadge,
-:global([data-theme='light']) .habitStreakBadge,
-:global([data-theme='cyber']) .habitStreakBadge,
-:global([data-theme='nature']) .habitStreakBadge {
+.habitStreakBadge {
   font-size: 0.74rem;
   font-weight: 600;
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   padding: 2px 6px;
   border-radius: 9999px;
 }
@@ -2453,13 +2423,9 @@ a.summaryPill:hover {
   transition: background-color var(--transition-fast);
 }
 
-.inTodayRow,
-:global([data-theme='dark']) .inTodayRow,
-:global([data-theme='light']) .inTodayRow,
-:global([data-theme='cyber']) .inTodayRow,
-:global([data-theme='nature']) .inTodayRow {
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+.inTodayRow {
+  background-color: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
 }
 
 .modalTaskTitle {
@@ -2486,9 +2452,9 @@ a.summaryPill:hover {
 .inTodayBtn {
   padding: 4px 10px;
   border-radius: 6px;
-  background: #ffffff;
-  color: #000000;
-  border: 1px solid #ffffff;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
@@ -2717,24 +2683,6 @@ a.summaryPill:hover {
   }
 }
 
-/* Nature Theme Overrides - Today Dashboard */
-/* removed summaryPillFocus nature override */
-:global([data-theme='nature']) .pillIconGreen { color: #4ade80; }
-:global([data-theme='nature']) .pillIconOrange { color: #fbbf24; }
-:global([data-theme='nature']) .scheduleSectionCard,
-:global([data-theme='nature']) .scheduleCardItem {
-  background: rgba(20, 38, 28, 0.60);
-  border-color: rgba(134, 239, 172, 0.12);
-  color: #f0fdf4;
-}
-:global([data-theme='nature']) .energyBanner,
-:global([data-theme='nature']) .lowEnergyBanner {
-  background: rgba(24, 46, 32, 0.65);
-  border-color: rgba(134, 239, 172, 0.15);
-  color: #f0fdf4;
-}
-
-
 /* ── Today's Unified Reminders Card (Minimalist Executive) ── */
 .todayRemindersCard {
   background: var(--color-surface);
@@ -2939,16 +2887,14 @@ a.summaryPill:hover {
 }
 
 .taskGoalPill,
-:global([data-theme='dark']) .taskGoalPill,
-.taskProjectPill,
-:global([data-theme='dark']) .taskProjectPill {
+.taskProjectPill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.68rem;
   font-weight: 600;

@@ -481,10 +481,16 @@
 }
 
 .calActiveDay {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-accent) !important;
   font-weight: 700;
-  border-color: #ffffff !important;
+  border-color: var(--color-accent) !important;
+}
+
+:global([data-theme='light']) .calActiveDay {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
 }
 
 :global([data-theme='dark']) .calActiveDay {
@@ -494,8 +500,8 @@
 }
 
 .calSelectedDay {
-  box-shadow: 0 0 0 1px #ffffff !important;
-  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
   background-color: var(--color-surface-2) !important;
 }
 
@@ -519,7 +525,7 @@
 .calDotDeadline,
 .calDotEvent,
 .calDotBlock {
-  background-color: #ffffff;
+  background-color: var(--color-text);
 }
 
 /* Legend Row */
@@ -584,9 +590,9 @@
   font-size: 0.65rem;
   padding: 2px 7px;
   border-radius: 99px;
-  background-color: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -596,7 +602,7 @@
   background: none;
   border: none;
   font-size: 0.72rem;
-  color: #ffffff;
+  color: var(--color-accent);
   cursor: pointer;
   padding: 2px 4px;
   font-weight: 600;
@@ -824,9 +830,9 @@
 .priorityHigh,
 .priorityMedium,
 .priorityLow {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .emptyDayNotice {
@@ -1024,4 +1030,3 @@
     border-radius: var(--radius-lg);
   }
 }
-

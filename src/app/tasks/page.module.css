@@ -62,8 +62,8 @@
 
 .btnAdhdGuide:hover {
   background: var(--color-surface-hover);
-  border-color: #ffffff;
-  color: #ffffff;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
   transform: translateY(-1px);
 }
 
@@ -880,8 +880,8 @@
 
 .loadMoreBtn:hover {
   background: var(--color-surface-hover);
-  border-color: #ffffff;
-  color: #ffffff;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .compactDoneRow {

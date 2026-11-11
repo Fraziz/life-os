@@ -1137,11 +1137,9 @@ export default function SettingsPage() {
               <div className={styles.sectionBody}>
                 <div className={styles.themeGrid}>
                   {([
-                    { id: 'dark', label: 'Monochrome B&W (Default)', desc: 'Pure Obsidian & Crisp White', icon: <Sparkles size={14} /> },
-                    { id: 'cyber', label: 'High-Contrast B&W', desc: 'Distraction-Free Engineering', icon: <Moon size={14} /> },
-                    { id: 'light', label: 'Minimalist Slate', desc: 'Single Theme Clean Architecture', icon: <Sliders size={14} /> },
-                    { id: 'nature', label: 'Deep Void Black', desc: 'Zero Color Pitch Black', icon: <Leaf size={14} /> },
-                    { id: 'system', label: 'System Auto-Sync', desc: 'Unified Monochrome Standard', icon: <Sliders size={14} /> },
+                    { id: 'dark', label: 'Black (Dark Mode)', desc: 'Pure Obsidian & Crisp White Accent', icon: <Moon size={14} /> },
+                    { id: 'light', label: 'White (Light Mode)', desc: 'Clean High-Contrast Executive White', icon: <Sun size={14} /> },
+                    { id: 'system', label: 'System Auto-Sync', desc: 'Sync with OS Light / Dark Mode', icon: <Sliders size={14} /> },
                   ] as const).map((item) => (
                     <button
                       key={item.id}

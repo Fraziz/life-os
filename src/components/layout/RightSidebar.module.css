@@ -31,13 +31,9 @@
 }
 
 .searchBox:hover {
-  background-color: var(--color-surface-2);
-  border-color: #cbd5e1;
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
   box-shadow: var(--shadow-sm);
-}
-
-:global([data-theme='dark']) .searchBox:hover {
-  border-color: #3b4256;
 }
 
 .searchIcon {
@@ -181,14 +177,10 @@
   font-family: var(--font-serif), Georgia, serif;
   font-style: italic;
   font-size: 0.86rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px solid var(--color-border-subtle);
-}
-
-:global([data-theme='dark']) .quoteText {
-  color: #94a3b8;
 }
 
 /*  Calendar Card  */
@@ -294,20 +286,26 @@
 }
 
 .calActiveDay {
-  background-color: var(--color-primary-light, rgba(99, 102, 241, 0.12)) !important;
-  color: var(--color-primary, #6366f1) !important;
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-accent) !important;
   font-weight: 700;
-  border-color: var(--color-primary, #6366f1) !important;
+  border-color: var(--color-accent) !important;
+}
+
+:global([data-theme='light']) .calActiveDay {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
 }
 
 :global([data-theme='dark']) .calActiveDay {
-  background-color: rgba(129, 140, 248, 0.18) !important;
-  color: #a5b4fc !important;
-  border-color: #818cf8 !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
 }
 
 .calSelectedDay {
-  box-shadow: 0 0 0 2px var(--color-primary, #6366f1);
+  box-shadow: 0 0 0 1px var(--color-accent);
   background-color: var(--color-surface-2) !important;
 }
 
@@ -789,15 +787,10 @@
 }
 
 .energyBtnActive {
-  background: var(--color-surface);
+  background: var(--color-surface-hover);
   color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border);
   font-weight: 600;
-}
-
-:global([data-theme='dark']) .energyBtnActive {
-  background: rgba(99, 102, 241, 0.2);
-  color: #c7d2fe;
 }
 
 .energyTipText {
@@ -855,69 +848,6 @@
 }
 
 
-
-/* Nature Theme Overrides - Floating Glass Widget Cards */
-:global([data-theme='nature']) .rightSidebar {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-:global([data-theme='nature']) .widgetCard,
-:global([data-theme='nature']) .momentumCard,
-:global([data-theme='nature']) .energyCard,
-:global([data-theme='nature']) .shortcutsCard {
-  background: rgba(12, 24, 16, 0.62) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(134, 239, 172, 0.16) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
-}
-
-:global([data-theme='nature']) .widgetCard:hover,
-:global([data-theme='nature']) .momentumCard:hover,
-:global([data-theme='nature']) .energyCard:hover,
-:global([data-theme='nature']) .shortcutsCard:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5) !important;
-  border-color: rgba(134, 239, 172, 0.35) !important;
-}
-
-:global([data-theme='nature']) .searchBox {
-  background: rgba(12, 24, 16, 0.62) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(134, 239, 172, 0.16) !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
-  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-
-:global([data-theme='nature']) .searchBox:hover {
-  transform: translateY(-2px) !important;
-  border-color: rgba(134, 239, 172, 0.35) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38) !important;
-}
-
-:global([data-theme='nature']) .iconBtn {
-  background: rgba(12, 24, 16, 0.62) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(134, 239, 172, 0.16) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-
-:global([data-theme='nature']) .iconBtn:hover {
-  transform: scale(1.08) !important;
-  border-color: rgba(134, 239, 172, 0.35) !important;
-}
-
-:global([data-theme='nature']) .iconBtn:active {
-  transform: scale(0.95) !important;
-}
 
 /*  Mobile & Tablet Responsiveness  */
 @media (max-width: 1120px) {

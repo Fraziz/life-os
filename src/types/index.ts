@@ -23,7 +23,7 @@ export type PlanningStyle =
   | 'kanban'
   | 'weekly-focus';
 
-export type AppTheme = 'dark' | 'light' | 'nature' | 'cyber' | 'system';
+export type AppTheme = 'dark' | 'light' | 'system';
 
 export interface WorkingHours {
   start: string;       // e.g. "09:00"

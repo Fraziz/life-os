@@ -6,8 +6,6 @@ import {
   Search,
   Sun,
   Moon,
-  Leaf,
-  Sparkles,
   Bell,
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -33,6 +31,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useCalendar } from '@/context/CalendarContext';
 import { useInbox } from '@/context/InboxContext';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import type { AppTheme } from '@/types';
 import styles from './RightSidebar.module.css';
 
 export default function RightSidebar() {
@@ -55,28 +54,14 @@ export default function RightSidebar() {
     );
   }, [inboxReminders]);
 
-  // ── Theme toggle (cycles: light → dark → nature → cyber → light) ────
+  // ── Theme toggle (strictly switches between: Black (Dark) ↔ White (Light)) ────
   const currentTheme = settings.theme;
   const toggleTheme = () => {
-    const cycle: Record<string, 'dark' | 'light' | 'nature' | 'cyber'> = {
-      light: 'dark',
-      dark: 'nature',
-      nature: 'cyber',
-      cyber: 'light',
-      system: 'dark',
-    };
-    updateSettings({ theme: cycle[currentTheme] ?? 'dark' });
+    const nextTheme: AppTheme = currentTheme === 'light' ? 'dark' : 'light';
+    updateSettings({ theme: nextTheme });
   };
-  const themeIcon =
-    currentTheme === 'dark' ? <Moon size={17} /> :
-    currentTheme === 'nature' ? <Leaf size={17} /> :
-    currentTheme === 'cyber' ? <Sparkles size={17} /> :
-    <Sun size={17} />;
-  const themeTitle =
-    currentTheme === 'light' ? 'Switch to Dark Theme' :
-    currentTheme === 'dark' ? 'Switch to Nature Theme' :
-    currentTheme === 'nature' ? 'Switch to Cyber Glow Theme' :
-    'Switch to Light Theme';
+  const themeIcon = currentTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />;
+  const themeTitle = currentTheme === 'light' ? 'Switch to Black (Dark Theme)' : 'Switch to White (Light Theme)';
 
   // ── Selected Date for Agenda Inspection ──────────────────────
   const [selectedDate, setSelectedDate] = useState<string>(

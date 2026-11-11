@@ -125,6 +125,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             autoFailover: true,
           };
         }
+        // Normalize legacy 4-theme settings down to the 2 Black & White themes ('dark' | 'light')
+        if (parsed.theme === 'nature' || parsed.theme === 'cyber') {
+          parsed.theme = 'dark';
+        }
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       } else {
         setSettings(DEFAULT_SETTINGS);
@@ -143,16 +147,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
-  // Apply theme to document
+  // Apply theme to document (strictly 'dark' or 'light')
   useEffect(() => {
     if (!isLoaded) return;
     const theme = settings.theme;
     if (theme === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
     } else {
-      // 'dark' | 'light' | 'nature' — all map directly to data-theme
-      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, [settings.theme, isLoaded]);
 

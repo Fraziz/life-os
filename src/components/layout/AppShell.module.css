@@ -169,35 +169,6 @@
   }
 }
 
-/* ================================================================
-   NATURE THEME  -  Shell transparency so background shows through
-   ================================================================ */
-:global([data-theme='nature']) .shell {
-  background: transparent;
-}
-
-:global([data-theme='nature']) .main {
-  background: transparent;
-}
-
-:global([data-theme='nature']) .content {
-  /* Transparent so the nature forest background shows through the whole app */
-  background: transparent;
-  backdrop-filter: none;
-}
-
-:global([data-theme='nature']) .expandSidebarBtn {
-  background: rgba(243, 241, 232, 0.92);
-  border-color: rgba(45, 90, 63, 0.22);
-  color: #4a5e4d;
-}
-
-:global([data-theme='nature']) .expandSidebarBtn:hover {
-  background: rgba(220, 232, 212, 0.95);
-  border-color: #2d5a3f;
-  color: #1b3a27;
-}
-
 /* -- Floating Movable AI Assistant Button --------------------------------- */
 .aiChatBtn {
   position: fixed;
@@ -255,39 +226,28 @@
 
 :global([data-theme='light']) .aiChatBtn {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #334155;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  border-color: #e4e4e7;
+  color: #09090b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme='light']) .aiChatBtn:hover {
-  border-color: #6366f1;
-  color: #4f46e5;
-  background: #f8fafc;
+  border-color: #000000;
+  color: #000000;
+  background: #f4f4f5;
 }
 
 :global([data-theme='dark']) .aiChatBtn {
-  background: rgba(26, 29, 38, 0.95);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #e2e8f0;
+  background: #121212;
+  border-color: #262626;
+  color: #ffffff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 :global([data-theme='dark']) .aiChatBtn:hover {
-  border-color: #818cf8;
-  color: #818cf8;
-}
-
-:global([data-theme='nature']) .aiChatBtn {
-  background: rgba(16, 32, 23, 0.92);
-  border-color: rgba(134, 239, 172, 0.22);
-  color: #f0fdf4;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-
-:global([data-theme='nature']) .aiChatBtn:hover {
-  border-color: #4ade80;
-  color: #4ade80;
+  border-color: #ffffff;
+  color: #ffffff;
+  background: #1c1c1c;
 }
 
 

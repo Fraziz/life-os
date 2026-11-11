@@ -180,11 +180,16 @@
   --z-toast:    500;
 }
 
-/*  Unified Single Theme (Monochrome Black & White Across All Selectors)  */
-[data-theme='light'],
-[data-theme='dark'],
-[data-theme='cyber'],
-[data-theme='nature'] {
+/* ============================================================
+   LIFE OS — MONOCHROME TWO-THEME SYSTEM (BLACK & WHITE)
+   1. Black (Dark): Pitch Obsidian (#000000), Dark Surfaces, White Text
+   2. White (Light): Crisp Pure White (#ffffff), Light Surfaces, Black Text
+   High-contrast, executive minimalism, crisp solid borders.
+   ============================================================ */
+
+/* ── Theme 1: Black (Dark Mode - Default) ── */
+:root,
+[data-theme='dark'] {
   --color-bg:             #000000;
   --color-surface:        #0a0a0a;
   --color-surface-2:      #121212;
@@ -257,26 +262,100 @@
   --color-doitnow-glow:          transparent;
 }
 
-/*  OS light mode preference override — preserves the pro monochrome black & white aesthetic  */
+/* ── Theme 2: White (Light Mode) ── */
+[data-theme='light'] {
+  --color-bg:             #ffffff;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f4f4f5;
+  --color-surface-3:      #e4e4e7;
+  --color-surface-hover:  #ececee;
+
+  --color-border:         #e4e4e7;
+  --color-border-subtle:  #f4f4f5;
+  --color-border-focus:   #000000;
+
+  --color-text:           #09090b;
+  --color-text-muted:     #71717a;
+  --color-text-faint:     #a1a1aa;
+  --color-text-inverse:   #ffffff;
+
+  --color-accent:         #000000;
+  --color-accent-light:   #18181b;
+  --color-accent-dim:     rgba(0, 0, 0, 0.06);
+  --color-accent-glow:    rgba(0, 0, 0, 0.08);
+  --color-accent-hover:   #27272a;
+
+  --color-badge-blue-bg:  rgba(0, 0, 0, 0.05);
+  --color-badge-blue-txt: #09090b;
+  --color-badge-purple-bg:rgba(0, 0, 0, 0.05);
+  --color-badge-purple-txt:#09090b;
+  --color-badge-green-bg: rgba(0, 0, 0, 0.07);
+  --color-badge-green-txt:#000000;
+  --color-badge-amber-bg: rgba(0, 0, 0, 0.05);
+  --color-badge-amber-txt:#09090b;
+
+  --color-success:        #000000;
+  --color-success-dim:    rgba(0, 0, 0, 0.06);
+  --color-warning:        #52525b;
+  --color-warning-dim:    rgba(0, 0, 0, 0.06);
+  --color-danger:         #18181b;
+  --color-danger-dim:     rgba(0, 0, 0, 0.06);
+  --color-info:           #000000;
+  --color-info-dim:       rgba(0, 0, 0, 0.06);
+
+  --color-lavender-card:  #fbfbfe;
+  --color-lavender-border:#e4e4e7;
+  --color-mint-card:      #fbfbfe;
+  --color-mint-border:    #e4e4e7;
+  --color-amber-card:     #fbfbfe;
+  --color-amber-border:   #e4e4e7;
+  --color-rose-card:      #fbfbfe;
+  --color-rose-border:    #e4e4e7;
+  --color-cyan-card:      #fbfbfe;
+  --color-cyan-border:    #e4e4e7;
+
+  --shadow-sm:            0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md:            0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg:            0 10px 25px rgba(0, 0, 0, 0.08);
+  --shadow-xl:            0 20px 40px rgba(0, 0, 0, 0.10);
+  --shadow-glow:          0 0 16px rgba(0, 0, 0, 0.06);
+  --shadow-glow-sm:       0 0 8px rgba(0, 0, 0, 0.04);
+
+  --color-pill-action-bg:     rgba(0, 0, 0, 0.06);
+  --color-pill-action-text:   #09090b;
+  --color-pill-action-border: rgba(0, 0, 0, 0.16);
+  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  --color-doitnow-accent:        #000000;
+  --color-doitnow-accent-hover:  #27272a;
+  --color-doitnow-bg:            rgba(0, 0, 0, 0.03);
+  --color-doitnow-border:        rgba(0, 0, 0, 0.14);
+  --color-doitnow-border-hover:  rgba(0, 0, 0, 0.30);
+  --color-doitnow-text:          #09090b;
+  --color-doitnow-badge-bg:      rgba(0, 0, 0, 0.08);
+  --color-doitnow-glow:          transparent;
+}
+
+/*  OS light mode preference sync when no explicit data-theme is set  */
 @media (prefers-color-scheme: light) {
-  :root {
-    --color-bg:             #000000;
-    --color-surface:        #0a0a0a;
-    --color-surface-2:      #121212;
-    --color-surface-3:      #1c1c1c;
-    --color-surface-hover:  #242424;
-    --color-border:         #262626;
-    --color-border-subtle:  #181818;
-    --color-border-focus:   #ffffff;
-    --color-text:           #ffffff;
-    --color-text-muted:     #a1a1aa;
-    --color-text-faint:     #52525b;
-    --color-text-inverse:   #000000;
-    --color-accent:         #ffffff;
-    --color-accent-light:   #f4f4f5;
-    --color-accent-dim:     rgba(255, 255, 255, 0.10);
-    --color-accent-glow:    rgba(255, 255, 255, 0.15);
-    --color-accent-hover:   #e4e4e7;
+  :root:not([data-theme='dark']) {
+    --color-bg:             #ffffff;
+    --color-surface:        #ffffff;
+    --color-surface-2:      #f4f4f5;
+    --color-surface-3:      #e4e4e7;
+    --color-surface-hover:  #ececee;
+    --color-border:         #e4e4e7;
+    --color-border-subtle:  #f4f4f5;
+    --color-border-focus:   #000000;
+    --color-text:           #09090b;
+    --color-text-muted:     #71717a;
+    --color-text-faint:     #a1a1aa;
+    --color-text-inverse:   #ffffff;
+    --color-accent:         #000000;
+    --color-accent-light:   #18181b;
+    --color-accent-dim:     rgba(0, 0, 0, 0.06);
+    --color-accent-glow:    rgba(0, 0, 0, 0.08);
+    --color-accent-hover:   #27272a;
   }
 }
 
@@ -560,6 +639,11 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
+[data-theme='light'] ::selection {
+  background: rgba(0, 0, 0, 0.15);
+  color: #000000;
+}
+
 /* Glass effect */
 .glass {
   background: rgba(10, 10, 10, 0.85);
@@ -568,9 +652,23 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--color-border);
 }
 
+[data-theme='light'] .glass {
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+}
+
 /* Monochrome Gradient text */
 .gradient-text {
   background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme='light'] .gradient-text {
+  background: linear-gradient(180deg, #09090b 0%, #52525b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

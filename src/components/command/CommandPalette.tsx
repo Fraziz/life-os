@@ -131,22 +131,11 @@ export default function CommandPalette() {
       },
     },
     {
-      id: 'act-theme-nature',
-      category: 'Quick Actions',
-      title: 'Set Theme: Nature Forest',
-      subtitle: 'Calm organic translucent aesthetic',
-      keywords: ['theme', 'nature', 'green', 'forest'],
-      onSelect: () => {
-        updateSettings({ theme: 'nature' });
-        closePalette();
-      },
-    },
-    {
       id: 'act-theme-dark',
       category: 'Quick Actions',
-      title: 'Set Theme: Sleek Charcoal Dark',
-      subtitle: 'Modern high-contrast dark mode',
-      keywords: ['theme', 'dark', 'black', 'charcoal'],
+      title: 'Set Theme: Black (Dark Mode)',
+      subtitle: 'Pure Obsidian & Crisp White Accent',
+      keywords: ['theme', 'dark', 'black', 'monochrome'],
       onSelect: () => {
         updateSettings({ theme: 'dark' });
         closePalette();
@@ -155,9 +144,9 @@ export default function CommandPalette() {
     {
       id: 'act-theme-light',
       category: 'Quick Actions',
-      title: 'Set Theme: Clean Luminous Light',
-      subtitle: 'Crisp slate and indigo aesthetic',
-      keywords: ['theme', 'light', 'white', 'indigo'],
+      title: 'Set Theme: White (Light Mode)',
+      subtitle: 'Clean High-Contrast Executive White',
+      keywords: ['theme', 'light', 'white', 'clean'],
       onSelect: () => {
         updateSettings({ theme: 'light' });
         closePalette();

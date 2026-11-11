@@ -416,33 +416,33 @@
 }
 
 .btnConvert:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .btnConvertDone {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .btnConvertDone:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .btnConvertImportant {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .btnConvertImportant:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .btnCopy {
@@ -488,8 +488,8 @@
 .btnActionActiveReminder,
 .btnActionActiveNote,
 .btnActionActiveNotesText {
-  color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.12) !important;
+  color: var(--color-accent) !important;
+  background: var(--color-surface-hover) !important;
 }
 
 /* ── Inline Edit Mode ── */
