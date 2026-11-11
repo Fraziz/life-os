@@ -210,15 +210,15 @@
 }
 
 .zenTimerActionStart {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .zenTimerActionStart:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .zenTimerResetBtn {
@@ -418,9 +418,9 @@
 }
 
 .zenParkBtn {
-  background: var(--color-accent);
-  border: 1px solid var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-focus);
+  color: var(--color-text);
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   padding: 7px 14px;
@@ -430,7 +430,9 @@
 }
 
 .zenParkBtn:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .zenParkNotice {
@@ -697,7 +699,7 @@
 
 .modeTab {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--color-text-muted);
   padding: 6px 14px;
   border-radius: var(--radius-full);
@@ -713,10 +715,11 @@
 }
 
 .modeTab.activeMode {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-focus);
+  color: var(--color-text);
   font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /*  Formal Digital Timer Display Card  */
@@ -821,9 +824,9 @@
 }
 
 .btnStart {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: var(--space-3) var(--space-8);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -832,13 +835,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   transition: all var(--transition-fast);
 }
 
 .btnStart:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -860,15 +864,16 @@
 }
 
 .btnPause:hover {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-2px);
 }
 
 .btnFinish {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-xl);
   font-size: var(--text-sm);
@@ -882,9 +887,9 @@
 }
 
 .btnFinish:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-inverse);
-  border-color: var(--color-accent-hover);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-2px);
 }
 
@@ -908,11 +913,10 @@
 
 /*  Subtasks on Focus Page (Formal & Clean)  */
 .subtasksBox {
-  background: transparent;
-  border: none;
-  border-left: 2px solid var(--color-border-subtle);
-  border-radius: 0;
-  padding: var(--space-2) 0 var(--space-2) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
   width: 100%;
   max-width: 480px;
   display: flex;
@@ -939,9 +943,9 @@
 }
 
 .btnMagicBreakdown {
-  background: linear-gradient(135deg, rgba(124, 106, 255, 0.2), rgba(167, 139, 250, 0.2));
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent-light);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 11px;
   font-weight: var(--weight-semibold);
   padding: 4px 10px;
@@ -952,8 +956,9 @@
 }
 
 .btnMagicBreakdown:hover {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
 }
 
@@ -1179,9 +1184,9 @@
 
 .bookBtnStart {
   width: 100%;
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: 9px var(--space-4);
   border-radius: var(--radius-md);
   font-size: 0.8rem;
@@ -1191,14 +1196,16 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   transition: all var(--transition-fast);
 }
 
 .bookBtnStart:hover {
-  background: var(--color-accent-hover, #e4e4e7);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .bookBtnPause {
@@ -1699,9 +1706,9 @@
 /*  Side Session Controls  */
 .sideBtnStart {
   width: 100%;
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: 10px var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -1711,12 +1718,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   transition: all var(--transition-fast);
 }
 
 .sideBtnStart:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -1740,8 +1749,9 @@
 }
 
 .sideBtnPause:hover {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
 }
 
@@ -1762,9 +1772,9 @@
 }
 
 .sideActionBtn:hover {
-  border-color: var(--color-accent);
-  color: var(--color-text);
   background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .sideBtnFinish {
@@ -1785,9 +1795,9 @@
 }
 
 .sideBtnFinish:hover {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
 }
 
@@ -1975,8 +1985,9 @@
 }
 
 .btnMagicBreakdown:hover {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   transform: translateY(-1px);
 }
 
@@ -2883,8 +2894,9 @@
 }
 
 :global([data-theme='light']) .modeTab.activeMode {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-focus);
+  color: var(--color-text);
   box-shadow: var(--shadow-sm);
 }
 

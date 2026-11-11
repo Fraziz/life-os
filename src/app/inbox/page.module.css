@@ -529,19 +529,19 @@
 }
 
 .btnSaveEdit {
-  background: var(--color-accent);
-  color: var(--color-text-inverse, #ffffff);
-  border: none;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: 5px 12px;
   border-radius: var(--radius-sm, 6px);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 
 .btnSaveEdit:hover {
-  opacity: 0.9;
+  background: var(--color-surface-hover);
 }
 
 .btnCancelEdit {
@@ -1459,11 +1459,11 @@
 .vaultSubmitBtn {
   width: 100%;
   height: 42px;
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-2);
+  color: var(--color-text);
   font-weight: 600;
   font-size: 13px;
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-border-focus);
   border-radius: 10px;
   cursor: pointer;
   display: flex;
@@ -1471,7 +1471,12 @@
   justify-content: center;
   gap: 6px;
   box-sizing: border-box;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.vaultSubmitBtn:hover {
+  background: var(--color-surface-hover);
+  transform: translateY(-1px);
 }
 
 .vaultSubmitBtn:hover:not(:disabled) {

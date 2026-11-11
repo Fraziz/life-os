@@ -45,9 +45,9 @@
 }
 
 .btnAdd {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--text-xs);
@@ -60,7 +60,7 @@
 }
 
 .btnAdd:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-surface-hover);
 }
 
 .btnAdd:hover {

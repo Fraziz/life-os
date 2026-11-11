@@ -87,8 +87,9 @@
 }
 
 .viewTab.activeViewTab {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-focus);
+  color: var(--color-text);
   font-weight: var(--weight-semibold);
 }
 
@@ -107,9 +108,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: 8px 16px;
   border-radius: var(--radius-lg, 10px);
   font-size: 0.84rem;
@@ -120,8 +121,8 @@
 }
 
 .btnNewEntry:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -208,9 +209,9 @@
 }
 
 .btnSchedule {
-  background: var(--color-accent);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-focus);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--text-xs);
@@ -222,8 +223,8 @@
 }
 
 .btnSchedule:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-inverse);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .btnSecondary {
