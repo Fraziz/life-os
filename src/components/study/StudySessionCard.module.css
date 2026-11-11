@@ -294,9 +294,9 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  background: var(--color-accent, #6962f4);
-  color: #ffffff;
-  border: 1px solid transparent;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
 }
 
 .primaryControlBtn:hover {

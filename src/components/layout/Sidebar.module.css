@@ -392,31 +392,15 @@
    Expanded: full row highlight.
 */
 .activeItem {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: var(--color-accent, #ffffff);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
   font-weight: 600;
 }
 
-:global([data-theme='dark']) .activeItem {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-}
-
-:global([data-theme='dark']) .activeItem .navIcon {
-  color: #ffffff;
-}
-
-:global([data-theme='light']) .activeItem {
-  background-color: rgba(0, 0, 0, 0.08);
-  color: #000000;
-  border: 1px solid rgba(0, 0, 0, 0.16);
-}
-
-:global([data-theme='light']) .activeItem .navIcon {
-  color: #000000;
+.activeItem .navIcon {
+  color: var(--color-text);
 }
 
 .navIconBox {

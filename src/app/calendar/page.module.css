@@ -88,7 +88,7 @@
 
 .viewTab.activeViewTab {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-inverse);
   font-weight: var(--weight-semibold);
 }
 
@@ -108,8 +108,8 @@
   align-items: center;
   gap: 8px;
   background: var(--color-accent);
-  color: #fff;
-  border: none;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
   padding: 8px 16px;
   border-radius: var(--radius-lg, 10px);
   font-size: 0.84rem;
@@ -120,10 +120,10 @@
 }
 
 .btnNewEntry:hover {
-  background: #ffffff;
-  color: #000000;
+  background: var(--color-accent-hover);
+  color: var(--color-text-inverse);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .chevron {
@@ -183,9 +183,9 @@
 .iconEvent,
 .iconBlock,
 .iconDeadline {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .menuItemText {
@@ -209,8 +209,8 @@
 
 .btnSchedule {
   background: var(--color-accent);
-  color: #fff;
-  border: none;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--text-xs);
@@ -222,8 +222,8 @@
 }
 
 .btnSchedule:hover {
-  background: #ffffff;
-  color: #000000;
+  background: var(--color-accent-hover);
+  color: var(--color-text-inverse);
 }
 
 .btnSecondary {
@@ -241,8 +241,8 @@
 
 /*  Distinct Deadlines Top Banner (Must be completed by...)  */
 .deadlinesBanner {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--space-4) var(--space-5);
   display: flex;
@@ -261,7 +261,7 @@
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #ffffff;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -482,21 +482,9 @@
 
 .calActiveDay {
   background-color: var(--color-surface-hover) !important;
-  color: var(--color-accent) !important;
+  color: var(--color-text) !important;
   font-weight: 700;
-  border-color: var(--color-accent) !important;
-}
-
-:global([data-theme='light']) .calActiveDay {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  color: #000000 !important;
-  border-color: #000000 !important;
-}
-
-:global([data-theme='dark']) .calActiveDay {
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  color: #ffffff !important;
-  border-color: #ffffff !important;
+  border-color: var(--color-border-focus) !important;
 }
 
 .calSelectedDay {
@@ -784,8 +772,8 @@
 }
 
 .sideCardDeleteBtn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
 }
 
 .focusNowBtn {

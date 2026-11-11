@@ -79,18 +79,18 @@
   align-items: center;
   gap: var(--space-2);
   background: var(--color-accent);
-  color: white;
+  color: var(--color-text-inverse);
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-lg);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  border: none;
+  border: 1px solid var(--color-accent);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
 
 .btnCreate:hover {
-  background: #6a5cff;
+  background: var(--color-accent-hover);
 }
 
 /*  Areas Grid  */
@@ -310,7 +310,7 @@
 }
 
 .colorSwatch.selectedColor {
-  border-color: white;
+  border-color: var(--color-border-focus);
   transform: scale(1.15);
 }
 

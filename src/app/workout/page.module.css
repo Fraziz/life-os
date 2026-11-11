@@ -452,7 +452,7 @@
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  color: white;
+  color: var(--color-text);
 }
 
 .setCheck:hover {
@@ -486,8 +486,8 @@
 }
 
 .setRemoveBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .addSetBtn {
@@ -799,7 +799,7 @@
 .muscleFilterActive {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: white;
+  color: var(--color-text-inverse);
 }
 
 .libraryGrid {
@@ -872,14 +872,14 @@
 
 .btnPrimary {
   background: var(--color-accent);
-  color: white;
-  border-color: transparent;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
 }
 
 .btnPrimary:hover {
   background: var(--color-accent-hover);
-  color: white;
-  border-color: transparent;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent-hover);
 }
 
 .btnSecondary {
@@ -888,14 +888,14 @@
 }
 
 .btnDanger {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btnDanger:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .btnLg {

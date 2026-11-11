@@ -113,10 +113,10 @@ a.summaryPill:hover {
 
 .pillIconGreen,
 .pillIconOrange,
-.pillIconYellow {
-  color: #ffffff;
+.pillIconYellow,
+.pillIconSky {
+  color: var(--color-text);
 }
-.pillIconSky { color: #0ea5e9; }
 
 /*  Today's Schedule & Deadlines Section  */
 .scheduleSectionCard {
@@ -135,8 +135,9 @@ a.summaryPill:hover {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 99px;
-  background: rgba(14, 165, 233, 0.12);
-  color: #0ea5e9;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   letter-spacing: 0.02em;
 }
 
@@ -208,9 +209,9 @@ a.summaryPill:hover {
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   flex-shrink: 0;
 }
 
@@ -418,8 +419,9 @@ a.summaryPill:hover {
 }
 
 .flowStepStatusDone {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .flowStepBody {
@@ -481,15 +483,15 @@ a.summaryPill:hover {
 }
 
 .habitChip:hover {
-  border-color: #ffffff;
-  color: #ffffff;
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
   background: var(--color-surface);
 }
 
 .habitChipDone {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .habitDot {
@@ -506,9 +508,9 @@ a.summaryPill:hover {
 }
 
 .habitDotDone {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #000000;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse);
 }
 
 .habitChipLabel {
@@ -619,11 +621,11 @@ a.summaryPill:hover {
   gap: 3px;
   font-size: 0.68rem;
   font-weight: 600;
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
   padding: 2px 7px;
   border-radius: 99px;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid var(--color-border);
 }
 
 .workoutStatusRestBadge {
@@ -804,17 +806,13 @@ a.summaryPill:hover {
   font-style: italic;
   font-size: 0.82rem;
   line-height: 1.3;
-  color: #292524;
+  color: var(--color-text);
   text-align: center;
-}
-
-:global([data-theme='dark']) .heroQuoteText {
-  color: #f3f4f6;
 }
 
 .heroQuoteAuthor {
   font-size: 0.68rem;
-  color: #78716c;
+  color: var(--color-text-muted);
   text-align: center;
   margin-top: 4px;
 }
@@ -903,9 +901,9 @@ a.summaryPill:hover {
 }
 
 .changeBookBtn:hover {
-  color: #38bdf8;
-  border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  color: var(--color-text);
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
 }
 
 .bookPickerModalCard {
@@ -956,7 +954,7 @@ a.summaryPill:hover {
 
 .bookSearchInput:focus {
   outline: none;
-  border-color: #38bdf8;
+  border-color: var(--color-border-focus);
 }
 
 .bookListScroll {
@@ -985,13 +983,13 @@ a.summaryPill:hover {
 }
 
 .bookListItem:hover {
-  border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.06);
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
 }
 
 .bookListItemActive {
-  border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
 }
 
 .bookItemTitle {
@@ -1010,10 +1008,11 @@ a.summaryPill:hover {
 .bookSelectBadge {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #38bdf8;
+  color: var(--color-text);
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(56, 189, 248, 0.1);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
   white-space: nowrap;
 }
 
@@ -1053,15 +1052,15 @@ a.summaryPill:hover {
 
 .bookCreateInput:focus {
   outline: none;
-  border-color: #38bdf8;
+  border-color: var(--color-border-focus);
 }
 
 .bookCreateBtn {
   padding: 7px 14px;
   border-radius: 8px;
-  border: none;
-  background: #38bdf8;
-  color: #0f172a;
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1099,15 +1098,15 @@ a.summaryPill:hover {
 }
 
 .sunHeaderIcon {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .targetHeaderIcon {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .noteHeaderIcon {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .sectionHeading {
@@ -1179,16 +1178,10 @@ a.summaryPill:hover {
   font-weight: 600;
 }
 
-:global([data-theme='dark']) .headerEnergyBtnActive,
-:global([data-theme='cyber']) .headerEnergyBtnActive {
+:global([data-theme='dark']) .headerEnergyBtnActive {
   background: var(--color-surface-3, rgba(255, 255, 255, 0.12));
   color: var(--color-text);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-:global([data-theme='nature']) .headerEnergyBtnActive {
-  background: rgba(74, 222, 128, 0.2);
-  color: #f0fdf4;
 }
 
 .todayEnergyTipBanner {
@@ -1205,7 +1198,7 @@ a.summaryPill:hover {
 }
 
 .todayEnergyZapIcon {
-  color: #eab308;
+  color: var(--color-text);
   flex-shrink: 0;
 }
 
@@ -1254,19 +1247,15 @@ a.summaryPill:hover {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: #1e293b;
-  color: #ffffff;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   font-size: 0.72rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-:global([data-theme='dark']) .priorityNumBadge {
-  background-color: #334155;
-  color: #f1f5f9;
 }
 
 .checkboxBtn {
@@ -1284,21 +1273,21 @@ a.summaryPill:hover {
   width: 17px;
   height: 17px;
   border-radius: 4px;
-  border: 1.5px solid #94a3b8;
+  border: 1.5px solid var(--color-border);
   background: transparent;
   transition: border-color var(--transition-fast);
 }
 
 .emptyBox:hover {
-  border-color: #475569;
+  border-color: var(--color-border-focus);
 }
 
 .checkedBox {
   width: 17px;
   height: 17px;
   border-radius: 4px;
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1382,15 +1371,15 @@ a.summaryPill:hover {
 }
 
 .priorityOneNumBadge {
-  background-color: var(--color-doitnow-accent) !important;
-  color: #ffffff !important;
+  background-color: var(--color-accent) !important;
+  color: var(--color-text-inverse) !important;
   font-weight: 700 !important;
 }
 
 :global([data-theme='dark']) .priorityOneNumBadge {
-  background-color: #352f2a !important;
-  color: var(--color-doitnow-accent) !important;
-  border: 1px solid var(--color-doitnow-border) !important;
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 .priorityOneBadge {
@@ -1426,9 +1415,9 @@ a.summaryPill:hover {
 }
 
 .tagDoitnow {
-  color: #d4a373;
-  background-color: rgba(212, 163, 115, 0.12);
-  border-color: rgba(212, 163, 115, 0.28);
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border);
   font-weight: 600;
 }
 
@@ -1447,7 +1436,7 @@ a.summaryPill:hover {
 }
 
 .energyNoticeIcon {
-  color: #ffffff;
+  color: var(--color-text);
   flex-shrink: 0;
 }
 
@@ -1474,7 +1463,7 @@ a.summaryPill:hover {
   gap: 6px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .completedTasksList {
@@ -1507,9 +1496,9 @@ a.summaryPill:hover {
 
 .completedBadge {
   font-size: 0.7rem;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
   padding: 2px 7px;
   border-radius: 99px;
   font-weight: 600;
@@ -1626,18 +1615,19 @@ a.summaryPill:hover {
   gap: 8px;
   padding: 10px 22px;
   border-radius: 99px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #ffffff;
-  border: none;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-border);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .wrapUpDayBtn:hover {
   transform: translateY(-2px);
+  background: var(--color-accent-hover);
   box-shadow: var(--shadow-md);
 }
 
@@ -1711,7 +1701,7 @@ a.summaryPill:hover {
 .modalStatNumber {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .modalStatLabel {
@@ -1738,7 +1728,7 @@ a.summaryPill:hover {
   padding: 12px;
   border-radius: var(--radius-md, 8px);
   background: var(--color-accent);
-  color: #000000;
+  color: var(--color-text-inverse);
   border: 1px solid var(--color-accent);
   font-size: 0.92rem;
   font-weight: 700;
@@ -1800,21 +1790,21 @@ a.summaryPill:hover {
   width: 17px;
   height: 17px;
   border-radius: 50%;
-  border: 1.5px solid #94a3b8;
+  border: 1.5px solid var(--color-border);
   background: transparent;
   transition: border-color var(--transition-fast);
 }
 
 .emptyCircle:hover {
-  border-color: #475569;
+  border-color: var(--color-border-focus);
 }
 
 .checkedCircle {
   width: 17px;
   height: 17px;
   border-radius: 50%;
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1880,12 +1870,17 @@ a.summaryPill:hover {
 .addTaskSubmitBtn {
   padding: 4px 12px;
   border-radius: 6px;
-  background: #1e293b;
-  color: #ffffff;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
   font-size: 0.76rem;
   font-weight: 600;
-  border: none;
+  border: 1px solid var(--color-accent);
   cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.addTaskSubmitBtn:hover {
+  opacity: 0.9;
 }
 
 .addTaskCancelBtn {
@@ -1931,7 +1926,7 @@ a.summaryPill:hover {
 }
 
 .leafIconWrap {
-  color: #16a34a;
+  color: var(--color-text);
 }
 
 .projectCardTitle {
@@ -1954,7 +1949,7 @@ a.summaryPill:hover {
 :global([data-theme='dark']) .progressBarFillDark,
 .progressBarFillGreen {
   height: 100%;
-  background-color: #ffffff;
+  background-color: var(--color-accent);
   border-radius: 9999px;
 }
 
@@ -1976,7 +1971,7 @@ a.summaryPill:hover {
 }
 
 .metaCheckIcon {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .personalGoalsList {
@@ -2005,8 +2000,8 @@ a.summaryPill:hover {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2038,7 +2033,7 @@ a.summaryPill:hover {
 }
 
 .noteBullet {
-  color: #ffffff;
+  color: var(--color-text);
   font-weight: 700;
 }
 
@@ -2070,7 +2065,7 @@ a.summaryPill:hover {
 }
 
 .noteDeleteBtn:hover {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 /*  Empty state  */
@@ -2167,13 +2162,8 @@ a.summaryPill:hover {
 }
 
 .activeTabBtn .tabBadge {
-  background-color: #1e293b;
-  color: #ffffff;
-}
-
-:global([data-theme='dark']) .activeTabBtn .tabBadge {
-  background-color: #818cf8;
-  color: #111424;
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
 }
 
 .subSectionHeaderRow {
@@ -2236,7 +2226,7 @@ a.summaryPill:hover {
 }
 
 .habitCheckPill:hover {
-  border-color: #94a3b8;
+  border-color: var(--color-border-focus);
 }
 
 .habitCompleted {
@@ -2302,20 +2292,14 @@ a.summaryPill:hover {
 
 .timePillBtn:hover {
   color: var(--color-text);
-  border-color: #94a3b8;
+  border-color: var(--color-border-focus);
 }
 
 .activeTimePill {
-  background-color: #1e293b;
-  color: #ffffff;
-  border-color: #1e293b;
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
+  border-color: var(--color-accent);
   font-weight: 600;
-}
-
-:global([data-theme='dark']) .activeTimePill {
-  background-color: #818cf8;
-  color: #111424;
-  border-color: #818cf8;
 }
 
 .budgetStatsRow {
@@ -2792,9 +2776,9 @@ a.summaryPill:hover {
 }
 
 .reminderCheckBtn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #ffffff;
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .reminderDotMarker {
@@ -2824,9 +2808,9 @@ a.summaryPill:hover {
 .typeBadge_task,
 .typeBadge_idea,
 .typeBadge_project {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .reminderItemLink {

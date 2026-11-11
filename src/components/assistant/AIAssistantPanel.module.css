@@ -142,7 +142,8 @@
 
 .userBubble {
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
 }
 
 .assistantBubble {
@@ -206,9 +207,9 @@
 }
 
 .userActionBtn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
@@ -221,8 +222,7 @@
 }
 
 .userActionBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--color-border-focus);
 }
 
 .userActionBtn:disabled {
@@ -288,8 +288,8 @@
 
 .sendBtn {
   background: var(--color-accent);
-  color: white;
-  border: none;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-md, 6px);
   width: 36px;
   height: 36px;

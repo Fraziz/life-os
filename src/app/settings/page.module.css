@@ -680,12 +680,12 @@
 .btnVaultActionPrimary {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-text-inverse);
 }
 
 .btnVaultActionPrimary:hover {
   opacity: 0.92;
-  color: #ffffff;
+  color: var(--color-text-inverse);
 }
 
 .vaultList {
@@ -737,7 +737,7 @@
   font-size: 0.65rem;
   font-weight: 700;
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-text-inverse);
   padding: 1px 6px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
@@ -1224,10 +1224,10 @@
 }
 
 .domainPillActive {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: var(--pill-border, var(--color-accent, #818cf8));
-  color: #ffffff;
-  box-shadow: 0 0 0 1px var(--pill-border, var(--color-accent, #818cf8));
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-border-focus);
 }
 
 .domainKbd {

@@ -72,7 +72,7 @@
 
 .perspectiveTab.activeTab {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
 }
 

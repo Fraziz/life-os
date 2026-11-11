@@ -46,8 +46,8 @@
 
 .btnAdd {
   background: var(--color-accent);
-  color: #fff;
-  border: none;
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--text-xs);
@@ -57,6 +57,10 @@
   align-items: center;
   gap: 5px;
   transition: all var(--transition-fast);
+}
+
+.btnAdd:hover {
+  background: var(--color-accent-hover);
 }
 
 .btnAdd:hover {
@@ -449,9 +453,9 @@
 }
 
 .btnCheckIn.checked {
-  background: var(--color-success);
-  color: #07070e;
-  border-color: var(--color-success);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border-color: var(--color-accent);
 }
 
 /*  7-Day Matrix Dots  */

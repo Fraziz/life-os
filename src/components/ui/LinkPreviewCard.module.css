@@ -248,8 +248,8 @@
 }
 
 .actionBtnPrimary {
-  background: var(--color-accent, #2d3748);
-  color: #ffffff !important;
+  background: var(--color-accent);
+  color: var(--color-text-inverse) !important;
   border: 1px solid var(--color-accent);
 }
 

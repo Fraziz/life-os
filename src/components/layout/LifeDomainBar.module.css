@@ -38,9 +38,9 @@
 }
 
 .triggerActive {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #ffffff !important;
-  box-shadow: 0 0 0 1px #ffffff !important;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus) !important;
+  box-shadow: 0 0 0 1px var(--color-border-focus) !important;
 }
 
 .triggerLeft {
@@ -130,7 +130,7 @@
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
-  background-color: #ffffff !important;
+  background-color: var(--color-text) !important;
   box-shadow: none !important;
 }
 
@@ -206,8 +206,8 @@
 }
 
 .domainItemActive {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
   font-weight: 600;
 }
 

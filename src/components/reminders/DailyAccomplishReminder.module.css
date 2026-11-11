@@ -195,17 +195,14 @@
   justify-content: center;
   min-height: 36px;
 
-  background: var(--color-doitnow-accent, #d4a373);
-  color: #ffffff;
-}
-
-:global([data-theme='dark']) .submitBtn {
-  color: #1e1e24;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
   font-weight: 700;
+  border: 1px solid var(--color-accent);
 }
 
 .submitBtn:hover {
-  background: var(--color-doitnow-accent-hover, #e0b589);
+  background: var(--color-accent-hover);
 }
 
 .submitBtn:disabled {
