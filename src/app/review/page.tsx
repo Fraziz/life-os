@@ -185,9 +185,6 @@ export default function WeeklyReviewPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Weekly Review & Alignment</h1>
-          <p className={styles.subtitle}>
-            A structured, low-friction reflection protocol to celebrate tangible progress, realign deferred commitments without guilt, and establish priority focus.
-          </p>
         </div>
 
         <div className={styles.tabSwitch} role="tablist">

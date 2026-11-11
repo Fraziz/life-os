@@ -295,9 +295,6 @@ export default function GoalsPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Goals & Objectives</h1>
-          <p className={styles.subtitle}>
-            Concrete milestones on the path to your Dreams. Each goal has a defined horizon, priority, and clear human purpose.
-          </p>
         </div>
 
         <div className={styles.headerActions}>

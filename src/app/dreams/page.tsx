@@ -232,9 +232,6 @@ export default function DreamsPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Dreams &amp; Vision Board</h1>
-          <p className={styles.subtitle}>
-            Capture what you want your life to become. Dreams represent your long-term direction, visual aspirations, and core human motivations.
-          </p>
         </div>
 
         <div className={styles.headerActions}>

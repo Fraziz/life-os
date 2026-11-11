@@ -554,9 +554,6 @@ export default function SettingsPage() {
       {/* ── Formal Header ── */}
       <header className={styles.header}>
         <h1 className={styles.title}>System Settings &amp; Preferences</h1>
-        <p className={styles.subtitle}>
-          Manage your profile, display preferences, operational capacity, and integrations.
-        </p>
       </header>
 
       {/* ── Minimalist Navigation Toolbar & Category Pills ── */}

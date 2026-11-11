@@ -1016,13 +1016,6 @@ export default function FocusPage() {
                 </span>
               )}
             </div>
-            {!(activeDoc && focusViewMode === 'book') && (
-              <p className={styles.subtitle}>
-                {activeDoc && isDocVideoLesson(activeDoc)
-                  ? 'Hyperfocus timer, ADHD distraction parking lot, and video lesson studio.'
-                  : 'Hyperfocus timer, ADHD distraction parking lot, and in-session Book Reader with live highlights.'}
-              </p>
-            )}
           </div>
 
           <div className={styles.headerActions}>

@@ -85,9 +85,6 @@ export default function ProgressPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Meaningful Progress & Review</h1>
-          <p className={styles.subtitle}>
-            A clear, grounded reflection on your trajectory. Direct answers to where you are, what you have accomplished, and what remains ahead.
-          </p>
         </div>
 
         <Link

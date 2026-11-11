@@ -601,7 +601,6 @@ export default function TodayDashboardContent() {
           <div className={styles.heroOverlay}>
             <div className={styles.heroLeft}>
               <h1 className={styles.heroGreeting}>{greeting}, {userName}!</h1>
-              <p className={styles.heroSubtitle}>Same you. But a little closer to your goals.</p>
               {dateDisplay && (
                 <div className={styles.heroDateBadge}>
                   <Calendar size={13} />

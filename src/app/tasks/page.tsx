@@ -883,9 +883,6 @@ export default function TasksPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Tasks & Actions</h1>
-          <p className={styles.subtitle}>
-            Daily execution engine. Move tasks across Backlog, To Do, Doing, and Done with frictionless Quick Add and duration tracking.
-          </p>
         </div>
 
         <div className={styles.headerActions}>

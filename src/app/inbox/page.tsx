@@ -636,9 +636,6 @@ export default function InboxPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Idea Parking & Inbox</h1>
-          <p className={styles.subtitle}>
-            Capture ideas, thoughts, and flashes of inspiration in seconds with zero friction. Park ideas here first, organize into Tasks, Projects, Goals, or Dreams later.
-          </p>
         </div>
       </header>
 

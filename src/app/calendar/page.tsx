@@ -278,9 +278,6 @@ export default function CalendarPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Calendar & Planning</h1>
-          <p className={styles.subtitle}>
-            Deadlines (obligations) kept strictly separate from Scheduled Work (focus blocks) and Events (appointments).
-          </p>
         </div>
 
         <div className={styles.actionButtons} ref={addMenuRef}>

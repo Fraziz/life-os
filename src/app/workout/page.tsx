@@ -816,7 +816,6 @@ export default function WorkoutPage() {
           <Dumbbell size={22} strokeWidth={1.8} className={styles.pageIcon} />
           <div>
             <h1 className={styles.pageTitle}>Workout Tracker</h1>
-            <p className={styles.pageSubtitle}>Train. Track. Progress.</p>
           </div>
         </div>
         <button

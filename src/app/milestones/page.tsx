@@ -160,9 +160,6 @@ export default function MilestonesPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Milestones &amp; Checkpoints</h1>
-          <p className={styles.subtitle}>
-            Major checkpoints bridging Goals and actionable Projects. Keep your long-term roadmap calibrated with concrete progress gates.
-          </p>
         </div>
 
         <button className={styles.btnCreate} onClick={openCreateModal}>

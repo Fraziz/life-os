@@ -161,9 +161,6 @@ export default function HabitsPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Optional Habits &amp; Practice</h1>
-          <p className={styles.subtitle}>
-            Supportive, identity-driven daily and weekly practice. Consistency and total volume are celebrated — without punishing streaks.
-          </p>
         </div>
 
         <div className={styles.headerActions}>

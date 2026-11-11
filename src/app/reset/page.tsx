@@ -142,9 +142,6 @@ export default function ResetPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Reset My Day & Plan</h1>
-          <p className={styles.subtitle}>
-            Plans exist to serve you, not trap you. When life happens or tasks pile up, quickly reorganize your work with zero guilt.
-          </p>
         </div>
 
         <Link

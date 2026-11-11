@@ -951,9 +951,6 @@ export default function ProjectsPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Projects &amp; Execution</h1>
-          <p className={styles.subtitle}>
-            Real creative, technical, and life endeavors you are actively building.
-          </p>
         </div>
         <div className={styles.headerActions}>
           <button

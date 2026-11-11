@@ -143,9 +143,6 @@ export default function LifeAreasPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Life Areas</h1>
-          <p className={styles.subtitle}>
-            Organize your life into distinct areas. Create, rename, reorder, archive, or remove categories to match your personal structure.
-          </p>
         </div>
 
         <button className={styles.btnCreate} onClick={openCreateModal}>

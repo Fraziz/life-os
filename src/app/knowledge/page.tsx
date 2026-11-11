@@ -4305,9 +4305,6 @@ export default function KnowledgePage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Books &amp; Video Lessons</h1>
-          <p className={styles.subtitle}>
-            {booksCount} {booksCount === 1 ? 'book' : 'books'} · {videoLessonsCount} {videoLessonsCount === 1 ? 'video lesson' : 'video lessons'}
-          </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input

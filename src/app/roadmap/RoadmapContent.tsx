@@ -648,7 +648,6 @@ Keep language professional, crisp, and clean. No emojis.`;
           <div className={styles.topBarLeft}>
             <div className={styles.pageTitleGroup}>
               <span className={styles.pageTitle}>Roadmap</span>
-              <span className={styles.pageSubtitle}>Execution Flow</span>
             </div>
 
             {/* View Mode Switcher */}
