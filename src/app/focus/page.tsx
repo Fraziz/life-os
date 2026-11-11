@@ -2117,7 +2117,7 @@ export default function FocusPage() {
                   <button
                     type="button"
                     className={styles.btnSecondary}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px', fontSize: '12px', padding: '8px', background: 'rgba(124, 106, 255, 0.1)', border: '1px solid var(--color-accent)' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px', fontSize: '12px', padding: '8px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border-subtle)' }}
                     onClick={() => {
                       const newDoc = addDoc({
                         title: 'Focus Note — ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),

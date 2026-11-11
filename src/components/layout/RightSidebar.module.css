@@ -944,34 +944,14 @@
   line-height: 1.2;
 }
 
-.typeBadge_book {
-  color: #a594ff;
-  border-color: rgba(165, 148, 255, 0.25);
-  background: rgba(165, 148, 255, 0.08);
-}
-
-.typeBadge_video {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.25);
-  background: rgba(56, 189, 248, 0.08);
-}
-
-.typeBadge_task {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.25);
-  background: rgba(16, 185, 129, 0.08);
-}
-
-.typeBadge_idea {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.25);
-  background: rgba(245, 158, 11, 0.08);
-}
-
+.typeBadge_book,
+.typeBadge_video,
+.typeBadge_task,
+.typeBadge_idea,
 .typeBadge_project {
-  color: #c084fc;
-  border-color: rgba(192, 132, 252, 0.25);
-  background: rgba(192, 132, 252, 0.08);
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-hover, var(--color-surface-2));
 }
 
 .sidebarReminderSubtitle {

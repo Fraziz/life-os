@@ -118,8 +118,9 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-accent-light);
-  background: rgba(124, 106, 255, 0.12);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   padding: 2px 7px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
@@ -671,8 +672,8 @@
 
 /*  Left: Central Focus Card  */
 .focusCard {
-  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(124, 106, 255, 0.04) 100%);
-  border: 1px solid rgba(124, 106, 255, 0.25);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-2xl);
   padding: var(--space-8);
@@ -785,8 +786,9 @@
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-accent-light);
-  background: rgba(124, 106, 255, 0.15);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   padding: 3px 10px;
   border-radius: var(--radius-full);
   display: inline-flex;
@@ -1292,7 +1294,7 @@
 }
 
 .readingIcon {
-  color: var(--color-primary, #6366f1);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
@@ -1362,7 +1364,7 @@
 
 .bookReadingFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary, #6366f1), #22d3ee);
+  background: var(--color-accent);
   border-radius: 99px;
   transition: width 0.2s ease;
 }
@@ -1498,7 +1500,7 @@
 }
 
 .bookInlineParkInput:focus {
-  border-color: var(--color-primary, #6366f1);
+  border-color: var(--color-border-focus);
 }
 
 .bookInlineParkInput::placeholder {
@@ -1576,7 +1578,7 @@
 }
 
 .bookAmbientSelect:focus {
-  border-color: var(--color-primary, #6366f1);
+  border-color: var(--color-border-focus);
 }
 
 .bookAmbientVolWrap {
@@ -1593,7 +1595,7 @@
 
 .bookAmbientSlider {
   flex: 1;
-  accent-color: var(--color-primary, #6366f1);
+  accent-color: var(--color-accent);
   height: 4px;
   cursor: pointer;
 }
@@ -1970,9 +1972,9 @@
 
 /* 1-Click Magic Breakdown Button */
 .btnMagicBreakdown {
-  background: rgba(124, 106, 255, 0.15);
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent-light);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
@@ -2357,8 +2359,8 @@
 }
 
 .knowledgeTargetActive {
-  border-color: var(--color-accent);
-  background: rgba(124, 106, 255, 0.08);
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
 }
 
 /*  Focus Mode: Book Reader Layout & Sticky Header  */
@@ -3166,12 +3168,12 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  background: rgba(124, 106, 255, 0.15);
-  border: 1px solid rgba(124, 106, 255, 0.3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: var(--weight-semibold);
-  color: var(--color-accent-light);
+  color: var(--color-text-muted);
   letter-spacing: 0.04em;
   margin-left: auto;
 }
@@ -3226,7 +3228,7 @@
 
 .todayBarFill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(124, 106, 255, 0.7), rgba(124, 106, 255, 1));
+  background: var(--color-accent);
   border-radius: 99px;
   transition: width 0.5s ease;
 }
