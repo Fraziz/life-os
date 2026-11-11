@@ -10,6 +10,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
 import { extractTextFromFile, cleanAndFormatPastedText } from '@/utils/fileImporter';
+import { idbGet, idbSet } from '@/lib/idbStore';
 import type { KnowledgeDocument, DocumentStatus, DocumentCategory, DocumentReadStatus, QuizQuestionItem, ReadingLogItem } from '@/types';
 import {
   BookOpen,
@@ -1821,6 +1822,13 @@ export default function KnowledgePage() {
         fileUrl: fileBlobUrl,
         tags,
       });
+
+      // Persist raw uploaded file into IndexedDB so it can always be reopened or downloaded across browser sessions
+      if (typeof window !== 'undefined' && file) {
+        try {
+          await idbSet(`life_os_book_file_${newDoc.id}`, file);
+        } catch {}
+      }
 
       setFTitle(docTitle);
       setFContent(docContent);
@@ -5035,16 +5043,36 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <div className={styles.bookInfoRight}>
-                    {selectedDoc.fileUrl && (
-                      <a
-                        href={selectedDoc.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {(selectedDoc.fileName || selectedDoc.fileUrl) && (
+                      <button
+                        type="button"
                         className={styles.bookOpenFileLink}
-                        download={selectedDoc.fileName}
+                        onClick={async () => {
+                          // Try loading original binary file from IndexedDB
+                          try {
+                            const storedFile = await idbGet<File | Blob>(`life_os_book_file_${selectedDoc.id}`);
+                            if (storedFile) {
+                              const freshUrl = URL.createObjectURL(storedFile);
+                              const a = document.createElement('a');
+                              a.href = freshUrl;
+                              a.download = selectedDoc.fileName || `${selectedDoc.title}.txt`;
+                              a.click();
+                              setTimeout(() => URL.revokeObjectURL(freshUrl), 5000);
+                              return;
+                            }
+                          } catch {}
+                          // Fallback to text content download if original binary is not in IDB
+                          const blob = new Blob([selectedDoc.content || ''], { type: 'text/markdown;charset=utf-8' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = selectedDoc.fileName || `${selectedDoc.title}.md`;
+                          a.click();
+                          setTimeout(() => URL.revokeObjectURL(url), 5000);
+                        }}
                       >
                         <ExternalLink size={11} /> Open / Download File
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>

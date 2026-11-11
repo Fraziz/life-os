@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { wipeCloudKv } from '@/lib/cloudStore';
 import { wipeCloudBooks } from '@/lib/bookCloudSync';
+import { idbGet, idbSet } from '@/lib/idbStore';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
 import {
   User,
@@ -21,6 +22,7 @@ import {
   Moon,
   Leaf,
   Download,
+  Upload,
   Trash2,
   AlertOctagon,
   LogOut,
@@ -90,6 +92,111 @@ export default function SettingsPage() {
   const [passwordChangeBusy, setPasswordChangeBusy] = useState(false);
   const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+
+  // Backup & Portability state
+  const restoreFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+
+  const handleExportBackup = async () => {
+    if (typeof window === 'undefined') return;
+    const backup: Record<string, any> = {};
+
+    // 1. Collect all local storage keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_'))) {
+        try {
+          backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
+        } catch {
+          backup[key] = localStorage.getItem(key);
+        }
+      }
+    }
+
+    // 2. Also ensure complete knowledge books from IndexedDB are included if available
+    try {
+      const idbDocs = await idbGet('life_os_knowledge_docs_v1');
+      if (Array.isArray(idbDocs) && idbDocs.length > 0) {
+        backup['life_os_knowledge_docs_v1'] = idbDocs;
+      }
+    } catch {}
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setRestoreStatus('Reading backup file...');
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data || typeof data !== 'object') {
+        alert('Invalid backup file: Not a JSON object.');
+        setRestoreStatus(null);
+        return;
+      }
+
+      const keys = Object.keys(data).filter(
+        (k) => k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_')
+      );
+
+      if (keys.length === 0) {
+        alert('No recognized Life OS data found in this file.');
+        setRestoreStatus(null);
+        return;
+      }
+
+      const confirmRestore = confirm(
+        `Found ${keys.length} data categories to restore from "${file.name}". This will merge/update your workspace data. Continue?`
+      );
+      if (!confirmRestore) {
+        setRestoreStatus(null);
+        if (restoreFileInputRef.current) restoreFileInputRef.current.value = '';
+        return;
+      }
+
+      setRestoreStatus('Restoring data...');
+      for (const key of keys) {
+        const val = data[key];
+        const valStr = typeof val === 'string' ? val : JSON.stringify(val);
+        try {
+          localStorage.setItem(key, valStr);
+        } catch (err) {
+          console.warn(`localStorage setItem failed for ${key}:`, err);
+        }
+
+        // If it is knowledge docs, also persist into IndexedDB for safety
+        if (key === 'life_os_knowledge_docs_v1' && Array.isArray(val)) {
+          void idbSet('life_os_knowledge_docs_v1', val);
+          void idbSet('life_os_knowledge_docs_backup', val);
+        }
+      }
+
+      // Notify all active contexts that data was updated
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+      }
+
+      setRestoreStatus(`Successfully restored ${keys.length} categories!`);
+      alert(`Success! Restored ${keys.length} data categories. The page will now reload.`);
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to import backup:', err);
+      alert('Could not read or parse this backup file. Please ensure it is a valid JSON file.');
+      setRestoreStatus(null);
+    } finally {
+      if (restoreFileInputRef.current) restoreFileInputRef.current.value = '';
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2820,37 +2927,50 @@ export default function SettingsPage() {
                       Complete Snapshot Export (.json)
                     </span>
                     <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                      Download all Dreams, Goals, Projects, Tasks, Notes, and Settings in a portable standard format.
+                      Download all Dreams, Goals, Projects, Tasks, Workouts, Notes, and Settings in a portable standard format.
                     </span>
                   </div>
 
                   <button
                     type="button"
                     className={styles.btnSecondary}
-                    onClick={() => {
-                      if (typeof window === 'undefined') return;
-                      const backup: Record<string, any> = {};
-                      for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        if (key && (key.startsWith('life_os_') || key.startsWith('lifeos_'))) {
-                          try {
-                            backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
-                          } catch {
-                            backup[key] = localStorage.getItem(key);
-                          }
-                        }
-                      }
-                      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
+                    onClick={() => void handleExportBackup()}
                   >
                     <Download size={13} style={{ marginRight: 6 }} />
                     Export Data
+                  </button>
+                </div>
+
+                <div className={styles.backupCard}>
+                  <div>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                      Restore / Import Snapshot (.json)
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                      Upload and restore a previously exported JSON backup file into your workspace.
+                    </span>
+                    {restoreStatus && (
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-success)', marginTop: 4 }}>
+                        {restoreStatus}
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    ref={restoreFileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    style={{ display: 'none' }}
+                    onChange={handleImportBackup}
+                  />
+
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={() => restoreFileInputRef.current?.click()}
+                  >
+                    <Upload size={13} style={{ marginRight: 6 }} />
+                    Import Backup
                   </button>
                 </div>
 

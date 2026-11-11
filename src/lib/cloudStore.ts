@@ -19,7 +19,9 @@ function kvRef(uid: string, key: string) {
 }
 
 export function isManagedKvKey(key: string): boolean {
-  if (!key || !key.startsWith(PREFIX)) return false;
+  if (!key) return false;
+  const isPrefixMatch = key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_');
+  if (!isPrefixMatch) return false;
   if (key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') return false;
   return true;
 }
@@ -173,7 +175,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
         const k = localStorage.key(i);
         if (
           k &&
-          k.startsWith(PREFIX) &&
+          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_')) &&
           k !== 'life_os_sidebar_collapsed' &&
           k !== 'life_os_knowledge_docs_v1' &&
           k !== 'life_os_knowledge_docs_backup'
