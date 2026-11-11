@@ -33,7 +33,6 @@ import {
   Folder,
 } from 'lucide-react';
 
-import { isDocVideoLesson } from '@/utils/videoLesson';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -73,7 +72,7 @@ export default function TodayDashboardContent() {
   const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
-  const { docs, addDoc, toggleDocReminder } = useKnowledge();
+  const { docs, addDoc } = useKnowledge();
 
   const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
@@ -338,23 +337,7 @@ export default function TodayDashboardContent() {
         });
       });
 
-    // 2. Books & Videos marked as reminder
-    docs
-      .filter((d) => d.isReminder && d.status !== 'archived')
-      .forEach((d) => {
-        const isVideo = isDocVideoLesson(d);
-        list.push({
-          id: d.id,
-          type: isVideo ? 'video' : 'book',
-          typeLabel: isVideo ? 'VIDEO' : 'BOOK',
-          title: d.title,
-          subtitle: isVideo ? 'Video Lesson' : (d.category || 'Reading Material'),
-          href: isVideo ? '/focus' : '/knowledge',
-          onClearReminder: () => toggleDocReminder(d.id),
-        });
-      });
-
-    // 3. Idea Parking thoughts marked as reminder
+    // 2. Idea Parking thoughts marked as reminder
     (activeReminders || [])
       .filter((r) => !r.isApplied && r.status === 'inbox')
       .forEach((r) => {
@@ -386,7 +369,7 @@ export default function TodayDashboardContent() {
       });
 
     return list;
-  }, [tasks, docs, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleDocReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+  }, [tasks, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
 
   const [addingTask, setAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
