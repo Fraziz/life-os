@@ -94,9 +94,9 @@ const FONT_COLORS = [
 ];
 
 const SOUNDSCAPES: { id: AmbientSoundType; title: string; subtitle: string; icon: string }[] = [
-  { id: 'gamma40', title: '40Hz Gamma', subtitle: 'Hyperfocus', icon: '\u{1F9E0}' },
-  { id: 'alpha10', title: '10Hz Alpha', subtitle: 'Flow State', icon: '\u{1F9D8}' },
-  { id: 'pink',    title: 'Pink Noise', subtitle: 'ADHD Shield', icon: '\u{1F6E1}' },
+  { id: 'gamma40', title: '40Hz Gamma', subtitle: 'Hyperfocus', icon: '🧠' },
+  { id: 'alpha10', title: '10Hz Alpha', subtitle: 'Deep Focus', icon: '🧘' },
+  { id: 'pink',    title: 'Pink Noise', subtitle: 'ADHD Shield', icon: '🛡️' },
   { id: 'brown',   title: 'Deep Brown', subtitle: 'Heavy Focus', icon: '\u{1F3A7}' },
   { id: 'white',   title: 'White Noise', subtitle: 'Sound Mask', icon: '\u{1F4FB}' },
   { id: 'rain',    title: 'Gentle Rain', subtitle: 'Calm Rainfall', icon: '\u{1F327}' },
@@ -192,6 +192,13 @@ export default function FocusPage() {
       return next;
     });
   };
+
+  // Guard against any lingering 'flow' mode from previous sessions
+  useEffect(() => {
+    if (mode === 'flow') {
+      setTimerMode('pomodoro');
+    }
+  }, [mode, setTimerMode]);
 
   // Reading scroll progress tracker
   const [readingScrollPercent, setReadingScrollPercent] = useState<number>(0);
@@ -957,7 +964,7 @@ export default function FocusPage() {
               type="button"
               className={`${styles.zenParkTrigger} ${zenParkOpen ? styles.zenParkTriggerActive : ''}`}
               onClick={() => setZenParkOpen((prev) => !prev)}
-              title="Park an ADHD thought without breaking flow"
+              title="Park an ADHD thought without breaking focus"
             >
               {zenParkOpen ? 'Close Park' : 'Park Thought'}
             </button>
@@ -1246,12 +1253,6 @@ export default function FocusPage() {
                 >
                   Long Break
                 </button>
-                <button
-                  className={`${styles.modeTab} ${mode === 'flow' ? styles.activeMode : ''}`}
-                  onClick={() => setTimerMode('flow')}
-                >
-                  Flow
-                </button>
               </div>
 
               {/* Formal Digital Timer Display Card */}
@@ -1440,7 +1441,7 @@ export default function FocusPage() {
                 </button>
               </div>
 
-              {/* Single-row Mode Segmented Control: 4 segments, no wrap */}
+              {/* Single-row Mode Segmented Control: 3 segments, no wrap */}
               <div className={styles.bookSegmentedTabs}>
                 <button
                   type="button"
@@ -1462,13 +1463,6 @@ export default function FocusPage() {
                   onClick={() => setTimerMode('long_break')}
                 >
                   Long
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.bookSegmentTab} ${mode === 'flow' ? styles.bookSegmentTabActive : ''}`}
-                  onClick={() => setTimerMode('flow')}
-                >
-                  Flow
                 </button>
               </div>
 

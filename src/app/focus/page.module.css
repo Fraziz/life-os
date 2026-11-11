@@ -1090,10 +1090,10 @@
   background: var(--color-surface-2);
 }
 
-/* Single-row Segmented Tabs: 4 segments, no wrap */
+/* Single-row Segmented Tabs: 3 segments, no wrap */
 .bookSegmentedTabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
