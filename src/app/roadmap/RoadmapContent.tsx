@@ -31,23 +31,23 @@ const CANVAS_PAD = 64;
 
 const AREA_COLORS: Record<string, string> = {
   'area-creative': '#ff6b6b',
-  'area-career':   '#7c6fff',
-  'area-money':    '#f5a623',
+  'area-career': '#7c6fff',
+  'area-money': '#f5a623',
   'area-learning': '#4db8ff',
-  'area-health':   '#22d3a5',
-  'area-social':   '#ff79c6',
-  'area-mindset':  '#bd93f9',
-  'area-family':   '#ffb86c',
+  'area-health': '#22d3a5',
+  'area-social': '#ff79c6',
+  'area-mindset': '#bd93f9',
+  'area-family': '#ffb86c',
 };
 const AREA_LABELS: Record<string, string> = {
   'area-creative': 'Creative',
-  'area-career':   'Career',
-  'area-money':    'Finance',
+  'area-career': 'Career',
+  'area-money': 'Finance',
   'area-learning': 'Learning',
-  'area-health':   'Health',
-  'area-social':   'Social',
-  'area-mindset':  'Mindset',
-  'area-family':   'Family',
+  'area-health': 'Health',
+  'area-social': 'Social',
+  'area-mindset': 'Mindset',
+  'area-family': 'Family',
 };
 const DEFAULT_COLOR = '#7c6fff';
 
@@ -593,7 +593,7 @@ Keep language professional, crisp, and clean. No emojis.`;
         const res = await executeOptionalAICall(prompt, systemPrompt, settings.aiSettings);
         text = res.text;
       }
-      
+
       if (text) {
         setAuditResult(text);
       } else {
@@ -1116,28 +1116,28 @@ interface NodeCardProps {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  dream:   'Dream',
-  goal:    'Goal',
+  dream: 'Dream',
+  goal: 'Goal',
   project: 'Project',
-  task:    'Task',
+  task: 'Task',
 };
 const STATUS_COLORS: Record<string, string> = {
   'in-progress': '#22d3a5',
-  'active':      '#22d3a5',
-  'dream':       '#7c6fff',
-  'planning':    '#4db8ff',
+  'active': '#22d3a5',
+  'dream': '#7c6fff',
+  'planning': '#4db8ff',
   'not-started': '#8888a8',
-  'completed':   '#22d3a5',
-  'done':        '#22d3a5',
-  'todo':        '#8888a8',
+  'completed': '#22d3a5',
+  'done': '#22d3a5',
+  'todo': '#8888a8',
 };
 
 function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeId, onHover, onFocus, hasMoved }: NodeCardProps) {
   const typeHrefs: Record<string, string> = {
-    dream:   '/dreams',
-    goal:    '/goals',
+    dream: '/dreams',
+    goal: '/goals',
     project: '/projects',
-    task:    '/tasks',
+    task: '/tasks',
   };
 
   const dimmed = isFocused === false;
