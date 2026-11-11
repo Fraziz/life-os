@@ -27,7 +27,6 @@ import {
   RotateCcw,
   TrendingUp,
   Zap,
-  Sprout,
   Sparkles,
 } from 'lucide-react';
 
@@ -50,7 +49,6 @@ const NAV_ICON_MAP: Record<string, React.ComponentType<{ size?: number; classNam
   dreams: Cloud,
   goals: Target,
   projects: Folder,
-  growth: Sprout,
   knowledge: BookOpen,
   habits: Repeat,
   workout: Dumbbell,
@@ -105,12 +103,7 @@ export default function Sidebar({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const displayedSections = settings.simpleMode
-    ? NAV_SECTIONS.filter((s) => s.id === 'daily' || s.id === 'growth')
-        .map((s) =>
-          s.id === 'growth'
-            ? { ...s, items: s.items.filter((item) => item.id === 'growth-system') }
-            : s
-        )
+    ? NAV_SECTIONS.filter((s) => s.id === 'daily')
     : NAV_SECTIONS;
 
   // An expanded sidebar is active when either mobile drawer is open, pinned open, or hovered

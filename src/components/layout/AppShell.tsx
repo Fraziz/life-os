@@ -19,7 +19,6 @@ import { InboxProvider } from '@/context/InboxContext';
 import { CalendarProvider } from '@/context/CalendarContext';
 import { HabitProvider } from '@/context/HabitContext';
 import { ReviewProvider } from '@/context/ReviewContext';
-import { GrowthProvider } from '@/context/GrowthContext';
 import { KnowledgeProvider } from '@/context/KnowledgeContext';
 import { StudySessionProvider } from '@/context/StudySessionContext';
 import { QuickNotesProvider } from '@/context/QuickNotesContext';
@@ -475,8 +474,7 @@ function withAppProviders(content: React.ReactNode) {
                             <CalendarProvider>
                               <HabitProvider>
                                 <ReviewProvider>
-                                  <GrowthProvider>
-                                    <QuickNotesProvider>
+                                  <QuickNotesProvider>
                                     <ReminderProvider>
                                       <SearchProvider>
                                         <UndoProvider>
@@ -489,8 +487,7 @@ function withAppProviders(content: React.ReactNode) {
                                       </SearchProvider>
                                     </ReminderProvider>
                                   </QuickNotesProvider>
-                                </GrowthProvider>
-                              </ReviewProvider>
+                                </ReviewProvider>
                               </HabitProvider>
                             </CalendarProvider>
                           </InboxProvider>

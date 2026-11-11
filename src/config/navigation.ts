@@ -85,13 +85,6 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Growth',
     items: [
       {
-        id: 'growth-system',
-        label: 'Growth System',
-        href: '/growth',
-        icon: 'growth',
-        isAvailable: true,
-      },
-      {
         id: 'knowledge',
         label: 'Books & Lessons',
         href: '/knowledge',
