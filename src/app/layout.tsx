@@ -26,11 +26,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=2', sizes: 'any' },
+      { url: '/favicon-32x32.png?v=2', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png?v=2', sizes: '16x16', type: 'image/png' },
     ],
-    apple: '/icon.svg',
-    shortcut: '/icon.svg',
+    apple: '/apple-touch-icon.png?v=2',
+    shortcut: '/icon.svg?v=2',
   },
 };
 

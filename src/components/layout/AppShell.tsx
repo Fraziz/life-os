@@ -255,7 +255,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   // Synchronize browser tab logo (favicon) with active brand/workspace logo in real time
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const faviconHref = settings?.customLogoUrl || '/icon.svg';
+    const faviconHref = settings?.customLogoUrl || '/icon.svg?v=2';
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');
@@ -263,11 +263,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       document.head.appendChild(link);
     }
     link.href = faviconHref;
-    if (faviconHref.endsWith('.svg')) {
+    if (faviconHref.includes('.svg')) {
       link.type = 'image/svg+xml';
-    } else if (faviconHref.startsWith('data:image/png') || faviconHref.endsWith('.png')) {
+    } else if (faviconHref.startsWith('data:image/png') || faviconHref.includes('.png')) {
       link.type = 'image/png';
-    } else if (faviconHref.startsWith('data:image/jpeg') || faviconHref.endsWith('.jpg')) {
+    } else if (faviconHref.startsWith('data:image/jpeg') || faviconHref.includes('.jpg')) {
       link.type = 'image/jpeg';
     }
   }, [settings?.customLogoUrl]);
