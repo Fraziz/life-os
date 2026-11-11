@@ -668,18 +668,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Active Devices & Session Management */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
-                  Active Sessions &amp; Devices
-                </span>
-                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                  Devices currently signed in to your account. Sign out any device you don&apos;t recognize.
-                </span>
-              </div>
-
-              {user?.uid && <ActiveDevices uid={user.uid} />}
-            </div>
+            {user?.uid && <ActiveDevices uid={user.uid} />}
 
             {/* ── Security & Change Password ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-lg, 10px)', border: '1px solid var(--color-border)' }}>

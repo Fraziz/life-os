@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Monitor, Smartphone, Tablet, ChevronDown } from 'lucide-react';
 import {
   ACTIVE_NOW_WINDOW_MS,
   formatLastActive,
@@ -39,6 +39,23 @@ export default function ActiveDevices({ uid }: ActiveDevicesProps) {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [currentId] = useState(() => getDeviceId());
+  const [isExpanded, setIsExpanded] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('life_os_devices_expanded');
+      return saved !== null ? saved === 'true' : false;
+    }
+    return false;
+  });
+
+  const toggleExpand = () => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('life_os_devices_expanded', String(next));
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const unsub = subscribeDeviceSessions(
@@ -80,88 +97,117 @@ export default function ActiveDevices({ uid }: ActiveDevicesProps) {
       })
     : null;
 
-  if (error && !ordered) {
-    return <div className={styles.message}>{error}</div>;
-  }
-
-  if (!ordered) {
-    return (
-      <ul className={styles.list} aria-busy="true">
-        {[0, 1].map((i) => (
-          <li key={i} className={`${styles.row} ${styles.skeleton}`}>
-            <span className={styles.iconBox} />
-            <span className={styles.skelLines}>
-              <span className={styles.skelLine} />
-              <span className={`${styles.skelLine} ${styles.skelShort}`} />
-            </span>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (ordered.length === 0) {
-    return <div className={styles.message}>No signed-in devices found yet.</div>;
-  }
-
   return (
-    <>
-      <div className={styles.count}>
-        {ordered.length} {ordered.length === 1 ? 'device' : 'devices'} signed in to this account
-      </div>
-      <ul className={styles.list}>
-        {ordered.map((s) => {
-          const isCurrent = s.deviceId === currentId;
-          const Icon = DEVICE_ICONS[s.deviceType] || Monitor;
-          const activeNow = isCurrent || now - (s.lastActive || 0) < ACTIVE_NOW_WINDOW_MS;
-          const title = s.model ? `${s.model} · ${s.os}` : s.os;
+    <div className={styles.card}>
+      <button
+        type="button"
+        className={styles.headerBtn}
+        onClick={toggleExpand}
+        aria-expanded={isExpanded}
+        title={isExpanded ? 'Collapse active devices' : 'Expand active devices'}
+      >
+        <div className={styles.headerLeft}>
+          <span className={styles.headerTitle}>Active Sessions &amp; Devices</span>
+          <span className={styles.headerDesc}>
+            Devices currently signed in to your account. Sign out any device you don&apos;t recognize.
+          </span>
+        </div>
 
-          return (
-            <li key={s.deviceId} className={`${styles.row} ${isCurrent ? styles.current : ''}`}>
-              <span className={styles.iconBox} aria-hidden="true">
-                <Icon size={18} strokeWidth={1.7} />
-              </span>
+        <div className={styles.headerRight}>
+          {ordered !== null ? (
+            <span className={styles.countBadge}>
+              {ordered.length} {ordered.length === 1 ? 'device' : 'devices'}
+            </span>
+          ) : (
+            <span className={styles.countBadge}>Loading...</span>
+          )}
+          <span className={styles.collapseLabel}>
+            {isExpanded ? 'Collapse' : 'Expand'}
+          </span>
+          <ChevronDown
+            size={16}
+            className={`${styles.chevron} ${isExpanded ? styles.chevronOpen : ''}`}
+          />
+        </div>
+      </button>
 
-              <div className={styles.info}>
-                <div className={styles.titleRow}>
-                  <span className={styles.title}>{title}</span>
-                  {isCurrent && <span className={styles.badge}>This device</span>}
-                </div>
-                <div className={styles.meta}>
-                  <span>{s.browser}</span>
-                  {s.location && (
-                    <>
-                      <span className={styles.dot} aria-hidden="true">·</span>
-                      <span>{s.location}</span>
-                    </>
-                  )}
-                  <span className={styles.dot} aria-hidden="true">·</span>
-                  <span className={activeNow ? styles.activeNow : undefined}>
-                    {activeNow && <span className={styles.pulse} aria-hidden="true" />}
-                    {isCurrent ? 'Active now' : formatLastActive(s.lastActive, now)}
+      {isExpanded && (
+        <div className={styles.body}>
+          {error && !ordered ? (
+            <div className={styles.message}>{error}</div>
+          ) : !ordered ? (
+            <ul className={styles.list} aria-busy="true">
+              {[0, 1].map((i) => (
+                <li key={i} className={`${styles.row} ${styles.skeleton}`}>
+                  <span className={styles.iconBox} />
+                  <span className={styles.skelLines}>
+                    <span className={styles.skelLine} />
+                    <span className={`${styles.skelLine} ${styles.skelShort}`} />
                   </span>
-                </div>
-                {s.signedInAt > 0 && (
-                  <div className={styles.signedIn}>Signed in {formatSignedIn(s.signedInAt)}</div>
-                )}
-              </div>
+                </li>
+              ))}
+            </ul>
+          ) : ordered.length === 0 ? (
+            <div className={styles.message}>No signed-in devices found yet.</div>
+          ) : (
+            <>
+              <ul className={styles.list}>
+                {ordered.map((s) => {
+                  const isCurrent = s.deviceId === currentId;
+                  const Icon = DEVICE_ICONS[s.deviceType] || Monitor;
+                  const activeNow = isCurrent || now - (s.lastActive || 0) < ACTIVE_NOW_WINDOW_MS;
+                  const title = s.model ? `${s.model} · ${s.os}` : s.os;
 
-              {!isCurrent && (
-                <button
-                  type="button"
-                  className={styles.revokeBtn}
-                  onClick={() => handleRevoke(s)}
-                  disabled={revoking === s.deviceId}
-                  id={`revoke-device-${s.deviceId}`}
-                >
-                  {revoking === s.deviceId ? 'Signing out…' : 'Sign out'}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {error && <div className={styles.message}>{error}</div>}
-    </>
+                  return (
+                    <li key={s.deviceId} className={`${styles.row} ${isCurrent ? styles.current : ''}`}>
+                      <span className={styles.iconBox} aria-hidden="true">
+                        <Icon size={18} strokeWidth={1.7} />
+                      </span>
+
+                      <div className={styles.info}>
+                        <div className={styles.titleRow}>
+                          <span className={styles.title}>{title}</span>
+                          {isCurrent && <span className={styles.badge}>This device</span>}
+                        </div>
+                        <div className={styles.meta}>
+                          <span>{s.browser}</span>
+                          {s.location && (
+                            <>
+                              <span className={styles.dot} aria-hidden="true">·</span>
+                              <span>{s.location}</span>
+                            </>
+                          )}
+                          <span className={styles.dot} aria-hidden="true">·</span>
+                          <span className={activeNow ? styles.activeNow : undefined}>
+                            {activeNow && <span className={styles.pulse} aria-hidden="true" />}
+                            {isCurrent ? 'Active now' : formatLastActive(s.lastActive, now)}
+                          </span>
+                        </div>
+                        {s.signedInAt > 0 && (
+                          <div className={styles.signedIn}>Signed in {formatSignedIn(s.signedInAt)}</div>
+                        )}
+                      </div>
+
+                      {!isCurrent && (
+                        <button
+                          type="button"
+                          className={styles.revokeBtn}
+                          onClick={() => handleRevoke(s)}
+                          disabled={revoking === s.deviceId}
+                          id={`revoke-device-${s.deviceId}`}
+                        >
+                          {revoking === s.deviceId ? 'Signing out…' : 'Sign out'}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {error && <div className={styles.message}>{error}</div>}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
