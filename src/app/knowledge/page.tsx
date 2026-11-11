@@ -806,6 +806,8 @@ export default function KnowledgePage() {
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; currentName: string; percent: number } | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isAiFormatting, setIsAiFormatting] = useState(false);
   const [activeHighlightColor, setActiveHighlightColor] = useState('yellow');
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -1789,70 +1791,130 @@ export default function KnowledgePage() {
     };
   }, []);
 
-  // Automatically import and extract text from uploaded PDF or Document
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
+  // Automatically import and extract text from uploaded PDF, EPUB, Word, or Text books (Single or Bulk)
+  const processBookFiles = async (files: File[]) => {
+    const supportedExts = ['pdf', 'epub', 'docx', 'doc', 'txt', 'md', 'markdown', 'rtf', 'mobi', 'xlsx', 'xls', 'csv'];
+    const validFiles = files.filter((f) => {
+      const ext = f.name.split('.').pop()?.toLowerCase() || '';
+      return (
+        supportedExts.includes(ext) ||
+        f.type.includes('pdf') ||
+        f.type.includes('epub') ||
+        f.type.includes('word') ||
+        f.type.includes('text') ||
+        f.type.includes('spreadsheet')
+      );
+    });
+
+    if (validFiles.length === 0) {
+      alert('Please select valid book files (PDF, EPUB, Word, Markdown, or Text).');
+      return;
+    }
+
     setIsImporting(true);
-    setImportStatus(`Extracting text from ${file.name}...`);
-    try {
-      const result = await extractTextFromFile(file);
-      const isPdf = file.name.toLowerCase().endsWith('.pdf');
-      const isEpub = file.name.toLowerCase().endsWith('.epub');
-      const tags = isPdf ? ['book', 'pdf', 'reading'] : isEpub ? ['book', 'epub', 'reading'] : ['book', 'reading'];
-      
-      const docTitle = (result.title || file.name).replace(/\.[^/.]+$/, '');
-      const docContent = result.content || '';
+    let successCount = 0;
+    let firstNewDocId: string | null = null;
+    let firstNewDocTitle = '';
+    let firstNewDocContent = '';
 
-      const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
-      const fileSizeStr = file.size > 1024 * 1024 ? `${fileSizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
-
-      let fileBlobUrl = '';
-      try {
-        fileBlobUrl = URL.createObjectURL(file);
-      } catch {}
-
-      const newDoc = addDoc({
-        title: docTitle,
-        content: docContent,
-        status: 'active',
-        category: 'learning',
-        docType: 'document',
-        readStatus: 'reading',
-        fileName: file.name,
-        fileSize: fileSizeStr,
-        fileType: isPdf ? 'pdf' : isEpub ? 'epub' : 'document',
-        fileUrl: fileBlobUrl,
-        tags,
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const percent = Math.round(((i + 1) / validFiles.length) * 100);
+      setImportProgress({
+        current: i + 1,
+        total: validFiles.length,
+        currentName: file.name,
+        percent,
       });
+      setImportStatus(`Importing (${i + 1}/${validFiles.length}): ${file.name}`);
 
-      // Persist raw uploaded file into IndexedDB so it can always be reopened or downloaded across browser sessions
-      if (typeof window !== 'undefined' && file) {
+      try {
+        const result = await extractTextFromFile(file);
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        const isEpub = file.name.toLowerCase().endsWith('.epub');
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'document';
+        const tags = isPdf
+          ? ['book', 'pdf', 'reading']
+          : isEpub
+          ? ['book', 'epub', 'reading']
+          : ['book', ext, 'reading'];
+
+        const docTitle = (result.title || file.name).replace(/\.[^/.]+$/, '');
+        const docContent = result.content || '';
+
+        const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        const fileSizeStr = file.size > 1024 * 1024 ? `${fileSizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+        let fileBlobUrl = '';
         try {
-          await idbSet(`life_os_book_file_${newDoc.id}`, file);
+          fileBlobUrl = URL.createObjectURL(file);
         } catch {}
+
+        const newDoc = addDoc({
+          title: docTitle,
+          content: docContent,
+          status: 'active',
+          category: 'learning',
+          docType: 'document',
+          readStatus: 'reading',
+          fileName: file.name,
+          fileSize: fileSizeStr,
+          fileType: isPdf ? 'pdf' : isEpub ? 'epub' : 'document',
+          fileUrl: fileBlobUrl,
+          tags,
+        });
+
+        // Persist raw uploaded file into IndexedDB so it can always be reopened or downloaded across browser sessions
+        if (typeof window !== 'undefined' && file) {
+          try {
+            await idbSet(`life_os_book_file_${newDoc.id}`, file);
+          } catch {}
+        }
+
+        if (successCount === 0) {
+          firstNewDocId = newDoc.id;
+          firstNewDocTitle = docTitle;
+          firstNewDocContent = docContent;
+        }
+        successCount++;
+      } catch (err) {
+        console.error(`Import failed for ${file.name}:`, err);
       }
 
-      setFTitle(docTitle);
-      setFContent(docContent);
-      setSelectedId(newDoc.id);
+      // Small async yield to keep UI responsive and allow React to paint the progress bar
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
+    setIsImporting(false);
+    setImportProgress(null);
+    setImportStatus(null);
+    if (importFileRef.current) importFileRef.current.value = '';
+
+    if (firstNewDocId) {
+      setSelectedId(firstNewDocId);
+      setFTitle(firstNewDocTitle);
+      setFContent(firstNewDocContent);
       setIsCreating(false);
       setEditorMode('book');
       setMobileTab('editor');
       setAiSummaryResult(null);
       setAiQuizResult(null);
-      setImportStatus(null);
-      setPasteToast(`Imported "${docTitle}" successfully into Book mode!`);
-      setTimeout(() => setPasteToast(null), 3500);
-    } catch (err) {
-      console.error('Import failed:', err);
-      alert('Could not extract text from this file. Please make sure the file contains readable text.');
-      setImportStatus(null);
-    } finally {
-      setIsImporting(false);
-      if (importFileRef.current) importFileRef.current.value = '';
+
+      if (successCount === 1) {
+        setPasteToast(`Imported "${firstNewDocTitle}" successfully into Book mode!`);
+      } else {
+        setPasteToast(`Successfully imported ${successCount} books into your library!`);
+      }
+      setTimeout(() => setPasteToast(null), 4000);
+    } else {
+      alert('Could not extract readable text from the selected files.');
     }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await processBookFiles(Array.from(files));
   };
 
   // Helper to format raw text and create/display as Book
@@ -4304,7 +4366,29 @@ export default function KnowledgePage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div
+      className={`${styles.page} ${isDraggingOver ? styles.pageDraggingOver : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isDraggingOver) setIsDraggingOver(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          setIsDraggingOver(false);
+        }
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(false);
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          void processBookFiles(Array.from(e.dataTransfer.files));
+        }
+      }}
+    >
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
@@ -4315,7 +4399,8 @@ export default function KnowledgePage() {
             type="file"
             ref={importFileRef}
             style={{ display: 'none' }}
-            accept=".pdf,.epub,.txt,.md,.doc,.docx"
+            accept=".pdf,.epub,.txt,.md,.markdown,.doc,.docx,.rtf,.mobi"
+            multiple
             onChange={handleImportFile}
           />
           <div className={styles.actionMenuWrapper} ref={actionMenuRef}>
@@ -4383,8 +4468,8 @@ export default function KnowledgePage() {
                     <FileUp size={15} />
                   </div>
                   <div className={styles.actionMenuText}>
-                    <span className={styles.actionMenuLabel}>{isImporting ? (importStatus || 'Importing Book...') : 'Import Book File'}</span>
-                    <span className={styles.actionMenuHint}>PDF, EPUB, Word (.docx), or Text book files</span>
+                    <span className={styles.actionMenuLabel}>{isImporting ? (importStatus || 'Importing Books...') : 'Import Books (Single or Bulk)'}</span>
+                    <span className={styles.actionMenuHint}>Select multiple PDF, EPUB, Word (.docx), or Text books</span>
                   </div>
                 </button>
 
@@ -4660,8 +4745,9 @@ export default function KnowledgePage() {
                         type="button"
                         className={styles.emptyAddBtn}
                         onClick={() => importFileRef.current?.click()}
+                        disabled={isImporting}
                       >
-                        <FileUp size={13} /> Import File
+                        <FileUp size={13} /> Import Books
                       </button>
                       <button
                         type="button"
@@ -4850,8 +4936,9 @@ export default function KnowledgePage() {
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => importFileRef.current?.click()}
                   disabled={isImporting}
+                  title="Import single or multiple books (PDF, EPUB, Word, Markdown, Text)"
                 >
-                  <FileUp size={14} /> Import Book File
+                  <FileUp size={14} /> Import Books
                 </button>
                 <button className={styles.btnCreate} onClick={handleNewDoc}>
                   <Plus size={15} /> New Book
@@ -6430,6 +6517,45 @@ export default function KnowledgePage() {
         onArchive={handleBatchArchiveDocs}
         archiveLabel="Archive"
       />
+
+      {/* ── Drag and Drop Overlay ── */}
+      {isDraggingOver && (
+        <div className={styles.dragDropOverlay}>
+          <div className={styles.dragDropCard}>
+            <FileUp size={36} className={styles.dragDropIcon} />
+            <span className={styles.dragDropTitle}>Drop books here to import</span>
+            <span className={styles.dragDropSubtitle}>
+              Release to import single or multiple books &bull; PDF, EPUB, Word (.docx), Markdown, or Text
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Multi-Book Batch Import Progress ── */}
+      {importProgress && (
+        <aside className={styles.importProgressOverlay} role="status" aria-live="polite">
+          <div className={styles.importProgressCard}>
+            <div className={styles.importProgressHeader}>
+              <span className={styles.importProgressTitle}>Importing Books</span>
+              <span className={styles.importProgressCount}>
+                {importProgress.current} / {importProgress.total} ({importProgress.percent}%)
+              </span>
+            </div>
+            <div className={styles.importProgressFile} title={importProgress.currentName}>
+              {importProgress.currentName}
+            </div>
+            <div className={styles.importProgressBarTrack}>
+              <div
+                className={styles.importProgressBarFill}
+                style={{ width: `${importProgress.percent}%` }}
+              />
+            </div>
+            <span className={styles.importProgressTip}>
+              Extracting chapters and saving to offline book library...
+            </span>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

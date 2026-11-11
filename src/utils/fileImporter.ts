@@ -6,6 +6,7 @@
 
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 
 /**
  * Converts an HTML <table> element into clean, aligned Markdown table syntax.
@@ -382,6 +383,129 @@ function extractTextFromBinaryDoc(buffer: ArrayBuffer): string {
 /**
  * Clean and structure extracted text into readable markdown with clean headings & spacing.
  */
+/**
+ * Extract structured text and chapters from an EPUB e-book using JSZip.
+ */
+export async function extractTextFromEpub(file: File): Promise<{ title: string; content: string }> {
+  const baseName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+  let title = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+
+  const arrayBuffer = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(arrayBuffer);
+
+  // 1. Locate the package OPF file via META-INF/container.xml
+  let opfPath = '';
+  const containerFile = zip.file('META-INF/container.xml');
+  if (containerFile) {
+    const containerXml = await containerFile.async('text');
+    const rootfileMatch = containerXml.match(/full-path=["']([^"']+)["']/i);
+    if (rootfileMatch) {
+      opfPath = rootfileMatch[1].trim();
+    }
+  }
+
+  // Fallback: search for any .opf file in the zip
+  if (!opfPath) {
+    const opfFiles = Object.keys(zip.files).filter((p) => p.toLowerCase().endsWith('.opf'));
+    if (opfFiles.length > 0) opfPath = opfFiles[0];
+  }
+
+  const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+  const spineItems: string[] = [];
+  let author = '';
+
+  if (opfPath && zip.file(opfPath)) {
+    const opfXml = await zip.file(opfPath)!.async('text');
+
+    // Extract title from <dc:title>
+    const titleMatch = opfXml.match(/<dc:title[^>]*>([\s\S]*?)<\/dc:title>/i);
+    if (titleMatch && titleMatch[1].trim()) {
+      const parsedTitle = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+      if (parsedTitle) title = parsedTitle;
+    }
+
+    // Extract author from <dc:creator>
+    const creatorMatch = opfXml.match(/<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/i);
+    if (creatorMatch && creatorMatch[1].trim()) {
+      author = creatorMatch[1].replace(/<[^>]+>/g, '').trim();
+    }
+
+    // Map manifest items (id -> href)
+    const manifest = new Map<string, string>();
+    const itemRegex = /<item\s+[^>]*>/gi;
+    let itemTagMatch;
+    while ((itemTagMatch = itemRegex.exec(opfXml)) !== null) {
+      const tag = itemTagMatch[0];
+      const idMatch = tag.match(/id=["']([^"']+)["']/i);
+      const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
+      if (idMatch && hrefMatch) {
+        manifest.set(idMatch[1], hrefMatch[1]);
+      }
+    }
+
+    // Extract spine reading order (<itemref idref="..."/>)
+    const spineRegex = /<itemref\s+[^>]*idref=["']([^"']+)["']/gi;
+    let sMatch;
+    while ((sMatch = spineRegex.exec(opfXml)) !== null) {
+      const idref = sMatch[1];
+      const href = manifest.get(idref);
+      if (href) {
+        const cleanHref = decodeURIComponent(href.split('#')[0]);
+        const fullPath = opfDir + cleanHref;
+        if (zip.file(fullPath)) {
+          spineItems.push(fullPath);
+        } else if (zip.file(cleanHref)) {
+          spineItems.push(cleanHref);
+        }
+      }
+    }
+  }
+
+  // If no spine items were found, gather all html/xhtml files sorted
+  if (spineItems.length === 0) {
+    const htmlFiles = Object.keys(zip.files)
+      .filter(
+        (p) =>
+          !p.startsWith('__MACOSX') &&
+          !p.startsWith('META-INF') &&
+          (p.toLowerCase().endsWith('.xhtml') ||
+            p.toLowerCase().endsWith('.html') ||
+            p.toLowerCase().endsWith('.htm'))
+      )
+      .sort();
+    spineItems.push(...htmlFiles);
+  }
+
+  const chapters: string[] = [];
+  for (const itemPath of spineItems) {
+    const entry = zip.file(itemPath);
+    if (!entry) continue;
+    try {
+      const htmlText = await entry.async('text');
+      const parsed = cleanAndFormatPastedText(htmlText, htmlText, title);
+      if (parsed.markdown && parsed.markdown.trim().length > 15) {
+        chapters.push(parsed.markdown.trim());
+      }
+    } catch (chErr) {
+      console.warn(`[File Importer] Error parsing EPUB chapter ${itemPath}:`, chErr);
+    }
+  }
+
+  const headerPrefix = author ? `# ${title}\n\n*By ${author}*\n\n` : `# ${title}\n\n`;
+
+  if (chapters.length > 0) {
+    return {
+      title,
+      content: headerPrefix + chapters.join('\n\n---\n\n'),
+    };
+  }
+
+  return {
+    title,
+    content: `${headerPrefix}> **EPUB Book:** ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)\n\n## Summary & Notes\n\n`,
+  };
+}
+
 export function formatAsNotes(raw: string, docTitle: string): string {
   if (!raw || raw.trim().length < 5) {
     return `# ${docTitle}\n\n`;
@@ -396,6 +520,18 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
   const baseName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
   const title = baseName.charAt(0).toUpperCase() + baseName.slice(1);
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+  // 0. EPUB e-books (.epub) — extract chapters in reading order
+  if (ext === 'epub' || file.type.includes('epub')) {
+    try {
+      const epubResult = await extractTextFromEpub(file);
+      if (epubResult && epubResult.content.trim().length > 20) {
+        return epubResult;
+      }
+    } catch (epubErr) {
+      console.warn('[File Importer] EPUB parsing failed, falling back:', epubErr);
+    }
+  }
 
   // 1. Markdown (.md, .markdown) — keep pure markdown format
   if (ext === 'md' || ext === 'markdown') {
@@ -548,7 +684,24 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
     }
   }
 
-  // 7. Plain text, JSON
+  // 7. Plain text, JSON, RTF
+  if (ext === 'rtf' || file.type.includes('rtf')) {
+    try {
+      const rtfRaw = await file.text();
+      const stripped = rtfRaw
+        .replace(/\\par[d]?/g, '\n')
+        .replace(/\{\\*?\\[^{}]+;?\}|\\tab/g, ' ')
+        .replace(/\\'[0-9a-fA-F]{2}/g, ' ')
+        .replace(/\\[a-zA-Z]+-?[0-9]*\s?/g, '')
+        .replace(/[{}]/g, '')
+        .trim();
+      if (stripped.length > 20) {
+        return { title, content: formatAsNotes(stripped, title) };
+      }
+    } catch (rtfErr) {
+      console.warn('[File Importer] RTF parsing failed:', rtfErr);
+    }
+  }
   if (
     ext === 'txt' ||
     ext === 'json' ||

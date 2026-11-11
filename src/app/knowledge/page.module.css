@@ -5518,3 +5518,140 @@
   text-overflow: ellipsis;
   max-width: 120px;
 }
+
+/* ==========================================================================
+   MULTI-BOOK BATCH IMPORT & DRAG-AND-DROP OVERLAYS
+   ========================================================================== */
+
+.pageDraggingOver {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.dragDropOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: fadeInOverlay 0.18s ease forwards;
+}
+
+.dragDropCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg, 12px);
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  max-width: 480px;
+}
+
+.dragDropIcon {
+  color: var(--color-accent);
+  stroke-width: 1.8;
+}
+
+.dragDropTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.dragDropSubtitle {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Floating Batch Import Progress Card */
+.importProgressOverlay {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100000;
+  pointer-events: auto;
+  animation: toastSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.importProgressCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px 18px;
+  width: 340px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.importProgressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.importProgressTitle {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.importProgressCount {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.importProgressFile {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+
+.importProgressBarTrack {
+  width: 100%;
+  height: 4px;
+  background: var(--color-surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.importProgressBarFill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.importProgressTip {
+  font-size: 0.7rem;
+  color: var(--color-text-faint);
+  font-style: italic;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
