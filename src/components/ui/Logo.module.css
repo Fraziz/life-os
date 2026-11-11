@@ -43,6 +43,11 @@
   display: block;
 }
 
+.customLogoImg {
+  display: block;
+  object-fit: contain;
+}
+
 .textGroup {
   display: flex;
   flex-direction: column;

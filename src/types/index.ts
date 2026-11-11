@@ -111,6 +111,7 @@ export interface UserSettings {
   aiSettings?: AISettings;
   simpleMode?: boolean;         // Simple Mode (beginner) vs Full Sariling Mundo (power user)
   starterPreset?: string;       // Active or loaded starter preset
+  customLogoUrl?: string;       // Custom uploaded workspace logo (synced across app and browser tab)
   theme: AppTheme;
   updatedAt: string;
 }

@@ -320,6 +320,104 @@
   gap: 10px;
 }
 
+/* ── Workspace Logo & Browser Tab Customizer ── */
+.logoCustomizerCard {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.logoCustomizerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subCardTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.subCardDesc {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.logoPreviewRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.logoPreviewBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.logoPreviewLabel {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.logoBadgeContainer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.browserTabMock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px 8px 0 0;
+  max-width: 280px;
+}
+
+.tabFaviconMock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tabTitleMock {
+  font-size: 0.72rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoActionsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
 .themeBtn {
   display: flex;
   flex-direction: column;

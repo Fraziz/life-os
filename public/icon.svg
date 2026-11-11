@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="sm-grad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="sm-ring" x1="2" y1="16" x2="30" y2="16" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- High-contrast rounded container suitable for all browser tabs -->
+  <rect width="32" height="32" rx="7" fill="#0c1017"/>
+
+  <!-- Precision World Sphere Body -->
+  <circle cx="16" cy="16" r="9" stroke="#f1f5f9" stroke-width="1.4" fill="none" opacity="0.85"/>
+
+  <!-- Angled Dynamic Orbital Ring (Back Arc) -->
+  <path d="M 5.8 20 C 7 13.5, 23 9, 27 12.5" stroke="url(#sm-ring)" stroke-width="1.3" fill="none" opacity="0.45" stroke-dasharray="2 1.5"/>
+
+  <!-- Angled Dynamic Orbital Ring (Front Arc) -->
+  <path d="M 5 20.5 C 8 26.5, 24 23.5, 27.5 13" stroke="url(#sm-ring)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+
+  <!-- Focal Nexus Core Point -->
+  <circle cx="16" cy="16" r="2.5" fill="url(#sm-grad)"/>
+
+  <!-- Orbiting Satellite Beacon -->
+  <circle cx="24.5" cy="15" r="1.3" fill="#38bdf8"/>
+</svg>

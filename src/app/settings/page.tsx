@@ -47,6 +47,7 @@ import { useTour } from '@/context/TourContext';
 import { testAIConnection } from '@/utils/aiEngine';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import Logo from '@/components/ui/Logo';
 
 const TIMEZONES = [
   'UTC',
@@ -96,6 +97,67 @@ export default function SettingsPage() {
   // Backup & Portability state
   const restoreFileInputRef = useRef<HTMLInputElement | null>(null);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+
+  // Custom Logo & Tab Icon state
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Logo file too large. Please select an image under 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (!result) return;
+
+      if (file.type === 'image/svg+xml') {
+        const updated = { ...formData, customLogoUrl: result };
+        setFormData(updated);
+        updateSettings(updated);
+      } else {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 256;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const optimized = canvas.toDataURL('image/png');
+            const updated = { ...formData, customLogoUrl: optimized };
+            setFormData(updated);
+            updateSettings(updated);
+          }
+        };
+        img.src = result;
+      }
+    };
+    reader.readAsDataURL(file);
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  };
+
+  const handleResetLogo = () => {
+    const updated = { ...formData, customLogoUrl: undefined };
+    setFormData(updated);
+    updateSettings(updated);
+  };
 
   const handleExportBackup = async () => {
     if (typeof window === 'undefined') return;
@@ -1252,6 +1314,68 @@ export default function SettingsPage() {
                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* ── Custom Logo & Tab Icon ── */}
+                <div className={styles.logoCustomizerCard}>
+                  <div className={styles.logoCustomizerHeader}>
+                    <div>
+                      <h3 className={styles.subCardTitle}>Workspace Logo &amp; Tab Icon</h3>
+                      <p className={styles.subCardDesc}>
+                        Change the brand logo and keep your browser tab icon in sync with your personal workspace.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={styles.logoPreviewRow}>
+                    <div className={styles.logoPreviewBox}>
+                      <span className={styles.logoPreviewLabel}>App Logo Preview</span>
+                      <div className={styles.logoBadgeContainer}>
+                        <Logo size={32} iconOnly={true} withBadge={true} />
+                      </div>
+                    </div>
+
+                    <div className={styles.logoPreviewBox}>
+                      <span className={styles.logoPreviewLabel}>Browser Tab Preview</span>
+                      <div className={styles.browserTabMock}>
+                        <div className={styles.tabFaviconMock}>
+                          <Logo size={14} iconOnly={true} withBadge={false} />
+                        </div>
+                        <span className={styles.tabTitleMock}>Sariling Mundo — Turn Dreams Into Action</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.logoActionsRow}>
+                    <input
+                      type="file"
+                      ref={logoInputRef}
+                      style={{ display: 'none' }}
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon"
+                      onChange={handleLogoUpload}
+                    />
+
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      <Upload size={13} style={{ marginRight: 6 }} />
+                      Upload Custom Logo
+                    </button>
+
+                    {formData.customLogoUrl && (
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        onClick={handleResetLogo}
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        <RotateCcw size={13} style={{ marginRight: 6 }} />
+                        Reset to Official Logo
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

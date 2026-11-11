@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useContext } from 'react';
+import { SettingsContext } from '@/context/SettingsContext';
 import styles from './Logo.module.css';
 
 interface LogoProps {
@@ -20,7 +21,7 @@ interface LogoProps {
 
 /**
  * Sariling Mundo ("Own World") Logo Mark.
- * Minimalist orbital sphere representing focus and sovereignty.
+ * Minimalist orbital sphere representing focus, sovereignty, and personal universe.
  */
 export default function Logo({
   iconOnly = false,
@@ -30,7 +31,25 @@ export default function Logo({
   className,
   withBadge = true,
 }: LogoProps) {
-  const iconContent = (
+  const settingsCtx = useContext(SettingsContext);
+  const customLogoUrl = settingsCtx?.settings?.customLogoUrl;
+
+  const iconContent = customLogoUrl ? (
+    <img
+      src={customLogoUrl}
+      alt="Workspace Logo"
+      width={size}
+      height={size}
+      className={styles.customLogoImg}
+      style={{
+        width: size,
+        height: size,
+        objectFit: 'contain',
+        borderRadius: withBadge ? '4px' : '6px',
+        display: 'block',
+      }}
+    />
+  ) : (
     <svg
       width={size}
       height={size}
@@ -40,17 +59,41 @@ export default function Logo({
       className={styles.svgIcon}
       aria-hidden="true"
     >
-      <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="1.5" opacity="0.8" />
-      <ellipse
+      <defs>
+        <linearGradient id="sm-logo-ring" x1="2" y1="16" x2="30" y2="16" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="var(--color-accent, #6366f1)" />
+          <stop offset="60%" stopColor="var(--color-accent, #6366f1)" />
+          <stop offset="100%" stopColor="#38bdf8" />
+        </linearGradient>
+      </defs>
+      {/* Precision World Sphere */}
+      <circle
         cx="16"
         cy="16"
-        rx="14"
-        ry="5"
-        transform="rotate(-25 16 16)"
-        stroke="var(--color-accent)"
+        r="10.5"
+        stroke="currentColor"
         strokeWidth="1.5"
+        strokeOpacity="0.8"
       />
-      <circle cx="16" cy="16" r="3" fill="var(--color-accent)" />
+      {/* Dynamic Orbital Ring (Back Arc) */}
+      <path
+        d="M 5 20.5 C 7 13.5, 23 8.5, 27 12"
+        stroke="url(#sm-logo-ring)"
+        strokeWidth="1.4"
+        strokeOpacity="0.4"
+        strokeDasharray="2 1.5"
+      />
+      {/* Dynamic Orbital Ring (Front Arc) */}
+      <path
+        d="M 4.5 21 C 7.5 27, 24.5 24, 27.5 12.5"
+        stroke="url(#sm-logo-ring)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      {/* Focal Core Nexus Dot */}
+      <circle cx="16" cy="16" r="2.8" fill="var(--color-accent, #6366f1)" />
+      {/* Orbital Satellite Beacon */}
+      <circle cx="24.8" cy="14.8" r="1.4" fill="#38bdf8" />
     </svg>
   );
 

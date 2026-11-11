@@ -90,7 +90,7 @@ interface SettingsContextType {
   isLoaded: boolean;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);

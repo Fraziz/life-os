@@ -25,8 +25,12 @@ export const metadata: Metadata = {
     title: 'Sariling Mundo',
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/icon-192.png',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/icon.svg',
+    shortcut: '/icon.svg',
   },
 };
 

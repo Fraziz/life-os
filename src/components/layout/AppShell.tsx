@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import styles from './AppShell.module.css';
 import { NAV_SECTIONS } from '@/config/navigation';
-import { SettingsProvider } from '@/context/SettingsContext';
+import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { LifeAreaProvider } from '@/context/LifeAreaContext';
 import { DreamProvider } from '@/context/DreamContext';
 import { GoalProvider } from '@/context/GoalContext';
@@ -71,6 +71,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen, openSearch } = useSearch();
+  const { settings } = useSettings();
 
   // Desktop: pinned state — when true, sidebar is locked open at 248px.
   // When false (default), sidebar is in Instagram PC hover rail mode (72px).
@@ -250,6 +251,26 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [mobileOpen, openSearch, router]);
+
+  // Synchronize browser tab logo (favicon) with active brand/workspace logo in real time
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const faviconHref = settings?.customLogoUrl || '/icon.svg';
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = faviconHref;
+    if (faviconHref.endsWith('.svg')) {
+      link.type = 'image/svg+xml';
+    } else if (faviconHref.startsWith('data:image/png') || faviconHref.endsWith('.png')) {
+      link.type = 'image/png';
+    } else if (faviconHref.startsWith('data:image/jpeg') || faviconHref.endsWith('.jpg')) {
+      link.type = 'image/jpeg';
+    }
+  }, [settings?.customLogoUrl]);
 
   // Draggable floating AI bubble state
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
