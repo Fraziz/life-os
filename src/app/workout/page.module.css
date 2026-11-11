@@ -134,8 +134,8 @@
 }
 
 .weekDayDone {
-  border-color: #22c55e;
-  background: rgba(34, 197, 94, 0.08);
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .weekDayRest {
@@ -162,7 +162,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #ffffff;
   flex-shrink: 0;
 }
 
@@ -283,7 +283,7 @@
 
 .progressBarFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-accent), #22d3ee);
+  background: #ffffff;
   border-radius: 99px;
   transition: width 0.3s ease;
 }
@@ -461,8 +461,8 @@
 }
 
 .setCheckDone {
-  border-color: #22c55e;
-  background: #22c55e;
+  border-color: #ffffff;
+  background: #ffffff;
 }
 
 .setRemoveBtn {
@@ -485,8 +485,8 @@
 }
 
 .setRemoveBtn:hover {
-  background: rgba(244, 63, 94, 0.12);
-  color: #f43f5e;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .addSetBtn {
@@ -887,14 +887,14 @@
 }
 
 .btnDanger {
-  color: #f43f5e;
-  border-color: rgba(244, 63, 94, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btnDanger:hover {
-  background: rgba(244, 63, 94, 0.08);
-  border-color: rgba(244, 63, 94, 0.4);
-  color: #f43f5e;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
 }
 
 .btnLg {
@@ -937,9 +937,9 @@
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 99px;
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   white-space: nowrap;
 }
 
@@ -951,9 +951,9 @@
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 99px;
-  background: var(--color-accent-dim);
-  color: var(--color-accent-light);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /*  Section Title  */

@@ -60,7 +60,7 @@
 }
 
 .btnAdd:hover {
-  background: #6a5cff;
+  background: var(--color-accent-hover, #e4e4e7);
 }
 
 .btnSecondary {
@@ -264,9 +264,9 @@
 
 /*  Philosophy Banner  */
 .philosophyBanner {
-  background: linear-gradient(135deg, rgba(124, 106, 255, 0.1) 0%, rgba(245, 158, 11, 0.06) 100%);
-  border: 1px solid rgba(124, 106, 255, 0.25);
-  border-radius: var(--radius-2xl);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-6);
   display: flex;
   align-items: center;
@@ -368,8 +368,8 @@
 }
 
 .habitCard.completedToday {
-  border-color: rgba(34, 211, 165, 0.4);
-  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(34, 211, 165, 0.03) 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--color-surface);
 }
 
 .cardTop {

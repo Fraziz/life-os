@@ -362,7 +362,7 @@
 }
 
 .btnCreate:hover {
-  background: #6a5cff;
+  background: var(--color-accent-hover, #e4e4e7);
 }
 
 .headerActions {
@@ -376,9 +376,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(168, 85, 247, 0.12);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: var(--color-surface-2);
+  color: #ffffff;
+  border: 1px solid var(--color-border);
   padding: 6px 13px;
   border-radius: var(--radius-sm, 6px);
   font-size: var(--text-xs);
@@ -388,8 +388,8 @@
 }
 
 .btnAdhdGuide:hover {
-  background: rgba(168, 85, 247, 0.22);
-  border-color: rgba(168, 85, 247, 0.55);
+  background: var(--color-surface-hover);
+  border-color: #ffffff;
   color: #ffffff;
   transform: translateY(-1px);
 }
@@ -479,28 +479,13 @@
   letter-spacing: 0.04em;
 }
 
-.priorityBadge.urgent {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-.priorityBadge.high {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-.priorityBadge.medium {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
+.priorityBadge.urgent,
+.priorityBadge.high,
+.priorityBadge.medium,
 .priorityBadge.low {
-  background: rgba(100, 116, 139, 0.12);
-  color: #94a3b8;
-  border: 1px solid rgba(100, 116, 139, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .cardActions {
