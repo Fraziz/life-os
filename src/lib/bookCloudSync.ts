@@ -229,6 +229,14 @@ export async function saveBookToCloud(uid: string, docData: KnowledgeDocument): 
  */
 export async function deleteBookFromCloud(uid: string, docId: string): Promise<void> {
   if (!uid || !docId) return;
+
+  // 1. Cancel any pending debounced upload for this book
+  const existingTimer = bookDebounceTimers.get(docId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    bookDebounceTimers.delete(docId);
+  }
+
   const db = safeDb();
   if (!db) return;
 

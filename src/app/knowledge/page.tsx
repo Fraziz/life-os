@@ -787,6 +787,10 @@ export default function KnowledgePage() {
   const handleBatchDeleteDocs = () => {
     const ids = Array.from(selectedDocIds);
     if (ids.length === 0) return;
+    if (selectedId && selectedDocIds.has(selectedId)) {
+      setSelectedId(null);
+      setIsCreating(false);
+    }
     deleteDocs(ids);
     setSelectedDocIds(new Set());
     setIsSelectMode(false);

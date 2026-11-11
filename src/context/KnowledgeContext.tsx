@@ -16,11 +16,46 @@ import {
   wipeCloudBooks,
 } from '@/lib/bookCloudSync';
 
-import { idbGet, idbSet } from '@/lib/idbStore';
+import { idbGet, idbSet, idbDelete } from '@/lib/idbStore';
 import { isDocVideoLesson, cleanDocumentContent } from '@/utils/videoLesson';
 
 const STORAGE_KEY = 'life_os_knowledge_docs_v1';
 const INITIALIZED_KEY = 'life_os_knowledge_initialized_v1';
+const DELETED_IDS_KEY = 'life_os_deleted_book_ids_v1';
+
+function getDeletedBookIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(DELETED_IDS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set();
+}
+
+function recordDeletedBookIds(ids: string[]) {
+  if (typeof window === 'undefined' || !ids.length) return;
+  try {
+    const current = getDeletedBookIds();
+    ids.forEach((id) => current.add(id));
+    const arr = Array.from(current);
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(arr));
+    void idbSet(DELETED_IDS_KEY, arr);
+  } catch {}
+}
+
+function removeDeletedBookIds(ids: string[]) {
+  if (typeof window === 'undefined' || !ids.length) return;
+  try {
+    const current = getDeletedBookIds();
+    ids.forEach((id) => current.delete(id));
+    const arr = Array.from(current);
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(arr));
+    void idbSet(DELETED_IDS_KEY, arr);
+  } catch {}
+}
 
 function generateId() {
   return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -720,6 +755,16 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
   const reloadFromStorage = useCallback(async (isCloudSyncEvent: boolean = false) => {
     const map = new Map<string, KnowledgeDocument>();
+    const deletedIds = getDeletedBookIds();
+
+    try {
+      const idbDeleted = await idbGet<string[]>(DELETED_IDS_KEY);
+      if (Array.isArray(idbDeleted)) {
+        idbDeleted.forEach((id) => deletedIds.add(id));
+      }
+    } catch {}
+
+    const isInitialized = typeof window !== 'undefined' && localStorage.getItem(INITIALIZED_KEY) === 'true';
 
     // 1. Recover from specific book storage keys
     const bookKeys = [
@@ -741,7 +786,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
           const parsed = JSON.parse(raw);
           const list = Array.isArray(parsed) ? parsed : [parsed];
           list.forEach((d) => {
-            if (isTrueBookOrVideo(d)) {
+            if (isTrueBookOrVideo(d) && !deletedIds.has(d.id)) {
               const existing = map.get(d.id);
               if (!existing) {
                 map.set(d.id, d);
@@ -768,7 +813,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         const idbDocs = await idbGet<KnowledgeDocument[]>(key);
         if (Array.isArray(idbDocs) && idbDocs.length > 0) {
           idbDocs.forEach((d) => {
-            if (isTrueBookOrVideo(d)) {
+            if (isTrueBookOrVideo(d) && !deletedIds.has(d.id)) {
               const existing = map.get(d.id);
               if (!existing) {
                 map.set(d.id, d);
@@ -791,38 +836,19 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 4. Defaults & User Books preservation and healing:
-    const defaults = defaultDocs();
-    defaults.forEach((d) => {
-      const existing = map.get(d.id);
-      if (!existing) {
-        const hasMatchingTitle = Array.from(map.values()).some((e) => e.title === d.title);
-        if (!hasMatchingTitle) {
+    // 4. Defaults & User Books preservation: ONLY on initial blank setup if not yet initialized
+    if (!isInitialized && map.size === 0) {
+      const defaults = defaultDocs();
+      defaults.forEach((d) => {
+        if (!deletedIds.has(d.id)) {
           map.set(d.id, d);
         }
-      } else {
-        const existContent = existing.content || '';
-        const defaultContent = d.content || '';
-        // If content was truncated, stripped, or shortened, heal it back to complete content!
-        if (
-          existContent.includes('[...Full book content preserved') ||
-          existContent.includes('[...Full document saved') ||
-          (defaultContent.length > existContent.length && existContent.length < 150)
-        ) {
-          existing.content = defaultContent;
-        }
-        if ((!existing.studyQuiz || existing.studyQuiz.length === 0) && d.studyQuiz && d.studyQuiz.length > 0) {
-          existing.studyQuiz = d.studyQuiz;
-        }
-        if ((!existing.readingLogs || existing.readingLogs.length === 0) && d.readingLogs && d.readingLogs.length > 0) {
-          existing.readingLogs = d.readingLogs;
-        }
-      }
-    });
+      });
+    }
 
-    // 5. Ensure no non-book objects leaked into the library
+    // 5. Ensure no non-book objects or deleted IDs leaked into the library
     for (const [id, item] of Array.from(map.entries())) {
-      if (!isTrueBookOrVideo(item)) {
+      if (!isTrueBookOrVideo(item) || deletedIds.has(id)) {
         map.delete(id);
       }
     }
@@ -941,23 +967,24 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
         const localList = docsRef.current;
         const localMap = new Map(localList.map((d) => [d.id, d]));
+        const deletedIds = getDeletedBookIds();
         let stateChanged = false;
 
-        // Purge non-books from localMap
+        // Purge non-books and deleted books from localMap
         for (const [id, item] of Array.from(localMap.entries())) {
-          if (!isTrueBookOrVideo(item)) {
+          if (!isTrueBookOrVideo(item) || deletedIds.has(id)) {
             localMap.delete(id);
             stateChanged = true;
           }
         }
 
-        // Filter valid remote books
-        const filteredRemote = remoteDocs.filter(isTrueBookOrVideo);
+        // Filter valid remote books (excluding any deleted IDs)
+        const filteredRemote = remoteDocs.filter((r) => isTrueBookOrVideo(r) && !deletedIds.has(r.id));
         const remoteMap = new Map(filteredRemote.map((d) => [d.id, d]));
 
-        // Delete ANY confirmed non-book entity mistakenly uploaded to Firestore books collection
+        // Delete ANY confirmed non-book or deleted entity mistakenly in Firestore books collection
         for (const remote of remoteDocs) {
-          if (!isTrueBookOrVideo(remote)) {
+          if (!isTrueBookOrVideo(remote) || deletedIds.has(remote.id)) {
             void deleteBookFromCloud(uid, remote.id);
           }
         }
@@ -988,7 +1015,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
         // 2. Process local books not in Firestore:
         for (const local of Array.from(localMap.values())) {
-          if (isTrueBookOrVideo(local) && !remoteMap.has(local.id)) {
+          if (isTrueBookOrVideo(local) && !deletedIds.has(local.id) && !remoteMap.has(local.id)) {
             // Push valid local books to cloud so they are permanently preserved
             queueBookSaveToCloud(uid, local, 1000);
           }
@@ -1107,6 +1134,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
   }, [addDoc]);
 
   const restoreDoc = useCallback((docItem: KnowledgeDocument) => {
+    removeDeletedBookIds([docItem.id]);
     if (docsRef.current.some((d) => d.id === docItem.id)) return;
     const restored = {
       ...docItem,
@@ -1144,11 +1172,24 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
             }
           }
         } catch {}
+
+        void idbGet<KnowledgeDocument[]>(k).then((idbDocs) => {
+          if (Array.isArray(idbDocs)) {
+            const cleaned = idbDocs.filter((item) => item && !idSet.has(item.id));
+            void idbSet(k, cleaned);
+          }
+        });
+      });
+
+      // Remove raw binary files from IndexedDB
+      ids.forEach((id) => {
+        void idbDelete(`life_os_book_file_${id}`);
       });
     }
   };
 
   const deleteDoc = useCallback((id: string) => {
+    recordDeletedBookIds([id]);
     const target = docsRef.current.find((d) => d.id === id);
     const next = docsRef.current.filter((d) => d.id !== id);
     saveDocs(next);
@@ -1175,6 +1216,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
 
   const deleteDocs = useCallback((ids: string[]) => {
     if (!ids || ids.length === 0) return;
+    recordDeletedBookIds(ids);
     const idSet = new Set(ids);
     const deletedItems = docsRef.current.filter((d) => idSet.has(d.id));
     const next = docsRef.current.filter((d) => !idSet.has(d.id));
@@ -1202,6 +1244,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
   }, [saveDocs, restoreDoc]);
 
   const resetToDefaultDocs = useCallback(async () => {
+    removeDeletedBookIds(defaultDocs().map((d) => d.id));
     const defaults = defaultDocs();
     saveDocs(defaults);
     if (uidRef.current) {
@@ -1213,6 +1256,7 @@ ${initialDescription || 'Write down exactly what is happening, what is failing, 
   }, [saveDocs]);
 
   const restoreStarterBooks = useCallback(() => {
+    removeDeletedBookIds(defaultDocs().map((d) => d.id));
     const defaults = defaultDocs();
     const currentMap = new Map(docsRef.current.map((d) => [d.id, d]));
     let countRestored = 0;
