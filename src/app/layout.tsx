@@ -9,10 +9,7 @@ import './globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Sariling Mundo — Turn Dreams Into Action',
-    template: '%s | Sariling Mundo',
-  },
+  title: 'Sariling Mundo',
   description:
     'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions.',
   keywords: ['goal setting', 'productivity', 'life planning', 'habits', 'focus', 'task management'],

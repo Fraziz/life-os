@@ -1341,7 +1341,7 @@ export default function SettingsPage() {
                         <div className={styles.tabFaviconMock}>
                           <Logo size={14} iconOnly={true} withBadge={false} />
                         </div>
-                        <span className={styles.tabTitleMock}>Sariling Mundo — Turn Dreams Into Action</span>
+                        <span className={styles.tabTitleMock}>Sariling Mundo</span>
                       </div>
                     </div>
                   </div>

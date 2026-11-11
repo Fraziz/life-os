@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Sariling Mundo — Personal Operating System',
+    name: 'Sariling Mundo',
     short_name: 'Sariling Mundo',
     description: 'Executive Personal Operating System for Tasks, Goals, Roadmap, Habits, and Focus.',
     start_url: '/',

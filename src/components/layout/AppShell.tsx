@@ -173,9 +173,12 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Close mobile drawer on route change
+  // Close mobile drawer and maintain browser tab title on route change
   useEffect(() => {
     setMobileOpen(false);
+    if (typeof document !== 'undefined') {
+      document.title = 'Sariling Mundo';
+    }
   }, [pathname]);
 
   // Global keybindings
