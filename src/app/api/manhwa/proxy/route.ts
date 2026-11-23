@@ -3,6 +3,23 @@ import { isPrivateOrReservedHost } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
+function getCorsHeaders(req: NextRequest): Record<string, string> {
+  const origin = req.headers.get('origin');
+  if (origin) {
+    return {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    };
+  }
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': '*',
+  };
+}
+
 async function handleProxy(req: NextRequest) {
   const urlParam = req.nextUrl.searchParams.get('url');
   if (!urlParam) {
@@ -28,6 +45,8 @@ async function handleProxy(req: NextRequest) {
   if (isPrivateOrReservedHost(parsed.hostname)) {
     return new NextResponse('Restricted host', { status: 403 });
   }
+
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const isPost = req.method === 'POST';
@@ -60,7 +79,7 @@ async function handleProxy(req: NextRequest) {
 
     const contentType = upstreamRes.headers.get('content-type') || 'text/html';
 
-    // 1. If it's JSON (e.g. /auth/chapter-content, /wp-json/...), return as JSON with CORS enabled
+    // 1. If it's JSON (e.g. /auth/chapter-content, /wp-json/...), return as JSON with valid CORS headers
     if (contentType.includes('application/json')) {
       const jsonText = await upstreamRes.text();
       return new Response(jsonText, {
@@ -68,9 +87,7 @@ async function handleProxy(req: NextRequest) {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=60',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': '*',
+          ...corsHeaders,
         },
       });
     }
@@ -83,8 +100,8 @@ async function handleProxy(req: NextRequest) {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=86400',
-          'Access-Control-Allow-Origin': '*',
           'X-Frame-Options': 'SAMEORIGIN',
+          ...corsHeaders,
         },
       });
     }
@@ -104,6 +121,7 @@ async function handleProxy(req: NextRequest) {
   (function() {
     var targetOrigin = "${parsed.origin}";
     var targetHost = "${parsed.hostname}";
+    var domainBase = "${parsed.hostname.replace(/^(?:www\.)?([^.]+).*/, '$1')}";
 
     // 1. Neutralize window.top / window.parent navigation traps
     try {
@@ -128,7 +146,8 @@ async function handleProxy(req: NextRequest) {
           absolute = targetOrigin + '/' + url;
         }
         var parsedUrl = new URL(absolute);
-        if (parsedUrl.hostname === targetHost || parsedUrl.hostname.endsWith("." + targetHost.replace(/^www\\./, ''))) {
+        var host = parsedUrl.hostname.toLowerCase();
+        if (host === targetHost || host.includes(domainBase) || host.endsWith("." + targetHost.replace(/^www\\./, ''))) {
           return '/api/manhwa/proxy?url=' + encodeURIComponent(absolute);
         }
       } catch(e) {}
@@ -139,15 +158,19 @@ async function handleProxy(req: NextRequest) {
     if (window.fetch) {
       var rawFetch = window.fetch;
       window.fetch = function(input, init) {
+        var cleanInit = init ? Object.assign({}, init) : {};
+        if (cleanInit.credentials === 'include') {
+          cleanInit.credentials = 'same-origin';
+        }
         if (typeof input === 'string') {
-          return rawFetch(toProxyUrl(input), init);
+          return rawFetch(toProxyUrl(input), cleanInit);
         } else if (input && input.url) {
           var proxied = toProxyUrl(input.url);
           if (proxied !== input.url) {
             try {
-              return rawFetch(new Request(proxied, input), init);
+              return rawFetch(new Request(proxied, cleanInit));
             } catch(e) {
-              return rawFetch(proxied, init);
+              return rawFetch(proxied, cleanInit);
             }
           }
         }
@@ -172,7 +195,8 @@ async function handleProxy(req: NextRequest) {
       if (a && a.href && /^https?:\\/\\//i.test(a.href)) {
         try {
           var dest = new URL(a.href);
-          if (dest.hostname === targetHost && !a.href.includes('/api/manhwa/proxy')) {
+          var destHost = dest.hostname.toLowerCase();
+          if ((destHost === targetHost || destHost.includes(domainBase)) && !a.href.includes('/api/manhwa/proxy')) {
             e.preventDefault();
             window.location.href = '/api/manhwa/proxy?url=' + encodeURIComponent(a.href);
           }
@@ -209,9 +233,9 @@ async function handleProxy(req: NextRequest) {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Access-Control-Allow-Origin': '*',
         'X-Frame-Options': 'SAMEORIGIN',
         'Content-Security-Policy': "frame-ancestors 'self'",
+        ...corsHeaders,
       },
     });
   } catch (err: any) {
@@ -288,9 +312,9 @@ async function handleProxy(req: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
           'X-Frame-Options': 'SAMEORIGIN',
           'Content-Security-Policy': "frame-ancestors 'self'",
+          ...corsHeaders,
         },
       }
     );
@@ -305,13 +329,10 @@ export async function POST(req: NextRequest) {
   return handleProxy(req);
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
+  const corsHeaders = getCorsHeaders(req);
   return new Response(null, {
     status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
-    },
+    headers: corsHeaders,
   });
 }
