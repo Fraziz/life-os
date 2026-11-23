@@ -10,11 +10,24 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.2));
 }
 
+.zenMode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  border-radius: 0;
+  border: none;
+}
+
 .readerTopBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--color-surface, #1e1e24);
   border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
   gap: 12px;
@@ -36,12 +49,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 240px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .manhwaTitle {
-    max-width: 160px;
+    max-width: 140px;
   }
 }
 
@@ -50,7 +63,7 @@
   font-weight: 600;
   color: var(--color-accent-light, #818cf8);
   background: rgba(99, 102, 241, 0.1);
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid rgba(99, 102, 241, 0.2);
   white-space: nowrap;
@@ -105,6 +118,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .controlBtn {
@@ -131,25 +145,75 @@
   border-color: var(--color-border, rgba(255, 255, 255, 0.2));
 }
 
+.controlBtnPrimary {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.controlBtnPrimary:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
 .controlBtnLikeActive {
   color: var(--color-danger, #ef4444) !important;
   border-color: rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);
 }
 
+.engineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #94a3b8);
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  padding: 4px 8px;
+  border-radius: var(--radius-md, 6px);
+  min-height: 44px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.engineBadge:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.07));
+  color: var(--color-text, #f1f5f9);
+}
+
+.engineDotActive {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  flex-shrink: 0;
+}
+
+.engineDotDirect {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+}
+
 .iframeWrapper {
   position: relative;
   flex: 1;
   width: 100%;
-  min-height: 520px;
-  background: #000000;
+  min-height: 540px;
+  background: #0b0f19;
   overflow: hidden;
 }
 
 .manhwaIframe {
   width: 100%;
   height: 100%;
-  min-height: 520px;
+  min-height: 540px;
   border: none;
   background: #0b0f19;
   display: block;
@@ -162,7 +226,7 @@
   padding: 8px 16px;
   background: var(--color-surface, #1e1e24);
   border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary, #94a3b8);
   flex-shrink: 0;
   gap: 12px;
@@ -173,6 +237,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .footerActionLink {
@@ -182,6 +247,12 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .footerActionLink:hover {

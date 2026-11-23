@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Heart,
   ExternalLink,
@@ -10,10 +10,10 @@ import {
   Maximize2,
   Minimize2,
   Edit2,
-  BookOpen,
   Info,
   CheckCircle2,
   FileText,
+  ShieldCheck,
 } from 'lucide-react';
 import styles from './InWebManhwaReader.module.css';
 import type { KnowledgeDocument, DocumentReadStatus } from '@/types';
@@ -38,14 +38,31 @@ export default function InWebManhwaReader({
   const [isZenMode, setIsZenMode] = useState(false);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [notesText, setNotesText] = useState(doc.content || '');
+  const [readerEngine, setReaderEngine] = useState<'proxy' | 'direct'>('proxy');
 
-  const manhwaUrl = doc.manhwaUrl || '';
+  const manhwaUrl = (doc.manhwaUrl || '').trim();
   const parsedMeta = parseManhwaUrl(manhwaUrl);
   const siteName = doc.author || parsedMeta?.siteName || 'Web Reader';
   const currentChapter = doc.currentChapter || parsedMeta?.chapterHint || 'Chapter 1';
 
+  // Compute iframe source: default to server proxy to bypass X-Frame-Options: SAMEORIGIN
+  const frameSrc = manhwaUrl
+    ? readerEngine === 'proxy'
+      ? `/api/manhwa/proxy?url=${encodeURIComponent(manhwaUrl)}`
+      : manhwaUrl
+    : '';
+
   const handleReload = () => {
     setIframeKey((prev) => prev + 1);
+  };
+
+  const handleOpenPopout = () => {
+    if (!manhwaUrl) return;
+    window.open(
+      manhwaUrl,
+      'LifeOSManhwaReader',
+      'width=1100,height=920,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes'
+    );
   };
 
   const handlePrevChapter = () => {
@@ -64,6 +81,7 @@ export default function InWebManhwaReader({
         onUpdateDoc(doc.id, {
           currentChapter: `Chapter ${nextNum}`,
         });
+        setIframeKey((prev) => prev + 1);
       }
     }
   };
@@ -86,6 +104,7 @@ export default function InWebManhwaReader({
           currentChapter: `Chapter ${nextNum}`,
           readStatus: 'reading',
         });
+        setIframeKey((prev) => prev + 1);
       }
     }
   };
@@ -152,6 +171,30 @@ export default function InWebManhwaReader({
 
         {/* Action Controls */}
         <div className={styles.actionControls}>
+          {/* Reader Engine Switcher */}
+          <button
+            type="button"
+            className={styles.engineBadge}
+            onClick={() => setReaderEngine(readerEngine === 'proxy' ? 'direct' : 'proxy')}
+            title={`Current Engine: ${readerEngine === 'proxy' ? 'In-App Proxy (Bypassing X-Frame restrictions)' : 'Direct Embed'}. Click to toggle.`}
+            aria-label="Toggle reader engine"
+          >
+            <span className={readerEngine === 'proxy' ? styles.engineDotActive : styles.engineDotDirect} />
+            <span>{readerEngine === 'proxy' ? 'Proxy Active' : 'Direct Mode'}</span>
+          </button>
+
+          {/* Dedicated Pop-out Focused Window Button (100% immune to X-Frame restrictions) */}
+          <button
+            type="button"
+            className={`${styles.controlBtn} ${styles.controlBtnPrimary}`}
+            onClick={handleOpenPopout}
+            title="Open in dedicated pop-out window (Bypasses all frame restrictions & Cloudflare gates)"
+            aria-label="Pop-out reader window"
+          >
+            <ExternalLink size={13} />
+            <span>Pop-out ⧉</span>
+          </button>
+
           {/* Like Button */}
           <button
             type="button"
@@ -179,14 +222,14 @@ export default function InWebManhwaReader({
             <RotateCcw size={13} />
           </button>
 
-          {/* Open on Original Scanlation Site */}
+          {/* Open Direct on Provider Site in New Tab */}
           {manhwaUrl && (
             <a
               href={manhwaUrl}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.controlBtn}
-              title="Open full page on provider site"
+              title="Open full page on provider site in new tab"
             >
               <ExternalLink size={13} />
               <span>Open on Site ↗</span>
@@ -223,16 +266,16 @@ export default function InWebManhwaReader({
       <div className={styles.iframeWrapper}>
         {manhwaUrl ? (
           <iframe
-            key={iframeKey}
-            src={manhwaUrl}
+            key={`${readerEngine}-${iframeKey}`}
+            src={frameSrc}
             title={doc.title}
             className={styles.manhwaIframe}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-            referrerPolicy="no-referrer"
+            loading="eager"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           />
         ) : (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-            <p>No reading URL configured. Please add a website link.</p>
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+            <p style={{ margin: 0 }}>No reading URL configured. Please add a website link.</p>
           </div>
         )}
       </div>
@@ -240,18 +283,32 @@ export default function InWebManhwaReader({
       {/* Reader Assistive Footer Banner */}
       <div className={styles.readerFooterBanner}>
         <div className={styles.readerFooterLeft}>
-          <Info size={13} />
+          <ShieldCheck size={14} color="#10b981" />
           <span>
-            Reading on <strong>{siteName}</strong>. If the scan site restricts in-page frames, tap{' '}
-            <a
-              href={manhwaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.footerActionLink}
-            >
-              Open on Site ↗
-            </a>{' '}
-            to read in a full tab while Life OS preserves your chapter bookmarks and logs.
+            {readerEngine === 'proxy' ? (
+              <>
+                In-App Proxy active for <strong>{siteName}</strong>. If a scan site requires Cloudflare human verification, tap{' '}
+                <button
+                  type="button"
+                  onClick={handleOpenPopout}
+                  className={styles.footerActionLink}
+                >
+                  Pop-out ⧉
+                </button>{' '}
+                to read in a dedicated window while Life OS tracks your progress.
+              </>
+            ) : (
+              <>
+                Direct mode active. If you encounter a &quot;refused to connect&quot; message, switch back to{' '}
+                <button
+                  type="button"
+                  onClick={() => setReaderEngine('proxy')}
+                  className={styles.footerActionLink}
+                >
+                  Proxy Mode
+                </button>.
+              </>
+            )}
           </span>
         </div>
 
