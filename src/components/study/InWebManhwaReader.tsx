@@ -10,7 +10,6 @@ import {
   Maximize2,
   Minimize2,
   Edit2,
-  Info,
   CheckCircle2,
   FileText,
   ShieldCheck,
@@ -54,15 +53,6 @@ export default function InWebManhwaReader({
 
   const handleReload = () => {
     setIframeKey((prev) => prev + 1);
-  };
-
-  const handleOpenPopout = () => {
-    if (!manhwaUrl) return;
-    window.open(
-      manhwaUrl,
-      'LifeOSManhwaReader',
-      'width=1100,height=920,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes'
-    );
   };
 
   const handlePrevChapter = () => {
@@ -176,23 +166,11 @@ export default function InWebManhwaReader({
             type="button"
             className={styles.engineBadge}
             onClick={() => setReaderEngine(readerEngine === 'proxy' ? 'direct' : 'proxy')}
-            title={`Current Engine: ${readerEngine === 'proxy' ? 'In-App Proxy (Bypassing X-Frame restrictions)' : 'Direct Embed'}. Click to toggle.`}
+            title={`Current Reader Mode: ${readerEngine === 'proxy' ? 'In-Web Proxy (Active)' : 'Direct Embed'}. Click to toggle.`}
             aria-label="Toggle reader engine"
           >
             <span className={readerEngine === 'proxy' ? styles.engineDotActive : styles.engineDotDirect} />
-            <span>{readerEngine === 'proxy' ? 'Proxy Active' : 'Direct Mode'}</span>
-          </button>
-
-          {/* Dedicated Pop-out Focused Window Button (100% immune to X-Frame restrictions) */}
-          <button
-            type="button"
-            className={`${styles.controlBtn} ${styles.controlBtnPrimary}`}
-            onClick={handleOpenPopout}
-            title="Open in dedicated pop-out window (Bypasses all frame restrictions & Cloudflare gates)"
-            aria-label="Pop-out reader window"
-          >
-            <ExternalLink size={13} />
-            <span>Pop-out ⧉</span>
+            <span>{readerEngine === 'proxy' ? 'In-Web Proxy' : 'Direct Embed'}</span>
           </button>
 
           {/* Like Button */}
@@ -222,17 +200,17 @@ export default function InWebManhwaReader({
             <RotateCcw size={13} />
           </button>
 
-          {/* Open Direct on Provider Site in New Tab */}
+          {/* Open Provider Link */}
           {manhwaUrl && (
             <a
               href={manhwaUrl}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.controlBtn}
-              title="Open full page on provider site in new tab"
+              title="Open full original site in new tab"
             >
               <ExternalLink size={13} />
-              <span>Open on Site ↗</span>
+              <span>Provider ↗</span>
             </a>
           )}
 
@@ -249,20 +227,21 @@ export default function InWebManhwaReader({
             </button>
           )}
 
-          {/* Zen Mode Toggle */}
+          {/* Zen Full-Screen Web Canvas Mode Toggle */}
           <button
             type="button"
             className={styles.controlBtn}
             onClick={() => setIsZenMode(!isZenMode)}
-            title={isZenMode ? 'Exit Zen Mode' : 'Zen Full Width Mode'}
-            aria-label={isZenMode ? 'Exit Zen Mode' : 'Zen Full Width Mode'}
+            title={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas Mode'}
+            aria-label={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas Mode'}
           >
             {isZenMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            <span>{isZenMode ? 'Exit Zen' : 'Full Canvas'}</span>
           </button>
         </div>
       </div>
 
-      {/* Embedded Web Reader Canvas */}
+      {/* Embedded In-Web Manhwa Reader Canvas */}
       <div className={styles.iframeWrapper}>
         {manhwaUrl ? (
           <iframe
@@ -285,30 +264,7 @@ export default function InWebManhwaReader({
         <div className={styles.readerFooterLeft}>
           <ShieldCheck size={14} color="#10b981" />
           <span>
-            {readerEngine === 'proxy' ? (
-              <>
-                In-App Proxy active for <strong>{siteName}</strong>. If a scan site requires Cloudflare human verification, tap{' '}
-                <button
-                  type="button"
-                  onClick={handleOpenPopout}
-                  className={styles.footerActionLink}
-                >
-                  Pop-out ⧉
-                </button>{' '}
-                to read in a dedicated window while Life OS tracks your progress.
-              </>
-            ) : (
-              <>
-                Direct mode active. If you encounter a &quot;refused to connect&quot; message, switch back to{' '}
-                <button
-                  type="button"
-                  onClick={() => setReaderEngine('proxy')}
-                  className={styles.footerActionLink}
-                >
-                  Proxy Mode
-                </button>.
-              </>
-            )}
+            In-Web Reader active for <strong>{siteName}</strong> using local proxy bypass.
           </span>
         </div>
 
