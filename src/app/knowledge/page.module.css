@@ -418,6 +418,14 @@
   flex-shrink: 0;
 }
 
+.manhwaRowBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent-light, #818cf8);
+  flex-shrink: 0;
+}
+
 .bookRowBadge {
   display: inline-flex;
   align-items: center;
@@ -632,6 +640,16 @@
 
 .rowActionBtnActive {
   color: var(--color-accent);
+}
+
+.rowActionBtnLiked {
+  color: var(--color-danger, #ef4444) !important;
+  opacity: 1 !important;
+}
+
+.likedIcon {
+  color: var(--color-danger, #ef4444);
+  flex-shrink: 0;
 }
 
 .rowActionBtnDelete:hover {
@@ -5419,6 +5437,34 @@
   background: rgba(56, 189, 248, 0.1);
   color: #0284c7;
   border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.bookInfoTypeBadgeManhwa {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(129, 140, 248, 0.12);
+  color: var(--color-accent-light, #818cf8);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+}
+
+.headerLikeBtnActive {
+  color: var(--color-danger, #ef4444) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.metaManhwaTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-accent-light, #818cf8);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .bookInfoAuthor {

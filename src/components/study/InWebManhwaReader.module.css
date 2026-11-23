@@ -1,0 +1,224 @@
+.readerContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg, #0f172a);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.2));
+}
+
+.readerTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--color-surface, #1e1e24);
+  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.manhwaTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #f1f5f9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+@media (max-width: 600px) {
+  .manhwaTitle {
+    max-width: 160px;
+  }
+}
+
+.siteBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent-light, #818cf8);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  white-space: nowrap;
+}
+
+.navControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chapterBtn {
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--color-text, #f1f5f9);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  transition: all 0.15s ease;
+}
+
+.chapterBtn:hover:not(:disabled) {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--color-border, rgba(255, 255, 255, 0.2));
+}
+
+.chapterBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chapterBadge {
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--color-text, #f1f5f9);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 6px);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.actionControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlBtn {
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.controlBtn:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+  color: var(--color-text, #f1f5f9);
+  border-color: var(--color-border, rgba(255, 255, 255, 0.2));
+}
+
+.controlBtnLikeActive {
+  color: var(--color-danger, #ef4444) !important;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.iframeWrapper {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 520px;
+  background: #000000;
+  overflow: hidden;
+}
+
+.manhwaIframe {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  border: none;
+  background: #0b0f19;
+  display: block;
+}
+
+.readerFooterBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--color-surface, #1e1e24);
+  border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  font-size: 11px;
+  color: var(--color-text-secondary, #94a3b8);
+  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.readerFooterLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerActionLink {
+  color: var(--color-accent-light, #818cf8);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.footerActionLink:hover {
+  text-decoration: underline;
+}
+
+.notesDrawer {
+  padding: 14px 16px;
+  background: var(--color-surface, #1e1e24);
+  border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text, #f1f5f9);
+}
+
+.notesTextarea {
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+  color: var(--color-text, #f1f5f9);
+  font-size: 12px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+.notesTextarea:focus {
+  border-color: var(--color-accent, #6366f1);
+}

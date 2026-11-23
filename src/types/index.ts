@@ -426,14 +426,20 @@ export interface KnowledgeDocument {
   content: string;        // Markdown/rich text (stored as plain markdown)
   status: DocumentStatus;
   category?: DocumentCategory;
-  docType?: 'document' | 'video-lesson';
+  docType?: 'document' | 'video-lesson' | 'manhwa';
   videoLessons?: VideoLessonItem[]; // Multi-video playlist support for lessons/courses
-  author?: string;             // Book author or course instructor
+  author?: string;             // Book author or course instructor or manhwa creator
   fileUrl?: string;            // Direct URL/Blob to attached PDF, EPUB, or media file
   fileName?: string;           // Original attached file name (e.g. "Atomic_Habits.pdf")
   fileSize?: string;           // Human-readable file size (e.g. "3.4 MB")
   fileType?: string;           // File extension or mime type (e.g. "pdf", "epub")
   isPinned?: boolean;
+  isLiked?: boolean;           // Like / Favorite status across books, videos, and manhwa
+  webUrl?: string;             // External reference / reading link for books or web assets
+  manhwaUrl?: string;          // Direct reading website URL for manhwa (e.g. roliascan, vortex, asura)
+  currentChapter?: string;     // Current reading chapter (e.g. "Ch. 45")
+  latestChapter?: string;      // Latest or total chapter count (e.g. "Ch. 120")
+  coverImageUrl?: string;      // Cover image URL for book or manhwa
   readStatus?: DocumentReadStatus;
   readProgress?: number;  // 0 - 100 percentage
   currentPage?: number;

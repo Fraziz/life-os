@@ -88,6 +88,7 @@ import {
   Video,
   ListVideo,
   Bell,
+  Heart,
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
@@ -111,7 +112,10 @@ import {
   extractAllVideoLessons,
   type VideoLessonItem,
 } from '@/utils/videoLesson';
+import { isDocManhwa, isManhwaUrl, parseManhwaUrl } from '@/utils/manhwa';
 import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
+import AddManhwaModal from '@/components/study/AddManhwaModal';
+import InWebManhwaReader from '@/components/study/InWebManhwaReader';
 import FocusViewWorkspace from '@/components/study/FocusViewWorkspace';
 import StudySessionCard from '@/components/study/StudySessionCard';
 
@@ -752,7 +756,7 @@ function MarkdownToolbar({
 export default function KnowledgePage() {
   const router = useRouter();
   const { selectFocusDoc } = useFocus();
-  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, deleteDocs, restoreDoc, togglePinDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
+  const { docs, isLoaded, addDoc, updateDoc, deleteDoc, deleteDocs, restoreDoc, togglePinDoc, toggleLikeDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
   const { settings } = useSettings();
   const { goals }    = useGoals();
   const { dreams }   = useDreams();
@@ -801,8 +805,11 @@ export default function KnowledgePage() {
     setSelectedDocIds(new Set());
     setIsSelectMode(false);
   };
-  const [readFilter, setReadFilter] = useState<'all' | 'reading' | 'to-read' | 'completed'>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'documents' | 'videos'>('all');
+  const [readFilter, setReadFilter] = useState<'all' | 'reading' | 'to-read' | 'completed' | 'liked'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'documents' | 'videos' | 'manhwa'>('all');
+  const [manhwaModalOpen, setManhwaModalOpen] = useState(false);
+  const [manhwaModalMode, setManhwaModalMode] = useState<'create' | 'edit'>('create');
+  const [detectedPastedManhwa, setDetectedPastedManhwa] = useState<{ url: string; title: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -978,7 +985,8 @@ export default function KnowledgePage() {
   const [fProjectId, setFProjectId]   = useState('');
   const [fTaskId, setFTaskId]         = useState('');
 
-  const isCurrentVideo = Boolean(selectedDoc ? isDocVideoLesson(selectedDoc) : isDocVideoLesson({ content: fContent, title: fTitle }));
+  const isCurrentManhwa = Boolean(selectedDoc ? isDocManhwa(selectedDoc) : false);
+  const isCurrentVideo = !isCurrentManhwa && Boolean(selectedDoc ? isDocVideoLesson(selectedDoc) : isDocVideoLesson({ content: fContent, title: fTitle }));
 
   const editorRef = useRef<HTMLDivElement>(null);
   const bookEditorRef = useRef<HTMLDivElement>(null);
@@ -1573,6 +1581,56 @@ export default function KnowledgePage() {
     }
   };
 
+  // Add or Edit Manhwa Web Reader entry
+  const handleInsertManhwa = (data: {
+    title: string;
+    manhwaUrl: string;
+    author: string;
+    currentChapter: string;
+    latestChapter?: string;
+    coverImageUrl?: string;
+    readStatus: DocumentReadStatus;
+  }) => {
+    if (manhwaModalMode === 'edit' && selectedDoc) {
+      updateDoc(selectedDoc.id, {
+        title: data.title,
+        author: data.author,
+        manhwaUrl: data.manhwaUrl,
+        currentChapter: data.currentChapter,
+        latestChapter: data.latestChapter,
+        coverImageUrl: data.coverImageUrl,
+        readStatus: data.readStatus,
+      });
+      setPasteToast('Manhwa reading updated successfully!');
+      setTimeout(() => setPasteToast(null), 3000);
+      return;
+    }
+
+    const newDoc = addDoc({
+      title: data.title,
+      author: data.author,
+      status: 'active',
+      category: 'learning',
+      docType: 'manhwa',
+      manhwaUrl: data.manhwaUrl,
+      currentChapter: data.currentChapter,
+      latestChapter: data.latestChapter,
+      coverImageUrl: data.coverImageUrl,
+      readStatus: data.readStatus,
+      readProgress: 0,
+      isLiked: false,
+      tags: ['manhwa', 'webtoon', 'reading'],
+      content: `# ${data.title}\n\n**Reading Source**: [${data.author}](${data.manhwaUrl})\n**Current Chapter**: ${data.currentChapter}\n\n## Reading Notes & Log\n\nTrack your favorite moments, chapter reactions, and theories here.\n`,
+    });
+    setSelectedId(newDoc.id);
+    setIsCreating(false);
+    setTypeFilter('manhwa');
+    setEditorMode('book');
+    setMobileTab('editor');
+    setPasteToast('New Manhwa added to Web Reader!');
+    setTimeout(() => setPasteToast(null), 3000);
+  };
+
   // Convert pasted YouTube URL to embedded Video Lesson block
   const handleConvertPastedToVideo = () => {
     if (!detectedPastedYouTube || !editorRef.current) return;
@@ -2045,6 +2103,20 @@ export default function KnowledgePage() {
       return;
     }
 
+    // Standalone Manhwa URL detection: offer to open directly in In-Web Reader
+    if (isManhwaUrl(trimmed) && !/\s/.test(trimmed)) {
+      const parsedManhwa = parseManhwaUrl(trimmed);
+      const defaultLinkHtml = `<a href="${trimmed}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${trimmed}">${trimmed}</a>`;
+      document.execCommand('insertHTML', false, defaultLinkHtml);
+      if (editorRef.current) {
+        setFContent(editorRef.current.innerHTML);
+        pushHistorySnapshot(editorRef.current.innerHTML);
+        if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
+      }
+      setDetectedPastedManhwa({ url: trimmed, title: parsedManhwa?.titleHint || 'Manhwa Reading' });
+      return;
+    }
+
     // Check if plainText contains URLs or Markdown links
     const hasUrls = /(https?:\/\/[^\s<]+|www\.[^\s<]+|\[[^\]]+\]\([^\)]+\))/.test(plainText);
 
@@ -2186,9 +2258,12 @@ export default function KnowledgePage() {
     const targetDoc = docs.find((d) => d.id === docId);
     if (targetDoc) {
       const isVideo = isDocVideoLesson(targetDoc);
+      const isManhwa = isDocManhwa(targetDoc);
       if (typeFilter === 'videos' && !isVideo) {
         setTypeFilter('all');
-      } else if (typeFilter === 'documents' && isVideo) {
+      } else if (typeFilter === 'documents' && (isVideo || isManhwa)) {
+        setTypeFilter('all');
+      } else if (typeFilter === 'manhwa' && !isManhwa) {
         setTypeFilter('all');
       }
     }
@@ -4017,22 +4092,31 @@ export default function KnowledgePage() {
     window.dispatchEvent(new CustomEvent('open-ai-chat'));
   };
 
-  // Material Type Counts: strictly verified Books and Video Lessons
+  // Material Type Counts: strictly verified Books, Video Lessons, and Manhwa
   const validDocs = docs.filter(isTrueBookOrVideo);
   const allMaterialsCount = validDocs.length;
-  const videoLessonsCount = validDocs.filter((d) => isDocVideoLesson(d)).length;
-  const booksCount = validDocs.filter((d) => !isDocVideoLesson(d) || d.docType === 'document' || Boolean(d.fileName || d.fileUrl)).length;
+  const manhwaCount = validDocs.filter((d) => isDocManhwa(d)).length;
+  const videoLessonsCount = validDocs.filter((d) => !isDocManhwa(d) && isDocVideoLesson(d)).length;
+  const booksCount = validDocs.filter((d) => !isDocManhwa(d) && (!isDocVideoLesson(d) || d.docType === 'document' || Boolean(d.fileName || d.fileUrl))).length;
+  const likedCount = validDocs.filter((d) => Boolean(d.isLiked)).length;
 
   // Filter & sort docs list (pinned items always at the top)
   const q = searchQ.toLowerCase();
   const filteredDocs = validDocs
     .filter((d) => {
-      if (readFilter !== 'all' && (d.readStatus || 'reading') !== readFilter) return false;
-      const isVideo = isDocVideoLesson(d);
-      const isBook = !isVideo || d.docType === 'document' || Boolean(d.fileName || d.fileUrl) || (Array.isArray(d.tags) && d.tags.some(t => ['book','reading','imported','pdf','epub'].includes((t||'').toLowerCase())));
+      if (readFilter === 'liked') {
+        if (!d.isLiked) return false;
+      } else if (readFilter !== 'all' && (d.readStatus || 'reading') !== readFilter) {
+        return false;
+      }
+
+      const isManhwa = isDocManhwa(d);
+      const isVideo = !isManhwa && isDocVideoLesson(d);
+      const isBook = !isManhwa && (!isVideo || d.docType === 'document' || Boolean(d.fileName || d.fileUrl) || (Array.isArray(d.tags) && d.tags.some(t => ['book','reading','imported','pdf','epub'].includes((t||'').toLowerCase()))));
 
       if (typeFilter === 'documents' && !isBook) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
+      if (typeFilter === 'manhwa' && !isManhwa) return false;
       if (q && !d.title.toLowerCase().includes(q) && !(d.content || '').toLowerCase().includes(q)) return false;
       return true;
     })
@@ -4459,6 +4543,25 @@ export default function KnowledgePage() {
                   className={styles.actionMenuItem}
                   onClick={() => {
                     setIsActionMenuOpen(false);
+                    setManhwaModalMode('create');
+                    setManhwaModalOpen(true);
+                  }}
+                  role="menuitem"
+                >
+                  <div className={styles.actionMenuIconBox} style={{ color: '#818cf8', background: 'rgba(129, 140, 248, 0.1)' }}>
+                    <BookMarked size={15} />
+                  </div>
+                  <div className={styles.actionMenuText}>
+                    <span className={styles.actionMenuLabel}>New Manhwa Reading</span>
+                    <span className={styles.actionMenuHint}>Paste website (Asura, Rolia, Vortex) to read in-app</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.actionMenuItem}
+                  onClick={() => {
+                    setIsActionMenuOpen(false);
                     importFileRef.current?.click();
                   }}
                   disabled={isImporting}
@@ -4587,7 +4690,7 @@ export default function KnowledgePage() {
             )}
           </div>
 
-          {/* Material Type Navigation: All | Books | Video Lessons */}
+          {/* Material Type Navigation: All | Books | Video Lessons | Manhwa */}
           <div className={styles.materialTypeTabs} role="tablist" aria-label="Filter by material type">
             <button
               type="button"
@@ -4595,7 +4698,7 @@ export default function KnowledgePage() {
               aria-selected={typeFilter === 'all'}
               className={`${styles.materialTypeTab} ${typeFilter === 'all' ? styles.materialTypeTabActive : ''}`}
               onClick={() => setTypeFilter('all')}
-              title="All books &amp; video lessons"
+              title="All books, video lessons &amp; manhwa"
             >
               <span>All ({allMaterialsCount})</span>
             </button>
@@ -4619,7 +4722,18 @@ export default function KnowledgePage() {
               title="Dedicated video lessons"
             >
               <Video size={11} />
-              <span>Video Lessons ({videoLessonsCount})</span>
+              <span>Videos ({videoLessonsCount})</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={typeFilter === 'manhwa'}
+              className={`${styles.materialTypeTab} ${typeFilter === 'manhwa' ? styles.materialTypeTabActive : ''}`}
+              onClick={() => setTypeFilter('manhwa')}
+              title="Manhwa &amp; Webtoons reader"
+            >
+              <BookMarked size={11} />
+              <span>Manhwa ({manhwaCount})</span>
             </button>
           </div>
 
@@ -4630,6 +4744,7 @@ export default function KnowledgePage() {
                 { id: 'reading', label: 'Reading' },
                 { id: 'to-read', label: 'To Read' },
                 { id: 'completed', label: 'Finished' },
+                { id: 'liked', label: `Liked (${likedCount})` },
               ].map((rf) => (
                 <button
                   key={rf.id}
@@ -4683,7 +4798,33 @@ export default function KnowledgePage() {
           <div className={styles.docList}>
             {filteredDocs.length === 0 ? (
               <div className={styles.emptyList}>
-                {typeFilter === 'videos' ? (
+                {typeFilter === 'manhwa' ? (
+                  <>
+                    <BookMarked size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
+                    <p>No manhwa reading items found</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
+                      {allMaterialsCount > 0 && (
+                        <button
+                          type="button"
+                          className={styles.emptyAddBtn}
+                          onClick={() => setTypeFilter('all')}
+                        >
+                          Show All Materials ({allMaterialsCount})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.emptyAddBtn}
+                        onClick={() => {
+                          setManhwaModalMode('create');
+                          setManhwaModalOpen(true);
+                        }}
+                      >
+                        <BookMarked size={13} /> + Add Manhwa Link
+                      </button>
+                    </div>
+                  </>
+                ) : typeFilter === 'videos' ? (
                   <>
                     <Video size={24} style={{ color: 'var(--color-text-faint)', marginBottom: '6px' }} />
                     <p>No video lessons match your filter</p>
@@ -4768,7 +4909,8 @@ export default function KnowledgePage() {
               filteredDocs.map((doc) => {
                 const isActive = doc.id === selectedId;
                 const isFeatured = featuredBookId === doc.id;
-                const isVideo = isDocVideoLesson(doc);
+                const isManhwa = isDocManhwa(doc);
+                const isVideo = !isManhwa && isDocVideoLesson(doc);
                 const statusDotColor = doc.status === 'active' ? '#10b981' : '#94a3b8';
 
                 return (
@@ -4787,7 +4929,12 @@ export default function KnowledgePage() {
                             ariaLabel={`Select book ${doc.title}`}
                           />
                           {doc.isPinned && <Pin size={11} className={styles.pinnedIcon} />}
-                          {isVideo ? (
+                          {doc.isLiked && <Heart size={11} fill="#ef4444" color="#ef4444" className={styles.likedIcon} />}
+                          {isManhwa ? (
+                            <span className={styles.manhwaRowBadge} title="Manhwa / Webtoon">
+                              <BookMarked size={11} />
+                            </span>
+                          ) : isVideo ? (
                             <span className={styles.videoLessonRowBadge} title="Video Lesson">
                               <Video size={11} />
                             </span>
@@ -4799,6 +4946,14 @@ export default function KnowledgePage() {
                           <span className={styles.docRowTitle}>{doc.title}</span>
                         </div>
                         <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className={`${styles.rowActionBtn} ${doc.isLiked ? styles.rowActionBtnLiked : ''}`}
+                            onClick={() => toggleLikeDoc(doc.id)}
+                            title={doc.isLiked ? "Unlike" : "Like"}
+                          >
+                            <Heart size={11} fill={doc.isLiked ? "#ef4444" : "none"} color={doc.isLiked ? "#ef4444" : "currentColor"} />
+                          </button>
                           <button
                             type="button"
                             className={`${styles.rowActionBtn} ${isFeatured ? styles.rowActionBtnActive : ''}`}
@@ -4847,7 +5002,11 @@ export default function KnowledgePage() {
                       </div>
 
                       <div className={styles.docRowMeta}>
-                        {isVideo ? (
+                        {isManhwa ? (
+                          <span className={styles.metaManhwaTag}>
+                            <BookMarked size={10} /> Manhwa{doc.currentChapter ? ` · ${doc.currentChapter}` : ''}
+                          </span>
+                        ) : isVideo ? (
                           <span className={styles.metaVideoTag}>
                             <Video size={10} /> Video Lesson
                           </span>
@@ -4943,6 +5102,17 @@ export default function KnowledgePage() {
                 <button className={styles.btnCreate} onClick={handleNewDoc}>
                   <Plus size={15} /> New Book
                 </button>
+                <button
+                  className={styles.btnSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => {
+                    setManhwaModalMode('create');
+                    setManhwaModalOpen(true);
+                  }}
+                  title="Add Manhwa / Webtoon reading link"
+                >
+                  <BookMarked size={14} /> + Manhwa Reader
+                </button>
               </div>
             </div>
           ) : (
@@ -4961,7 +5131,30 @@ export default function KnowledgePage() {
                     <span>All Books &amp; Lessons</span>
                   </button>
 
-                  {isCurrentVideo ? (
+                  {isCurrentManhwa ? (
+                    <div className={styles.segmentedControl}>
+                      <button
+                        type="button"
+                        className={`${styles.segmentBtn} ${styles.segmentBtnActive}`}
+                        title="In-Web Manhwa Reader"
+                      >
+                        <BookMarked size={12} />
+                        <span>Manhwa Reader</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.segmentBtn}
+                        onClick={() => {
+                          setManhwaModalMode('edit');
+                          setManhwaModalOpen(true);
+                        }}
+                        title="Edit Manhwa URL & Chapter"
+                      >
+                        <Edit2 size={12} />
+                        <span>Edit Link &amp; Chapter</span>
+                      </button>
+                    </div>
+                  ) : isCurrentVideo ? (
                     <div className={styles.segmentedControl}>
                       <button
                         type="button"
@@ -5022,6 +5215,18 @@ export default function KnowledgePage() {
                 </div>
 
                 <div className={styles.canvasActionsRight}>
+                  {selectedDoc && (
+                    <button
+                      type="button"
+                      className={`${styles.headerGhostBtn} ${selectedDoc.isLiked ? styles.headerLikeBtnActive : ''}`}
+                      onClick={() => toggleLikeDoc(selectedDoc.id)}
+                      title={selectedDoc.isLiked ? "Unlike" : "Like"}
+                    >
+                      <Heart size={13} fill={selectedDoc.isLiked ? "#ef4444" : "none"} color={selectedDoc.isLiked ? "#ef4444" : "currentColor"} />
+                      <span>{selectedDoc.isLiked ? 'Liked' : 'Like'}</span>
+                    </button>
+                  )}
+
                   {selectedDoc && (
                     <span className={styles.lastSavedText}>
                       Saved {safeFormatTime(selectedDoc.updatedAt) || 'just now'}
@@ -5112,7 +5317,11 @@ export default function KnowledgePage() {
               {selectedDoc && (
                 <div className={styles.bookInfoBanner}>
                   <div className={styles.bookInfoLeft}>
-                    {isCurrentVideo ? (
+                    {isCurrentManhwa ? (
+                      <span className={styles.bookInfoTypeBadgeManhwa}>
+                        Manhwa Webtoon
+                      </span>
+                    ) : isCurrentVideo ? (
                       <span className={styles.bookInfoTypeBadgeVideo}>
                         Video Lesson
                       </span>
@@ -5131,6 +5340,28 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <div className={styles.bookInfoRight}>
+                    {selectedDoc.webUrl && (
+                      <a
+                        href={selectedDoc.webUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.bookOpenFileLink}
+                        title="Open external website or reading link"
+                      >
+                        <ExternalLink size={11} /> Open Web Link ↗
+                      </a>
+                    )}
+                    {selectedDoc.manhwaUrl && (
+                      <a
+                        href={selectedDoc.manhwaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.bookOpenFileLink}
+                        title="Open original manhwa site"
+                      >
+                        <ExternalLink size={11} /> Open Site ↗
+                      </a>
+                    )}
                     {(selectedDoc.fileName || selectedDoc.fileUrl) && (
                       <button
                         type="button"
@@ -5281,7 +5512,18 @@ export default function KnowledgePage() {
                 /* ── Formal Microsoft Word Document / Video Studio Layout with Right Companion ── */
                 <div className={isCompanionOpen ? styles.readerTwoColumnLayout : styles.readerTwoColumnLayoutCollapsed}>
                   <div className={styles.readerMainContent}>
-                    {isCurrentVideo ? (
+                    {isCurrentManhwa && selectedDoc ? (
+                      /* ── Executive In-Web Manhwa Reader Studio Layout ── */
+                      <InWebManhwaReader
+                        doc={selectedDoc}
+                        onUpdateDoc={updateDoc}
+                        onToggleLike={toggleLikeDoc}
+                        onOpenEditModal={() => {
+                          setManhwaModalMode('edit');
+                          setManhwaModalOpen(true);
+                        }}
+                      />
+                    ) : isCurrentVideo ? (
                       /* ── Executive Video Lesson Studio Layout (Wide Theater Canvas) ── */
                       <div className={styles.videoLessonStudioSheet}>
                         {/* 1. Active Video Player Block (Wide Theater Player) */}
@@ -6480,6 +6722,66 @@ export default function KnowledgePage() {
         mode={videoModalMode}
         lessonNumber={videoModalMode === 'add-part' ? currentVideoLessons.length + 1 : undefined}
       />
+
+      {/* Add / Edit Manhwa Modal */}
+      <AddManhwaModal
+        isOpen={manhwaModalOpen}
+        onClose={() => setManhwaModalOpen(false)}
+        onInsert={handleInsertManhwa}
+        initialUrl={manhwaModalMode === 'edit' ? selectedDoc?.manhwaUrl : undefined}
+        initialTitle={manhwaModalMode === 'edit' ? selectedDoc?.title : undefined}
+        initialChapter={manhwaModalMode === 'edit' ? selectedDoc?.currentChapter : undefined}
+        initialTotalChapters={manhwaModalMode === 'edit' ? selectedDoc?.latestChapter : undefined}
+        initialAuthor={manhwaModalMode === 'edit' ? selectedDoc?.author : undefined}
+        initialStatus={manhwaModalMode === 'edit' ? selectedDoc?.readStatus : undefined}
+        mode={manhwaModalMode}
+      />
+
+      {/* Floating Prompt on Pasting Manhwa URL */}
+      {detectedPastedManhwa && (
+        <div className={styles.youtubePasteToast} role="alert">
+          <span>Manhwa reading link detected ({detectedPastedManhwa.title}). Open in Web Reader?</span>
+          <div className={styles.youtubePasteToastActions}>
+            <button
+              type="button"
+              className={styles.toastInsertVideoBtn}
+              onClick={() => {
+                const parsed = parseManhwaUrl(detectedPastedManhwa.url);
+                const newDoc = addDoc({
+                  title: detectedPastedManhwa.title,
+                  author: parsed?.siteName || 'Manhwa',
+                  status: 'active',
+                  category: 'learning',
+                  docType: 'manhwa',
+                  manhwaUrl: detectedPastedManhwa.url,
+                  currentChapter: parsed?.chapterHint || 'Chapter 1',
+                  readStatus: 'reading',
+                  readProgress: 0,
+                  isLiked: false,
+                  tags: ['manhwa', 'webtoon', 'reading'],
+                  content: `# ${detectedPastedManhwa.title}\n\n**Reading Source**: [${parsed?.siteName || 'Manhwa'}](${detectedPastedManhwa.url})\n**Current Chapter**: ${parsed?.chapterHint || 'Chapter 1'}\n\n## Reading Notes & Log\n\nTrack your favorite moments, chapter reactions, and theories here.\n`,
+                });
+                setSelectedId(newDoc.id);
+                setTypeFilter('manhwa');
+                setEditorMode('book');
+                setMobileTab('editor');
+                setDetectedPastedManhwa(null);
+                setPasteToast('New Manhwa added to Web Reader!');
+                setTimeout(() => setPasteToast(null), 3000);
+              }}
+            >
+              Open in Web Reader
+            </button>
+            <button
+              type="button"
+              className={styles.toastDismissBtn}
+              onClick={() => setDetectedPastedManhwa(null)}
+            >
+              Keep as Link
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating Prompt on Pasting Standalone YouTube URL */}
       {detectedPastedYouTube && (
