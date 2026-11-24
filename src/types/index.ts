@@ -484,6 +484,7 @@ export interface KnowledgeDocument {
   isReminder?: boolean;        // Active reminder on Today dashboard
   syncedWithCloud?: boolean;   // Synced with Firestore books subcollection
   isChunked?: boolean;         // Stored in subcollection chunks in cloud for massive size
+  storedInIdb?: boolean;       // Content exceeds localStorage quota and is fully loaded from IndexedDB
 }
 
 // ── Reminders & Notifications (Phase 24) ───────────────────

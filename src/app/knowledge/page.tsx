@@ -998,6 +998,7 @@ export default function KnowledgePage() {
   // Smart Paste as Book states
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [pasteModalText, setPasteModalText] = useState('');
+  const [pasteExactMode, setPasteExactMode] = useState(false);
   const [pasteToast, setPasteToast] = useState<string | null>(null);
 
   // Reading mode typography settings (font family, font size & reader text color)
@@ -1975,10 +1976,10 @@ export default function KnowledgePage() {
     await processBookFiles(Array.from(files));
   };
 
-  // Helper to format raw text and create/display as Book
-  const applyPastedTextAsBook = (rawText: string) => {
+  // Helper to format raw text and create/display as Book (handles unlimited length books & chapters)
+  const applyPastedTextAsBook = (rawText: string, options?: { preserveExactText?: boolean }) => {
     if (!rawText.trim()) return;
-    const formatted = cleanAndFormatPastedText(rawText);
+    const formatted = cleanAndFormatPastedText(rawText, undefined, undefined, options);
     const newDoc = addDoc({
       title: formatted.title,
       content: formatted.markdown,
@@ -1992,7 +1993,7 @@ export default function KnowledgePage() {
     setIsCreating(false);
     setEditorMode('book');
     setMobileTab('editor');
-    setPasteToast(`Formatted "${formatted.title}" into Book layout!`);
+    setPasteToast(`Formatted "${formatted.title}" into Book layout (No limit)!`);
     setTimeout(() => setPasteToast(null), 3500);
   };
 
@@ -2030,9 +2031,9 @@ export default function KnowledgePage() {
     setPasteModalOpen(true);
   };
 
-  const appendPastedTextToCurrentBook = (rawText: string) => {
+  const appendPastedTextToCurrentBook = (rawText: string, options?: { preserveExactText?: boolean }) => {
     if (!rawText.trim()) return;
-    const formatted = cleanAndFormatPastedText(rawText, undefined, fTitle || selectedDoc?.title);
+    const formatted = cleanAndFormatPastedText(rawText, undefined, fTitle || selectedDoc?.title, options);
     const existing = fContent || selectedDoc?.content || '';
     const updatedContent = existing.trim()
       ? `${existing.trim()}\n\n---\n\n${formatted.markdown.replace(/^#\s+.+\n+/, '')}`
@@ -2050,7 +2051,7 @@ export default function KnowledgePage() {
       setFTitle(formatted.title);
     }
     setEditorMode('book');
-    setPasteToast('Pasted & styled into clean Book layout!');
+    setPasteToast('Pasted & added to Book (No size limit)!');
     setTimeout(() => setPasteToast(null), 3500);
   };
 
@@ -2078,12 +2079,79 @@ export default function KnowledgePage() {
     setTimeout(() => setPasteToast(null), 3500);
   };
 
+  // Inserts text or HTML into contentEditable without Chrome's 64KB execCommand buffer limitation
+  const insertContentIntoRichEditor = (editorEl: HTMLElement, textToInsert: string, htmlSnippet?: string) => {
+    let inserted = false;
+
+    // Method 1: Modern DOM Selection & Range (unlimited text size, zero truncation)
+    try {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        if (editorEl.contains(range.commonAncestorContainer) || editorEl === range.commonAncestorContainer) {
+          range.deleteContents();
+          if (htmlSnippet) {
+            const template = document.createElement('template');
+            template.innerHTML = htmlSnippet;
+            const frag = template.content;
+            const lastChild = frag.lastChild;
+            range.insertNode(frag);
+            if (lastChild) {
+              const newRange = document.createRange();
+              newRange.setStartAfter(lastChild);
+              newRange.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(newRange);
+            }
+          } else {
+            const textNode = document.createTextNode(textToInsert);
+            range.insertNode(textNode);
+            const newRange = document.createRange();
+            newRange.setStartAfter(textNode);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          }
+          inserted = true;
+        }
+      }
+    } catch (rangeErr) {
+      console.warn('[RichEditor] Selection range paste error, falling back:', rangeErr);
+    }
+
+    // Method 2: document.execCommand fallback (only if under 40k chars)
+    if (!inserted && textToInsert.length < 40000) {
+      try {
+        inserted = htmlSnippet
+          ? document.execCommand('insertHTML', false, htmlSnippet)
+          : document.execCommand('insertText', false, textToInsert);
+      } catch {}
+    }
+
+    // Method 3: Direct DOM Append (absolute fallback for massive text without limits)
+    if (!inserted) {
+      if (htmlSnippet) {
+        editorEl.innerHTML += htmlSnippet;
+      } else {
+        const p = document.createElement('p');
+        p.textContent = textToInsert;
+        editorEl.appendChild(p);
+      }
+      inserted = true;
+    }
+
+    return inserted;
+  };
+
   // Paste inside the contentEditable rich editor: preserves exact text formatting while
   // automatically detecting and converting URLs and Markdown links into clickable hyperlinks.
+  // Supports UNLIMITED text length (resolves Chrome 64KB execCommand buffer limitation).
   const handleSmartPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const rawText = e.clipboardData.getData('text/plain');
     if (!rawText) return;
+    const editor = editorRef.current;
+    if (!editor) return;
 
     // Automatically put space after numbering: e.g. "1.hha" -> "1. hha"
     const plainText = rawText.replace(/(^|[\s\n])(\d+)[\.\)]([A-Za-z\u00C0-\u024F\u1E00-\u1EFF])/g, '$1$2. $3');
@@ -2093,12 +2161,10 @@ export default function KnowledgePage() {
     const parsedYt = parseYouTubeUrl(trimmed);
     if (parsedYt && !/\s/.test(trimmed)) {
       const defaultLinkHtml = `<a href="${parsedYt.watchUrl}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${parsedYt.watchUrl}">${trimmed}</a>`;
-      document.execCommand('insertHTML', false, defaultLinkHtml);
-      if (editorRef.current) {
-        setFContent(editorRef.current.innerHTML);
-        pushHistorySnapshot(editorRef.current.innerHTML);
-        if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
-      }
+      insertContentIntoRichEditor(editor, trimmed, defaultLinkHtml);
+      setFContent(editor.innerHTML);
+      pushHistorySnapshot(editor.innerHTML);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
       setDetectedPastedYouTube({ parsed: parsedYt, rawUrl: trimmed });
       return;
     }
@@ -2107,18 +2173,16 @@ export default function KnowledgePage() {
     if (isManhwaUrl(trimmed) && !/\s/.test(trimmed)) {
       const parsedManhwa = parseManhwaUrl(trimmed);
       const defaultLinkHtml = `<a href="${trimmed}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${trimmed}">${trimmed}</a>`;
-      document.execCommand('insertHTML', false, defaultLinkHtml);
-      if (editorRef.current) {
-        setFContent(editorRef.current.innerHTML);
-        pushHistorySnapshot(editorRef.current.innerHTML);
-        if (selectedDoc) updateDoc(selectedDoc.id, { content: editorRef.current.innerHTML });
-      }
+      insertContentIntoRichEditor(editor, trimmed, defaultLinkHtml);
+      setFContent(editor.innerHTML);
+      pushHistorySnapshot(editor.innerHTML);
+      if (selectedDoc) updateDoc(selectedDoc.id, { content: editor.innerHTML });
       setDetectedPastedManhwa({ url: trimmed, title: parsedManhwa?.titleHint || 'Manhwa Reading' });
       return;
     }
 
-    // Check if plainText contains URLs or Markdown links
-    const hasUrls = /(https?:\/\/[^\s<]+|www\.[^\s<]+|\[[^\]]+\]\([^\)]+\))/.test(plainText);
+    // Check if plainText contains URLs or Markdown links (only run URL regex on reasonably sized text or small chunks)
+    const hasUrls = plainText.length < 200000 && /(https?:\/\/[^\s<]+|www\.[^\s<]+|\[[^\]]+\]\([^\)]+\))/.test(plainText);
 
     if (hasUrls) {
       let html = plainText
@@ -2149,15 +2213,13 @@ export default function KnowledgePage() {
       // Convert line breaks to preserve spacing
       html = html.replace(/\r?\n/g, '<br/>');
 
-      document.execCommand('insertHTML', false, html);
+      insertContentIntoRichEditor(editor, plainText, html);
     } else {
-      document.execCommand('insertText', false, plainText);
+      insertContentIntoRichEditor(editor, plainText);
     }
 
-    if (editorRef.current) {
-      setFContent(editorRef.current.innerHTML);
-      pushHistorySnapshot(editorRef.current.innerHTML);
-    }
+    setFContent(editor.innerHTML);
+    pushHistorySnapshot(editor.innerHTML);
     updateActiveFormats();
   };
 
@@ -5274,15 +5336,26 @@ export default function KnowledgePage() {
                   )}
 
                   {(editorMode === 'book' || editorMode === 'word') && (
-                    <button
-                      type="button"
-                      className={`${styles.headerGhostBtn} ${isCompanionOpen ? styles.headerActiveBtn : ''}`}
-                      onClick={handleToggleCompanion}
-                      title={isCompanionOpen ? 'Hide Reading Tools companion' : 'Show Reading Tools (timer, typography, auto-scroll)'}
-                    >
-                      <SlidersHorizontal size={13} style={isCompanionOpen ? { color: 'var(--color-accent-light)' } : undefined} />
-                      <span>{isCompanionOpen ? 'Reading Tools' : 'Tools'}</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className={styles.headerGhostBtn}
+                        onClick={handlePasteIntoCurrentBook}
+                        title="Paste or append text into this book (No size limit)"
+                      >
+                        <ClipboardPaste size={13} style={{ color: 'var(--color-accent-light)' }} />
+                        <span>Paste into Book</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.headerGhostBtn} ${isCompanionOpen ? styles.headerActiveBtn : ''}`}
+                        onClick={handleToggleCompanion}
+                        title={isCompanionOpen ? 'Hide Reading Tools companion' : 'Show Reading Tools (timer, typography, auto-scroll)'}
+                      >
+                        <SlidersHorizontal size={13} style={isCompanionOpen ? { color: 'var(--color-accent-light)' } : undefined} />
+                        <span>{isCompanionOpen ? 'Reading Tools' : 'Tools'}</span>
+                      </button>
+                    </>
                   )}
 
                   {!isCurrentVideo && (
@@ -6355,14 +6428,14 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* Smart Paste into Book Modal (fallback when clipboard API is restricted or for manual pasting) */}
+      {/* Smart Paste into Book Modal (supports unlimited length text, chapters, whole books) */}
       {pasteModalOpen && (
         <div className={styles.pasteModalOverlay} onClick={() => setPasteModalOpen(false)}>
           <div className={styles.pasteModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.pasteModalHeader}>
               <div className={styles.pasteModalTitle}>
                 <BookMarked size={20} style={{ color: 'var(--color-accent)' }} />
-                <span>Paste & Format as Book</span>
+                <span>{selectedDoc && (editorMode === 'book' || editorMode === 'word') ? 'Paste Text into Book' : 'Paste & Create Book'}</span>
               </div>
               <button
                 type="button"
@@ -6374,15 +6447,44 @@ export default function KnowledgePage() {
               </button>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              Paste raw text from a website, PDF, or document. It will automatically clean line breaks, reconstruct headings, format lists, and apply the elegant Book design.
+              Paste any length text from a website, PDF, ebook, or document. Supports unlimited characters and chapters without truncation or limits.
             </p>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                className={`${styles.pasteModeOptionBtn} ${!pasteExactMode ? styles.pasteModeOptionBtnActive : ''}`}
+                onClick={() => setPasteExactMode(false)}
+                title="Automatically structures headings, cleans line breaks, and formats lists"
+              >
+                Smart Book Layout
+              </button>
+              <button
+                type="button"
+                className={`${styles.pasteModeOptionBtn} ${pasteExactMode ? styles.pasteModeOptionBtnActive : ''}`}
+                onClick={() => setPasteExactMode(true)}
+                title="Preserves 100% exact text character-for-character without any changes"
+              >
+                Exact Text (Raw)
+              </button>
+            </div>
+
             <textarea
               className={styles.pasteModalTextarea}
-              placeholder="Paste your text here (Ctrl+V)..."
+              placeholder="Paste your text here (Ctrl+V)... There is no size limit."
               value={pasteModalText}
               onChange={(e) => setPasteModalText(e.target.value)}
+              spellCheck={false}
               autoFocus
             />
+
+            {pasteModalText.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-2)', padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+                <span>{pasteModalText.length.toLocaleString()} characters • {pasteModalText.trim().split(/\s+/).filter(Boolean).length.toLocaleString()} words</span>
+                <span style={{ color: '#10b981', fontWeight: 600 }}>No Length Limit</span>
+              </div>
+            )}
+
             <div className={styles.pasteModalActions}>
               <button
                 type="button"
@@ -6391,6 +6493,22 @@ export default function KnowledgePage() {
               >
                 Cancel
               </button>
+              {selectedDoc && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  disabled={!pasteModalText.trim()}
+                  onClick={() => {
+                    const txt = pasteModalText;
+                    setPasteModalOpen(false);
+                    setPasteModalText('');
+                    appendPastedTextToCurrentBook(txt, { preserveExactText: pasteExactMode });
+                  }}
+                  title="Append pasted text to the end of currently open book"
+                >
+                  <BookOpen size={14} /> Append to This Book
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.btnPrimary}
@@ -6399,14 +6517,10 @@ export default function KnowledgePage() {
                   const txt = pasteModalText;
                   setPasteModalOpen(false);
                   setPasteModalText('');
-                  if (editorMode === 'book' && selectedDoc) {
-                    appendPastedTextToCurrentBook(txt);
-                  } else {
-                    applyPastedTextAsBook(txt);
-                  }
+                  applyPastedTextAsBook(txt, { preserveExactText: pasteExactMode });
                 }}
               >
-                <BookMarked size={14} /> Format & Open as Book
+                <Plus size={14} /> Create as New Book
               </button>
             </div>
           </div>

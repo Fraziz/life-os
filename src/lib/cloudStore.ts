@@ -23,6 +23,22 @@ export function isManagedKvKey(key: string): boolean {
   const isPrefixMatch = key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_');
   if (!isPrefixMatch) return false;
   if (key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') return false;
+
+  // Books and knowledge documents have their own dedicated cloud sync via bookCloudSync.ts with multi-chunk storage.
+  // They must NEVER be stored in or pruned by the single-document KV collection.
+  if (
+    key.startsWith('life_os_knowledge_docs') ||
+    key.startsWith('life_os_books') ||
+    key.startsWith('life_os_study_docs') ||
+    key.startsWith('life_os_docs') ||
+    key.startsWith('life_os_imported_books') ||
+    key.startsWith('life_os_book_') ||
+    key.startsWith('life_os_deleted_book_ids') ||
+    key.startsWith('knowledge_docs')
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -63,25 +79,9 @@ export async function flushCloudNow(): Promise<void> {
       chunk.forEach(([key, value]) => {
         const updatedAt = Date.now();
         let safeValue = value;
-        // Guard against Firestore 1MB single-document quota limit
+        // Guard against Firestore 1MB single-document quota limit for generic KV keys
         if (typeof value === 'string' && value.length > 900000) {
-          try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) {
-              const pruned = parsed.map((item) => {
-                if (typeof item === 'object' && item && item.content && typeof item.content === 'string' && item.content.length > 30000) {
-                  return {
-                    ...item,
-                    content: item.content.slice(0, 30000) + '\n\n[...Full book content preserved in local device storage...]',
-                  };
-                }
-                return item;
-              });
-              safeValue = JSON.stringify(pruned);
-            }
-          } catch {
-            safeValue = value.slice(0, 900000);
-          }
+          safeValue = value.slice(0, 900000);
         }
         batch.set(kvRef(uid, key), { v: safeValue, updatedAt });
       });

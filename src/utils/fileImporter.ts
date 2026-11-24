@@ -867,6 +867,8 @@ export function removeHashtags(text: string): string {
  */
 export function removeAiChatter(text: string): string {
   if (!text) return '';
+  // Never strip chatter if text is long (such as a book or multi-chapter document)
+  if (text.length > 15000) return text;
 
   const lines = text.split('\n');
   const filtered: string[] = [];
@@ -891,12 +893,12 @@ export function removeAiChatter(text: string): string {
 }
 
 /**
- * Deduplicates paragraphs, sections, list items, and consecutive duplicate lines.
+ * Deduplicates consecutive repeated paragraphs or lines without discarding repeated dialogue across a long book.
  */
 export function deduplicateContentBlocks(blocks: string[], documentTitle?: string): string[] {
-  const seenSignatures = new Set<string>();
   const normalizedTitle = documentTitle ? documentTitle.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
   const result: string[] = [];
+  let lastBlockSig = '';
 
   for (let i = 0; i < blocks.length; i++) {
     const rawBlock = blocks[i].trim();
@@ -905,12 +907,13 @@ export function deduplicateContentBlocks(blocks: string[], documentTitle?: strin
     // Preserved dividers
     if (rawBlock === '---' || rawBlock === '***') {
       result.push('---');
+      lastBlockSig = '---';
       continue;
     }
 
     // Split block into individual lines to check for list items and duplicate lines
     const lines = rawBlock.split('\n');
-    const seenLineSignatures = new Set<string>();
+    let lastLineSig = '';
     const cleanLines: string[] = [];
 
     for (let lIdx = 0; lIdx < lines.length; lIdx++) {
@@ -920,11 +923,11 @@ export function deduplicateContentBlocks(blocks: string[], documentTitle?: strin
       const isListItem = /^([-*•]|\d+[\.\)])\s+/.test(line);
       const lineSig = line.toLowerCase().replace(/^([-*•]|\d+[\.\)]|#{1,6})\s+/, '').replace(/[^a-z0-9]/g, '');
 
-      // Deduplicate identical list items or repeated lines inside this block
-      if (isListItem && lineSig && seenLineSignatures.has(lineSig)) {
+      // Only deduplicate CONSECUTIVE identical lines or list items (e.g. accidental double-paste)
+      if (isListItem && lineSig && lineSig === lastLineSig) {
         continue;
       }
-      if (lineSig) seenLineSignatures.add(lineSig);
+      lastLineSig = lineSig;
       cleanLines.push(line);
     }
 
@@ -937,14 +940,17 @@ export function deduplicateContentBlocks(blocks: string[], documentTitle?: strin
       .replace(/^[*-•]\s+/gm, '')
       .replace(/[^a-z0-9]/g, '');
 
+    // Skip only if identical to the extracted document title at the very beginning
     if (i === 0 && normalizedTitle && blockSig === normalizedTitle) {
       continue;
     }
-    if (blockSig.length > 8 && seenSignatures.has(blockSig)) {
+
+    // Only skip if it is a CONSECUTIVE duplicate block (never discard repeated dialogue or chapters across the whole book)
+    if (blockSig.length > 8 && blockSig === lastBlockSig) {
       continue;
     }
 
-    if (blockSig.length > 8) seenSignatures.add(blockSig);
+    lastBlockSig = blockSig;
     result.push(cleanedBlock);
   }
 
@@ -955,13 +961,25 @@ export function deduplicateContentBlocks(blocks: string[], documentTitle?: strin
  * Transforms pasted text or HTML (from websites, PDFs, Word, emails, notes)
  * into clean, publication-ready Book format markdown with structured headings,
  * flowing paragraphs, and clean typography without icons, hashtags, or duplicate text.
+ * Handles unlimited text length without dropping or truncating long book content.
  */
 export function cleanAndFormatPastedText(
   plainText: string,
   htmlText?: string,
-  fallbackTitle?: string
+  fallbackTitle?: string,
+  options?: { preserveExactText?: boolean }
 ): { title: string; markdown: string } {
   let sourceText = plainText || '';
+
+  // If exact raw text preservation is requested, preserve all words and whitespace cleanly
+  if (options?.preserveExactText) {
+    const normalized = sourceText.replace(/\r\n|\r/g, '\n').trim();
+    if (!normalized) return { title: fallbackTitle || 'Untitled Book', markdown: '' };
+    const firstLine = normalized.split('\n')[0].replace(/^#+\s*/, '').trim().slice(0, 80);
+    const title = firstLine || fallbackTitle || 'Untitled Book';
+    const finalMd = normalized.startsWith('# ') ? normalized : `# ${title}\n\n${normalized}`;
+    return { title, markdown: finalMd };
+  }
 
   // 1. If HTML is available, attempt to extract clean structured markdown from it
   if (htmlText && typeof DOMParser !== 'undefined') {

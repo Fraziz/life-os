@@ -3335,6 +3335,30 @@
   border-color: var(--color-accent);
 }
 
+.pasteModeOptionBtn {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pasteModeOptionBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.pasteModeOptionBtnActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
 .pasteModalActions {
   display: flex;
   align-items: center;

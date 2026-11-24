@@ -869,8 +869,8 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
               } else {
                 const idbLen = (d.content || '').length;
                 const existLen = (existing.content || '').length;
-                const existingIsTruncated = (existing.content || '').includes('[...Full');
-                const idbIsTruncated = (d.content || '').includes('[...Full');
+                const existingIsTruncated = (existing.content || '').includes('[...Full') || Boolean(existing.storedInIdb);
+                const idbIsTruncated = (d.content || '').includes('[...Full') || Boolean(d.storedInIdb);
                 if (existingIsTruncated && !idbIsTruncated) {
                   map.set(d.id, d);
                 } else if (!idbIsTruncated && idbLen >= existLen) {
@@ -882,6 +882,18 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         }
       } catch (idbErr) {
         console.warn(`[KnowledgeContext] IDB read error for ${key}:`, idbErr);
+      }
+    }
+
+    // 3. Inspect any individually saved full books in IndexedDB for complete content
+    for (const [id, currentDoc] of Array.from(map.entries())) {
+      if (currentDoc.storedInIdb || (currentDoc.content || '').includes('[...Full')) {
+        try {
+          const fullBook = await idbGet<KnowledgeDocument>(`life_os_book_${id}`);
+          if (fullBook && typeof fullBook.content === 'string' && fullBook.content.length > (currentDoc.content || '').length) {
+            map.set(id, { ...fullBook, storedInIdb: undefined });
+          }
+        } catch {}
       }
     }
 
@@ -908,18 +920,27 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     isLoadedRef.current = true;
     setIsLoaded(true);
 
-    // 6. Critical: Persist full merged books library to IndexedDB
+    // 6. Critical: Persist full merged books library to IndexedDB (unlimited quota)
     void idbSet(STORAGE_KEY, merged);
     void idbSet('life_os_knowledge_docs_backup', merged);
+    merged.forEach((d) => {
+      if (d.id) void idbSet(`life_os_book_${d.id}`, d);
+    });
 
     if (!isCloudSyncEvent) {
       try {
-        const currentRaw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-        const newRaw = JSON.stringify(merged);
-        if (currentRaw !== newRaw) {
-          localStorage.setItem(STORAGE_KEY, newRaw);
-          localStorage.setItem(INITIALIZED_KEY, 'true');
+        const serialized = JSON.stringify(merged);
+        if (serialized.length <= 1_500_000) {
+          localStorage.setItem(STORAGE_KEY, serialized);
+        } else {
+          // Large library protection: keep localStorage safe from quota crashes
+          const lightCache = merged.map((d) => {
+            const content = d.content || '';
+            return content.length > 3000 ? { ...d, content: content.slice(0, 3000), storedInIdb: true } : d;
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(lightCache));
         }
+        localStorage.setItem(INITIALIZED_KEY, 'true');
       } catch (quotaErr) {
         console.warn('[KnowledgeContext] LocalStorage full; IndexedDB retains complete full content:', quotaErr);
       }
@@ -952,10 +973,33 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
     // 1. Immediately persist full documents & books into IndexedDB (unlimited quota)
     void idbSet(STORAGE_KEY, next);
     void idbSet('life_os_knowledge_docs_backup', next);
+    // Persist each book individually into IndexedDB so it has dedicated zero-limit storage
+    next.forEach((docItem) => {
+      if (docItem.id) {
+        void idbSet(`life_os_book_${docItem.id}`, docItem);
+      }
+    });
 
     // 2. Also save to localStorage for fast initial paint / offline caching
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const serialized = JSON.stringify(next);
+      if (serialized.length <= 1_500_000) {
+        localStorage.setItem(STORAGE_KEY, serialized);
+      } else {
+        // Large library / massive book protection: store preview in localStorage while IndexedDB retains 100% full text
+        const lightCache = next.map((d) => {
+          const content = d.content || '';
+          if (content.length > 3000) {
+            return {
+              ...d,
+              content: content.slice(0, 3000),
+              storedInIdb: true,
+            };
+          }
+          return d;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightCache));
+      }
     } catch (quotaErr) {
       console.warn('[KnowledgeContext] localStorage quota exceeded, full content preserved in IndexedDB:', quotaErr);
     }
