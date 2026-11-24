@@ -4946,6 +4946,18 @@ export default function KnowledgePage() {
                           <span className={styles.docRowTitle}>{doc.title}</span>
                         </div>
                         <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
+                          {(doc.manhwaUrl || doc.webUrl) && (
+                            <a
+                              href={doc.manhwaUrl || doc.webUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.rowActionBtn}
+                              title="Open directly on web in new tab"
+                              style={{ color: 'var(--color-accent-light, #818cf8)' }}
+                            >
+                              <ExternalLink size={11} />
+                            </a>
+                          )}
                           <button
                             type="button"
                             className={`${styles.rowActionBtn} ${doc.isLiked ? styles.rowActionBtnLiked : ''}`}
@@ -5003,9 +5015,24 @@ export default function KnowledgePage() {
 
                       <div className={styles.docRowMeta}>
                         {isManhwa ? (
-                          <span className={styles.metaManhwaTag}>
-                            <BookMarked size={10} /> Manhwa{doc.currentChapter ? ` · ${doc.currentChapter}` : ''}
-                          </span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span className={styles.metaManhwaTag}>
+                              <BookMarked size={10} /> Manhwa{doc.currentChapter ? ` · ${doc.currentChapter}` : ''}
+                            </span>
+                            {(doc.manhwaUrl || doc.webUrl) && (
+                              <a
+                                href={doc.manhwaUrl || doc.webUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.metaOpenWebLink}
+                                onClick={(e) => e.stopPropagation()}
+                                title="Open link directly on web"
+                              >
+                                <ExternalLink size={9} />
+                                <span>Open Web ↗</span>
+                              </a>
+                            )}
+                          </div>
                         ) : isVideo ? (
                           <span className={styles.metaVideoTag}>
                             <Video size={10} /> Video Lesson

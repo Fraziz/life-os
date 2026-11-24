@@ -12,7 +12,9 @@ import {
   Edit2,
   CheckCircle2,
   FileText,
-  ShieldCheck,
+  Globe,
+  BookOpen,
+  ArrowRight,
 } from 'lucide-react';
 import styles from './InWebManhwaReader.module.css';
 import type { KnowledgeDocument, DocumentReadStatus } from '@/types';
@@ -37,6 +39,7 @@ export default function InWebManhwaReader({
   const [isZenMode, setIsZenMode] = useState(false);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [notesText, setNotesText] = useState(doc.content || '');
+  const [viewMode, setViewMode] = useState<'hub' | 'embed'>('hub');
   const [readerEngine, setReaderEngine] = useState<'proxy' | 'direct'>('proxy');
 
   const manhwaUrl = (doc.manhwaUrl || '').trim();
@@ -44,7 +47,7 @@ export default function InWebManhwaReader({
   const siteName = doc.author || parsedMeta?.siteName || 'Web Reader';
   const currentChapter = doc.currentChapter || parsedMeta?.chapterHint || 'Chapter 1';
 
-  // Compute iframe source: default to server proxy to bypass X-Frame-Options: SAMEORIGIN
+  // Compute iframe source: default to server proxy
   const frameSrc = manhwaUrl
     ? readerEngine === 'proxy'
       ? `/api/manhwa/proxy?url=${encodeURIComponent(manhwaUrl)}`
@@ -55,7 +58,13 @@ export default function InWebManhwaReader({
     setIframeKey((prev) => prev + 1);
   };
 
-  const handlePrevChapter = () => {
+  const handleOpenDirect = () => {
+    if (manhwaUrl) {
+      window.open(manhwaUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handlePrevChapter = (openTab = false) => {
     const res = shiftChapterUrl(manhwaUrl, -1);
     if (res) {
       onUpdateDoc(doc.id, {
@@ -63,8 +72,10 @@ export default function InWebManhwaReader({
         currentChapter: res.nextChapter,
       });
       setIframeKey((prev) => prev + 1);
+      if (openTab) {
+        window.open(res.nextUrl, '_blank', 'noopener,noreferrer');
+      }
     } else {
-      // Fallback: decrement numeric chapter
       const numMatch = currentChapter.match(/\d+/);
       if (numMatch) {
         const nextNum = Math.max(1, parseInt(numMatch[0], 10) - 1);
@@ -76,7 +87,7 @@ export default function InWebManhwaReader({
     }
   };
 
-  const handleNextChapter = () => {
+  const handleNextChapter = (openTab = false) => {
     const res = shiftChapterUrl(manhwaUrl, 1);
     if (res) {
       onUpdateDoc(doc.id, {
@@ -85,8 +96,10 @@ export default function InWebManhwaReader({
         readStatus: 'reading',
       });
       setIframeKey((prev) => prev + 1);
+      if (openTab) {
+        window.open(res.nextUrl, '_blank', 'noopener,noreferrer');
+      }
     } else {
-      // Fallback: increment numeric chapter
       const numMatch = currentChapter.match(/\d+/);
       if (numMatch) {
         const nextNum = parseInt(numMatch[0], 10) + 1;
@@ -134,7 +147,7 @@ export default function InWebManhwaReader({
           <button
             type="button"
             className={styles.chapterBtn}
-            onClick={handlePrevChapter}
+            onClick={() => handlePrevChapter(false)}
             title="Previous Chapter"
             aria-label="Previous Chapter"
           >
@@ -150,7 +163,7 @@ export default function InWebManhwaReader({
           <button
             type="button"
             className={styles.chapterBtn}
-            onClick={handleNextChapter}
+            onClick={() => handleNextChapter(false)}
             title="Next Chapter"
             aria-label="Next Chapter"
           >
@@ -161,16 +174,29 @@ export default function InWebManhwaReader({
 
         {/* Action Controls */}
         <div className={styles.actionControls}>
-          {/* Reader Engine Switcher */}
+          {/* Direct Web Link Button */}
+          {manhwaUrl && (
+            <button
+              type="button"
+              className={`${styles.controlBtn} ${styles.controlBtnPrimary}`}
+              onClick={handleOpenDirect}
+              title="Open chapter directly in web browser"
+            >
+              <ExternalLink size={13} />
+              <span>Open on Web ↗</span>
+            </button>
+          )}
+
+          {/* View Mode Toggle: Direct Web vs Embedded Frame */}
           <button
             type="button"
             className={styles.engineBadge}
-            onClick={() => setReaderEngine(readerEngine === 'proxy' ? 'direct' : 'proxy')}
-            title={`Current Reader Mode: ${readerEngine === 'proxy' ? 'In-Web Proxy (Active)' : 'Direct Embed'}. Click to toggle.`}
-            aria-label="Toggle reader engine"
+            onClick={() => setViewMode(viewMode === 'hub' ? 'embed' : 'hub')}
+            title={`Current View: ${viewMode === 'hub' ? 'Fast Web Launcher' : 'In-Page Embed'}. Click to toggle.`}
+            aria-label="Toggle reader view mode"
           >
-            <span className={readerEngine === 'proxy' ? styles.engineDotActive : styles.engineDotDirect} />
-            <span>{readerEngine === 'proxy' ? 'In-Web Proxy' : 'Direct Embed'}</span>
+            <span className={viewMode === 'hub' ? styles.engineDotActive : styles.engineDotDirect} />
+            <span>{viewMode === 'hub' ? 'Web Link' : 'In-Page Frame'}</span>
           </button>
 
           {/* Like Button */}
@@ -178,8 +204,8 @@ export default function InWebManhwaReader({
             type="button"
             className={`${styles.controlBtn} ${doc.isLiked ? styles.controlBtnLikeActive : ''}`}
             onClick={() => onToggleLike(doc.id)}
-            title={doc.isLiked ? 'Unlike manhwa' : 'Like manhwa'}
-            aria-label={doc.isLiked ? 'Unlike manhwa' : 'Like manhwa'}
+            title={doc.isLiked ? 'Unlike' : 'Like'}
+            aria-label={doc.isLiked ? 'Unlike' : 'Like'}
           >
             <Heart
               size={14}
@@ -189,29 +215,17 @@ export default function InWebManhwaReader({
             <span>{doc.isLiked ? 'Liked' : 'Like'}</span>
           </button>
 
-          {/* Reload Frame */}
-          <button
-            type="button"
-            className={styles.controlBtn}
-            onClick={handleReload}
-            title="Reload web reader"
-            aria-label="Reload web reader"
-          >
-            <RotateCcw size={13} />
-          </button>
-
-          {/* Open Provider Link */}
-          {manhwaUrl && (
-            <a
-              href={manhwaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Reload (in embed mode) */}
+          {viewMode === 'embed' && (
+            <button
+              type="button"
               className={styles.controlBtn}
-              title="Open full original site in new tab"
+              onClick={handleReload}
+              title="Reload frame"
+              aria-label="Reload frame"
             >
-              <ExternalLink size={13} />
-              <span>Provider ↗</span>
-            </a>
+              <RotateCcw size={13} />
+            </button>
           )}
 
           {/* Edit Manhwa details */}
@@ -227,44 +241,130 @@ export default function InWebManhwaReader({
             </button>
           )}
 
-          {/* Zen Full-Screen Web Canvas Mode Toggle */}
+          {/* Zen Full-Canvas Mode Toggle */}
           <button
             type="button"
             className={styles.controlBtn}
             onClick={() => setIsZenMode(!isZenMode)}
-            title={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas Mode'}
-            aria-label={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas Mode'}
+            title={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas'}
+            aria-label={isZenMode ? 'Exit Zen Mode' : 'Zen Full Canvas'}
           >
             {isZenMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-            <span>{isZenMode ? 'Exit Zen' : 'Full Canvas'}</span>
           </button>
         </div>
       </div>
 
-      {/* Embedded In-Web Manhwa Reader Canvas */}
-      <div className={styles.iframeWrapper}>
-        {manhwaUrl ? (
-          <iframe
-            key={`${readerEngine}-${iframeKey}`}
-            src={frameSrc}
-            title={doc.title}
-            className={styles.manhwaIframe}
-            loading="eager"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          />
-        ) : (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-            <p style={{ margin: 0 }}>No reading URL configured. Please add a website link.</p>
+      {/* Main Canvas Area */}
+      {viewMode === 'hub' ? (
+        /* ── Fast & Direct Web Launcher Hub ── */
+        <div className={styles.webLauncherHub}>
+          <div className={styles.webLauncherCard}>
+            <div className={styles.hubHeader}>
+              <div className={styles.hubCoverWrap}>
+                {doc.coverImageUrl ? (
+                  <img src={doc.coverImageUrl} alt={doc.title} className={styles.hubCoverImg} />
+                ) : (
+                  <div className={styles.hubCoverPlaceholder}>
+                    <BookOpen size={36} color="var(--color-accent)" opacity={0.7} />
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.hubDetails}>
+                <div className={styles.hubMetaRow}>
+                  <span className={styles.siteBadge}>{siteName}</span>
+                  <span className={styles.chapterBadge}>{currentChapter}</span>
+                  {doc.readStatus === 'completed' ? (
+                    <span className={styles.statusCompletedBadge}>Finished</span>
+                  ) : (
+                    <span className={styles.statusReadingBadge}>Reading</span>
+                  )}
+                </div>
+
+                <h2 className={styles.hubTitle}>{doc.title}</h2>
+
+                {manhwaUrl ? (
+                  <a
+                    href={manhwaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.hubUrlText}
+                    title={manhwaUrl}
+                  >
+                    <Globe size={12} />
+                    <span>{manhwaUrl}</span>
+                  </a>
+                ) : (
+                  <p className={styles.hubUrlMissing}>No URL configured. Tap Edit to add your link.</p>
+                )}
+
+                {/* Primary Direct Launch Button */}
+                <div className={styles.hubActionRow}>
+                  {manhwaUrl && (
+                    <button
+                      type="button"
+                      className={styles.hubPrimaryBtn}
+                      onClick={handleOpenDirect}
+                    >
+                      <ExternalLink size={15} />
+                      <span>Open {currentChapter} on {siteName} ↗</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className={styles.hubSecondaryBtn}
+                    onClick={() => handleNextChapter(true)}
+                    title="Advance to next chapter and open in web"
+                  >
+                    <span>Next Chapter &amp; Open</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick helper banner */}
+            <div className={styles.hubHintBar}>
+              <span>
+                Clicking <strong>Open on Web ↗</strong> launches directly to the chapter in a clean tab with zero bot challenges or loading issues.
+              </span>
+              <button
+                type="button"
+                className={styles.embedSwitchBtn}
+                onClick={() => setViewMode('embed')}
+              >
+                Switch to In-Page Frame
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* ── Embedded Frame Canvas ── */
+        <div className={styles.iframeWrapper}>
+          {manhwaUrl ? (
+            <iframe
+              key={`${readerEngine}-${iframeKey}`}
+              src={frameSrc}
+              title={doc.title}
+              className={styles.manhwaIframe}
+              loading="eager"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            />
+          ) : (
+            <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+              <p style={{ margin: 0 }}>No reading URL configured. Please add a website link.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Reader Assistive Footer Banner */}
       <div className={styles.readerFooterBanner}>
         <div className={styles.readerFooterLeft}>
-          <ShieldCheck size={14} color="#10b981" />
+          <Globe size={14} color="#10b981" />
           <span>
-            In-Web Reader active for <strong>{siteName}</strong> using local proxy bypass.
+            Reading on <strong>{siteName}</strong> · Bookmark tracked in Life OS
           </span>
         </div>
 

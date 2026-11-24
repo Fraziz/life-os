@@ -641,14 +641,11 @@ Keep language professional, crisp, and clean. No emojis.`;
 
   return (
     <div className={styles.roadmapPage}>
-      {/* ── Fixed Structured Top Bar ── */}
+      {/* ── Minimal Single Top Bar ── */}
       <header className={styles.topBar}>
-        {/* Main Row */}
         <div className={styles.topBarMain}>
           <div className={styles.topBarLeft}>
-            <div className={styles.pageTitleGroup}>
-              <span className={styles.pageTitle}>Roadmap</span>
-            </div>
+            <span className={styles.pageTitle}>Roadmap</span>
 
             {/* View Mode Switcher */}
             <div className={styles.viewSwitcher}>
@@ -667,32 +664,37 @@ Keep language professional, crisp, and clean. No emojis.`;
                 Timeline Gantt
               </button>
             </div>
-          </div>
 
-          <div className={styles.topBarRight}>
-            {/* Horizon Filter */}
-            <div className={styles.horizonControl}>
-              {(['all', '90-day', 'yearly'] as HorizonMode[]).map(h => (
+            {/* Compact Filter Pills */}
+            <div className={styles.filterGroup}>
+              <button
+                type="button"
+                className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
+                onClick={() => setFilter('active')}
+              >
+                Active
+              </button>
+              {uniqueAreas.map(areaId => (
                 <button
-                  key={h}
+                  key={areaId}
                   type="button"
-                  className={`${styles.horizonBtn} ${horizonFilter === h ? styles.horizonBtnActive : ''}`}
-                  onClick={() => setHorizonFilter(h)}
+                  className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
+                  onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
                 >
-                  {h === 'all' ? 'All Horizons' : h === '90-day' ? '90-Day Focus' : 'Yearly'}
+                  {AREA_LABELS[areaId] ?? areaId}
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Audit Button */}
-            <button
-              type="button"
-              className={styles.auditBtn}
-              onClick={handleAuditStrategy}
-            >
-              Audit Strategy
-            </button>
-
+          <div className={styles.topBarRight}>
             {/* Zoom Controls */}
             {viewMode === 'graph' && (
               <div className={styles.zoomControlGroup}>
@@ -708,64 +710,6 @@ Keep language professional, crisp, and clean. No emojis.`;
                 </button>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Sub Row: Filter & Executive KPI Metrics */}
-        <div className={styles.topBarSub}>
-          <div className={styles.filterGroup}>
-            <button
-              type="button"
-              className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
-              onClick={() => setFilter('all')}
-            >
-              All Areas
-            </button>
-            <button
-              type="button"
-              className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
-              onClick={() => setFilter('active')}
-            >
-              Active Only
-            </button>
-            {uniqueAreas.map(areaId => (
-              <button
-                key={areaId}
-                type="button"
-                className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
-                onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
-              >
-                {AREA_LABELS[areaId] ?? areaId}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.metricsGroup}>
-            <div className={`${styles.metricBadge} ${metrics.goalCoverage >= 80 ? styles.metricSuccess : ''}`}>
-              <span>Goal Alignment:</span>
-              <strong>{metrics.goalCoverage}%</strong>
-            </div>
-
-            <div className={styles.metricDivider} />
-
-            <div className={styles.metricBadge}>
-              <span>Pipeline:</span>
-              <strong>{metrics.activeProjectCount} Projects · {metrics.activeTaskCount} Tasks</strong>
-            </div>
-
-            <div className={styles.metricDivider} />
-
-            <div className={`${styles.metricBadge} ${metrics.unlinkedCount > 0 ? styles.metricWarning : ''}`}>
-              <span>Unlinked:</span>
-              <strong>{metrics.unlinkedCount} Tasks</strong>
-            </div>
-
-            <div className={styles.metricDivider} />
-
-            <div className={styles.metricBadge}>
-              <span>Milestones:</span>
-              <strong>{metrics.pendingMilestones} in Queue</strong>
-            </div>
           </div>
         </div>
       </header>
@@ -952,10 +896,10 @@ Keep language professional, crisp, and clean. No emojis.`;
 
               {/* Column Headers on Canvas */}
               {[
-                { label: '1. Daily Tasks', col: 0 },
-                { label: '2. Projects', col: 1 },
-                { label: '3. Strategic Goals', col: 2 },
-                { label: '4. Vision & Dreams', col: 3 },
+                { label: 'Tasks', col: 0 },
+                { label: 'Projects', col: 1 },
+                { label: 'Goals', col: 2 },
+                { label: 'Vision & Dreams', col: 3 },
               ].map(({ label, col }) => (
                 <div
                   key={label}
@@ -1165,8 +1109,6 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
         onFocus(focusedNodeId === node.id ? null : node.id);
       }}
     >
-      <div className={styles.nodeAccentBar} style={{ background: node.color }} />
-
       <div className={styles.nodeHeader}>
         <span className={styles.nodeTypeBadge} style={{ color: node.color, borderColor: `${node.color}35`, background: `${node.color}15` }}>
           {TYPE_LABELS[node.type]}
