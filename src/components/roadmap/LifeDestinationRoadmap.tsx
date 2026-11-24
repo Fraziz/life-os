@@ -9,9 +9,7 @@ import {
   Edit2,
   Plus,
   Trash2,
-  ArrowLeft,
-  ArrowRight,
-  Compass,
+  GitBranch,
   X,
   Target,
   RotateCcw,
@@ -19,18 +17,25 @@ import {
   ZoomOut,
   Maximize2,
   Check,
+  Compass,
 } from 'lucide-react';
 import styles from './LifeDestinationRoadmap.module.css';
 import type { LifeDestination, LifeDestinationStatus } from '@/types';
 
-const STORAGE_KEY = 'life_os_life_destinations_v1';
+const STORAGE_KEY = 'life_os_life_destinations_tree_v1';
 
-// Layout geometry on canvas
-const NODE_W = 340;
-const NODE_H = 240;
-const COL_GAP = 420;
-const START_X = 80;
-const START_Y = 190;
+// Layout geometry constants
+const NODE_W = 280;
+const NODE_H = 195;
+const H_COL_GAP = 360;
+const H_ROW_GAP = 36;
+const H_START_X = 80;
+const H_Y_CENTER = 460;
+
+const V_ROW_GAP = 270;
+const V_COL_GAP = 40;
+const V_Y_BOTTOM = 920;
+const V_X_CENTER = 950;
 
 const AREA_COLORS: Record<string, string> = {
   'area-creative': '#ff6b6b',
@@ -43,112 +48,245 @@ const AREA_COLORS: Record<string, string> = {
 };
 
 const AREA_LABELS: Record<string, string> = {
-  'area-creative': 'Creative & Craft',
-  'area-career': 'Career & Enterprise',
-  'area-money': 'Financial Runway',
-  'area-learning': 'Learning & Skills',
-  'area-health': 'Health & Vitality',
-  'area-social': 'Relationships',
-  'area-mindset': 'Mindset & Vision',
+  'area-creative': 'Creative Craft',
+  'area-career': 'Enterprise & Career',
+  'area-money': 'Financial Freedom',
+  'area-learning': 'Skills Mastery',
+  'area-health': 'Vitality & Body',
+  'area-social': 'Freedom & Travel',
+  'area-mindset': 'Vision & Legacy',
 };
 
-export const DEFAULT_DESTINATIONS: LifeDestination[] = [
+const TIER_NAMES: Record<number, string> = {
+  1: 'Tier 1: Roots & Groundwork',
+  2: 'Tier 2: Core Trunk Pillars',
+  3: 'Tier 3: Specialized Branches',
+  4: 'Tier 4: Scaled Canopy',
+  5: 'Tier 5: Crown & Life Summit',
+};
+
+export const DEFAULT_TREE_DESTINATIONS: LifeDestination[] = [
+  // Tier 1 — Roots (The Foundation)
   {
-    id: 'dest-1',
-    title: 'Self-Mastery, Health & Core Skills Baseline',
-    phaseLabel: 'Stage 1: Groundwork & Energy',
-    description: 'Establish unbreakable daily discipline, physical vitality, consistent training, and master professional English & technical fundamentals.',
-    whyItMatters: 'Without health, stamina, and mental sharpness, all other goals collapse. This foundation fuels my entire future.',
-    targetAgeOrYear: 'Current Phase',
+    id: 'tree-root',
+    title: 'Self-Mastery, Fitness & English Fluency',
+    phaseLabel: 'Roots: Base Groundwork',
+    branchName: 'Foundation & Energy',
+    description: 'Establish unbreakable daily fitness discipline, high athletic vitality, deep focus habits, and professional English communication.',
+    whyItMatters: 'Without health, stamina, and mental clarity, all other branches wither. This root fuels every dream above it.',
+    targetAgeOrYear: 'Current Base',
     lifeAreaId: 'area-health',
     status: 'completed',
     criteria: [
-      'Consistent daily fitness & nutrition habits',
-      'Fluent conversational & technical English communication',
-      'Deep focus routine with zero burnout',
+      'Daily strength & cardio conditioning',
+      'Fluent conversational & technical English',
+      'Consistent 4-hour deep focus blocks',
     ],
     order: 1,
+    tier: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
+
+  // Tier 2 — Trunk (Two Core Pillars)
   {
-    id: 'dest-2',
-    title: '6-Month Independence Fund & Debt-Free Runway',
-    phaseLabel: 'Stage 2: Runway & Autonomy',
-    description: 'Accumulate a full 6-month liquid runway in high-yield savings to eliminate survival stress and unlock fearless creative risk-taking.',
-    whyItMatters: 'Financial runway buys mental freedom. When survival is guaranteed, I never have to make desperate short-term compromises.',
+    id: 'tree-wealth',
+    title: '6-Month Independence Buffer ($30k)',
+    phaseLabel: 'Trunk: Wealth Pillar',
+    branchName: 'Financial Freedom',
+    description: 'Accumulate a full liquid 6-month runway in high-yield accounts to eliminate survival stress and unlock fearless risk-taking.',
+    whyItMatters: 'Financial runway buys mental sovereignty. When survival is guaranteed, I never have to make desperate compromises.',
     targetAgeOrYear: 'Target: 2026-2027',
     lifeAreaId: 'area-money',
     status: 'current',
+    parentId: 'tree-root',
     criteria: [
-      'Save $15,000 emergency buffer',
-      'Reach full $30,000 independence runway',
-      'Zero consumer debt with diversified savings',
+      'Save $15,000 emergency safety cushion',
+      'Reach $30,000 full independence runway',
+      'Zero consumer debt with diversified cashflow',
     ],
     order: 2,
+    tier: 2,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'dest-3',
-    title: 'Ship & Publish Playable 2D/3D Game Prototype',
-    phaseLabel: 'Stage 3: The Builder',
-    description: 'Master kinematic 2D movement physics, 3D low-poly environment modeling in Blender, and release a polished playable game to real players.',
-    whyItMatters: 'To prove creative capability, experience the thrill of building interactive worlds, and transition from consumer to master creator.',
-    targetAgeOrYear: 'Target: 2027',
-    lifeAreaId: 'area-creative',
-    status: 'upcoming',
+    id: 'tree-craft',
+    title: 'Master 3D Blender & Kinematic Physics',
+    phaseLabel: 'Trunk: Craft Pillar',
+    branchName: 'Game Dev Craft',
+    description: 'Master low-poly 3D modeling, texturing in Blender, and kinematic 2D/3D physics engines from first principles.',
+    whyItMatters: 'To build interactive worlds from my imagination and transition permanently from a digital consumer to an elite creator.',
+    targetAgeOrYear: 'Target: 2026-2027',
+    lifeAreaId: 'area-learning',
+    status: 'current',
+    parentId: 'tree-root',
     criteria: [
-      'Complete 3D diorama & stylized character modeling',
-      'Finish responsive 2D movement controller & combat feel',
-      'Publish playable demo with 1,000+ enthusiastic players',
+      '3D character & environmental modeling',
+      'Kinematic movement & responsive feel',
+      'Custom gameplay mechanics architecture',
     ],
     order: 3,
+    tier: 2,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Tier 3 — Branches (Active Ventures)
+  {
+    id: 'tree-gainroot',
+    title: 'GAINROOT MVP Launch & 10 Beta Users',
+    phaseLabel: 'Branch: Digital Product',
+    branchName: 'Software Venture',
+    description: 'Ship polished GAINROOT product, validate core value proposition with real paying or highly engaged beta users.',
+    whyItMatters: 'Transform technical craft into valuable digital assets that solve real problems and generate scalable independence.',
+    targetAgeOrYear: 'Target: 2027',
+    lifeAreaId: 'area-career',
+    status: 'upcoming',
+    parentId: 'tree-wealth',
+    criteria: [
+      'Launch MVP with high-craft user experience',
+      'Onboard 10 active beta testers',
+      'Establish core retention & feedback loop',
+    ],
+    order: 4,
+    tier: 3,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'dest-4',
-    title: 'Scale GAINROOT / Creative Studio to Full Autonomy',
-    phaseLabel: 'Stage 4: Creative Enterprise',
-    description: 'Turn digital software, games, and creative products into an autonomous, profitable business generating sustainable recurring revenue.',
-    whyItMatters: 'True freedom means owning my intellectual property, controlling my schedule, and never trading life hours for a wage.',
+    id: 'tree-game',
+    title: 'Publish Playable 2D/3D Indie Game Demo',
+    phaseLabel: 'Branch: Indie Game Studio',
+    branchName: 'Interactive Worlds',
+    description: 'Release a complete, standalone playable game demo with stylized art direction, immersive audio, and 1,000+ enthusiastic players.',
+    whyItMatters: 'Experience the joy of seeing players explore an original universe I designed, engineered, and brought to life.',
+    targetAgeOrYear: 'Target: 2027-2028',
+    lifeAreaId: 'area-creative',
+    status: 'upcoming',
+    parentId: 'tree-craft',
+    criteria: [
+      'Complete cohesive sound & visual atmosphere',
+      'Smooth 60fps performance across hardware',
+      'Publish playable demo on Steam / itch.io',
+    ],
+    order: 5,
+    tier: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'tree-vitality',
+    title: 'Peak Athletic Conditioning & Stamina',
+    phaseLabel: 'Branch: Physical Peak',
+    branchName: 'Vitality & Health',
+    description: 'Elevate physical conditioning, cardiovascular stamina, and nutrition discipline so the body never becomes a bottleneck to ambition.',
+    whyItMatters: 'A razor-sharp mind requires a resilient, energized body capable of performing under pressure for decades.',
+    targetAgeOrYear: 'Ongoing Life Pillar',
+    lifeAreaId: 'area-health',
+    status: 'upcoming',
+    parentId: 'tree-root',
+    criteria: [
+      'Consistent weekly strength & mobility sessions',
+      'Optimal sleep and energy biomarkers',
+      'Peak stamina for marathon creative focus',
+    ],
+    order: 6,
+    tier: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Tier 4 — Scaled Canopy
+  {
+    id: 'tree-studio',
+    title: 'Autonomous Studio ($10k+/mo MRR)',
+    phaseLabel: 'Canopy: Enterprise Autonomy',
+    branchName: 'Creative Enterprise',
+    description: 'Combine software products and game releases into an autonomous, profitable business generating sustainable recurring revenue.',
+    whyItMatters: 'True freedom means owning my intellectual property, controlling my schedule, and never having to sell life hours for a wage.',
     targetAgeOrYear: 'Target: 2028-2029',
     lifeAreaId: 'area-career',
     status: 'upcoming',
+    parentIds: ['tree-gainroot', 'tree-game'],
     criteria: [
-      'Launch product with paying subscribers or customers',
       'Reach $10,000+/month recurring baseline revenue',
-      'Build a respected indie brand in game dev & tech',
+      'Diversified digital product & game catalog',
+      'Respected indie creator brand reputation',
     ],
-    order: 4,
+    order: 7,
+    tier: 4,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'dest-5',
-    title: 'Total Autonomy, Living Without Limits & Mentoring Others',
-    phaseLabel: 'Stage 5: The Summit & Legacy',
-    description: 'Complete geographic, temporal, and financial sovereignty. Living wherever I choose, creating purely for passion, and inspiring others.',
-    whyItMatters: 'This is my ultimate destination and North Star. Remembering this final summit ensures I never lose direction along the way.',
+    id: 'tree-geo',
+    title: 'Location Independence & Travel Freedom',
+    phaseLabel: 'Canopy: Sovereignty',
+    branchName: 'Living Free',
+    description: 'Complete geographic freedom: ability to work, travel, and live anywhere in the world without friction or logistical barriers.',
+    whyItMatters: 'Life is meant to be explored firsthand. Freedom to experience new cultures, environments, and perspectives.',
+    targetAgeOrYear: 'Target: 2028+',
+    lifeAreaId: 'area-social',
+    status: 'upcoming',
+    parentIds: ['tree-wealth'],
+    criteria: [
+      'Remote-first asynchronous setup',
+      'Multi-currency banking & mobility readiness',
+      'Freedom to change home location on demand',
+    ],
+    order: 8,
+    tier: 4,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+
+  // Tier 5 — Crown Summit (Where all branches unite)
+  {
+    id: 'tree-summit',
+    title: 'Total Life Sovereignty & Mentoring Others',
+    phaseLabel: 'Crown: The Summit',
+    branchName: 'Life Legacy',
+    description: 'Complete geographic, temporal, and financial sovereignty. Creating purely for passion, building generational peace, and guiding other builders.',
+    whyItMatters: 'This is my ultimate North Star where every branch converges. Remembering this summit ensures I never lose direction through life.',
     targetAgeOrYear: 'Ultimate Destination',
     lifeAreaId: 'area-mindset',
     status: 'upcoming',
+    parentIds: ['tree-studio', 'tree-geo', 'tree-vitality'],
     criteria: [
-      'Location independence: freedom to live and build anywhere',
-      'Time freedom: 100% control over daily time and priorities',
-      'Generational wealth & mentoring the next generation of builders',
+      '100% control over my daily time and creative pursuits',
+      'Generational financial peace and lasting security',
+      'Mentoring and funding the next generation of builders',
     ],
-    order: 5,
+    order: 9,
+    tier: 5,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
 
+interface NodePositionData {
+  node: LifeDestination;
+  x: number;
+  y: number;
+}
+
+interface TreeConnection {
+  fromId: string;
+  toId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  isIlluminated: boolean;
+  color: string;
+}
+
 export default function LifeDestinationRoadmap() {
   const [destinations, setDestinations] = useState<LifeDestination[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [direction, setDirection] = useState<'forward' | 'reverse'>('forward'); // forward: Start -> End, reverse: End -> Start
+  const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal'); // Horizontal Tree vs Vertical Tree
+  const [direction, setDirection] = useState<'forward' | 'reverse'>('forward'); // Roots -> Crown vs Crown -> Roots
   const [editingDest, setEditingDest] = useState<LifeDestination | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -179,7 +317,7 @@ export default function LifeDestinationRoadmap() {
         }
       }
     } catch {}
-    setDestinations(DEFAULT_DESTINATIONS);
+    setDestinations(DEFAULT_TREE_DESTINATIONS);
     setIsLoaded(true);
   }, []);
 
@@ -191,29 +329,182 @@ export default function LifeDestinationRoadmap() {
     } catch {}
   };
 
-  // Reorder sort (forward vs reverse)
-  const orderedDestinations = useMemo(() => {
-    const sorted = [...destinations].sort((a, b) => a.order - b.order);
-    return direction === 'forward' ? sorted : [...sorted].reverse();
-  }, [destinations, direction]);
-
   const completedCount = useMemo(() => {
     return destinations.filter((d) => d.status === 'completed').length;
   }, [destinations]);
 
-  const currentDestination = useMemo(() => {
-    const sorted = [...destinations].sort((a, b) => a.order - b.order);
-    return sorted.find((d) => d.status === 'current') || sorted.find((d) => d.status === 'upcoming');
+  // Group nodes by tier (1 to 5)
+  const tierGroups = useMemo(() => {
+    const groups: Record<number, LifeDestination[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+    destinations.forEach((d) => {
+      const t = Math.max(1, Math.min(5, d.tier || 1));
+      groups[t].push(d);
+    });
+    // Sort within each tier by order
+    Object.keys(groups).forEach((key) => {
+      const numKey = Number(key);
+      groups[numKey].sort((a, b) => a.order - b.order);
+    });
+    return groups;
   }, [destinations]);
 
-  // Canvas dimensions
-  const canvasWidth = useMemo(() => {
-    return Math.max(2600, START_X + (orderedDestinations.length + 1) * COL_GAP + 300);
-  }, [orderedDestinations.length]);
+  // Calculate Node Coordinates in Tree Layout
+  const { nodePositions, connections, canvasWidth, canvasHeight } = useMemo(() => {
+    const positions: Record<string, NodePositionData> = {};
+    const conns: TreeConnection[] = [];
 
-  const canvasHeight = 1000;
+    // Tiers order (forward: 1 -> 5, reverse: 5 -> 1)
+    const tierSequence = direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1];
 
-  // Pan & Zoom event handlers (exact Graph Flow ergonomics)
+    if (orientation === 'horizontal') {
+      // ── Horizontal Tree: Roots on Left → Crown on Right ──
+      tierSequence.forEach((tierNum, colIndex) => {
+        const nodesInTier = tierGroups[tierNum] || [];
+        const M = nodesInTier.length;
+        if (M === 0) return;
+
+        const totalHeight = M * NODE_H + (M - 1) * H_ROW_GAP;
+        const startY = H_Y_CENTER - totalHeight / 2;
+        const x = H_START_X + colIndex * H_COL_GAP;
+
+        nodesInTier.forEach((node, rowIndex) => {
+          const y = startY + rowIndex * (NODE_H + H_ROW_GAP);
+          positions[node.id] = { node, x, y };
+        });
+      });
+
+      // Build Connections
+      destinations.forEach((node) => {
+        const targetPos = positions[node.id];
+        if (!targetPos) return;
+
+        // Check parents
+        const parentIdList: string[] = [];
+        if (node.parentId) parentIdList.push(node.parentId);
+        if (node.parentIds && Array.isArray(node.parentIds)) {
+          node.parentIds.forEach((pid) => {
+            if (!parentIdList.includes(pid)) parentIdList.push(pid);
+          });
+        }
+
+        parentIdList.forEach((pid) => {
+          const sourcePos = positions[pid];
+          if (!sourcePos) return;
+
+          const isIlluminated = sourcePos.node.status === 'completed';
+          const areaColor = sourcePos.node.lifeAreaId
+            ? (AREA_COLORS[sourcePos.node.lifeAreaId] ?? '#ffffff')
+            : '#ffffff';
+
+          // When direction is forward: from source right to target left
+          // When direction is reverse: from source left to target right
+          let fromX: number, fromY: number, toX: number, toY: number;
+          if (direction === 'forward') {
+            fromX = sourcePos.x + NODE_W;
+            fromY = sourcePos.y + NODE_H / 2;
+            toX = targetPos.x;
+            toY = targetPos.y + NODE_H / 2;
+          } else {
+            fromX = sourcePos.x;
+            fromY = sourcePos.y + NODE_H / 2;
+            toX = targetPos.x + NODE_W;
+            toY = targetPos.y + NODE_H / 2;
+          }
+
+          conns.push({
+            fromId: pid,
+            toId: node.id,
+            fromX,
+            fromY,
+            toX,
+            toY,
+            isIlluminated,
+            color: areaColor,
+          });
+        });
+      });
+
+      const width = Math.max(2200, H_START_X + 5 * H_COL_GAP + 260);
+      const height = Math.max(1050, 950);
+      return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
+    } else {
+      // ── Vertical Tree: Roots at Bottom → Crown at Top ──
+      tierSequence.forEach((tierNum, rowIndex) => {
+        const nodesInTier = tierGroups[tierNum] || [];
+        const M = nodesInTier.length;
+        if (M === 0) return;
+
+        const totalWidth = M * NODE_W + (M - 1) * V_COL_GAP;
+        const startX = V_X_CENTER - totalWidth / 2;
+        // Forward: Tier 1 at bottom, Tier 5 at top
+        // Reverse: Tier 5 at bottom, Tier 1 at top
+        const y = V_Y_BOTTOM - rowIndex * V_ROW_GAP;
+
+        nodesInTier.forEach((node, colIndex) => {
+          const x = startX + colIndex * (NODE_W + V_COL_GAP);
+          positions[node.id] = { node, x, y };
+        });
+      });
+
+      // Build Connections
+      destinations.forEach((node) => {
+        const targetPos = positions[node.id];
+        if (!targetPos) return;
+
+        const parentIdList: string[] = [];
+        if (node.parentId) parentIdList.push(node.parentId);
+        if (node.parentIds && Array.isArray(node.parentIds)) {
+          node.parentIds.forEach((pid) => {
+            if (!parentIdList.includes(pid)) parentIdList.push(pid);
+          });
+        }
+
+        parentIdList.forEach((pid) => {
+          const sourcePos = positions[pid];
+          if (!sourcePos) return;
+
+          const isIlluminated = sourcePos.node.status === 'completed';
+          const areaColor = sourcePos.node.lifeAreaId
+            ? (AREA_COLORS[sourcePos.node.lifeAreaId] ?? '#ffffff')
+            : '#ffffff';
+
+          // Forward: source is lower (higher y), target is higher (lower y)
+          const fromX = sourcePos.x + NODE_W / 2;
+          const fromY = sourcePos.y;
+          const toX = targetPos.x + NODE_W / 2;
+          const toY = targetPos.y + NODE_H;
+
+          conns.push({
+            fromId: pid,
+            toId: node.id,
+            fromX,
+            fromY,
+            toX,
+            toY,
+            isIlluminated,
+            color: areaColor,
+          });
+        });
+      });
+
+      const width = Math.max(2200, 2000);
+      const height = Math.max(1300, 1200);
+      return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
+    }
+  }, [destinations, direction, orientation, tierGroups]);
+
+  // SVG Bezier Curves
+  const getCurvePath = (fromX: number, fromY: number, toX: number, toY: number): string => {
+    if (orientation === 'horizontal') {
+      const dx = Math.abs(toX - fromX) * 0.5;
+      return `M ${fromX} ${fromY} C ${fromX + dx} ${fromY}, ${toX - dx} ${toY}, ${toX} ${toY}`;
+    } else {
+      const dy = Math.abs(toY - fromY) * 0.5;
+      return `M ${fromX} ${fromY} C ${fromX} ${fromY - dy}, ${toX} ${toY + dy}, ${toX} ${toY}`;
+    }
+  };
+
+  // Canvas Pan & Zoom Handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-node]') || (e.target as HTMLElement).closest('[data-interactive]')) {
       return;
@@ -293,22 +584,24 @@ export default function LifeDestinationRoadmap() {
   }, [handleWheel]);
 
   const resetView = useCallback(() => {
-    setPan({ x: 30, y: 10 });
+    if (orientation === 'horizontal') {
+      setPan({ x: 30, y: 10 });
+    } else {
+      setPan({ x: -280, y: -260 });
+    }
     setZoom(0.85);
-  }, []);
+  }, [orientation]);
 
   // Toggle checkpoint completion
   const handleToggleStatus = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    const sorted = [...destinations].sort((a, b) => a.order - b.order);
-    const targetIdx = sorted.findIndex((d) => d.id === id);
-    if (targetIdx === -1) return;
+    const target = destinations.find((d) => d.id === id);
+    if (!target) return;
 
-    const target = sorted[targetIdx];
     const willBeCompleted = target.status !== 'completed';
 
-    const updated = sorted.map((d, idx) => {
-      if (idx === targetIdx) {
+    const updated = destinations.map((d) => {
+      if (d.id === id) {
         return {
           ...d,
           status: willBeCompleted ? ('completed' as LifeDestinationStatus) : ('current' as LifeDestinationStatus),
@@ -316,13 +609,15 @@ export default function LifeDestinationRoadmap() {
           updatedAt: new Date().toISOString(),
         };
       }
-      // If completed, make next station 'current' if upcoming
-      if (willBeCompleted && idx === targetIdx + 1 && d.status === 'upcoming') {
-        return {
-          ...d,
-          status: 'current' as LifeDestinationStatus,
-          updatedAt: new Date().toISOString(),
-        };
+      // If we completed this node, unlock children that are upcoming
+      if (willBeCompleted && (d.parentId === id || (d.parentIds && d.parentIds.includes(id)))) {
+        if (d.status === 'upcoming') {
+          return {
+            ...d,
+            status: 'current' as LifeDestinationStatus,
+            updatedAt: new Date().toISOString(),
+          };
+        }
       }
       return d;
     });
@@ -330,18 +625,46 @@ export default function LifeDestinationRoadmap() {
     saveDestinations(updated);
   };
 
-  // Open modal to add new
-  const handleAddNew = () => {
+  // Add a branch child sprouting from a specific node
+  const handleAddChildBranch = (parentDest: LifeDestination, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextTier = Math.min(5, (parentDest.tier || 1) + 1);
     const nextOrder = destinations.length > 0 ? Math.max(...destinations.map((d) => d.order)) + 1 : 1;
     setEditingDest({
-      id: `dest-${Date.now()}`,
+      id: `tree-${Date.now()}`,
       title: '',
-      phaseLabel: `Stage ${nextOrder}: New Horizon`,
+      phaseLabel: `Branch: ${parentDest.branchName || 'Growth'}`,
+      branchName: parentDest.branchName || 'New Branch',
+      description: '',
+      whyItMatters: '',
+      targetAgeOrYear: '',
+      lifeAreaId: parentDest.lifeAreaId || 'area-career',
+      status: 'upcoming',
+      parentId: parentDest.id,
+      tier: nextTier,
+      criteria: [],
+      order: nextOrder,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    setIsModalOpen(true);
+  };
+
+  // Open modal to add generic new node
+  const handleAddNewNode = () => {
+    const nextOrder = destinations.length > 0 ? Math.max(...destinations.map((d) => d.order)) + 1 : 1;
+    setEditingDest({
+      id: `tree-${Date.now()}`,
+      title: '',
+      phaseLabel: 'New Life Destination',
+      branchName: 'Personal Growth',
       description: '',
       whyItMatters: '',
       targetAgeOrYear: '',
       lifeAreaId: 'area-career',
       status: 'upcoming',
+      parentId: destinations.length > 0 ? destinations[0].id : undefined,
+      tier: 2,
       criteria: [],
       order: nextOrder,
       createdAt: new Date().toISOString(),
@@ -357,31 +680,15 @@ export default function LifeDestinationRoadmap() {
     setIsModalOpen(true);
   };
 
-  // Delete destination
+  // Delete node
   const handleDelete = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (destinations.length <= 1) {
+      alert('You must have at least one root destination in your life tree.');
+      return;
+    }
     const filtered = destinations.filter((d) => d.id !== id);
-    const reindexed = filtered
-      .sort((a, b) => a.order - b.order)
-      .map((d, i) => ({ ...d, order: i + 1 }));
-    saveDestinations(reindexed);
-  };
-
-  // Move destination earlier or later
-  const handleMove = (id: string, dir: -1 | 1, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    const sorted = [...destinations].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((d) => d.id === id);
-    if (idx === -1) return;
-
-    const targetIdx = idx + dir;
-    if (targetIdx < 0 || targetIdx >= sorted.length) return;
-
-    const tempOrder = sorted[idx].order;
-    sorted[idx].order = sorted[targetIdx].order;
-    sorted[targetIdx].order = tempOrder;
-
-    saveDestinations([...sorted]);
+    saveDestinations(filtered);
   };
 
   // Save modal edit/create
@@ -404,16 +711,9 @@ export default function LifeDestinationRoadmap() {
 
   // Reset to default
   const handleResetDefaults = () => {
-    if (window.confirm('Reset life destinations to default master blueprint?')) {
-      saveDestinations(DEFAULT_DESTINATIONS);
+    if (window.confirm('Reset life tree to default master blueprint?')) {
+      saveDestinations(DEFAULT_TREE_DESTINATIONS);
     }
-  };
-
-  // SVG Bezier curved path calculation
-  const getBezierCurve = (fromX: number, fromY: number, toX: number, toY: number): string => {
-    const cx1 = fromX + Math.abs(toX - fromX) * 0.5;
-    const cx2 = toX - Math.abs(toX - fromX) * 0.5;
-    return `M ${fromX} ${fromY} C ${cx1} ${fromY}, ${cx2} ${toY}, ${toX} ${toY}`;
   };
 
   if (!isLoaded) return null;
@@ -424,44 +724,60 @@ export default function LifeDestinationRoadmap() {
       <div className={styles.toolbarRow} data-interactive="true">
         <div className={styles.progressSummary}>
           <div className={styles.progressCompass}>
-            <Compass size={15} className={styles.compassIcon} />
+            <GitBranch size={15} className={styles.compassIcon} />
           </div>
           <div className={styles.progressTextGroup}>
             <span className={styles.progressTitle}>
-              <strong>{completedCount}</strong> of <strong>{destinations.length}</strong> Stations Reached
+              <strong>{completedCount}</strong> of <strong>{destinations.length}</strong> Stations Achieved
             </span>
-            <span className={styles.progressSubtitle}>
-              {currentDestination
-                ? `Current Destination: ${currentDestination.title}`
-                : 'All Destinations Achieved!'}
-            </span>
+            <span className={styles.progressSubtitle}>Life Tree &amp; Destination Canvas</span>
           </div>
         </div>
 
         <div className={styles.toolbarCenter}>
-          {/* Order Direction Switcher */}
-          <div className={styles.directionControl}>
+          {/* Tree Orientation Switcher */}
+          <div className={styles.segmentedControl}>
             <button
               type="button"
-              className={`${styles.directionBtn} ${direction === 'forward' ? styles.directionBtnActive : ''}`}
-              onClick={() => setDirection('forward')}
-              title="Start to End (Ascending Growth Journey)"
+              className={`${styles.segmentBtn} ${orientation === 'horizontal' ? styles.segmentBtnActive : ''}`}
+              onClick={() => setOrientation('horizontal')}
+              title="Horizontal Tree (Roots on Left → Crown on Right)"
             >
-              Start → End
+              Horizontal Tree
             </button>
             <button
               type="button"
-              className={`${styles.directionBtn} ${direction === 'reverse' ? styles.directionBtnActive : ''}`}
-              onClick={() => setDirection('reverse')}
-              title="End to Start (Reverse Visionary Planning from Summit)"
+              className={`${styles.segmentBtn} ${orientation === 'vertical' ? styles.segmentBtnActive : ''}`}
+              onClick={() => setOrientation('vertical')}
+              title="Vertical Tree (Roots at Bottom → Branches Upwards)"
             >
-              End → Start
+              Vertical Tree
+            </button>
+          </div>
+
+          {/* Direction Switcher (Roots -> Crown vs Crown -> Roots) */}
+          <div className={styles.segmentedControl}>
+            <button
+              type="button"
+              className={`${styles.segmentBtn} ${direction === 'forward' ? styles.segmentBtnActive : ''}`}
+              onClick={() => setDirection('forward')}
+              title="Roots → Crown (Ascending Growth Journey)"
+            >
+              Roots → Crown
+            </button>
+            <button
+              type="button"
+              className={`${styles.segmentBtn} ${direction === 'reverse' ? styles.segmentBtnActive : ''}`}
+              onClick={() => setDirection('reverse')}
+              title="Crown → Roots (Reverse Visionary Planning from Summit)"
+            >
+              Crown → Roots
             </button>
           </div>
         </div>
 
         <div className={styles.toolbarActions}>
-          {/* Canvas Zoom Controls (Exact Graph Flow Standard) */}
+          {/* Zoom Controls (Exact Graph Flow Standard) */}
           <div className={styles.zoomControlGroup}>
             <button
               type="button"
@@ -484,7 +800,7 @@ export default function LifeDestinationRoadmap() {
               type="button"
               className={styles.ctrlBtn}
               onClick={resetView}
-              title="Reset View (100% / Fit)"
+              title="Reset View"
             >
               <Maximize2 size={12} />
             </button>
@@ -493,25 +809,25 @@ export default function LifeDestinationRoadmap() {
           <button
             type="button"
             className={styles.addBtn}
-            onClick={handleAddNew}
-            title="Add a new life destination station"
+            onClick={handleAddNewNode}
+            title="Add a new life destination node to tree"
           >
             <Plus size={13} />
-            <span>Add Destination</span>
+            <span>Add Node</span>
           </button>
 
           <button
             type="button"
             className={styles.resetBtn}
             onClick={handleResetDefaults}
-            title="Reset to default life blueprint"
+            title="Reset to default life tree blueprint"
           >
             <RotateCcw size={12} />
           </button>
         </div>
       </div>
 
-      {/* ── Canvas Viewport (Identical to Graph Flow) ── */}
+      {/* ── Tree Canvas Viewport ── */}
       <div
         ref={containerRef}
         className={`${styles.canvasViewport} ${isDragging ? styles.dragging : ''}`}
@@ -533,7 +849,7 @@ export default function LifeDestinationRoadmap() {
             height: canvasHeight,
           }}
         >
-          {/* Dot Grid Background (Identical to Graph Flow) */}
+          {/* Dot Grid Background */}
           <svg
             className={styles.dotGrid}
             width={canvasWidth}
@@ -541,33 +857,53 @@ export default function LifeDestinationRoadmap() {
             style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
           >
             <defs>
-              <pattern id="life-dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+              <pattern id="tree-dotgrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
                 <circle cx="1" cy="1" r="1.1" fill="currentColor" />
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#life-dotgrid)" />
+            <rect width="100%" height="100%" fill="url(#tree-dotgrid)" />
           </svg>
 
-          {/* Column Stage Headers on Canvas */}
-          {orderedDestinations.map((dest, idx) => {
-            const x = START_X + idx * COL_GAP;
-            const areaColor = dest.lifeAreaId ? (AREA_COLORS[dest.lifeAreaId] ?? '#7c6fff') : '#7c6fff';
-            return (
-              <div
-                key={`col-${dest.id}`}
-                className={styles.canvasColHeader}
-                style={{
-                  left: x + NODE_W / 2,
-                  top: START_Y - 56,
-                }}
-              >
-                <div className={styles.colHeaderDot} style={{ background: areaColor }} />
-                <span>{dest.phaseLabel || `Station ${dest.order}`}</span>
-              </div>
-            );
-          })}
+          {/* Tier Headers across Canvas */}
+          {orientation === 'horizontal' && (
+            (direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1]).map((tierNum, colIndex) => {
+              const x = H_START_X + colIndex * H_COL_GAP + NODE_W / 2;
+              return (
+                <div
+                  key={`tier-hdr-${tierNum}`}
+                  className={styles.canvasColHeader}
+                  style={{
+                    left: x,
+                    top: 100,
+                  }}
+                >
+                  <div className={styles.colHeaderDot} />
+                  <span>{TIER_NAMES[tierNum] || `Tier ${tierNum}`}</span>
+                </div>
+              );
+            })
+          )}
 
-          {/* SVG Connector Lines (Smooth Bezier Paths with Glow Illumination) */}
+          {orientation === 'vertical' && (
+            (direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1]).map((tierNum, rowIndex) => {
+              const y = V_Y_BOTTOM - rowIndex * V_ROW_GAP - 30;
+              return (
+                <div
+                  key={`tier-hdr-v-${tierNum}`}
+                  className={styles.canvasColHeader}
+                  style={{
+                    left: V_X_CENTER,
+                    top: y,
+                  }}
+                >
+                  <div className={styles.colHeaderDot} />
+                  <span>{TIER_NAMES[tierNum] || `Tier ${tierNum}`}</span>
+                </div>
+              );
+            })
+          )}
+
+          {/* SVG Connector Lines (Branching Curved Bezier Lines) */}
           <svg
             className={styles.svgOverlay}
             width={canvasWidth}
@@ -575,49 +911,36 @@ export default function LifeDestinationRoadmap() {
             style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
           >
             <defs>
-              {orderedDestinations.map((dest, i) => {
-                const areaColor = dest.lifeAreaId ? (AREA_COLORS[dest.lifeAreaId] ?? '#ffffff') : '#ffffff';
-                return (
-                  <marker
-                    key={`arrow-${dest.id}`}
-                    id={`life-arrow-${dest.id}`}
-                    markerWidth="6"
-                    markerHeight="6"
-                    refX="5"
-                    refY="3"
-                    orient="auto"
-                  >
-                    <path
-                      d="M0,0 L0,6 L6,3 z"
-                      fill={dest.status === 'completed' ? areaColor : 'var(--color-border-focus)'}
-                      opacity={dest.status === 'completed' ? '1' : '0.4'}
-                    />
-                  </marker>
-                );
-              })}
+              {connections.map((conn, i) => (
+                <marker
+                  key={`arrow-${conn.fromId}-${conn.toId}-${i}`}
+                  id={`tree-arrow-${conn.fromId}-${conn.toId}`}
+                  markerWidth="6"
+                  markerHeight="6"
+                  refX="5"
+                  refY="3"
+                  orient="auto"
+                >
+                  <path
+                    d="M0,0 L0,6 L6,3 z"
+                    fill={conn.isIlluminated ? conn.color : 'var(--color-border-focus)'}
+                    opacity={conn.isIlluminated ? '1' : '0.4'}
+                  />
+                </marker>
+              ))}
             </defs>
 
-            {orderedDestinations.map((dest, idx) => {
-              if (idx === orderedDestinations.length - 1) return null;
-              const nextDest = orderedDestinations[idx + 1];
-
-              const fromX = START_X + idx * COL_GAP + NODE_W;
-              const fromY = START_Y + 110;
-              const toX = START_X + (idx + 1) * COL_GAP;
-              const toY = START_Y + 110;
-
-              const isIlluminated = dest.status === 'completed';
-              const isHovered = hoveredNodeId === dest.id || hoveredNodeId === nextDest.id;
-              const areaColor = dest.lifeAreaId ? (AREA_COLORS[dest.lifeAreaId] ?? '#ffffff') : '#ffffff';
+            {connections.map((conn, i) => {
+              const isHovered = hoveredNodeId === conn.fromId || hoveredNodeId === conn.toId;
 
               return (
-                <g key={`path-group-${dest.id}`}>
-                  {/* Glowing halo if illuminated */}
-                  {isIlluminated && (
+                <g key={`branch-path-${conn.fromId}-${conn.toId}-${i}`}>
+                  {/* Glowing halo when branch is illuminated */}
+                  {conn.isIlluminated && (
                     <path
-                      d={getBezierCurve(fromX, fromY, toX, toY)}
+                      d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
                       fill="none"
-                      stroke={areaColor}
+                      stroke={conn.color}
                       strokeWidth={6}
                       strokeOpacity={0.2}
                       className={styles.glowingHalo}
@@ -625,12 +948,12 @@ export default function LifeDestinationRoadmap() {
                   )}
                   {/* Core Line */}
                   <path
-                    d={getBezierCurve(fromX, fromY, toX, toY)}
+                    d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
                     fill="none"
-                    stroke={isIlluminated ? areaColor : 'var(--color-border)'}
-                    strokeWidth={isIlluminated || isHovered ? 2.5 : 1.5}
-                    strokeOpacity={isIlluminated ? 0.95 : isHovered ? 0.7 : 0.3}
-                    markerEnd={`url(#life-arrow-${dest.id})`}
+                    stroke={conn.isIlluminated ? conn.color : 'var(--color-border)'}
+                    strokeWidth={conn.isIlluminated || isHovered ? 2.5 : 1.5}
+                    strokeOpacity={conn.isIlluminated ? 0.95 : isHovered ? 0.7 : 0.3}
+                    markerEnd={`url(#tree-arrow-${conn.fromId}-${conn.toId})`}
                     className={styles.connectionPath}
                   />
                 </g>
@@ -638,19 +961,17 @@ export default function LifeDestinationRoadmap() {
             })}
           </svg>
 
-          {/* ── Life Destination Node Cards on Canvas ── */}
-          {orderedDestinations.map((dest, idx) => {
-            const x = START_X + idx * COL_GAP;
-            const y = START_Y;
-            const isCompleted = dest.status === 'completed';
-            const isCurrent = dest.status === 'current';
-            const isHovered = hoveredNodeId === dest.id;
-            const areaColor = dest.lifeAreaId ? (AREA_COLORS[dest.lifeAreaId] ?? '#7c6fff') : '#7c6fff';
-            const areaName = dest.lifeAreaId ? (AREA_LABELS[dest.lifeAreaId] ?? 'Life Growth') : 'Life Growth';
+          {/* ── Tree Destination Node Cards ── */}
+          {Object.values(nodePositions).map(({ node, x, y }) => {
+            const isCompleted = node.status === 'completed';
+            const isCurrent = node.status === 'current';
+            const isHovered = hoveredNodeId === node.id;
+            const areaColor = node.lifeAreaId ? (AREA_COLORS[node.lifeAreaId] ?? '#7c6fff') : '#7c6fff';
+            const areaName = node.lifeAreaId ? (AREA_LABELS[node.lifeAreaId] ?? 'Life Growth') : 'Life Growth';
 
             return (
               <div
-                key={dest.id}
+                key={node.id}
                 data-node="true"
                 className={`${styles.nodeCard} ${
                   isCompleted ? styles.nodeCompleted : isCurrent ? styles.nodeCurrent : styles.nodeUpcoming
@@ -673,41 +994,41 @@ export default function LifeDestinationRoadmap() {
                     ? `0 0 20px rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.6)`
                     : undefined,
                 } as React.CSSProperties}
-                onMouseEnter={() => setHoveredNodeId(dest.id)}
+                onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
               >
-                {/* Header Row: Phase, Area, Checkpoint Marker */}
+                {/* Header Row: Branch Tag, Checkpoint Marker */}
                 <div className={styles.cardHeader}>
                   <div className={styles.badgeGroup}>
                     <span
-                      className={styles.phaseTag}
+                      className={styles.branchTag}
                       style={{
                         color: areaColor,
                         borderColor: `${areaColor}35`,
                         background: `${areaColor}12`,
                       }}
                     >
-                      {dest.phaseLabel || `Station ${dest.order}`}
+                      {node.branchName || node.phaseLabel || `Tier ${node.tier || 1}`}
                     </span>
                     <span className={styles.areaTag} style={{ color: areaColor }}>
                       {areaName}
                     </span>
                   </div>
 
-                  {/* Checkpoint Toggle Button */}
+                  {/* Interactive Checkpoint Toggle Button */}
                   <button
                     type="button"
                     data-interactive="true"
                     className={`${styles.checkpointBtn} ${
                       isCompleted ? styles.checkpointCompleted : isCurrent ? styles.checkpointCurrent : ''
                     }`}
-                    onClick={(e) => handleToggleStatus(dest.id, e)}
+                    onClick={(e) => handleToggleStatus(node.id, e)}
                     title={
                       isCompleted
-                        ? 'Destination Reached! Click to mark current'
-                        : 'Click to mark destination achieved & illuminate path'
+                        ? 'Station Achieved! Click to mark current'
+                        : 'Click to mark achieved & illuminate branches'
                     }
-                    aria-label={`Toggle checkpoint for ${dest.title}`}
+                    aria-label={`Toggle checkpoint for ${node.title}`}
                   >
                     {isCompleted ? (
                       <CheckCircle2 size={16} className={styles.checkIconActive} />
@@ -719,121 +1040,92 @@ export default function LifeDestinationRoadmap() {
                   </button>
                 </div>
 
-                {/* Status Indicator & Target Year Banner */}
+                {/* Target & Status Row */}
                 <div className={styles.metaRow}>
-                  {dest.targetAgeOrYear && (
+                  {node.targetAgeOrYear && (
                     <span className={styles.targetBadge}>
-                      <Target size={11} />
-                      <span>{dest.targetAgeOrYear}</span>
+                      <Target size={10} />
+                      <span>{node.targetAgeOrYear}</span>
                     </span>
                   )}
 
                   {isCurrent && (
                     <span className={styles.inFocusBadge}>
-                      <Sparkles size={10} /> You Are Here
+                      <Sparkles size={9} /> In Focus
                     </span>
                   )}
 
                   {isCompleted && (
                     <span className={styles.achievedBadge}>
-                      <Check size={10} /> Achieved
+                      <Check size={9} /> Achieved
                     </span>
                   )}
                 </div>
 
                 {/* Title */}
-                <h3 className={styles.nodeTitle}>{dest.title}</h3>
+                <h3 className={styles.nodeTitle}>{node.title}</h3>
 
                 {/* Description */}
-                {dest.description && <p className={styles.nodeDesc}>{dest.description}</p>}
+                {node.description && <p className={styles.nodeDesc}>{node.description}</p>}
 
-                {/* North Star Purpose Box (Why This Matters So I Don't Get Lost) */}
-                {dest.whyItMatters && (
+                {/* North Star Box */}
+                {node.whyItMatters && (
                   <div className={styles.whyBox}>
                     <span className={styles.whyLabel}>My North Star:</span>
-                    <span className={styles.whyText}>{dest.whyItMatters}</span>
+                    <span className={styles.whyText}>{node.whyItMatters}</span>
                   </div>
                 )}
 
                 {/* Criteria Pillars */}
-                {dest.criteria && dest.criteria.length > 0 && (
+                {node.criteria && node.criteria.length > 0 && (
                   <div className={styles.criteriaList}>
-                    {dest.criteria.map((c, i) => (
+                    {node.criteria.slice(0, 2).map((c, i) => (
                       <div key={i} className={styles.criteriaItem}>
                         <div className={styles.criteriaDot} style={{ background: areaColor }} />
                         <span>{c}</span>
                       </div>
                     ))}
+                    {node.criteria.length > 2 && (
+                      <div className={styles.moreCriteria}>+{node.criteria.length - 2} more criteria</div>
+                    )}
                   </div>
                 )}
 
-                {/* Bottom Actions Row */}
+                {/* Bottom Card Actions Row */}
                 <div className={styles.cardActionsRow} data-interactive="true">
-                  <div className={styles.reorderBtns}>
-                    <button
-                      type="button"
-                      className={styles.miniActionBtn}
-                      onClick={(e) => handleMove(dest.id, -1, e)}
-                      disabled={dest.order === 1}
-                      title="Move earlier along path"
-                    >
-                      <ArrowLeft size={11} />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.miniActionBtn}
-                      onClick={(e) => handleMove(dest.id, 1, e)}
-                      disabled={dest.order === destinations.length}
-                      title="Move later along path"
-                    >
-                      <ArrowRight size={11} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className={styles.branchAddBtn}
+                    onClick={(e) => handleAddChildBranch(node, e)}
+                    title="Sprout a new child branch from this node"
+                  >
+                    <Plus size={10} />
+                    <span>Branch</span>
+                  </button>
 
                   <div className={styles.editDeleteBtns}>
                     <button
                       type="button"
                       className={styles.miniActionBtn}
-                      onClick={(e) => handleEdit(dest, e)}
+                      onClick={(e) => handleEdit(node, e)}
                       title="Edit life destination"
                     >
-                      <Edit2 size={11} />
+                      <Edit2 size={10} />
                       <span>Edit</span>
                     </button>
                     <button
                       type="button"
                       className={`${styles.miniActionBtn} ${styles.miniDeleteBtn}`}
-                      onClick={(e) => handleDelete(dest.id, e)}
+                      onClick={(e) => handleDelete(node.id, e)}
                       title="Delete destination"
                     >
-                      <Trash2 size={11} />
+                      <Trash2 size={10} />
                     </button>
                   </div>
                 </div>
               </div>
             );
           })}
-
-          {/* Canvas End "+ Add Next Station" Node Card */}
-          <div
-            className={styles.addStationCard}
-            style={{
-              left: START_X + orderedDestinations.length * COL_GAP,
-              top: START_Y,
-              width: NODE_W,
-              minHeight: 180,
-            }}
-            onClick={handleAddNew}
-            data-interactive="true"
-          >
-            <div className={styles.addStationIcon}>
-              <Plus size={20} />
-            </div>
-            <span className={styles.addStationTitle}>Add Next Horizon</span>
-            <span className={styles.addStationSub}>
-              Map your next milestone so your journey stays limitless
-            </span>
-          </div>
         </div>
       </div>
 
@@ -846,8 +1138,8 @@ export default function LifeDestinationRoadmap() {
                 <Flag size={15} color="var(--color-accent)" />
                 <span className={styles.modalTitle}>
                   {destinations.some((d) => d.id === editingDest.id)
-                    ? 'Edit Life Destination'
-                    : 'Add New Life Destination'}
+                    ? 'Edit Life Tree Node'
+                    : 'Add Life Tree Branch'}
                 </span>
               </div>
               <button
@@ -867,7 +1159,7 @@ export default function LifeDestinationRoadmap() {
               className={styles.modalForm}
             >
               <div className={styles.formGroup}>
-                <label className={styles.fieldLabel}>Destination Title *</label>
+                <label className={styles.fieldLabel}>Node Title *</label>
                 <input
                   type="text"
                   required
@@ -881,14 +1173,49 @@ export default function LifeDestinationRoadmap() {
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.fieldLabel}>Stage / Phase Label</label>
+                  <label className={styles.fieldLabel}>Branch Name</label>
                   <input
                     type="text"
                     className={styles.inputField}
-                    placeholder="e.g. Stage 2: Security & Runway"
-                    value={editingDest.phaseLabel}
-                    onChange={(e) => setEditingDest({ ...editingDest, phaseLabel: e.target.value })}
+                    placeholder="e.g. Creative Craft, Wealth & Freedom"
+                    value={editingDest.branchName || ''}
+                    onChange={(e) => setEditingDest({ ...editingDest, branchName: e.target.value })}
                   />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.fieldLabel}>Tree Tier (Depth)</label>
+                  <select
+                    className={styles.selectField}
+                    value={editingDest.tier || 1}
+                    onChange={(e) => setEditingDest({ ...editingDest, tier: Number(e.target.value) })}
+                  >
+                    <option value={1}>Tier 1: Roots &amp; Groundwork</option>
+                    <option value={2}>Tier 2: Core Trunk Pillars</option>
+                    <option value={3}>Tier 3: Specialized Branches</option>
+                    <option value={4}>Tier 4: Scaled Canopy</option>
+                    <option value={5}>Tier 5: Crown &amp; Life Summit</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.fieldLabel}>Parent Branch (Connects From)</label>
+                  <select
+                    className={styles.selectField}
+                    value={editingDest.parentId || ''}
+                    onChange={(e) => setEditingDest({ ...editingDest, parentId: e.target.value || undefined })}
+                  >
+                    <option value="">None (Tree Root)</option>
+                    {destinations
+                      .filter((d) => d.id !== editingDest.id)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.title} ({d.branchName || `Tier ${d.tier || 1}`})
+                        </option>
+                      ))}
+                  </select>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -958,7 +1285,7 @@ export default function LifeDestinationRoadmap() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.fieldLabel}>Pillars / Key Milestones (1 per line)</label>
+                <label className={styles.fieldLabel}>Milestone Criteria Pillars (1 per line)</label>
                 <textarea
                   className={styles.textareaField}
                   rows={3}

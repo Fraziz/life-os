@@ -214,14 +214,18 @@ export type LifeDestinationStatus = 'completed' | 'current' | 'upcoming';
 export interface LifeDestination {
   id: string;
   title: string;
-  phaseLabel: string;            // e.g. "Start: Foundation", "Phase 2: Independence", "Ultimate Destination"
+  phaseLabel: string;            // e.g. "Root: Foundation", "Branch: Creative", "Crown: Ultimate Summit"
   description: string;
   whyItMatters: string;          // Core purpose so user never gets lost
   targetAgeOrYear?: string;      // e.g. "Age 25", "2027", "Future"
   lifeAreaId?: string;           // Linked Life Area ID
   status: LifeDestinationStatus;
   criteria?: string[];           // Key milestones / pillars required to reach destination
-  order: number;                 // Chronological index from Start (1) to End (N)
+  order: number;                 // Chronological index
+  tier?: number;                 // Tree Tier / Stage depth (1 = Roots, 2 = Trunk, 3 = Branches, 4 = Canopy, 5 = Crown)
+  parentId?: string;             // Parent node ID in tree
+  parentIds?: string[];          // Multiple parent IDs if converging
+  branchName?: string;           // e.g. "Creative Craft", "Wealth & Runway", "Enterprise", "Vitality"
   completedAt?: string;
   createdAt: string;
   updatedAt: string;

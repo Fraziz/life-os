@@ -1,12 +1,12 @@
 /* ============================================================
-   LIFE DESTINATION ROADMAP — GRAPH FLOW CANVAS
-   Executive Design System Rules:
-   - Identical Canvas & Node Experience to Graph Flow
+   LIFE DESTINATION ROADMAP — TREE CANVAS DESIGN SYSTEM
+   Executive Design Rules:
+   - Branching Graph Flow Tree Layout
    - Crisp 1px solid borders (var(--color-border) / var(--color-border-subtle))
    - Zero dashed or dotted borders ("no cut cut lines")
    - Zero left-side border stripes or box colors
-   - No icon bloat or emojis; clean typography, micro-dots, and solid badges
-   - 44x44px touch targets & fluid pan/zoom canvas ergonomics
+   - No icon bloat or emojis; clean typography and micro-dots
+   - 44x44px touch ergonomics and fluid canvas interaction
    ============================================================ */
 
 .lifePathContainer {
@@ -28,7 +28,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 24px 8px 56px;
-  background: rgba(10, 10, 10, 0.9);
+  background: rgba(10, 10, 10, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border-subtle);
@@ -89,10 +89,12 @@
 .toolbarCenter {
   display: flex;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-/* Direction Switcher (Start -> End vs End -> Start) */
-.directionControl {
+/* Segmented Control */
+.segmentedControl {
   display: inline-flex;
   background: var(--color-surface-2);
   padding: 2px;
@@ -100,7 +102,7 @@
   border: 1px solid var(--color-border-subtle);
 }
 
-.directionBtn {
+.segmentBtn {
   padding: 4px 10px;
   min-height: 26px;
   font-size: 11px;
@@ -114,13 +116,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
-.directionBtn:hover {
+.segmentBtn:hover {
   color: var(--color-text);
 }
 
-.directionBtnActive {
+.segmentBtnActive {
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -247,7 +250,7 @@
 }
 
 .glowingHalo {
-  filter: blur(4px);
+  filter: blur(5px);
 }
 
 /* Canvas Column Stage Headers */
@@ -257,14 +260,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-text-muted);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  padding: 4px 14px;
+  padding: 3px 12px;
   border-radius: var(--radius-md, 6px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   pointer-events: none;
@@ -272,10 +275,11 @@
 }
 
 .colHeaderDot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  flex-shrink: 0;
+  background: var(--color-accent);
+  opacity: 0.7;
 }
 
 /* ── Life Destination Node Cards on Canvas ── */
@@ -284,10 +288,10 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg, 12px);
-  padding: 16px 18px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   transition:
     border-color 0.2s ease,
@@ -311,7 +315,7 @@
 }
 
 .nodeUpcoming {
-  opacity: 0.88;
+  opacity: 0.9;
 }
 
 /* Header inside Card */
@@ -329,7 +333,7 @@
   flex-wrap: wrap;
 }
 
-.phaseTag {
+.branchTag {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -350,8 +354,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
@@ -385,8 +389,8 @@
 }
 
 .pulsingCore {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--dest-color, #ffffff);
   animation: pulseGlow 2s infinite ease-in-out;
@@ -425,12 +429,12 @@
 .targetBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
+  gap: 3px;
+  font-size: 9px;
   color: var(--color-text-muted);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
 }
@@ -467,34 +471,38 @@
 
 /* Content */
 .nodeTitle {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.4;
+  line-height: 1.35;
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 .nodeDesc {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* North Star Box (Why This Matters So I Don't Get Lost) */
+/* North Star Box */
 .whyBox {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .whyLabel {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -502,27 +510,34 @@
 }
 
 .whyText {
-  font-size: 11px;
+  font-size: 10px;
   font-style: italic;
   color: var(--color-text);
-  line-height: 1.4;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Criteria Pillars */
 .criteriaList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 6px;
+  gap: 3px;
+  padding-top: 5px;
   border-top: 1px solid var(--color-border-subtle);
 }
 
 .criteriaItem {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 10px;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .criteriaDot {
@@ -532,17 +547,44 @@
   flex-shrink: 0;
 }
 
+.moreCriteria {
+  font-size: 9px;
+  color: var(--color-text-faint);
+  font-style: italic;
+  padding-left: 9px;
+}
+
 /* Bottom Card Actions Row */
 .cardActionsRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 8px;
+  margin-top: 2px;
+  padding-top: 6px;
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.reorderBtns,
+.branchAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.branchAddBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
 .editDeleteBtns {
   display: flex;
   align-items: center;
@@ -553,82 +595,28 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 6px;
-  height: 22px;
+  padding: 2px 5px;
+  height: 20px;
   border-radius: 4px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .miniActionBtn:hover:not(:disabled) {
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   color: var(--color-text);
-  border-color: var(--color-border);
-}
-
-.miniActionBtn:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
+  border-color: var(--color-border-subtle);
 }
 
 .miniDeleteBtn:hover:not(:disabled) {
   background: rgba(255, 107, 107, 0.12);
   border-color: rgba(255, 107, 107, 0.3);
   color: #ff6b6b;
-}
-
-/* Canvas End "+ Add Next Horizon" Node Card */
-.addStationCard {
-  position: absolute;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg, 12px);
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.addStationCard:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-accent);
-  background: var(--color-surface-2);
-}
-
-.addStationIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text);
-}
-
-.addStationTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.addStationSub {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  max-width: 220px;
-  line-height: 1.4;
 }
 
 /* ── Modal Dialog ── */
