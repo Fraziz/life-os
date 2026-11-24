@@ -987,11 +987,17 @@ export function cleanAndFormatPastedText(
       const doc = new DOMParser().parseFromString(htmlText, 'text/html');
       doc.querySelectorAll('script, style, noscript, svg, nav, footer, iframe, link').forEach((el) => el.remove());
 
-      const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre, hr, table');
+      const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div, ul, ol, blockquote, pre, hr, table, section, article');
       if (elements.length > 0) {
         const parts: string[] = [];
         elements.forEach((el) => {
           const tag = el.tagName.toLowerCase();
+
+          // For generic wrapper tags, only treat as paragraph if it has direct text and no nested block children
+          if (tag === 'div' || tag === 'section' || tag === 'article') {
+            const hasNestedBlock = el.querySelector('p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, table, pre, div, section, article');
+            if (hasNestedBlock) return;
+          }
 
           // Table handling: convert HTML table to clean Markdown table syntax
           if (tag === 'table') {
@@ -1017,7 +1023,7 @@ export function cleanAndFormatPastedText(
           else if (tag === 'h2') parts.push(`## ${t}`);
           else if (tag === 'h3') parts.push(`### ${t}`);
           else if (tag === 'h4' || tag === 'h5' || tag === 'h6') parts.push(`#### ${t}`);
-          else if (tag === 'p') parts.push(t);
+          else if (tag === 'p' || tag === 'div' || tag === 'section' || tag === 'article') parts.push(t);
           else if (tag === 'blockquote') parts.push(`> ${t}`);
           else if (tag === 'pre') parts.push(`\`\`\`\n${t}\n\`\`\``);
           else if (tag === 'hr') parts.push('---');
@@ -1038,7 +1044,8 @@ export function cleanAndFormatPastedText(
           }
         });
 
-        if (parts.length > 0) {
+        // Only adopt HTML extraction if it captures the majority of content without truncating plainText
+        if (parts.length > 0 && parts.join('\n\n').trim().length >= (sourceText.trim().length * 0.45)) {
           sourceText = parts.join('\n\n');
         }
       }
@@ -1063,8 +1070,6 @@ export function cleanAndFormatPastedText(
     .replace(/\u00A0/g, ' ') // convert non-breaking spaces
     // Rejoin hyphenated word breaks from PDF wraps: "devel-\n opment" -> "development"
     .replace(/(\b[A-Za-z]{2,})-\s*\n\s*([A-Za-z]{2,}\b)/g, '$1$2')
-    // Rejoin mid-sentence lines where a line ends in a lowercase word/comma and next line begins with lowercase
-    .replace(/([a-z0-9,;])\n([a-z])/g, '$1 $2')
     // Remove space before punctuation: "word , " -> "word, "
     .replace(/[^\S\n]+([,.:;?!])/g, '$1')
     // Ensure space after punctuation when followed immediately by a letter (avoiding URLs like https://)
@@ -1074,12 +1079,13 @@ export function cleanAndFormatPastedText(
     .replace(/(^|[\s\n])(\d+)[\.\)]([A-Za-z\u00C0-\u024F\u1E00-\u1EFF])/g, '$1$2. $3')
     // Collapse multiple horizontal spaces to single space
     .replace(/[^\S\n]{2,}/g, ' ')
-    // Normalize newlines to max 2
-    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  // Split into paragraphs / blocks
-  const rawBlocks = clean.split(/\n{2,}/);
+  // Split into paragraphs / blocks: check if text has double newlines or single newlines
+  const hasDoubleNewlines = /\n\s*\n/.test(clean);
+  const rawBlocks = hasDoubleNewlines
+    ? clean.split(/\n\s*\n+/)
+    : clean.split('\n');
   const formattedBlocks: string[] = [];
   let extractedTitle = '';
 
@@ -1099,8 +1105,8 @@ export function cleanAndFormatPastedText(
     const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
     if (lines.length === 0) continue;
 
-    // If first block has a clear single-line title candidate, extract it
-    if (bIdx === 0 && !extractedTitle) {
+    // If first block has a clear single-line title candidate, extract it only if there are enough remaining blocks
+    if (bIdx === 0 && !extractedTitle && rawBlocks.length > 2) {
       const firstLine = lines[0];
       if (firstLine.startsWith('# ')) {
         extractedTitle = firstLine.replace(/^#+\s*/, '').trim();
@@ -1190,7 +1196,7 @@ export function cleanAndFormatPastedText(
       continue;
     }
 
-    // Standard formal paragraph: join hard-wrapped lines into a flowing, readable paragraph
+    // Standard formal paragraph: preserve separate paragraphs and only join hyphenated line wraps
     let para = '';
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -1217,7 +1223,13 @@ export function cleanAndFormatPastedText(
       if (!para) {
         para = line;
       } else {
-        if (para.endsWith('-')) {
+        // If previous sentence ended with punctuation and this line begins with capital/number, preserve as new paragraph!
+        const endsWithPunct = /[.?!:;)"'”’]$/.test(para.trim());
+        const startsWithCapital = /^[A-Z0-9"'“‘]/.test(line.trim());
+        if (endsWithPunct && startsWithCapital) {
+          formattedBlocks.push(para);
+          para = line;
+        } else if (para.endsWith('-')) {
           para = para.slice(0, -1) + line;
         } else {
           para += ' ' + line;
