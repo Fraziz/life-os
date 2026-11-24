@@ -27,10 +27,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 24px 8px 56px;
-  background: rgba(10, 10, 10, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border);
   position: relative;
   z-index: 25;
   gap: 16px;
@@ -217,7 +217,10 @@
   height: 100%;
   overflow: hidden;
   position: relative;
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  background-image: radial-gradient(ellipse 90% 60% at 50% -20%, var(--ambient-glow-color, rgba(255, 255, 255, 0.08)) 0%, transparent 75%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   cursor: grab;
   touch-action: none;
   -webkit-user-select: none;
@@ -236,7 +239,7 @@
 .dotGrid {
   pointer-events: none;
   color: var(--color-text-muted);
-  opacity: 0.14;
+  opacity: 0.16;
 }
 
 .svgOverlay {
@@ -251,35 +254,6 @@
   filter: blur(5px);
 }
 
-/* Canvas Column Stage Headers */
-.canvasColHeader {
-  position: absolute;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  padding: 3px 12px;
-  border-radius: var(--radius-md, 6px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.colHeaderDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  opacity: 0.7;
-}
-
 /* ── Compact Node Cards on Canvas (ADHD-Optimized) ── */
 .nodeCard {
   position: absolute;
@@ -291,7 +265,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 var(--color-card-sheen);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
