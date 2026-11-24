@@ -906,25 +906,6 @@ Keep language professional, crisp, and clean. No emojis.`;
                 <rect width="100%" height="100%" fill="url(#dotgrid)" />
               </svg>
 
-              {/* Column Headers on Canvas */}
-              {[
-                { label: 'Tasks', col: 0 },
-                { label: 'Projects', col: 1 },
-                { label: 'Goals', col: 2 },
-                { label: 'Vision & Dreams', col: 3 },
-              ].map(({ label, col }) => (
-                <div
-                  key={label}
-                  className={styles.canvasColHeader}
-                  style={{
-                    left: COL_STARTS[col] + NODE_W / 2,
-                    top: 20,
-                  }}
-                >
-                  {label}
-                </div>
-              ))}
-
               {/* SVG Connections */}
               <svg
                 className={styles.svgOverlay}
