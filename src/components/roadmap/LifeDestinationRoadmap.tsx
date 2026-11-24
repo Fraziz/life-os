@@ -18,24 +18,26 @@ import {
   Maximize2,
   Check,
   Compass,
+  ArrowRight,
 } from 'lucide-react';
 import styles from './LifeDestinationRoadmap.module.css';
 import type { LifeDestination, LifeDestinationStatus } from '@/types';
 
 const STORAGE_KEY = 'life_os_life_destinations_tree_v1';
 
-// Layout geometry constants
-const NODE_W = 280;
-const NODE_H = 195;
-const H_COL_GAP = 360;
-const H_ROW_GAP = 36;
+// ── ADHD-Optimized Canvas Layout Geometry ──
+// Compact cards (identical form factor to Graph Flow) with generous breathing space
+const NODE_W = 240;
+const NODE_H = 88;
+const H_COL_GAP = 310;
+const H_ROW_GAP = 64;
 const H_START_X = 80;
-const H_Y_CENTER = 460;
+const H_Y_CENTER = 420;
 
-const V_ROW_GAP = 270;
-const V_COL_GAP = 40;
-const V_Y_BOTTOM = 920;
-const V_X_CENTER = 950;
+const V_ROW_GAP = 220;
+const V_COL_GAP = 48;
+const V_Y_BOTTOM = 860;
+const V_X_CENTER = 900;
 
 const AREA_COLORS: Record<string, string> = {
   'area-creative': '#ff6b6b',
@@ -58,11 +60,11 @@ const AREA_LABELS: Record<string, string> = {
 };
 
 const TIER_NAMES: Record<number, string> = {
-  1: 'Tier 1: Roots & Groundwork',
-  2: 'Tier 2: Core Trunk Pillars',
-  3: 'Tier 3: Specialized Branches',
-  4: 'Tier 4: Scaled Canopy',
-  5: 'Tier 5: Crown & Life Summit',
+  1: 'Tier 1: Roots',
+  2: 'Tier 2: Trunk',
+  3: 'Tier 3: Branches',
+  4: 'Tier 4: Canopy',
+  5: 'Tier 5: Crown Summit',
 };
 
 export const DEFAULT_TREE_DESTINATIONS: LifeDestination[] = [
@@ -71,7 +73,7 @@ export const DEFAULT_TREE_DESTINATIONS: LifeDestination[] = [
     id: 'tree-root',
     title: 'Self-Mastery, Fitness & English Fluency',
     phaseLabel: 'Roots: Base Groundwork',
-    branchName: 'Foundation & Energy',
+    branchName: 'Roots & Energy',
     description: 'Establish unbreakable daily fitness discipline, high athletic vitality, deep focus habits, and professional English communication.',
     whyItMatters: 'Without health, stamina, and mental clarity, all other branches wither. This root fuels every dream above it.',
     targetAgeOrYear: 'Current Base',
@@ -158,7 +160,7 @@ export const DEFAULT_TREE_DESTINATIONS: LifeDestination[] = [
     id: 'tree-game',
     title: 'Publish Playable 2D/3D Indie Game Demo',
     phaseLabel: 'Branch: Indie Game Studio',
-    branchName: 'Interactive Worlds',
+    branchName: 'Game Studio',
     description: 'Release a complete, standalone playable game demo with stylized art direction, immersive audio, and 1,000+ enthusiastic players.',
     whyItMatters: 'Experience the joy of seeing players explore an original universe I designed, engineered, and brought to life.',
     targetAgeOrYear: 'Target: 2027-2028',
@@ -285,15 +287,15 @@ interface TreeConnection {
 export default function LifeDestinationRoadmap() {
   const [destinations, setDestinations] = useState<LifeDestination[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal'); // Horizontal Tree vs Vertical Tree
-  const [direction, setDirection] = useState<'forward' | 'reverse'>('forward'); // Roots -> Crown vs Crown -> Roots
+  const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editingDest, setEditingDest] = useState<LifeDestination | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   // Pan & Zoom Canvas State
-  const [zoom, setZoom] = useState(0.85);
-  const [pan, setPan] = useState({ x: 30, y: 10 });
+  const [zoom, setZoom] = useState(0.9);
+  const [pan, setPan] = useState({ x: 30, y: 30 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
@@ -333,6 +335,11 @@ export default function LifeDestinationRoadmap() {
     return destinations.filter((d) => d.status === 'completed').length;
   }, [destinations]);
 
+  // Selected Node Object
+  const selectedNode = useMemo(() => {
+    return destinations.find((d) => d.id === selectedNodeId) || null;
+  }, [destinations, selectedNodeId]);
+
   // Group nodes by tier (1 to 5)
   const tierGroups = useMemo(() => {
     const groups: Record<number, LifeDestination[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
@@ -340,7 +347,6 @@ export default function LifeDestinationRoadmap() {
       const t = Math.max(1, Math.min(5, d.tier || 1));
       groups[t].push(d);
     });
-    // Sort within each tier by order
     Object.keys(groups).forEach((key) => {
       const numKey = Number(key);
       groups[numKey].sort((a, b) => a.order - b.order);
@@ -353,12 +359,9 @@ export default function LifeDestinationRoadmap() {
     const positions: Record<string, NodePositionData> = {};
     const conns: TreeConnection[] = [];
 
-    // Tiers order (forward: 1 -> 5, reverse: 5 -> 1)
-    const tierSequence = direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1];
-
     if (orientation === 'horizontal') {
       // ── Horizontal Tree: Roots on Left → Crown on Right ──
-      tierSequence.forEach((tierNum, colIndex) => {
+      [1, 2, 3, 4, 5].forEach((tierNum, colIndex) => {
         const nodesInTier = tierGroups[tierNum] || [];
         const M = nodesInTier.length;
         if (M === 0) return;
@@ -373,12 +376,11 @@ export default function LifeDestinationRoadmap() {
         });
       });
 
-      // Build Connections
+      // Connections
       destinations.forEach((node) => {
         const targetPos = positions[node.id];
         if (!targetPos) return;
 
-        // Check parents
         const parentIdList: string[] = [];
         if (node.parentId) parentIdList.push(node.parentId);
         if (node.parentIds && Array.isArray(node.parentIds)) {
@@ -396,49 +398,32 @@ export default function LifeDestinationRoadmap() {
             ? (AREA_COLORS[sourcePos.node.lifeAreaId] ?? '#ffffff')
             : '#ffffff';
 
-          // When direction is forward: from source right to target left
-          // When direction is reverse: from source left to target right
-          let fromX: number, fromY: number, toX: number, toY: number;
-          if (direction === 'forward') {
-            fromX = sourcePos.x + NODE_W;
-            fromY = sourcePos.y + NODE_H / 2;
-            toX = targetPos.x;
-            toY = targetPos.y + NODE_H / 2;
-          } else {
-            fromX = sourcePos.x;
-            fromY = sourcePos.y + NODE_H / 2;
-            toX = targetPos.x + NODE_W;
-            toY = targetPos.y + NODE_H / 2;
-          }
-
           conns.push({
             fromId: pid,
             toId: node.id,
-            fromX,
-            fromY,
-            toX,
-            toY,
+            fromX: sourcePos.x + NODE_W,
+            fromY: sourcePos.y + NODE_H / 2,
+            toX: targetPos.x,
+            toY: targetPos.y + NODE_H / 2,
             isIlluminated,
             color: areaColor,
           });
         });
       });
 
-      const width = Math.max(2200, H_START_X + 5 * H_COL_GAP + 260);
-      const height = Math.max(1050, 950);
+      const width = Math.max(2000, H_START_X + 5 * H_COL_GAP + 260);
+      const height = Math.max(900, 800);
       return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
     } else {
       // ── Vertical Tree: Roots at Bottom → Crown at Top ──
-      tierSequence.forEach((tierNum, rowIndex) => {
+      [1, 2, 3, 4, 5].forEach((tierNum, rowIndex) => {
         const nodesInTier = tierGroups[tierNum] || [];
         const M = nodesInTier.length;
         if (M === 0) return;
 
         const totalWidth = M * NODE_W + (M - 1) * V_COL_GAP;
         const startX = V_X_CENTER - totalWidth / 2;
-        // Forward: Tier 1 at bottom, Tier 5 at top
-        // Reverse: Tier 5 at bottom, Tier 1 at top
-        const y = V_Y_BOTTOM - rowIndex * V_ROW_GAP;
+        const y = V_Y_BOTTOM - (tierNum - 1) * V_ROW_GAP;
 
         nodesInTier.forEach((node, colIndex) => {
           const x = startX + colIndex * (NODE_W + V_COL_GAP);
@@ -446,7 +431,7 @@ export default function LifeDestinationRoadmap() {
         });
       });
 
-      // Build Connections
+      // Connections
       destinations.forEach((node) => {
         const targetPos = positions[node.id];
         if (!targetPos) return;
@@ -468,30 +453,24 @@ export default function LifeDestinationRoadmap() {
             ? (AREA_COLORS[sourcePos.node.lifeAreaId] ?? '#ffffff')
             : '#ffffff';
 
-          // Forward: source is lower (higher y), target is higher (lower y)
-          const fromX = sourcePos.x + NODE_W / 2;
-          const fromY = sourcePos.y;
-          const toX = targetPos.x + NODE_W / 2;
-          const toY = targetPos.y + NODE_H;
-
           conns.push({
             fromId: pid,
             toId: node.id,
-            fromX,
-            fromY,
-            toX,
-            toY,
+            fromX: sourcePos.x + NODE_W / 2,
+            fromY: sourcePos.y,
+            toX: targetPos.x + NODE_W / 2,
+            toY: targetPos.y + NODE_H,
             isIlluminated,
             color: areaColor,
           });
         });
       });
 
-      const width = Math.max(2200, 2000);
-      const height = Math.max(1300, 1200);
+      const width = Math.max(2000, 1900);
+      const height = Math.max(1200, 1100);
       return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
     }
-  }, [destinations, direction, orientation, tierGroups]);
+  }, [destinations, orientation, tierGroups]);
 
   // SVG Bezier Curves
   const getCurvePath = (fromX: number, fromY: number, toX: number, toY: number): string => {
@@ -557,7 +536,7 @@ export default function LifeDestinationRoadmap() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       const factor = dist / pinchStartDistRef.current;
-      const nextZoom = Math.max(0.35, Math.min(1.8, pinchStartZoomRef.current * factor));
+      const nextZoom = Math.max(0.4, Math.min(1.6, pinchStartZoomRef.current * factor));
       setZoom(nextZoom);
     }
   }, [isDragging, dragStart]);
@@ -573,7 +552,7 @@ export default function LifeDestinationRoadmap() {
   // Mouse wheel zoom
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    setZoom((z) => Math.max(0.35, Math.min(1.8, z - e.deltaY * 0.001)));
+    setZoom((z) => Math.max(0.4, Math.min(1.6, z - e.deltaY * 0.001)));
   }, []);
 
   useEffect(() => {
@@ -585,11 +564,11 @@ export default function LifeDestinationRoadmap() {
 
   const resetView = useCallback(() => {
     if (orientation === 'horizontal') {
-      setPan({ x: 30, y: 10 });
+      setPan({ x: 30, y: 30 });
     } else {
       setPan({ x: -280, y: -260 });
     }
-    setZoom(0.85);
+    setZoom(0.9);
   }, [orientation]);
 
   // Toggle checkpoint completion
@@ -609,7 +588,7 @@ export default function LifeDestinationRoadmap() {
           updatedAt: new Date().toISOString(),
         };
       }
-      // If we completed this node, unlock children that are upcoming
+      // If completed, unlock upcoming children
       if (willBeCompleted && (d.parentId === id || (d.parentIds && d.parentIds.includes(id)))) {
         if (d.status === 'upcoming') {
           return {
@@ -625,7 +604,7 @@ export default function LifeDestinationRoadmap() {
     saveDestinations(updated);
   };
 
-  // Add a branch child sprouting from a specific node
+  // Add child branch from a node
   const handleAddChildBranch = (parentDest: LifeDestination, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const nextTier = Math.min(5, (parentDest.tier || 1) + 1);
@@ -689,6 +668,7 @@ export default function LifeDestinationRoadmap() {
     }
     const filtered = destinations.filter((d) => d.id !== id);
     saveDestinations(filtered);
+    if (selectedNodeId === id) setSelectedNodeId(null);
   };
 
   // Save modal edit/create
@@ -713,6 +693,7 @@ export default function LifeDestinationRoadmap() {
   const handleResetDefaults = () => {
     if (window.confirm('Reset life tree to default master blueprint?')) {
       saveDestinations(DEFAULT_TREE_DESTINATIONS);
+      setSelectedNodeId(null);
     }
   };
 
@@ -720,17 +701,17 @@ export default function LifeDestinationRoadmap() {
 
   return (
     <div className={styles.lifePathContainer}>
-      {/* ── Top Floating Toolbar (Sticky Glass Header) ── */}
+      {/* ── Top Toolbar (Clean, Minimalist SaaS Bar) ── */}
       <div className={styles.toolbarRow} data-interactive="true">
         <div className={styles.progressSummary}>
           <div className={styles.progressCompass}>
-            <GitBranch size={15} className={styles.compassIcon} />
+            <GitBranch size={14} className={styles.compassIcon} />
           </div>
           <div className={styles.progressTextGroup}>
             <span className={styles.progressTitle}>
-              <strong>{completedCount}</strong> of <strong>{destinations.length}</strong> Stations Achieved
+              <strong>{completedCount}</strong> of <strong>{destinations.length}</strong> Milestones Achieved
             </span>
-            <span className={styles.progressSubtitle}>Life Tree &amp; Destination Canvas</span>
+            <span className={styles.progressSubtitle}>Life Tree &amp; Purpose Map</span>
           </div>
         </div>
 
@@ -749,40 +730,20 @@ export default function LifeDestinationRoadmap() {
               type="button"
               className={`${styles.segmentBtn} ${orientation === 'vertical' ? styles.segmentBtnActive : ''}`}
               onClick={() => setOrientation('vertical')}
-              title="Vertical Tree (Roots at Bottom → Branches Upwards)"
+              title="Vertical Tree (Roots at Bottom → Crown at Top)"
             >
               Vertical Tree
-            </button>
-          </div>
-
-          {/* Direction Switcher (Roots -> Crown vs Crown -> Roots) */}
-          <div className={styles.segmentedControl}>
-            <button
-              type="button"
-              className={`${styles.segmentBtn} ${direction === 'forward' ? styles.segmentBtnActive : ''}`}
-              onClick={() => setDirection('forward')}
-              title="Roots → Crown (Ascending Growth Journey)"
-            >
-              Roots → Crown
-            </button>
-            <button
-              type="button"
-              className={`${styles.segmentBtn} ${direction === 'reverse' ? styles.segmentBtnActive : ''}`}
-              onClick={() => setDirection('reverse')}
-              title="Crown → Roots (Reverse Visionary Planning from Summit)"
-            >
-              Crown → Roots
             </button>
           </div>
         </div>
 
         <div className={styles.toolbarActions}>
-          {/* Zoom Controls (Exact Graph Flow Standard) */}
+          {/* Zoom Controls */}
           <div className={styles.zoomControlGroup}>
             <button
               type="button"
               className={styles.ctrlBtn}
-              onClick={() => setZoom((z) => Math.min(1.8, z + 0.1))}
+              onClick={() => setZoom((z) => Math.min(1.6, z + 0.1))}
               title="Zoom In"
             >
               <ZoomIn size={12} />
@@ -791,7 +752,7 @@ export default function LifeDestinationRoadmap() {
             <button
               type="button"
               className={styles.ctrlBtn}
-              onClick={() => setZoom((z) => Math.max(0.35, z - 0.1))}
+              onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
               title="Zoom Out"
             >
               <ZoomOut size={12} />
@@ -810,9 +771,9 @@ export default function LifeDestinationRoadmap() {
             type="button"
             className={styles.addBtn}
             onClick={handleAddNewNode}
-            title="Add a new life destination node to tree"
+            title="Add a new milestone node"
           >
-            <Plus size={13} />
+            <Plus size={12} />
             <span>Add Node</span>
           </button>
 
@@ -820,14 +781,14 @@ export default function LifeDestinationRoadmap() {
             type="button"
             className={styles.resetBtn}
             onClick={handleResetDefaults}
-            title="Reset to default life tree blueprint"
+            title="Reset to default life tree"
           >
             <RotateCcw size={12} />
           </button>
         </div>
       </div>
 
-      {/* ── Tree Canvas Viewport ── */}
+      {/* ── Main Canvas Viewport ── */}
       <div
         ref={containerRef}
         className={`${styles.canvasViewport} ${isDragging ? styles.dragging : ''}`}
@@ -838,6 +799,12 @@ export default function LifeDestinationRoadmap() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          if (!hasMovedRef.current) {
+            // Click on canvas background dismisses the detail drawer
+            setSelectedNodeId(null);
+          }
+        }}
       >
         <div
           ref={canvasRef}
@@ -864,9 +831,9 @@ export default function LifeDestinationRoadmap() {
             <rect width="100%" height="100%" fill="url(#tree-dotgrid)" />
           </svg>
 
-          {/* Tier Headers across Canvas */}
+          {/* Tier Stage Headers across Canvas */}
           {orientation === 'horizontal' && (
-            (direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1]).map((tierNum, colIndex) => {
+            [1, 2, 3, 4, 5].map((tierNum, colIndex) => {
               const x = H_START_X + colIndex * H_COL_GAP + NODE_W / 2;
               return (
                 <div
@@ -885,8 +852,8 @@ export default function LifeDestinationRoadmap() {
           )}
 
           {orientation === 'vertical' && (
-            (direction === 'forward' ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1]).map((tierNum, rowIndex) => {
-              const y = V_Y_BOTTOM - rowIndex * V_ROW_GAP - 30;
+            [1, 2, 3, 4, 5].map((tierNum) => {
+              const y = V_Y_BOTTOM - (tierNum - 1) * V_ROW_GAP - 30;
               return (
                 <div
                   key={`tier-hdr-v-${tierNum}`}
@@ -903,7 +870,7 @@ export default function LifeDestinationRoadmap() {
             })
           )}
 
-          {/* SVG Connector Lines (Branching Curved Bezier Lines) */}
+          {/* SVG Connector Lines (Smooth Curved Bezier Lines with Glowing Illumination) */}
           <svg
             className={styles.svgOverlay}
             width={canvasWidth}
@@ -931,18 +898,22 @@ export default function LifeDestinationRoadmap() {
             </defs>
 
             {connections.map((conn, i) => {
-              const isHovered = hoveredNodeId === conn.fromId || hoveredNodeId === conn.toId;
+              const isHighlighted =
+                selectedNodeId === conn.fromId ||
+                selectedNodeId === conn.toId ||
+                hoveredNodeId === conn.fromId ||
+                hoveredNodeId === conn.toId;
 
               return (
                 <g key={`branch-path-${conn.fromId}-${conn.toId}-${i}`}>
-                  {/* Glowing halo when branch is illuminated */}
-                  {conn.isIlluminated && (
+                  {/* Glowing halo when branch is illuminated or selected */}
+                  {(conn.isIlluminated || isHighlighted) && (
                     <path
                       d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
                       fill="none"
                       stroke={conn.color}
                       strokeWidth={6}
-                      strokeOpacity={0.2}
+                      strokeOpacity={isHighlighted ? 0.35 : 0.2}
                       className={styles.glowingHalo}
                     />
                   )}
@@ -950,9 +921,9 @@ export default function LifeDestinationRoadmap() {
                   <path
                     d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
                     fill="none"
-                    stroke={conn.isIlluminated ? conn.color : 'var(--color-border)'}
-                    strokeWidth={conn.isIlluminated || isHovered ? 2.5 : 1.5}
-                    strokeOpacity={conn.isIlluminated ? 0.95 : isHovered ? 0.7 : 0.3}
+                    stroke={conn.isIlluminated || isHighlighted ? conn.color : 'var(--color-border)'}
+                    strokeWidth={conn.isIlluminated || isHighlighted ? 2.5 : 1.4}
+                    strokeOpacity={conn.isIlluminated ? 0.95 : isHighlighted ? 0.9 : 0.3}
                     markerEnd={`url(#tree-arrow-${conn.fromId}-${conn.toId})`}
                     className={styles.connectionPath}
                   />
@@ -961,13 +932,13 @@ export default function LifeDestinationRoadmap() {
             })}
           </svg>
 
-          {/* ── Tree Destination Node Cards ── */}
+          {/* ── Compact Node Cards on Canvas (ADHD-Optimized: Clean, Spacious, Zero Clutter) ── */}
           {Object.values(nodePositions).map(({ node, x, y }) => {
             const isCompleted = node.status === 'completed';
             const isCurrent = node.status === 'current';
+            const isSelected = selectedNodeId === node.id;
             const isHovered = hoveredNodeId === node.id;
             const areaColor = node.lifeAreaId ? (AREA_COLORS[node.lifeAreaId] ?? '#7c6fff') : '#7c6fff';
-            const areaName = node.lifeAreaId ? (AREA_LABELS[node.lifeAreaId] ?? 'Life Growth') : 'Life Growth';
 
             return (
               <div
@@ -975,47 +946,51 @@ export default function LifeDestinationRoadmap() {
                 data-node="true"
                 className={`${styles.nodeCard} ${
                   isCompleted ? styles.nodeCompleted : isCurrent ? styles.nodeCurrent : styles.nodeUpcoming
-                }`}
+                } ${isSelected ? styles.nodeSelected : ''}`}
                 style={{
                   left: x,
                   top: y,
                   width: NODE_W,
+                  minHeight: NODE_H,
                   '--dest-color': areaColor,
-                  borderColor: isCompleted
+                  borderColor: isSelected
+                    ? 'var(--color-text)'
+                    : isCompleted
                     ? areaColor
                     : isCurrent
                     ? 'var(--color-border-focus)'
                     : isHovered
                     ? 'var(--color-text-muted)'
                     : undefined,
-                  boxShadow: isCompleted
-                    ? `0 0 24px ${areaColor}25, 0 4px 16px rgba(0, 0, 0, 0.6)`
+                  boxShadow: isSelected
+                    ? `0 0 0 2px var(--color-text), 0 8px 24px rgba(0, 0, 0, 0.8)`
+                    : isCompleted
+                    ? `0 0 16px ${areaColor}25, 0 4px 12px rgba(0, 0, 0, 0.5)`
                     : isCurrent
-                    ? `0 0 20px rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.6)`
+                    ? `0 0 14px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5)`
                     : undefined,
                 } as React.CSSProperties}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
+                }}
               >
-                {/* Header Row: Branch Tag, Checkpoint Marker */}
+                {/* Header: Branch Tag & Checkpoint Indicator */}
                 <div className={styles.cardHeader}>
-                  <div className={styles.badgeGroup}>
-                    <span
-                      className={styles.branchTag}
-                      style={{
-                        color: areaColor,
-                        borderColor: `${areaColor}35`,
-                        background: `${areaColor}12`,
-                      }}
-                    >
-                      {node.branchName || node.phaseLabel || `Tier ${node.tier || 1}`}
-                    </span>
-                    <span className={styles.areaTag} style={{ color: areaColor }}>
-                      {areaName}
-                    </span>
-                  </div>
+                  <span
+                    className={styles.branchTag}
+                    style={{
+                      color: areaColor,
+                      borderColor: `${areaColor}35`,
+                      background: `${areaColor}12`,
+                    }}
+                  >
+                    {node.branchName || `Tier ${node.tier || 1}`}
+                  </span>
 
-                  {/* Interactive Checkpoint Toggle Button */}
+                  {/* Interactive Checkpoint Toggle */}
                   <button
                     type="button"
                     data-interactive="true"
@@ -1025,33 +1000,33 @@ export default function LifeDestinationRoadmap() {
                     onClick={(e) => handleToggleStatus(node.id, e)}
                     title={
                       isCompleted
-                        ? 'Station Achieved! Click to mark current'
+                        ? 'Milestone Achieved! Click to set in focus'
                         : 'Click to mark achieved & illuminate branches'
                     }
                     aria-label={`Toggle checkpoint for ${node.title}`}
                   >
                     {isCompleted ? (
-                      <CheckCircle2 size={16} className={styles.checkIconActive} />
+                      <CheckCircle2 size={15} className={styles.checkIconActive} />
                     ) : isCurrent ? (
                       <div className={styles.pulsingCore} />
                     ) : (
-                      <Circle size={15} className={styles.checkIconInactive} />
+                      <Circle size={14} className={styles.checkIconInactive} />
                     )}
                   </button>
                 </div>
 
-                {/* Target & Status Row */}
+                {/* Bold Concise Title */}
+                <h3 className={styles.nodeTitle}>{node.title}</h3>
+
+                {/* Clean Bottom Meta Row */}
                 <div className={styles.metaRow}>
-                  {node.targetAgeOrYear && (
-                    <span className={styles.targetBadge}>
-                      <Target size={10} />
-                      <span>{node.targetAgeOrYear}</span>
-                    </span>
-                  )}
+                  {node.targetAgeOrYear ? (
+                    <span className={styles.targetBadge}>{node.targetAgeOrYear}</span>
+                  ) : null}
 
                   {isCurrent && (
                     <span className={styles.inFocusBadge}>
-                      <Sparkles size={9} /> In Focus
+                      <Sparkles size={9} /> You Are Here
                     </span>
                   )}
 
@@ -1061,73 +1036,157 @@ export default function LifeDestinationRoadmap() {
                     </span>
                   )}
                 </div>
-
-                {/* Title */}
-                <h3 className={styles.nodeTitle}>{node.title}</h3>
-
-                {/* Description */}
-                {node.description && <p className={styles.nodeDesc}>{node.description}</p>}
-
-                {/* North Star Box */}
-                {node.whyItMatters && (
-                  <div className={styles.whyBox}>
-                    <span className={styles.whyLabel}>My North Star:</span>
-                    <span className={styles.whyText}>{node.whyItMatters}</span>
-                  </div>
-                )}
-
-                {/* Criteria Pillars */}
-                {node.criteria && node.criteria.length > 0 && (
-                  <div className={styles.criteriaList}>
-                    {node.criteria.slice(0, 2).map((c, i) => (
-                      <div key={i} className={styles.criteriaItem}>
-                        <div className={styles.criteriaDot} style={{ background: areaColor }} />
-                        <span>{c}</span>
-                      </div>
-                    ))}
-                    {node.criteria.length > 2 && (
-                      <div className={styles.moreCriteria}>+{node.criteria.length - 2} more criteria</div>
-                    )}
-                  </div>
-                )}
-
-                {/* Bottom Card Actions Row */}
-                <div className={styles.cardActionsRow} data-interactive="true">
-                  <button
-                    type="button"
-                    className={styles.branchAddBtn}
-                    onClick={(e) => handleAddChildBranch(node, e)}
-                    title="Sprout a new child branch from this node"
-                  >
-                    <Plus size={10} />
-                    <span>Branch</span>
-                  </button>
-
-                  <div className={styles.editDeleteBtns}>
-                    <button
-                      type="button"
-                      className={styles.miniActionBtn}
-                      onClick={(e) => handleEdit(node, e)}
-                      title="Edit life destination"
-                    >
-                      <Edit2 size={10} />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.miniActionBtn} ${styles.miniDeleteBtn}`}
-                      onClick={(e) => handleDelete(node.id, e)}
-                      title="Delete destination"
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </div>
-                </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* ── ADHD Cognitive Usability: Calm Side Detail Inspector Drawer ── */}
+      {selectedNode && (
+        <aside className={styles.detailDrawer} data-interactive="true" onClick={(e) => e.stopPropagation()}>
+          {/* Drawer Header */}
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerBadgeRow}>
+              <span
+                className={styles.drawerBranchPill}
+                style={{
+                  color: selectedNode.lifeAreaId ? AREA_COLORS[selectedNode.lifeAreaId] : 'var(--color-accent)',
+                  borderColor: selectedNode.lifeAreaId ? `${AREA_COLORS[selectedNode.lifeAreaId]}40` : 'var(--color-border)',
+                  background: selectedNode.lifeAreaId ? `${AREA_COLORS[selectedNode.lifeAreaId]}15` : 'var(--color-surface-2)',
+                }}
+              >
+                {selectedNode.branchName || `Tier ${selectedNode.tier || 1}`}
+              </span>
+
+              <span className={styles.drawerTierLabel}>
+                {TIER_NAMES[selectedNode.tier || 1]}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className={styles.drawerCloseBtn}
+              onClick={() => setSelectedNodeId(null)}
+              title="Close inspector"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className={styles.drawerBody}>
+            {/* Title */}
+            <h2 className={styles.drawerTitle}>{selectedNode.title}</h2>
+
+            {/* Target Year & Status Bar */}
+            <div className={styles.drawerStatusBar}>
+              <button
+                type="button"
+                className={`${styles.drawerStatusToggle} ${
+                  selectedNode.status === 'completed' ? styles.statusToggleCompleted : ''
+                }`}
+                onClick={() => handleToggleStatus(selectedNode.id)}
+              >
+                {selectedNode.status === 'completed' ? (
+                  <>
+                    <CheckCircle2 size={16} />
+                    <span>Destination Achieved</span>
+                  </>
+                ) : selectedNode.status === 'current' ? (
+                  <>
+                    <Sparkles size={16} />
+                    <span>Current Focus (In Progress)</span>
+                  </>
+                ) : (
+                  <>
+                    <Circle size={16} />
+                    <span>Upcoming Milestone</span>
+                  </>
+                )}
+              </button>
+
+              {selectedNode.targetAgeOrYear && (
+                <div className={styles.drawerTargetPill}>
+                  <Target size={12} />
+                  <span>{selectedNode.targetAgeOrYear}</span>
+                </div>
+              )}
+            </div>
+
+            {/* North Star Box (The ADHD Anchor: Why this matters so you never get lost) */}
+            {selectedNode.whyItMatters && (
+              <div className={styles.drawerNorthStar}>
+                <div className={styles.northStarHeader}>
+                  <Compass size={13} />
+                  <span>My North Star (Why This Matters)</span>
+                </div>
+                <p className={styles.northStarText}>{selectedNode.whyItMatters}</p>
+              </div>
+            )}
+
+            {/* Vision / Description */}
+            {selectedNode.description && (
+              <div className={styles.drawerSection}>
+                <div className={styles.drawerSectionLabel}>Vision &amp; Reality</div>
+                <p className={styles.drawerDescText}>{selectedNode.description}</p>
+              </div>
+            )}
+
+            {/* Milestone Criteria Checklist */}
+            {selectedNode.criteria && selectedNode.criteria.length > 0 && (
+              <div className={styles.drawerSection}>
+                <div className={styles.drawerSectionLabel}>Milestone Pillars</div>
+                <div className={styles.drawerCriteriaList}>
+                  {selectedNode.criteria.map((c, i) => (
+                    <div key={i} className={styles.drawerCriteriaItem}>
+                      <div
+                        className={styles.criteriaPillarDot}
+                        style={{
+                          background: selectedNode.lifeAreaId
+                            ? AREA_COLORS[selectedNode.lifeAreaId]
+                            : 'var(--color-accent)',
+                        }}
+                      />
+                      <span>{c}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions: Sprout Branch, Edit, Delete */}
+            <div className={styles.drawerActions}>
+              <button
+                type="button"
+                className={styles.drawerBranchBtn}
+                onClick={(e) => handleAddChildBranch(selectedNode, e)}
+              >
+                <Plus size={13} />
+                <span>Sprout Child Branch</span>
+              </button>
+
+              <div className={styles.drawerActionGroup}>
+                <button
+                  type="button"
+                  className={styles.drawerEditBtn}
+                  onClick={(e) => handleEdit(selectedNode, e)}
+                >
+                  <Edit2 size={12} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.drawerDeleteBtn}
+                  onClick={(e) => handleDelete(selectedNode.id, e)}
+                  title="Delete destination"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      )}
 
       {/* ── Edit / Add Destination Modal ── */}
       {isModalOpen && editingDest && (
@@ -1159,7 +1218,7 @@ export default function LifeDestinationRoadmap() {
               className={styles.modalForm}
             >
               <div className={styles.formGroup}>
-                <label className={styles.fieldLabel}>Node Title *</label>
+                <label className={styles.fieldLabel}>Milestone Title *</label>
                 <input
                   type="text"
                   required
