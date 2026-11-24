@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Inbox,
@@ -615,9 +615,31 @@ export default function InboxPage() {
     setIsBulkOpen(false);
   };
 
-  if (!isLoaded) {
-    return <PageSkeleton variant="tasks" cardsCount={5} showMetrics={false} showControls={true} />;
-  }
+  // Responsive shortest-column masonry tracking for varied-height cards
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const [masonryCols, setMasonryCols] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = listContainerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const updateCols = (width: number) => {
+      if (width <= 0) return;
+      const gap = 14;
+      const minCardWidth = 275;
+      const nextCols = Math.max(1, Math.min(5, Math.floor((width + gap) / (minCardWidth + gap))));
+      setMasonryCols((prev) => (prev === nextCols ? prev : nextCols));
+    };
+
+    updateCols(el.getBoundingClientRect().width);
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        updateCols(entry.contentRect.width);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isLoaded, filterTab, isVaultUnlocked]);
 
   const currentList =
     filterTab === 'inbox'
@@ -629,6 +651,45 @@ export default function InboxPage() {
       : filterTab === 'done'
       ? doneItems
       : convertedItems;
+
+  const masonryColumns = useMemo(() => {
+    if (!masonryCols || masonryCols <= 1 || currentList.length <= 1) return null;
+
+    const estimateWeight = (item: InboxItem): number => {
+      const content = item.content || '';
+      const explicitLines = content.split('\n').length;
+      const wrappedLines = Math.ceil(content.length / 36);
+      const contentWeight = Math.max(explicitLines, wrappedLines) * 20;
+      const notesText = item.notes || '';
+      const notesWeight = notesText
+        ? 44 + Math.max(notesText.split('\n').length, Math.ceil(notesText.length / 34)) * 18
+        : 0;
+      const extra =
+        (item.reminderTime ? 24 : 0) +
+        (editingItemId === item.id || editingNotesItemId === item.id ? 140 : 0);
+      return 88 + contentWeight + notesWeight + extra;
+    };
+
+    const cols: { item: InboxItem; index: number }[][] = Array.from({ length: masonryCols }, () => []);
+    const heights = new Array<number>(masonryCols).fill(0);
+
+    currentList.forEach((item, index) => {
+      let shortestCol = 0;
+      for (let c = 1; c < masonryCols; c++) {
+        if (heights[c] < heights[shortestCol]) {
+          shortestCol = c;
+        }
+      }
+      cols[shortestCol].push({ item, index });
+      heights[shortestCol] += estimateWeight(item) + 14;
+    });
+
+    return cols;
+  }, [masonryCols, currentList, editingItemId, editingNotesItemId]);
+
+  if (!isLoaded) {
+    return <PageSkeleton variant="tasks" cardsCount={5} showMetrics={false} showControls={true} />;
+  }
 
   return (
     <div className={styles.page}>
@@ -1061,9 +1122,9 @@ export default function InboxPage() {
           </div>
         </section>
       ) : (
-        <div className={styles.inboxList}>
+        <div ref={listContainerRef} className={styles.inboxListWrap}>
         {currentList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', gridColumn: '1 / -1', width: '100%' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', width: '100%' }}>
             <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
               {filterTab === 'inbox'
@@ -1079,8 +1140,8 @@ export default function InboxPage() {
                 : 'No items in this category.'}
             </p>
           </div>
-        ) : (
-          currentList.map((item, index) => {
+        ) : (() => {
+          const renderCard = (item: InboxItem, index: number) => {
             const isSelected = selectedItemIds.has(item.id);
             return (
             <article
@@ -1091,6 +1152,8 @@ export default function InboxPage() {
                 background: isSelected ? 'var(--color-surface-2)' : undefined,
                 boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                 borderColor: isSelected ? 'var(--color-accent)' : undefined,
+                position: openColorPickerId === item.id ? 'relative' : undefined,
+                zIndex: openColorPickerId === item.id ? 30 : undefined,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
@@ -1695,11 +1758,29 @@ export default function InboxPage() {
                 )}
               </div>
             </article>
+            );
+          };
+
+          if (masonryColumns) {
+            return (
+              <div className={styles.inboxMasonry}>
+                {masonryColumns.map((col, colIdx) => (
+                  <div key={colIdx} className={styles.inboxMasonryCol}>
+                    {col.map(({ item, index }) => renderCard(item, index))}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          return (
+            <div className={styles.inboxList}>
+              {currentList.map((item, index) => renderCard(item, index))}
+            </div>
           );
-        })
+        })()}
+        </div>
       )}
-      </div>
-    )}
 
       {/* ── Conversion Modal ── */}
       {convertModalItem && (
