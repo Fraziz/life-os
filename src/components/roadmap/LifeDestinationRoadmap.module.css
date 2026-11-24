@@ -1,0 +1,748 @@
+/* ============================================================
+   LIFE DESTINATION ROADMAP — EXECUTIVE PATH CANVAS
+   Design System Rules:
+   - Pure solid borders (1px solid var(--color-border-subtle))
+   - Zero dashed or dotted borders ("no cut cut lines")
+   - Zero left-side border stripes or box colors
+   - No icon bloat or tacky emojis; clean typography and micro-dots
+   - 44x44px minimum tap target for touch & accessibility
+   ============================================================ */
+
+.lifePathContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100vh - 49px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-bg);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.lifePathContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lifePathContainer::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+/* ── Sticky Sub-Header Toolbar ── */
+.toolbarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px 12px 56px;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.progressSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressCompass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.compassIcon {
+  color: var(--color-text);
+  opacity: 0.9;
+}
+
+.progressTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progressTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.progressTitle strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.progressSubtitle {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Direction Switcher (Start -> End vs End -> Start) */
+.directionControl {
+  display: inline-flex;
+  background: var(--color-surface-2);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.directionBtn {
+  padding: 6px 12px;
+  min-height: 34px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.directionBtn:hover {
+  color: var(--color-text);
+}
+
+.directionBtnActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 34px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-inverse);
+  background: var(--color-text);
+  border: 1px solid var(--color-text);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.addBtn:hover {
+  opacity: 0.9;
+}
+
+.resetBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-height: 34px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resetBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* ── Visual Roadmap Canvas ── */
+.mapCanvas {
+  max-width: 840px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 24px 120px;
+  position: relative;
+}
+
+.pathStream {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Station Wrapper ── */
+.stationWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Left Checkpoint Track */
+.checkpointTrack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 18px;
+  flex-shrink: 0;
+  width: 52px;
+  gap: 6px;
+}
+
+.checkpointMarker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-faint);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.checkpointMarker:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+  transform: scale(1.05);
+}
+
+.checkpointMarker:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Station States */
+.markerCompleted {
+  background: var(--station-color, #ffffff);
+  border-color: var(--station-color, #ffffff);
+  color: #000000;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+}
+
+.checkIconActive {
+  color: #000000;
+}
+
+.markerCurrent {
+  border-color: var(--station-color, #ffffff);
+  background: var(--color-surface-2);
+}
+
+.pulsingCore {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--station-color, #ffffff);
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.checkIconInactive {
+  opacity: 0.4;
+}
+
+.stationNumber {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  letter-spacing: 0.05em;
+}
+
+/* ── Destination Card ── */
+.destinationCard {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  padding: 20px 24px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.stationCurrent .destinationCard {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.stationCompleted .destinationCard {
+  border-color: var(--color-border);
+}
+
+.stationCompleted .destinationCard:hover,
+.stationCurrent .destinationCard:hover,
+.destinationCard:hover {
+  border-color: var(--color-border-focus);
+}
+
+/* Header inside Card */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phaseBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.targetBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
+.areaBadge {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.inFocusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.achievedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Card Action Buttons */
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text);
+}
+
+.actionBtn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.actionBtnDelete:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.12);
+  border-color: rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+}
+
+/* Card Content */
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 0 14px 0;
+}
+
+/* North Star Box (Why This Matters So I Don't Get Lost) */
+.whyBox {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.whyLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+}
+
+.whyText {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* Criteria Pillars */
+.criteriaList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.criteriaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.criteriaDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Road Connector Between Stations ── */
+.roadConnector {
+  display: flex;
+  align-items: center;
+  margin-left: 25px; /* Centers with the 52px checkpointTrack */
+  height: 48px;
+  position: relative;
+}
+
+.roadLine {
+  width: 2px;
+  height: 100%;
+  background: var(--color-border-subtle);
+  transition: background 0.3s ease;
+}
+
+.roadIlluminated .roadLine {
+  background: var(--station-color, var(--color-text-muted));
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.roadDashIcon {
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  transform: translate(-50%, -50%) rotate(90deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-faint);
+  transition: all 0.2s ease;
+}
+
+.roadIlluminated .roadDashIcon {
+  border-color: var(--station-color, var(--color-text-muted));
+  color: var(--station-color, var(--color-text));
+}
+
+.roadArrow {
+  opacity: 0.8;
+}
+
+/* ── Modal Dialog ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  animation: modalFadeIn 0.15s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 540px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+}
+
+.modalTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalCloseBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.modalForm {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.inputField,
+.selectField,
+.textareaField {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-text);
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.inputField:focus,
+.selectField:focus,
+.textareaField:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+}
+
+.textareaField {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancelBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.saveBtn {
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-inverse);
+  background: var(--color-text);
+  border: 1px solid var(--color-text);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.saveBtn:hover {
+  opacity: 0.9;
+}
+
+/* ── Mobile & Fluid Responsiveness ── */
+@media (max-width: 640px) {
+  .toolbarRow {
+    padding: 12px 16px 12px 56px;
+  }
+
+  .stationWrapper {
+    gap: 12px;
+  }
+
+  .destinationCard {
+    padding: 16px;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+}

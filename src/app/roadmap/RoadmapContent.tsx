@@ -18,6 +18,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useSettings } from '@/context/SettingsContext';
 import { executeOptionalAICall } from '@/utils/aiEngine';
+import LifeDestinationRoadmap from '@/components/roadmap/LifeDestinationRoadmap';
 import styles from './page.module.css';
 
 // ── Layout constants ──────────────────────────────────────────
@@ -53,7 +54,7 @@ const DEFAULT_COLOR = '#7c6fff';
 
 type FilterMode = 'all' | 'active' | string;
 type HorizonMode = 'all' | '90-day' | 'yearly';
-type ViewMode = 'graph' | 'timeline';
+type ViewMode = 'graph' | 'timeline' | 'destinations';
 
 interface NodePosition {
   id: string;
@@ -663,35 +664,44 @@ Keep language professional, crisp, and clean. No emojis.`;
               >
                 Timeline Gantt
               </button>
+              <button
+                type="button"
+                className={`${styles.viewBtn} ${viewMode === 'destinations' ? styles.viewBtnActive : ''}`}
+                onClick={() => setViewMode('destinations')}
+              >
+                Life Path
+              </button>
             </div>
 
             {/* Compact Filter Pills */}
-            <div className={styles.filterGroup}>
-              <button
-                type="button"
-                className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
-                onClick={() => setFilter('all')}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
-                onClick={() => setFilter('active')}
-              >
-                Active
-              </button>
-              {uniqueAreas.map(areaId => (
+            {viewMode !== 'destinations' && (
+              <div className={styles.filterGroup}>
                 <button
-                  key={areaId}
                   type="button"
-                  className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
-                  onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
+                  className={`${styles.filterPill} ${filter === 'all' ? styles.filterActive : ''}`}
+                  onClick={() => setFilter('all')}
                 >
-                  {AREA_LABELS[areaId] ?? areaId}
+                  All
                 </button>
-              ))}
-            </div>
+                <button
+                  type="button"
+                  className={`${styles.filterPill} ${filter === 'active' ? styles.filterActive : ''}`}
+                  onClick={() => setFilter('active')}
+                >
+                  Active
+                </button>
+                {uniqueAreas.map(areaId => (
+                  <button
+                    key={areaId}
+                    type="button"
+                    className={`${styles.filterPill} ${filter === areaId ? styles.filterActive : ''}`}
+                    onClick={() => setFilter(f => f === areaId ? 'all' : areaId)}
+                  >
+                    {AREA_LABELS[areaId] ?? areaId}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className={styles.topBarRight}>
@@ -715,7 +725,9 @@ Keep language professional, crisp, and clean. No emojis.`;
       </header>
 
       {/* ── Viewport Content ── */}
-      {viewMode === 'timeline' ? (
+      {viewMode === 'destinations' ? (
+        <LifeDestinationRoadmap />
+      ) : viewMode === 'timeline' ? (
         <div className={styles.timelineViewport}>
           <div className={styles.timelineGridHeader}>
             <div>Initiative / Project</div>

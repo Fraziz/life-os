@@ -207,6 +207,26 @@ export interface Milestone {
   updatedAt: string;
 }
 
+// ── Life Path & Destinations (Roadmap) ─────────────────────
+
+export type LifeDestinationStatus = 'completed' | 'current' | 'upcoming';
+
+export interface LifeDestination {
+  id: string;
+  title: string;
+  phaseLabel: string;            // e.g. "Start: Foundation", "Phase 2: Independence", "Ultimate Destination"
+  description: string;
+  whyItMatters: string;          // Core purpose so user never gets lost
+  targetAgeOrYear?: string;      // e.g. "Age 25", "2027", "Future"
+  lifeAreaId?: string;           // Linked Life Area ID
+  status: LifeDestinationStatus;
+  criteria?: string[];           // Key milestones / pillars required to reach destination
+  order: number;                 // Chronological index from Start (1) to End (N)
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Projects (Phase 7) ─────────────────────────────────────
 
 export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
