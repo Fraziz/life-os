@@ -166,7 +166,7 @@ function safeFormatDate(dateVal: any, opts?: Intl.DateTimeFormatOptions): string
 }
 
 // ── Markdown Table Parser ──────────────────────────────────────────
-function renderMarkdownTables(text: string): string {
+export function renderMarkdownTables(text: string): string {
   // Regex matches a full markdown table block with header, separator, and data rows
   const tableRegex = /((?:^[ \t]*\|.+?\|[ \t]*\r?\n)+(?:^[ \t]*\|[ \t]*:?[-]+:?[ \t]*(?:\|[ \t]*:?[-]+:?[ \t]*)*\|[ \t]*\r?\n)(?:^[ \t]*\|.+?\|[ \t]*(?:\r?\n|$))+)/gm;
 
@@ -215,16 +215,19 @@ function renderMarkdownTables(text: string): string {
 }
 
 // ── Formal Document & Markdown Renderer (Word & Book Ready) ───────
-function renderMarkdown(md: string): string {
+export function renderMarkdown(md: string): string {
   if (!md) return '';
 
-  // 1. Extract and preserve Code Blocks
+  // 1. Extract and preserve Code Blocks (using token without underscores to avoid italic clash)
   const codeBlocks: string[] = [];
   let html = md.replace(/```([\s\S]*?)```/gm, (_, code) => {
     const idx = codeBlocks.length;
     codeBlocks.push(`<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
-    return `<!--CODE_BLOCK_${idx}-->`;
+    return `@@CODEBLOCK${idx}@@`;
   });
+
+  // Unwrap any existing .table-container wrappers to prevent container nesting
+  html = html.replace(/<div\s+class=["'][^"']*table-container[^"']*["']>\s*(<table[\s\S]*?<\/table>)\s*<\/div>/gi, '$1');
 
   // 2. Extract and preserve pre-existing HTML tables (<table...</table>)
   const htmlTables: string[] = [];
@@ -235,7 +238,7 @@ function renderMarkdown(md: string): string {
       formatted = formatted.replace(/<table/i, '<table class="doc-table"');
     }
     htmlTables.push(`<div class="table-container">${formatted}</div>`);
-    return `<!--HTML_TABLE_${idx}-->`;
+    return `@@HTMLTABLE${idx}@@`;
   });
 
   // 3. Render Markdown Tables (| Header | Header | ...)
@@ -246,14 +249,14 @@ function renderMarkdown(md: string): string {
   html = html.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, linkText) => {
     const idx = htmlLinks.length;
     htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${linkText}</a>`);
-    return `<!--HTML_LINK_${idx}-->`;
+    return `@@HTMLLINK${idx}@@`;
   });
 
   // 5. Convert Markdown Links: [Link Text](https://example.com)
   html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)/g, (_, label, url) => {
     const idx = htmlLinks.length;
     htmlLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${url}">${label}</a>`);
-    return `<!--HTML_LINK_${idx}-->`;
+    return `@@HTMLLINK${idx}@@`;
   });
 
   // 6. Autolink standalone raw URLs (https://..., http://..., or www....)
@@ -269,7 +272,7 @@ function renderMarkdown(md: string): string {
     const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
     const idx = htmlLinks.length;
     htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${url}</a>`);
-    return `${prefix}<!--HTML_LINK_${idx}-->${trailing}`;
+    return `${prefix}@@HTMLLINK${idx}@@${trailing}`;
   });
 
   // 7. Inline code
@@ -305,10 +308,12 @@ function renderMarkdown(md: string): string {
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-  // 13. Bold & italic
+  // 13. Bold & italic (word-bounded underscore italic prevents corrupting tags)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+  html = html.replace(/(?:^|[\s(>])_([^_ \n][^_]*?[^_ \n])_(?=$|[\s)<.,;:!?])/gm, (match, inner) => {
+    return match.replace(`_${inner}_`, `<em>${inner}</em>`);
+  });
 
   // 14. Inline arrows
   html = html.replace(/\s*->\s*/g, ' &rarr; ');
@@ -332,9 +337,9 @@ function renderMarkdown(md: string): string {
   html = html.replace(/^---$/gm, '<hr/>');
 
   // 20. Restore Code blocks, Tables, and Links
-  html = html.replace(/<!--CODE_BLOCK_(\d+)-->/g, (_, idx) => codeBlocks[Number(idx)] || '');
-  html = html.replace(/<!--HTML_TABLE_(\d+)-->/g, (_, idx) => htmlTables[Number(idx)] || '');
-  html = html.replace(/<!--HTML_LINK_(\d+)-->/g, (_, idx) => htmlLinks[Number(idx)] || '');
+  html = html.replace(/@@CODEBLOCK(\d+)@@/g, (_, idx) => codeBlocks[Number(idx)] || '');
+  html = html.replace(/@@HTMLTABLE(\d+)@@/g, (_, idx) => htmlTables[Number(idx)] || '');
+  html = html.replace(/@@HTMLLINK(\d+)@@/g, (_, idx) => htmlLinks[Number(idx)] || '');
 
   // 21. Wrap double-newline separated blocks in <p>
   html = html.split(/\n{2,}/).map((block) => {
@@ -2083,67 +2088,7 @@ export default function KnowledgePage() {
   const formatTextToHtmlParagraphs = (text: string): string => {
     const norm = text.replace(/\r\n|\r/g, '\n').trim();
     if (!norm) return '';
-
-    const escapeHtml = (s: string) =>
-      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const autolink = (str: string) => {
-      let res = escapeHtml(str);
-      // Markdown links: [label](url)
-      res = res.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|www\.[^\s\)]+)\)/g, (_, label, url) => {
-        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${label}</a>`;
-      });
-      // Standalone URLs
-      res = res.replace(/(^|[\s(>])(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, (match, prefix, rawUrl) => {
-        let url = rawUrl;
-        let trailing = '';
-        const punctMatch = url.match(/[.,;:!?)"']+$/);
-        if (punctMatch) {
-          trailing = punctMatch[0];
-          url = url.slice(0, -trailing.length);
-        }
-        if (!url.includes('.') || url.endsWith('.')) return match;
-        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-        return `${prefix}<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${url}</a>${trailing}`;
-      });
-      return res;
-    };
-
-    const hasDouble = /\n\s*\n/.test(norm);
-    const blocks = hasDouble ? norm.split(/\n\s*\n+/) : norm.split('\n');
-
-    const htmlBlocks: string[] = [];
-    for (const block of blocks) {
-      const trimmed = block.trim();
-      if (!trimmed) continue;
-
-      // Check headings
-      if (/^#\s+/.test(trimmed)) {
-        htmlBlocks.push(`<h1>${autolink(trimmed.replace(/^#\s+/, ''))}</h1>`);
-      } else if (/^##\s+/.test(trimmed)) {
-        htmlBlocks.push(`<h2>${autolink(trimmed.replace(/^##\s+/, ''))}</h2>`);
-      } else if (/^###\s+/.test(trimmed)) {
-        htmlBlocks.push(`<h3>${autolink(trimmed.replace(/^###\s+/, ''))}</h3>`);
-      } else if (/^####\s+/.test(trimmed)) {
-        htmlBlocks.push(`<h4>${autolink(trimmed.replace(/^####\s+/, ''))}</h4>`);
-      } else if (/^[-*•]\s+/.test(trimmed)) {
-        const items = trimmed.split('\n').map((l) => `<li>${autolink(l.replace(/^[-*•]\s+/, ''))}</li>`).join('');
-        htmlBlocks.push(`<ul>${items}</ul>`);
-      } else if (/^\d+[\.\)]\s+/.test(trimmed)) {
-        const items = trimmed.split('\n').map((l) => `<li>${autolink(l.replace(/^\d+[\.\)]\s+/, ''))}</li>`).join('');
-        htmlBlocks.push(`<ol>${items}</ol>`);
-      } else if (/^>\s+/.test(trimmed)) {
-        htmlBlocks.push(`<blockquote>${autolink(trimmed.replace(/^>\s+/, ''))}</blockquote>`);
-      } else if (trimmed === '---' || trimmed === '***') {
-        htmlBlocks.push('<hr/>');
-      } else {
-        const lines = trimmed.split('\n').map(autolink).join('<br/>');
-        htmlBlocks.push(`<p>${lines}</p>`);
-      }
-    }
-
-    return htmlBlocks.join('');
+    return renderMarkdown(norm);
   };
 
   // Places caret cleanly inside the deepest text node at the very end of an editor
@@ -2173,15 +2118,26 @@ export default function KnowledgePage() {
     } catch {}
   };
 
-  // Inserts text or HTML into contentEditable without Chrome's 64KB execCommand buffer limitation
+  // Inserts text or HTML into contentEditable with zero truncation (handles unlimited length books & tables)
   const insertContentIntoRichEditor = (editorEl: HTMLElement, textToInsert: string, htmlSnippet?: string) => {
-    let inserted = false;
+    editorEl.focus();
+
+    // Ensure we have a valid selection inside editorEl
+    const sel = window.getSelection();
+    let range: Range | null = null;
+    if (sel && sel.rangeCount > 0) {
+      const curRange = sel.getRangeAt(0);
+      if (editorEl.contains(curRange.commonAncestorContainer) || editorEl === curRange.commonAncestorContainer) {
+        range = curRange;
+      }
+    }
 
     // Direct insertion if editor is blank or only contains placeholder
     const isEmpty =
       !editorEl.textContent?.trim() ||
       editorEl.innerHTML.trim() === '' ||
       editorEl.innerHTML.trim() === '<p><br></p>' ||
+      editorEl.innerHTML.trim() === '<div><br></div>' ||
       editorEl.innerHTML.trim() === '<br>';
 
     if (isEmpty && htmlSnippet) {
@@ -2190,77 +2146,64 @@ export default function KnowledgePage() {
       return true;
     }
 
-    // Method 1: Modern DOM Selection & Range (unlimited text size, zero truncation)
+    // If selection was not inside editorEl, create a clean Range targeting the end
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(editorEl);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+
+    // DOM Selection & Range fragment insertion (unlimited text size, zero table or header truncation)
     try {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        if (editorEl.contains(range.commonAncestorContainer) || editorEl === range.commonAncestorContainer) {
-          range.deleteContents();
-          if (htmlSnippet) {
-            const template = document.createElement('template');
-            template.innerHTML = htmlSnippet;
-            const frag = template.content;
-            const lastChild = frag.lastChild;
-            range.insertNode(frag);
-            if (lastChild) {
-              let deepLast: Node = lastChild;
-              while (deepLast.lastChild) {
-                deepLast = deepLast.lastChild;
-              }
-              const newRange = document.createRange();
-              if (deepLast.nodeType === Node.TEXT_NODE) {
-                const len = (deepLast.textContent || '').length;
-                newRange.setStart(deepLast, len);
-                newRange.setEnd(deepLast, len);
-              } else {
-                newRange.setStartAfter(lastChild);
-                newRange.collapse(true);
-              }
-              sel.removeAllRanges();
-              sel.addRange(newRange);
-            }
-          } else {
-            const p = document.createElement('p');
-            p.textContent = textToInsert;
-            range.insertNode(p);
-            const newRange = document.createRange();
-            newRange.setStartAfter(p);
-            newRange.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
+      range.deleteContents();
+      if (htmlSnippet) {
+        const template = document.createElement('template');
+        template.innerHTML = htmlSnippet;
+        const frag = template.content;
+        const lastChild = frag.lastChild;
+        range.insertNode(frag);
+        if (lastChild) {
+          let deepLast: Node = lastChild;
+          while (deepLast.lastChild) {
+            deepLast = deepLast.lastChild;
           }
-          inserted = true;
+          const newRange = document.createRange();
+          if (deepLast.nodeType === Node.TEXT_NODE) {
+            const len = (deepLast.textContent || '').length;
+            newRange.setStart(deepLast, len);
+            newRange.setEnd(deepLast, len);
+          } else {
+            newRange.setStartAfter(lastChild);
+            newRange.collapse(true);
+          }
+          sel?.removeAllRanges();
+          sel?.addRange(newRange);
         }
+      } else {
+        const p = document.createElement('p');
+        p.textContent = textToInsert;
+        range.insertNode(p);
+        const newRange = document.createRange();
+        newRange.setStartAfter(p);
+        newRange.collapse(true);
+        sel?.removeAllRanges();
+        sel?.addRange(newRange);
       }
-    } catch (rangeErr) {
-      console.warn('[RichEditor] Selection range paste error, falling back:', rangeErr);
-    }
-
-    // Method 2: document.execCommand fallback (only if under 40k chars)
-    if (!inserted && textToInsert.length < 40000) {
-      try {
-        inserted = htmlSnippet
-          ? document.execCommand('insertHTML', false, htmlSnippet)
-          : document.execCommand('insertText', false, textToInsert);
-      } catch { }
-    }
-
-    // Method 3: Direct DOM Append (absolute fallback for massive text without limits)
-    if (!inserted) {
+      return true;
+    } catch (insertErr) {
+      console.warn('[RichEditor] Selection range paste error, using direct append:', insertErr);
       if (htmlSnippet) {
         editorEl.innerHTML += htmlSnippet;
-        setCaretToEnd(editorEl);
       } else {
         const p = document.createElement('p');
         p.textContent = textToInsert;
         editorEl.appendChild(p);
-        setCaretToEnd(editorEl);
       }
-      inserted = true;
+      setCaretToEnd(editorEl);
+      return true;
     }
-
-    return inserted;
   };
 
   // Paste inside the contentEditable rich editor: preserves exact text formatting while
@@ -2303,15 +2246,35 @@ export default function KnowledgePage() {
       return;
     }
 
-    // Try HTML from clipboard if rich and captures the full text
+    // Detect whether pasted plainText contains markdown syntax (headings, tables, bold, bullets, numbers, dividers)
+    const isMarkdown =
+      /(?:^|\n)#{1,6}\s+/.test(plainText) ||
+      /(?:^|\n)[ \t]*\|.+?\|\s*\n[ \t]*\|[\s\-:]+?\|/.test(plainText) ||
+      /\*\*[^*]+?\*\*/.test(plainText) ||
+      /(?:^|\n)[ \t]*[-*•]\s+/.test(plainText) ||
+      /(?:^|\n)[ \t]*\d+[\.\)]\s+/.test(plainText) ||
+      /(?:^|\n)---(?:\r?\n|$)/.test(plainText) ||
+      /```[\s\S]*?```/.test(plainText);
+
+    // Auto-detect document title if title is currently blank
+    if (!fTitle.trim()) {
+      const headingMatch = plainText.match(/^#\s+([^\n]+)/);
+      if (headingMatch && headingMatch[1].trim()) {
+        setFTitle(headingMatch[1].trim());
+      }
+    }
+
     let htmlSnippet = '';
-    if (rawHtml && typeof DOMParser !== 'undefined') {
+
+    // If text has markdown syntax, always compile with renderMarkdown for complete table & formatting fidelity
+    if (isMarkdown) {
+      htmlSnippet = renderMarkdown(plainText);
+    } else if (rawHtml && typeof DOMParser !== 'undefined') {
       try {
         const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
         doc.querySelectorAll('script, style, meta, link, noscript').forEach((el) => el.remove());
         const blocks = doc.body.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, table');
-        if (blocks.length > 0 && doc.body.textContent && doc.body.textContent.trim().length >= plainText.trim().length * 0.5) {
-          // Normalize links to have doc-link class
+        if (blocks.length > 0 && doc.body.textContent && doc.body.textContent.trim().length >= plainText.trim().length * 0.85) {
           doc.querySelectorAll('a').forEach((a) => {
             a.classList.add('doc-link');
             a.setAttribute('target', '_blank');
@@ -2322,9 +2285,9 @@ export default function KnowledgePage() {
       } catch { }
     }
 
-    // Fall back to structured formatting from plainText
+    // Fall back to renderMarkdown from plainText
     if (!htmlSnippet) {
-      htmlSnippet = formatTextToHtmlParagraphs(plainText);
+      htmlSnippet = renderMarkdown(plainText);
     }
 
     insertContentIntoRichEditor(editor, plainText, htmlSnippet);
