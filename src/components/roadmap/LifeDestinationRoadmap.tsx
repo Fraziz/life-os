@@ -831,45 +831,6 @@ export default function LifeDestinationRoadmap() {
             <rect width="100%" height="100%" fill="url(#tree-dotgrid)" />
           </svg>
 
-          {/* Tier Stage Headers across Canvas */}
-          {orientation === 'horizontal' && (
-            [1, 2, 3, 4, 5].map((tierNum, colIndex) => {
-              const x = H_START_X + colIndex * H_COL_GAP + NODE_W / 2;
-              return (
-                <div
-                  key={`tier-hdr-${tierNum}`}
-                  className={styles.canvasColHeader}
-                  style={{
-                    left: x,
-                    top: 100,
-                  }}
-                >
-                  <div className={styles.colHeaderDot} />
-                  <span>{TIER_NAMES[tierNum] || `Tier ${tierNum}`}</span>
-                </div>
-              );
-            })
-          )}
-
-          {orientation === 'vertical' && (
-            [1, 2, 3, 4, 5].map((tierNum) => {
-              const y = V_Y_BOTTOM - (tierNum - 1) * V_ROW_GAP - 30;
-              return (
-                <div
-                  key={`tier-hdr-v-${tierNum}`}
-                  className={styles.canvasColHeader}
-                  style={{
-                    left: V_X_CENTER,
-                    top: y,
-                  }}
-                >
-                  <div className={styles.colHeaderDot} />
-                  <span>{TIER_NAMES[tierNum] || `Tier ${tierNum}`}</span>
-                </div>
-              );
-            })
-          )}
-
           {/* SVG Connector Lines (Smooth Curved Bezier Lines with Glowing Illumination) */}
           <svg
             className={styles.svgOverlay}
