@@ -121,15 +121,15 @@ import StudySessionCard from '@/components/study/StudySessionCard';
 
 // ── Color Highlight Palette (Literal Translucent Highlighter Marker) ──
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [
-  { name: 'yellow',   bg: 'rgba(253, 224, 71,  0.42)', border: '#fbbf24', text: 'inherit', label: 'Yellow' },
-  { name: 'lime',     bg: 'rgba(134, 239, 172, 0.42)', border: '#4ade80', text: 'inherit', label: 'Lime' },
-  { name: 'cyan',     bg: 'rgba(103, 232, 249, 0.42)', border: '#22d3ee', text: 'inherit', label: 'Cyan' },
-  { name: 'blue',     bg: 'rgba(147, 197, 253, 0.42)', border: '#60a5fa', text: 'inherit', label: 'Blue' },
-  { name: 'purple',   bg: 'rgba(196, 181, 253, 0.42)', border: '#a78bfa', text: 'inherit', label: 'Purple' },
-  { name: 'pink',     bg: 'rgba(249, 168, 212, 0.42)', border: '#f472b6', text: 'inherit', label: 'Pink' },
-  { name: 'orange',   bg: 'rgba(253, 186, 116, 0.42)', border: '#fb923c', text: 'inherit', label: 'Orange' },
-  { name: 'red',      bg: 'rgba(252, 165, 165, 0.42)', border: '#f87171', text: 'inherit', label: 'Red' },
-  { name: 'mint',     bg: 'rgba(110, 231, 183, 0.42)', border: '#34d399', text: 'inherit', label: 'Mint' },
+  { name: 'yellow', bg: 'rgba(253, 224, 71,  0.42)', border: '#fbbf24', text: 'inherit', label: 'Yellow' },
+  { name: 'lime', bg: 'rgba(134, 239, 172, 0.42)', border: '#4ade80', text: 'inherit', label: 'Lime' },
+  { name: 'cyan', bg: 'rgba(103, 232, 249, 0.42)', border: '#22d3ee', text: 'inherit', label: 'Cyan' },
+  { name: 'blue', bg: 'rgba(147, 197, 253, 0.42)', border: '#60a5fa', text: 'inherit', label: 'Blue' },
+  { name: 'purple', bg: 'rgba(196, 181, 253, 0.42)', border: '#a78bfa', text: 'inherit', label: 'Purple' },
+  { name: 'pink', bg: 'rgba(249, 168, 212, 0.42)', border: '#f472b6', text: 'inherit', label: 'Pink' },
+  { name: 'orange', bg: 'rgba(253, 186, 116, 0.42)', border: '#fb923c', text: 'inherit', label: 'Orange' },
+  { name: 'red', bg: 'rgba(252, 165, 165, 0.42)', border: '#f87171', text: 'inherit', label: 'Red' },
+  { name: 'mint', bg: 'rgba(110, 231, 183, 0.42)', border: '#34d399', text: 'inherit', label: 'Mint' },
   { name: 'lavender', bg: 'rgba(167, 139, 250, 0.42)', border: '#8b5cf6', text: 'inherit', label: 'Lavender' },
 ];
 
@@ -663,8 +663,8 @@ function MarkdownToolbar({
           <Highlighter size={12} className={styles.highlighterIcon} />
           {[
             { name: 'yellow', bg: '#fef08a', border: '#eab308', label: 'Yellow' },
-            { name: 'mint',   bg: '#bbf7d0', border: '#22c55e', label: 'Green' },
-            { name: 'cyan',   bg: '#bae6fd', border: '#0284c7', label: 'Blue' },
+            { name: 'mint', bg: '#bbf7d0', border: '#22c55e', label: 'Green' },
+            { name: 'cyan', bg: '#bae6fd', border: '#0284c7', label: 'Blue' },
             { name: 'purple', bg: '#e9d5ff', border: '#a855f7', label: 'Purple' },
           ].map((c) => (
             <button
@@ -758,12 +758,12 @@ export default function KnowledgePage() {
   const { selectFocusDoc } = useFocus();
   const { docs, isLoaded, addDoc, updateDoc, deleteDoc, deleteDocs, restoreDoc, togglePinDoc, toggleLikeDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
   const { settings } = useSettings();
-  const { goals }    = useGoals();
-  const { dreams }   = useDreams();
+  const { goals } = useGoals();
+  const { dreams } = useDreams();
   const { projects } = useProjects();
-  const { tasks }    = useTasks();
+  const { tasks } = useTasks();
 
-  const [searchQ, setSearchQ]     = useState('');
+  const [searchQ, setSearchQ] = useState('');
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; title: string } | null>(null);
 
   // Multi-selection for bulk delete/archive
@@ -837,14 +837,14 @@ export default function KnowledgePage() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isActionMenuOpen]);
-  
+
   // Dedicated history stack for robust Ctrl+Z (Undo) and Ctrl+Y (Redo)
   const historyStackRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
   const isNavigatingHistoryRef = useRef<boolean>(false);
   const typingHistoryTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const performUndoRef = useRef<() => void>(() => {});
-  const performRedoRef = useRef<() => void>(() => {});
+  const performUndoRef = useRef<() => void>(() => { });
+  const performRedoRef = useRef<() => void>(() => { });
 
   // Microsoft Word-Style Live Active Formatting & Link Popover
   const [activeFormats, setActiveFormats] = useState({
@@ -896,7 +896,7 @@ export default function KnowledgePage() {
       const next = !prev;
       try {
         localStorage.setItem('life_os_reading_tools_open', String(next));
-      } catch {}
+      } catch { }
       return next;
     });
   };
@@ -970,20 +970,20 @@ export default function KnowledgePage() {
   const [revealedQuizAnswers, setRevealedQuizAnswers] = useState<Record<number, boolean>>({});
 
   // Form fields
-  const [fTitle, setFTitle]           = useState('');
-  const [fContent, setFContent]       = useState('');
-  const [fStatus, setFStatus]         = useState<DocumentStatus>('active');
-  const [fCategory, setFCategory]     = useState<DocumentCategory>('general');
-  const [fIsPinned, setFIsPinned]     = useState(false);
+  const [fTitle, setFTitle] = useState('');
+  const [fContent, setFContent] = useState('');
+  const [fStatus, setFStatus] = useState<DocumentStatus>('active');
+  const [fCategory, setFCategory] = useState<DocumentCategory>('general');
+  const [fIsPinned, setFIsPinned] = useState(false);
   const [fReadStatus, setFReadStatus] = useState<DocumentReadStatus>('reading');
   const [fReadProgress, setFReadProgress] = useState<number>(0);
   const [fCurrentPage, setFCurrentPage] = useState<number | undefined>(undefined);
-  const [fTotalPages, setFTotalPages]   = useState<number | undefined>(undefined);
-  const [fTags, setFTags]             = useState('');
-  const [fDreamId, setFDreamId]       = useState('');
-  const [fGoalId, setFGoalId]         = useState('');
-  const [fProjectId, setFProjectId]   = useState('');
-  const [fTaskId, setFTaskId]         = useState('');
+  const [fTotalPages, setFTotalPages] = useState<number | undefined>(undefined);
+  const [fTags, setFTags] = useState('');
+  const [fDreamId, setFDreamId] = useState('');
+  const [fGoalId, setFGoalId] = useState('');
+  const [fProjectId, setFProjectId] = useState('');
+  const [fTaskId, setFTaskId] = useState('');
 
   const isCurrentManhwa = Boolean(selectedDoc ? isDocManhwa(selectedDoc) : false);
   const isCurrentVideo = !isCurrentManhwa && Boolean(selectedDoc ? isDocVideoLesson(selectedDoc) : isDocVideoLesson({ content: fContent, title: fTitle }));
@@ -1228,8 +1228,8 @@ export default function KnowledgePage() {
         scrollAccRef.current -= px;
 
         const scrollContainer = (document.querySelector(`.${styles.editorCanvas}`) ||
-                                 document.querySelector(`.${styles.bookWrapper}`) ||
-                                 document.querySelector(`.${styles.wordDocumentWrapper}`)) as HTMLElement | null;
+          document.querySelector(`.${styles.bookWrapper}`) ||
+          document.querySelector(`.${styles.wordDocumentWrapper}`)) as HTMLElement | null;
 
         if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 10) {
           scrollContainer.scrollTop += px;
@@ -1895,8 +1895,8 @@ export default function KnowledgePage() {
         const tags = isPdf
           ? ['book', 'pdf', 'reading']
           : isEpub
-          ? ['book', 'epub', 'reading']
-          : ['book', ext, 'reading'];
+            ? ['book', 'epub', 'reading']
+            : ['book', ext, 'reading'];
 
         const docTitle = (result.title || file.name).replace(/\.[^/.]+$/, '');
         const docContent = result.content || '';
@@ -1907,7 +1907,7 @@ export default function KnowledgePage() {
         let fileBlobUrl = '';
         try {
           fileBlobUrl = URL.createObjectURL(file);
-        } catch {}
+        } catch { }
 
         const newDoc = addDoc({
           title: docTitle,
@@ -1927,7 +1927,7 @@ export default function KnowledgePage() {
         if (typeof window !== 'undefined' && file) {
           try {
             await idbSet(`life_os_book_file_${newDoc.id}`, file);
-          } catch {}
+          } catch { }
         }
 
         if (successCount === 0) {
@@ -2146,6 +2146,33 @@ export default function KnowledgePage() {
     return htmlBlocks.join('');
   };
 
+  // Places caret cleanly inside the deepest text node at the very end of an editor
+  const setCaretToEnd = (el: HTMLElement) => {
+    try {
+      el.focus();
+      const sel = window.getSelection();
+      if (!sel) return;
+
+      let lastNode: Node = el;
+      while (lastNode.lastChild) {
+        lastNode = lastNode.lastChild;
+      }
+
+      const range = document.createRange();
+      if (lastNode.nodeType === Node.TEXT_NODE) {
+        const len = (lastNode.textContent || '').length;
+        range.setStart(lastNode, len);
+        range.setEnd(lastNode, len);
+      } else {
+        range.selectNodeContents(lastNode);
+        range.collapse(false);
+      }
+
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch {}
+  };
+
   // Inserts text or HTML into contentEditable without Chrome's 64KB execCommand buffer limitation
   const insertContentIntoRichEditor = (editorEl: HTMLElement, textToInsert: string, htmlSnippet?: string) => {
     let inserted = false;
@@ -2159,16 +2186,7 @@ export default function KnowledgePage() {
 
     if (isEmpty && htmlSnippet) {
       editorEl.innerHTML = htmlSnippet;
-      try {
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(editorEl);
-        range.collapse(false);
-        if (sel) {
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-      } catch {}
+      setCaretToEnd(editorEl);
       return true;
     }
 
@@ -2186,9 +2204,19 @@ export default function KnowledgePage() {
             const lastChild = frag.lastChild;
             range.insertNode(frag);
             if (lastChild) {
+              let deepLast: Node = lastChild;
+              while (deepLast.lastChild) {
+                deepLast = deepLast.lastChild;
+              }
               const newRange = document.createRange();
-              newRange.setStartAfter(lastChild);
-              newRange.collapse(true);
+              if (deepLast.nodeType === Node.TEXT_NODE) {
+                const len = (deepLast.textContent || '').length;
+                newRange.setStart(deepLast, len);
+                newRange.setEnd(deepLast, len);
+              } else {
+                newRange.setStartAfter(lastChild);
+                newRange.collapse(true);
+              }
               sel.removeAllRanges();
               sel.addRange(newRange);
             }
@@ -2215,17 +2243,19 @@ export default function KnowledgePage() {
         inserted = htmlSnippet
           ? document.execCommand('insertHTML', false, htmlSnippet)
           : document.execCommand('insertText', false, textToInsert);
-      } catch {}
+      } catch { }
     }
 
     // Method 3: Direct DOM Append (absolute fallback for massive text without limits)
     if (!inserted) {
       if (htmlSnippet) {
         editorEl.innerHTML += htmlSnippet;
+        setCaretToEnd(editorEl);
       } else {
         const p = document.createElement('p');
         p.textContent = textToInsert;
         editorEl.appendChild(p);
+        setCaretToEnd(editorEl);
       }
       inserted = true;
     }
@@ -2289,7 +2319,7 @@ export default function KnowledgePage() {
           });
           htmlSnippet = doc.body.innerHTML;
         }
-      } catch {}
+      } catch { }
     }
 
     // Fall back to structured formatting from plainText
@@ -2368,8 +2398,8 @@ export default function KnowledgePage() {
       } catch {
         // ignore
       }
-      const preferredInitialDoc = docs.find((d) => 
-        !d.id.startsWith('doc-sariling-mundo') && 
+      const preferredInitialDoc = docs.find((d) =>
+        !d.id.startsWith('doc-sariling-mundo') &&
         !d.id.startsWith('doc-life-os')
       ) || docs[0];
       setSelectedId((prev) => prev || preferredInitialDoc.id);
@@ -2471,26 +2501,33 @@ export default function KnowledgePage() {
     }
   }, [selectedDoc]);
 
-  // Keep editor & book innerHTML in sync when mode or content changes
-  // Only fire when not in the middle of an internal highlight save or active user typing
+  // Keep book reader innerHTML in sync when in book mode
   useEffect(() => {
-    if (isInternalChange.current) return;
-    const html = getRichHtml(fContent || '');
-    if (editorMode === 'edit' && editorRef.current) {
-      const isFocused = typeof document !== 'undefined' && (document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement));
-      if (!isFocused && editorRef.current.innerHTML !== html) {
-        isInternalChange.current = true;
-        editorRef.current.innerHTML = html;
-        isInternalChange.current = false;
-      }
-    } else if (editorMode === 'book' && bookEditorRef.current) {
+    if (editorMode === 'book' && bookEditorRef.current) {
+      const html = getRichHtml(selectedDoc?.content || fContent || '');
       if (bookEditorRef.current.innerHTML !== html) {
         isInternalChange.current = true;
         bookEditorRef.current.innerHTML = html;
         isInternalChange.current = false;
       }
     }
-  }, [editorMode, fContent]);
+  }, [editorMode, fContent, selectedDoc?.content]);
+
+  // Synchronize rich editor DOM when entering edit mode or selecting a document (never while user is typing!)
+  useEffect(() => {
+    if (editorMode === 'edit' && editorRef.current) {
+      const isFocused = typeof document !== 'undefined' && (document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement));
+      // Only initialize if editor is not focused, currently empty, and not creating a new blank doc
+      if (!isFocused && !editorRef.current.innerHTML.trim() && !isCreating) {
+        const initialHtml = getRichHtml(selectedDoc?.content || fContent || '');
+        if (initialHtml) {
+          isInternalChange.current = true;
+          editorRef.current.innerHTML = initialHtml;
+          isInternalChange.current = false;
+        }
+      }
+    }
+  }, [editorMode, selectedDoc?.id, isCreating]);
 
   // Load saved active recall quiz from selected document
   useEffect(() => {
@@ -2548,14 +2585,16 @@ export default function KnowledgePage() {
 
   const handleSave = () => {
     const rawTags = fTags.split(',').map((t) => t.trim()).filter(Boolean);
-    const isVideo = isDocVideoLesson({ content: fContent, tags: rawTags, docType: selectedDoc?.docType });
+    const editorHtml = editorRef.current?.innerHTML?.trim() || '';
+    const activeContent = editorHtml || fContent || '';
+    const isVideo = isDocVideoLesson({ content: activeContent, tags: rawTags, docType: selectedDoc?.docType });
     const fallbackTitle = isVideo ? 'Untitled Video Lesson' : 'Untitled Document';
     const finalTitle = fTitle.trim() || fallbackTitle;
     const tags = isVideo && !rawTags.includes('video-lesson') ? [...rawTags, 'video-lesson'] : rawTags;
 
     const payload = {
       title: finalTitle,
-      content: fContent,
+      content: activeContent,
       status: fStatus,
       category: fCategory,
       docType: isVideo ? ('video-lesson' as const) : ('document' as const),
@@ -2574,10 +2613,12 @@ export default function KnowledgePage() {
       const created = addDoc(payload);
       setSelectedId(created.id);
       setIsCreating(false);
+      setEditorMode('book');
     } else if (selectedDoc) {
       updateDoc(selectedDoc.id, payload);
     }
     setFTitle(finalTitle);
+    setFContent(activeContent);
     setPasteToast('Saved successfully!');
     setTimeout(() => setPasteToast(null), 2500);
   };
@@ -2955,7 +2996,7 @@ export default function KnowledgePage() {
           range.collapse(false);
           sel.removeAllRanges();
           sel.addRange(range);
-        } catch {}
+        } catch { }
       }
     } else {
       document.execCommand('undo');
@@ -2988,7 +3029,7 @@ export default function KnowledgePage() {
           range.collapse(false);
           sel.removeAllRanges();
           sel.addRange(range);
-        } catch {}
+        } catch { }
       }
     } else {
       document.execCommand('redo');
@@ -3510,7 +3551,7 @@ export default function KnowledgePage() {
           sel.removeAllRanges();
           sel.addRange(range);
         }
-      } catch {}
+      } catch { }
     }
 
     // If nothing selected
@@ -3603,7 +3644,7 @@ export default function KnowledgePage() {
     } catch {
       try {
         document.execCommand('hiliteColor', false, c.bg);
-      } catch {}
+      } catch { }
     }
 
     // Save directly from DOM to persist highlight
@@ -3650,7 +3691,7 @@ export default function KnowledgePage() {
 
     try {
       const container = range.commonAncestorContainer;
-      
+
       // If common ancestor or parent is MARK or font-color-span
       let cur: Node | null = container;
       while (cur && cur !== editor) {
@@ -3725,7 +3766,7 @@ export default function KnowledgePage() {
           sel.removeAllRanges();
           sel.addRange(range);
         }
-      } catch {}
+      } catch { }
     }
 
     if (!range || range.collapsed || !editor.contains(range.commonAncestorContainer)) return;
@@ -3776,12 +3817,12 @@ export default function KnowledgePage() {
       } catch {
         try {
           document.execCommand('foreColor', false, fontColor);
-        } catch {}
+        } catch { }
       }
     } else {
       try {
         document.execCommand('removeFormat', false, undefined);
-      } catch {}
+      } catch { }
     }
 
     const saved = editor.innerHTML;
@@ -4254,7 +4295,7 @@ export default function KnowledgePage() {
 
       const isManhwa = isDocManhwa(d);
       const isVideo = !isManhwa && isDocVideoLesson(d);
-      const isBook = !isManhwa && (!isVideo || d.docType === 'document' || Boolean(d.fileName || d.fileUrl) || (Array.isArray(d.tags) && d.tags.some(t => ['book','reading','imported','pdf','epub'].includes((t||'').toLowerCase()))));
+      const isBook = !isManhwa && (!isVideo || d.docType === 'document' || Boolean(d.fileName || d.fileUrl) || (Array.isArray(d.tags) && d.tags.some(t => ['book', 'reading', 'imported', 'pdf', 'epub'].includes((t || '').toLowerCase()))));
 
       if (typeFilter === 'documents' && !isBook) return false;
       if (typeFilter === 'videos' && !isVideo) return false;
@@ -4302,7 +4343,7 @@ export default function KnowledgePage() {
             setIsCompanionOpen(false);
             try {
               localStorage.setItem('life_os_reading_tools_open', 'false');
-            } catch {}
+            } catch { }
           }}
           title="Minimize Reading Tools panel"
         >
@@ -5559,7 +5600,7 @@ export default function KnowledgePage() {
                               setTimeout(() => URL.revokeObjectURL(freshUrl), 5000);
                               return;
                             }
-                          } catch {}
+                          } catch { }
                           // Fallback to text content download if original binary is not in IDB
                           const blob = new Blob([selectedDoc.content || ''], { type: 'text/markdown;charset=utf-8' });
                           const url = URL.createObjectURL(blob);
@@ -5652,7 +5693,6 @@ export default function KnowledgePage() {
                     suppressContentEditableWarning
                     className={styles.richEditor}
                     data-placeholder="Start typing your notes here... Select any text and click a color swatch to highlight it live in color!"
-                    dangerouslySetInnerHTML={{ __html: getRichHtml(selectedDoc?.content || fContent || '') }}
                     onPaste={handleSmartPaste}
                     onClick={handleEditorClick}
                     onKeyDown={handleEditorKeyDown}
@@ -5722,13 +5762,13 @@ export default function KnowledgePage() {
                           dangerouslySetInnerHTML={{
                             __html: activeVideoLesson
                               ? generateVideoBlockHtml({
-                                  videoId: activeVideoLesson.videoId,
-                                  url: activeVideoLesson.url,
-                                  title: activeVideoLesson.title || selectedDoc?.title || fTitle || 'Video Lesson',
-                                  startTime: activeVideoLesson.startTime || 0,
-                                  platform: activeVideoLesson.platform,
-                                  isEditMode: false,
-                                })
+                                videoId: activeVideoLesson.videoId,
+                                url: activeVideoLesson.url,
+                                title: activeVideoLesson.title || selectedDoc?.title || fTitle || 'Video Lesson',
+                                startTime: activeVideoLesson.startTime || 0,
+                                platform: activeVideoLesson.platform,
+                                isEditMode: false,
+                              })
                               : getRichHtml(selectedDoc?.content || fContent || ''),
                           }}
                         />
@@ -6104,29 +6144,29 @@ export default function KnowledgePage() {
             onEdit={
               editorMode === 'edit'
                 ? () => {
-                    const newUrl = prompt('Edit link destination:', linkPopover.url);
-                    if (newUrl && newUrl.trim()) {
-                      const clean = newUrl.trim();
-                      const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-                      linkPopover.targetEl.href = href;
-                      linkPopover.targetEl.setAttribute('data-preview-url', href);
-                      setLinkPopover((prev) => prev ? { ...prev, url: href } : null);
-                      if (editorRef.current) setFContent(editorRef.current.innerHTML);
-                    }
+                  const newUrl = prompt('Edit link destination:', linkPopover.url);
+                  if (newUrl && newUrl.trim()) {
+                    const clean = newUrl.trim();
+                    const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
+                    linkPopover.targetEl.href = href;
+                    linkPopover.targetEl.setAttribute('data-preview-url', href);
+                    setLinkPopover((prev) => prev ? { ...prev, url: href } : null);
+                    if (editorRef.current) setFContent(editorRef.current.innerHTML);
                   }
+                }
                 : undefined
             }
             onUnlink={
               editorMode === 'edit'
                 ? () => {
-                    const parent = linkPopover.targetEl.parentNode;
-                    while (linkPopover.targetEl.firstChild) {
-                      parent?.insertBefore(linkPopover.targetEl.firstChild, linkPopover.targetEl);
-                    }
-                    parent?.removeChild(linkPopover.targetEl);
-                    setLinkPopover(null);
-                    if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                  const parent = linkPopover.targetEl.parentNode;
+                  while (linkPopover.targetEl.firstChild) {
+                    parent?.insertBefore(linkPopover.targetEl.firstChild, linkPopover.targetEl);
                   }
+                  parent?.removeChild(linkPopover.targetEl);
+                  setLinkPopover(null);
+                  if (editorRef.current) setFContent(editorRef.current.innerHTML);
+                }
                 : undefined
             }
           />
