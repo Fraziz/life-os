@@ -18,6 +18,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useSettings } from '@/context/SettingsContext';
 import { executeOptionalAICall } from '@/utils/aiEngine';
+import { getAdaptiveBezierPath, useDraggableGraphNodes } from '@/utils/graphDragAndEdge';
 import LifeDestinationRoadmap from '@/components/roadmap/LifeDestinationRoadmap';
 import styles from './page.module.css';
 
@@ -102,11 +103,23 @@ export default function RoadmapContent() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const touchMovedRef = useRef<boolean>(false);
   const pinchStartDistRef = useRef<number | null>(null);
   const pinchStartZoomRef = useRef<number>(1);
   const hasMoved = useCallback(() => touchMovedRef.current, []);
+
+  const {
+    positions: customPositions,
+    draggingNodeId,
+    hasMovedSinceDown,
+    hasCustomPositions,
+    startNodeMouseDown,
+    startNodeTouchStart,
+    resetPositions,
+  } = useDraggableGraphNodes('life_os_roadmap_graph_positions_v1', zoom);
 
   const isLoaded = dreamsLoaded && goalsLoaded && projectsLoaded && tasksLoaded;
 
@@ -190,7 +203,7 @@ export default function RoadmapContent() {
   }, [filteredDreams, filteredGoals]);
 
   // ── Balanced cluster layout (Task → Project → Goal → Dream) ──
-  const { nodes, connections, canvasHeight } = useMemo(() => {
+  const { nodes, connections, canvasWidth, canvasHeight } = useMemo(() => {
     const nodes: NodePosition[] = [];
     const connections: Connection[] = [];
 
@@ -406,20 +419,48 @@ export default function RoadmapContent() {
       }
     });
 
-    const maxY = nodes.reduce((m, n) => Math.max(m, n.y + NODE_H + CANVAS_PAD), 500);
-
     // Deduplicate nodes — the same dream can be referenced by multiple goals/clusters.
     const seenIds = new Set<string>();
-    const uniqueNodes = nodes.filter(n => {
-      if (seenIds.has(n.id)) return false;
-      seenIds.add(n.id);
-      return true;
+    const uniqueNodes = nodes
+      .filter(n => {
+        if (seenIds.has(n.id)) return false;
+        seenIds.add(n.id);
+        return true;
+      })
+      .map(n => {
+        const custom = customPositions[n.id];
+        return custom ? { ...n, x: custom.x, y: custom.y } : n;
+      });
+
+    const maxX = uniqueNodes.reduce(
+      (m, n) => Math.max(m, n.x + NODE_W + CANVAS_PAD),
+      COL_STARTS[3] + NODE_W + CANVAS_PAD
+    );
+    const maxYWithCustom = uniqueNodes.reduce(
+      (m, n) => Math.max(m, n.y + (nodeHeights[n.id] ?? NODE_H) + CANVAS_PAD),
+      500
+    );
+
+    return { nodes: uniqueNodes, connections, canvasWidth: maxX, canvasHeight: maxYWithCustom };
+  }, [filteredTasks, filteredProjects, filteredGoals, filteredDreams, dreamProgress, customPositions, nodeHeights]);
+
+  // Measure rendered card heights so adaptive arrows attach accurately to card edges
+  useEffect(() => {
+    if (viewMode !== 'graph') return;
+    const raf = requestAnimationFrame(() => {
+      const next: Record<string, number> = {};
+      let changed = false;
+      nodes.forEach(n => {
+        const el = nodeRefs.current[n.id];
+        if (el && el.offsetHeight > 0) {
+          next[n.id] = el.offsetHeight;
+          if (nodeHeights[n.id] !== el.offsetHeight) changed = true;
+        }
+      });
+      if (changed) setNodeHeights(next);
     });
-
-    return { nodes: uniqueNodes, connections, canvasHeight: maxY };
-  }, [filteredTasks, filteredProjects, filteredGoals, filteredDreams, dreamProgress]);
-
-  const canvasWidth = COL_STARTS[3] + NODE_W + CANVAS_PAD;
+    return () => cancelAnimationFrame(raf);
+  }, [nodes, viewMode, nodeHeights]);
 
   const nodeMap = useMemo(() => {
     const m: Record<string, NodePosition> = {};
@@ -616,13 +657,10 @@ Keep language professional, crisp, and clean. No emojis.`;
   };
 
   function getBezierPath(from: NodePosition, to: NodePosition): string {
-    const x1 = from.x + NODE_W;
-    const y1 = from.y + NODE_H / 2;
-    const x2 = to.x;
-    const y2 = to.y + NODE_H / 2;
-    const cx1 = x1 + Math.abs(x2 - x1) * 0.5;
-    const cx2 = x2 - Math.abs(x2 - x1) * 0.5;
-    return `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+    return getAdaptiveBezierPath(
+      { x: from.x, y: from.y, width: NODE_W, height: nodeHeights[from.id] ?? NODE_H },
+      { x: to.x, y: to.y, width: NODE_W, height: nodeHeights[to.id] ?? NODE_H }
+    );
   }
 
   const isEmpty =
@@ -708,6 +746,17 @@ Keep language professional, crisp, and clean. No emojis.`;
             {/* Zoom Controls */}
             {viewMode === 'graph' && (
               <div className={styles.zoomControlGroup}>
+                {hasCustomPositions && (
+                  <button
+                    type="button"
+                    className={styles.ctrlBtn}
+                    onClick={resetPositions}
+                    title="Reset boxes to default layout"
+                    aria-label="Reset boxes layout"
+                  >
+                    <RotateCcw size={12} />
+                  </button>
+                )}
                 <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.min(1.8, z + 0.1))} title="Zoom In">
                   <ZoomIn size={12} />
                 </button>
@@ -964,6 +1013,7 @@ Keep language professional, crisp, and clean. No emojis.`;
                     key={node.id}
                     node={node}
                     isHovered={hoveredNode === node.id}
+                    isDraggingNode={draggingNodeId === node.id}
                     isConnected={
                       hoveredNode != null &&
                       connections.some(
@@ -975,7 +1025,10 @@ Keep language professional, crisp, and clean. No emojis.`;
                     focusedNodeId={focusedNodeId}
                     onHover={setHoveredNode}
                     onFocus={setFocusedNodeId}
-                    hasMoved={hasMoved}
+                    onNodeMouseDown={e => startNodeMouseDown(e, node.id, { x: node.x, y: node.y })}
+                    onNodeTouchStart={e => startNodeTouchStart(e, node.id, { x: node.x, y: node.y })}
+                    nodeRef={el => { nodeRefs.current[node.id] = el; }}
+                    hasMoved={() => hasMoved() || hasMovedSinceDown()}
                   />
                 );
               })}
@@ -1044,11 +1097,15 @@ Keep language professional, crisp, and clean. No emojis.`;
 interface NodeCardProps {
   node: NodePosition;
   isHovered: boolean;
+  isDraggingNode?: boolean;
   isConnected: boolean;
   isFocused: boolean | null;
   focusedNodeId: string | null;
   onHover: (id: string | null) => void;
   onFocus: (id: string | null) => void;
+  onNodeMouseDown?: (e: React.MouseEvent) => void;
+  onNodeTouchStart?: (e: React.TouchEvent) => void;
+  nodeRef?: (el: HTMLDivElement | null) => void;
   hasMoved?: () => boolean;
 }
 
@@ -1069,7 +1126,20 @@ const STATUS_COLORS: Record<string, string> = {
   'todo': '#8888a8',
 };
 
-function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeId, onHover, onFocus, hasMoved }: NodeCardProps) {
+function RoadmapNodeCard({
+  node,
+  isHovered,
+  isDraggingNode,
+  isConnected,
+  isFocused,
+  focusedNodeId,
+  onHover,
+  onFocus,
+  onNodeMouseDown,
+  onNodeTouchStart,
+  nodeRef,
+  hasMoved,
+}: NodeCardProps) {
   const typeHrefs: Record<string, string> = {
     dream: '/dreams',
     goal: '/goals',
@@ -1082,8 +1152,9 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
 
   return (
     <div
+      ref={nodeRef}
       data-node="true"
-      className={styles.nodeCard}
+      className={`${styles.nodeCard} ${isDraggingNode ? styles.nodeCardDragging : ''}`}
       style={{
         left: node.x,
         top: node.y,
@@ -1095,6 +1166,8 @@ function RoadmapNodeCard({ node, isHovered, isConnected, isFocused, focusedNodeI
           : undefined,
         opacity: dimmed ? 0.12 : 1,
       }}
+      onMouseDown={onNodeMouseDown}
+      onTouchStart={onNodeTouchStart}
       onMouseEnter={() => onHover(node.id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => {

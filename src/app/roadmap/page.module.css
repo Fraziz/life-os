@@ -546,14 +546,24 @@
     box-shadow 0.15s ease,
     transform 0.15s ease,
     opacity 0.2s ease;
-  cursor: pointer;
+  cursor: grab;
   overflow: visible;
+  user-select: none;
+  touch-action: none;
 }
 
 .nodeCard:hover {
   transform: translateY(-2px);
   border-color: var(--color-accent);
   box-shadow: var(--shadow-md);
+}
+
+.nodeCardDragging {
+  cursor: grabbing !important;
+  z-index: 30;
+  transition: none !important;
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(0, 0, 0, 0.45));
 }
 
 .nodeAccentBar {

@@ -271,13 +271,23 @@
     box-shadow 0.18s ease,
     transform 0.15s ease,
     opacity 0.2s ease;
-  cursor: pointer;
+  cursor: grab;
   overflow: hidden;
+  user-select: none;
+  touch-action: none;
 }
 
 .nodeCard:hover {
   transform: translateY(-2px);
   border-color: var(--color-border-focus);
+}
+
+.nodeCardDragging {
+  cursor: grabbing !important;
+  z-index: 30;
+  transition: none !important;
+  transform: scale(1.02);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.48);
 }
 
 .nodeCompleted {

@@ -20,6 +20,7 @@ import {
   Compass,
   ArrowRight,
 } from 'lucide-react';
+import { getAdaptiveBezierPath, useDraggableGraphNodes } from '@/utils/graphDragAndEdge';
 import styles from './LifeDestinationRoadmap.module.css';
 import type { LifeDestination, LifeDestinationStatus } from '@/types';
 
@@ -301,10 +302,22 @@ export default function LifeDestinationRoadmap() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const pinchStartDistRef = useRef<number | null>(null);
   const pinchStartZoomRef = useRef<number>(1);
   const hasMovedRef = useRef<boolean>(false);
+
+  const {
+    positions: customPositions,
+    draggingNodeId,
+    hasMovedSinceDown,
+    hasCustomPositions,
+    startNodeMouseDown,
+    startNodeTouchStart,
+    resetPositions,
+  } = useDraggableGraphNodes(`life_os_life_tree_positions_v1_${orientation}`, zoom);
 
   // Load from localStorage
   useEffect(() => {
@@ -371,8 +384,13 @@ export default function LifeDestinationRoadmap() {
         const x = H_START_X + colIndex * H_COL_GAP;
 
         nodesInTier.forEach((node, rowIndex) => {
-          const y = startY + rowIndex * (NODE_H + H_ROW_GAP);
-          positions[node.id] = { node, x, y };
+          const defaultY = startY + rowIndex * (NODE_H + H_ROW_GAP);
+          const custom = customPositions[node.id];
+          positions[node.id] = {
+            node,
+            x: custom ? custom.x : x,
+            y: custom ? custom.y : defaultY,
+          };
         });
       });
 
@@ -401,22 +419,29 @@ export default function LifeDestinationRoadmap() {
           conns.push({
             fromId: pid,
             toId: node.id,
-            fromX: sourcePos.x + NODE_W,
-            fromY: sourcePos.y + NODE_H / 2,
+            fromX: sourcePos.x,
+            fromY: sourcePos.y,
             toX: targetPos.x,
-            toY: targetPos.y + NODE_H / 2,
+            toY: targetPos.y,
             isIlluminated,
             color: areaColor,
           });
         });
       });
 
-      const width = Math.max(2000, H_START_X + 5 * H_COL_GAP + 260);
-      const height = Math.max(900, 800);
+      const posList = Object.values(positions);
+      const width = posList.reduce(
+        (m, p) => Math.max(m, p.x + NODE_W + 120),
+        Math.max(2000, H_START_X + 5 * H_COL_GAP + 260)
+      );
+      const height = posList.reduce(
+        (m, p) => Math.max(m, p.y + (nodeHeights[p.node.id] ?? NODE_H) + 120),
+        Math.max(900, 800)
+      );
       return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
     } else {
       // ── Vertical Tree: Roots at Bottom → Crown at Top ──
-      [1, 2, 3, 4, 5].forEach((tierNum, rowIndex) => {
+      [1, 2, 3, 4, 5].forEach((tierNum) => {
         const nodesInTier = tierGroups[tierNum] || [];
         const M = nodesInTier.length;
         if (M === 0) return;
@@ -426,8 +451,13 @@ export default function LifeDestinationRoadmap() {
         const y = V_Y_BOTTOM - (tierNum - 1) * V_ROW_GAP;
 
         nodesInTier.forEach((node, colIndex) => {
-          const x = startX + colIndex * (NODE_W + V_COL_GAP);
-          positions[node.id] = { node, x, y };
+          const defaultX = startX + colIndex * (NODE_W + V_COL_GAP);
+          const custom = customPositions[node.id];
+          positions[node.id] = {
+            node,
+            x: custom ? custom.x : defaultX,
+            y: custom ? custom.y : y,
+          };
         });
       });
 
@@ -456,31 +486,62 @@ export default function LifeDestinationRoadmap() {
           conns.push({
             fromId: pid,
             toId: node.id,
-            fromX: sourcePos.x + NODE_W / 2,
+            fromX: sourcePos.x,
             fromY: sourcePos.y,
-            toX: targetPos.x + NODE_W / 2,
-            toY: targetPos.y + NODE_H,
+            toX: targetPos.x,
+            toY: targetPos.y,
             isIlluminated,
             color: areaColor,
           });
         });
       });
 
-      const width = Math.max(2000, 1900);
-      const height = Math.max(1200, 1100);
+      const posList = Object.values(positions);
+      const width = posList.reduce(
+        (m, p) => Math.max(m, p.x + NODE_W + 120),
+        Math.max(2000, 1900)
+      );
+      const height = posList.reduce(
+        (m, p) => Math.max(m, p.y + (nodeHeights[p.node.id] ?? NODE_H) + 120),
+        Math.max(1200, 1100)
+      );
       return { nodePositions: positions, connections: conns, canvasWidth: width, canvasHeight: height };
     }
-  }, [destinations, orientation, tierGroups]);
+  }, [destinations, orientation, tierGroups, customPositions, nodeHeights]);
 
-  // SVG Bezier Curves
-  const getCurvePath = (fromX: number, fromY: number, toX: number, toY: number): string => {
-    if (orientation === 'horizontal') {
-      const dx = Math.abs(toX - fromX) * 0.5;
-      return `M ${fromX} ${fromY} C ${fromX + dx} ${fromY}, ${toX - dx} ${toY}, ${toX} ${toY}`;
-    } else {
-      const dy = Math.abs(toY - fromY) * 0.5;
-      return `M ${fromX} ${fromY} C ${fromX} ${fromY - dy}, ${toX} ${toY + dy}, ${toX} ${toY}`;
-    }
+  // Measure rendered card heights so adaptive arrows attach accurately
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const next: Record<string, number> = {};
+      let changed = false;
+      Object.keys(nodePositions).forEach((id) => {
+        const el = nodeRefs.current[id];
+        if (el && el.offsetHeight > 0) {
+          next[id] = el.offsetHeight;
+          if (nodeHeights[id] !== el.offsetHeight) changed = true;
+        }
+      });
+      if (changed) setNodeHeights(next);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [nodePositions, nodeHeights]);
+
+  // SVG Bezier Curves (adapt dynamically to box positions)
+  const getCurvePath = (conn: TreeConnection): string => {
+    return getAdaptiveBezierPath(
+      {
+        x: conn.fromX,
+        y: conn.fromY,
+        width: NODE_W,
+        height: nodeHeights[conn.fromId] ?? NODE_H,
+      },
+      {
+        x: conn.toX,
+        y: conn.toY,
+        width: NODE_W,
+        height: nodeHeights[conn.toId] ?? NODE_H,
+      }
+    );
   };
 
   // Canvas Pan & Zoom Handlers
@@ -694,6 +755,7 @@ export default function LifeDestinationRoadmap() {
     if (window.confirm('Reset life tree to default master blueprint?')) {
       saveDestinations(DEFAULT_TREE_DESTINATIONS);
       setSelectedNodeId(null);
+      resetPositions();
     }
   };
 
@@ -740,6 +802,17 @@ export default function LifeDestinationRoadmap() {
         <div className={styles.toolbarActions}>
           {/* Zoom Controls */}
           <div className={styles.zoomControlGroup}>
+            {hasCustomPositions && (
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={resetPositions}
+                title="Reset boxes to default layout"
+                aria-label="Reset boxes layout"
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
             <button
               type="button"
               className={styles.ctrlBtn}
@@ -870,7 +943,7 @@ export default function LifeDestinationRoadmap() {
                   {/* Glowing halo when branch is illuminated or selected */}
                   {(conn.isIlluminated || isHighlighted) && (
                     <path
-                      d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
+                      d={getCurvePath(conn)}
                       fill="none"
                       stroke={conn.color}
                       strokeWidth={6}
@@ -880,7 +953,7 @@ export default function LifeDestinationRoadmap() {
                   )}
                   {/* Core Line */}
                   <path
-                    d={getCurvePath(conn.fromX, conn.fromY, conn.toX, conn.toY)}
+                    d={getCurvePath(conn)}
                     fill="none"
                     stroke={conn.isIlluminated || isHighlighted ? conn.color : 'var(--color-border)'}
                     strokeWidth={conn.isIlluminated || isHighlighted ? 2.5 : 1.4}
@@ -901,13 +974,18 @@ export default function LifeDestinationRoadmap() {
             const isHovered = hoveredNodeId === node.id;
             const areaColor = node.lifeAreaId ? (AREA_COLORS[node.lifeAreaId] ?? '#7c6fff') : '#7c6fff';
 
+            const isThisDragging = draggingNodeId === node.id;
+
             return (
               <div
                 key={node.id}
+                ref={(el) => {
+                  nodeRefs.current[node.id] = el;
+                }}
                 data-node="true"
                 className={`${styles.nodeCard} ${
                   isCompleted ? styles.nodeCompleted : isCurrent ? styles.nodeCurrent : styles.nodeUpcoming
-                } ${isSelected ? styles.nodeSelected : ''}`}
+                } ${isSelected ? styles.nodeSelected : ''} ${isThisDragging ? styles.nodeCardDragging : ''}`}
                 style={{
                   left: x,
                   top: y,
@@ -931,10 +1009,13 @@ export default function LifeDestinationRoadmap() {
                     ? `0 0 14px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5)`
                     : undefined,
                 } as React.CSSProperties}
+                onMouseDown={(e) => startNodeMouseDown(e, node.id, { x, y })}
+                onTouchStart={(e) => startNodeTouchStart(e, node.id, { x, y })}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (hasMovedRef.current || hasMovedSinceDown()) return;
                   setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
                 }}
               >
