@@ -55,7 +55,7 @@ const DEFAULT_COLOR = '#7c6fff';
 
 type FilterMode = 'all' | 'active' | string;
 type HorizonMode = 'all' | '90-day' | 'yearly';
-type ViewMode = 'graph' | 'timeline' | 'destinations';
+type ViewMode = 'graph' | 'destinations';
 
 interface NodePosition {
   id: string;
@@ -697,13 +697,6 @@ Keep language professional, crisp, and clean. No emojis.`;
               </button>
               <button
                 type="button"
-                className={`${styles.viewBtn} ${viewMode === 'timeline' ? styles.viewBtnActive : ''}`}
-                onClick={() => setViewMode('timeline')}
-              >
-                Timeline Gantt
-              </button>
-              <button
-                type="button"
                 className={`${styles.viewBtn} ${viewMode === 'destinations' ? styles.viewBtnActive : ''}`}
                 onClick={() => setViewMode('destinations')}
               >
@@ -776,131 +769,6 @@ Keep language professional, crisp, and clean. No emojis.`;
       {/* ── Viewport Content ── */}
       {viewMode === 'destinations' ? (
         <LifeDestinationRoadmap />
-      ) : viewMode === 'timeline' ? (
-        <div className={styles.timelineViewport}>
-          <div className={styles.timelineGridHeader}>
-            <div>Initiative / Project</div>
-            <div className={styles.quarterHeader}>Q1 Focus</div>
-            <div className={styles.quarterHeader}>Q2 Focus</div>
-            <div className={styles.quarterHeader}>Q3 Focus</div>
-            <div className={styles.quarterHeader}>Q4 Focus</div>
-          </div>
-
-          {filteredGoals.length === 0 && filteredProjects.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-              No initiatives found for the current horizon and area filters.
-            </div>
-          ) : (
-            filteredGoals.map(goal => {
-              const linkedProjects = filteredProjects.filter(p => p.goalId === goal.id);
-              const goalColor = goal.lifeAreaId ? (AREA_COLORS[goal.lifeAreaId] ?? DEFAULT_COLOR) : DEFAULT_COLOR;
-
-              return (
-                <div key={goal.id} className={styles.goalSection}>
-                  <div className={styles.goalRow}>
-                    <div className={styles.goalInfo}>
-                      <div className={styles.goalAreaIndicator} style={{ background: goalColor }} />
-                      <span className={styles.goalTitle}>{goal.title}</span>
-                    </div>
-                    <div className={styles.goalMeta}>
-                      <span>{goal.progress ?? 0}% Complete</span>
-                      <span>·</span>
-                      <span>{linkedProjects.length} Active {linkedProjects.length === 1 ? 'Project' : 'Projects'}</span>
-                    </div>
-                  </div>
-
-                  {linkedProjects.length === 0 ? (
-                    <div className={styles.emptyGoalRow}>
-                      <span>No active execution projects linked to this goal.</span>
-                      <Link href="/projects" className={styles.addProjectLink}>+ Add Project</Link>
-                    </div>
-                  ) : (
-                    linkedProjects.map(proj => {
-                      const linkedTasksCount = tasks.filter(t => t.projectId === proj.id).length;
-                      const completedTasksCount = tasks.filter(t => t.projectId === proj.id && t.status === 'done').length;
-                      const progressVal = proj.progress ?? (linkedTasksCount > 0 ? Math.round((completedTasksCount / linkedTasksCount) * 100) : 0);
-
-                      return (
-                        <div key={proj.id} className={styles.projectRow}>
-                          <div className={styles.projectInfo}>
-                            <span className={styles.projectTitle}>{proj.title}</span>
-                            <span className={styles.projectSub}>
-                              Status: {proj.status} · {completedTasksCount}/{linkedTasksCount} Tasks
-                            </span>
-                          </div>
-
-                          <div className={styles.projectTrackWrapper}>
-                            <div className={styles.trackQuarterLine} />
-                            <div className={styles.trackQuarterLine} />
-                            <div className={styles.trackQuarterLine} />
-                            <div className={styles.trackQuarterLine} />
-                            <div
-                              className={styles.projectBar}
-                              style={{
-                                width: `${Math.max(10, progressVal)}%`,
-                                background: goalColor,
-                              }}
-                            >
-                              <span className={styles.projectBarLabel}>{progressVal}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              );
-            })
-          )}
-
-          {/* Standalone Initiatives */}
-          {filteredProjects.filter(p => !p.goalId).length > 0 && (
-            <div className={styles.goalSection}>
-              <div className={styles.goalRow}>
-                <div className={styles.goalInfo}>
-                  <div className={styles.goalAreaIndicator} style={{ background: '#f5a623' }} />
-                  <span className={styles.goalTitle}>Unlinked Initiatives</span>
-                </div>
-                <div className={styles.goalMeta}>
-                  <span>{filteredProjects.filter(p => !p.goalId).length} Projects without Parent Goal</span>
-                </div>
-              </div>
-
-              {filteredProjects.filter(p => !p.goalId).map(proj => {
-                const linkedTasksCount = tasks.filter(t => t.projectId === proj.id).length;
-                const completedTasksCount = tasks.filter(t => t.projectId === proj.id && t.status === 'done').length;
-                const progressVal = proj.progress ?? (linkedTasksCount > 0 ? Math.round((completedTasksCount / linkedTasksCount) * 100) : 0);
-
-                return (
-                  <div key={proj.id} className={styles.projectRow}>
-                    <div className={styles.projectInfo}>
-                      <span className={styles.projectTitle}>{proj.title}</span>
-                      <span className={styles.projectSub}>
-                        Status: {proj.status} · {completedTasksCount}/{linkedTasksCount} Tasks
-                      </span>
-                    </div>
-
-                    <div className={styles.projectTrackWrapper}>
-                      <div className={styles.trackQuarterLine} />
-                      <div className={styles.trackQuarterLine} />
-                      <div className={styles.trackQuarterLine} />
-                      <div className={styles.trackQuarterLine} />
-                      <div
-                        className={styles.projectBar}
-                        style={{
-                          width: `${Math.max(10, progressVal)}%`,
-                          background: '#f5a623',
-                        }}
-                      >
-                        <span className={styles.projectBarLabel}>{progressVal}%</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       ) : (
         /* ── Canvas Viewport: Graph Flow ── */
         <div
