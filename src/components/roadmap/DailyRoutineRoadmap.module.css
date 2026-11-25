@@ -78,10 +78,12 @@
 
 .phaseHeaderChip {
   position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 12px;
+  justify-content: center;
+  padding: 5px 14px;
   background: linear-gradient(
     135deg,
     rgba(var(--phase-rgb, 168, 85, 247), 0.16),
@@ -96,14 +98,6 @@
   text-transform: uppercase;
   pointer-events: none;
   box-shadow: 0 3px 12px rgba(var(--phase-rgb, 168, 85, 247), 0.12);
-}
-
-.phaseDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgb(var(--phase-rgb, 168, 85, 247));
-  box-shadow: 0 0 8px rgba(var(--phase-rgb, 168, 85, 247), 0.75);
 }
 
 .graphNodeCard {

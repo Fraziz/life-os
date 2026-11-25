@@ -912,9 +912,8 @@ export default function DailyRoutineRoadmap() {
                 <div
                   key={ph.colIdx}
                   className={styles.phaseHeaderChip}
-                  style={{ left: ph.x, top: ph.y, '--phase-rgb': phaseRgb } as React.CSSProperties}
+                  style={{ left: ph.x + GRAPH_NODE_W / 2, top: ph.y, '--phase-rgb': phaseRgb } as React.CSSProperties}
                 >
-                  <span className={styles.phaseDot} />
                   <span>{ph.label}</span>
                 </div>
               );
