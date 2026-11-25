@@ -81,43 +81,58 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 11px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  padding: 5px 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--phase-rgb, 168, 85, 247), 0.16),
+    var(--color-surface)
+  );
+  border: 1px solid rgba(var(--phase-rgb, 168, 85, 247), 0.42);
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-text-muted);
+  color: color-mix(in srgb, rgb(var(--phase-rgb, 168, 85, 247)) 75%, var(--color-text));
   letter-spacing: 0.03em;
   text-transform: uppercase;
   pointer-events: none;
+  box-shadow: 0 3px 12px rgba(var(--phase-rgb, 168, 85, 247), 0.12);
 }
 
 .phaseDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: rgb(var(--phase-rgb, 168, 85, 247));
+  box-shadow: 0 0 8px rgba(var(--phase-rgb, 168, 85, 247), 0.75);
 }
 
 .graphNodeCard {
   position: absolute;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  background: linear-gradient(
+    160deg,
+    rgba(var(--block-rgb, 255, 255, 255), 0.12) 0%,
+    var(--color-surface) 64%
+  );
+  border: 1px solid rgba(var(--block-rgb, 255, 255, 255), 0.34);
   border-radius: var(--radius-lg, 12px);
   padding: 13px 15px;
   display: flex;
   flex-direction: column;
   gap: 9px;
   box-sizing: border-box;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.22),
+    0 0 18px rgba(var(--block-rgb, 255, 255, 255), 0.08);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
   user-select: text;
 }
 
 .graphNodeCard:hover {
-  border-color: var(--color-border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  border-color: rgba(var(--block-rgb, 255, 255, 255), 0.72);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 22px rgba(var(--block-rgb, 255, 255, 255), 0.18);
+  transform: translateY(-2px);
 }
 
 .graphNodeCard:hover .cardActions,
@@ -245,11 +260,11 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
+  color: color-mix(in srgb, #38bdf8 78%, var(--color-text));
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.32);
   border-radius: var(--radius-full, 999px);
-  padding: 2px 9px;
+  padding: 2px 10px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -264,7 +279,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 96px;
+  min-width: 106px;
+}
+
+.progressBoxComplete .progressTextRow {
+  color: #34d399;
 }
 
 .progressTextRow {
@@ -273,14 +292,14 @@
   justify-content: space-between;
   gap: 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .progressTrack {
   width: 100%;
-  height: 6px;
+  height: 7px;
   background: var(--color-surface-2);
   border-radius: 999px;
   overflow: hidden;
@@ -289,9 +308,9 @@
 
 .progressFill {
   height: 100%;
-  background: var(--color-accent);
+  background: linear-gradient(90deg, #f59e0b 0%, #10b981 36%, #38bdf8 70%, #a855f7 100%);
   border-radius: 999px;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: left;
 }
 
@@ -384,8 +403,12 @@
 
 /* ── Routine Block Card ── */
 .blockCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  background: linear-gradient(
+    160deg,
+    rgba(var(--block-rgb, 255, 255, 255), 0.11) 0%,
+    var(--color-surface) 64%
+  );
+  border: 1px solid rgba(var(--block-rgb, 255, 255, 255), 0.34);
   border-radius: var(--radius-lg, 12px);
   padding: 16px;
   display: flex;
@@ -393,21 +416,35 @@
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 16px rgba(var(--block-rgb, 255, 255, 255), 0.06);
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .blockCard:hover {
-  border-color: var(--color-border);
+  border-color: rgba(var(--block-rgb, 255, 255, 255), 0.68);
+  box-shadow: 0 8px 22px rgba(var(--block-rgb, 255, 255, 255), 0.14);
 }
 
 .blockCardCurrent {
-  background: var(--color-surface-2);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
+  background: linear-gradient(
+    160deg,
+    rgba(var(--block-rgb, 255, 255, 255), 0.2) 0%,
+    var(--color-surface-2) 72%
+  );
+  border-color: rgba(var(--block-rgb, 255, 255, 255), 0.92);
+  box-shadow:
+    0 0 0 1px rgba(var(--block-rgb, 255, 255, 255), 0.65),
+    0 10px 28px rgba(var(--block-rgb, 255, 255, 255), 0.2);
 }
 
 .blockCardDone {
-  opacity: 0.72;
+  background: linear-gradient(
+    160deg,
+    rgba(var(--block-rgb, 255, 255, 255), 0.16) 0%,
+    var(--color-surface) 75%
+  );
+  border-color: rgba(var(--block-rgb, 255, 255, 255), 0.45);
+  opacity: 0.86;
 }
 
 .blockTopRow {
@@ -435,7 +472,7 @@
   background: transparent;
   border: none;
   border-radius: 5px;
-  color: var(--color-text-muted);
+  color: rgba(var(--block-rgb, 255, 255, 255), 0.78);
   cursor: pointer;
   flex-shrink: 0;
   margin-top: 1px;
@@ -443,12 +480,12 @@
 }
 
 .checkSquareBtn:hover {
-  color: var(--color-accent);
-  transform: scale(1.06);
+  color: rgb(var(--block-rgb, 255, 255, 255));
+  transform: scale(1.1);
 }
 
 .checkSquareBtnChecked {
-  color: var(--color-accent);
+  color: rgb(var(--block-rgb, 255, 255, 255));
 }
 
 .blockHeadingCol {
@@ -467,9 +504,18 @@
 }
 
 .stepIndexBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(var(--block-rgb, 255, 255, 255), 0.18);
+  border: 1px solid rgba(var(--block-rgb, 255, 255, 255), 0.35);
   font-size: 10.5px;
-  font-weight: 700;
-  color: var(--color-text-faint);
+  font-weight: 800;
+  color: color-mix(in srgb, rgb(var(--block-rgb, 255, 255, 255)) 82%, var(--color-text));
   font-variant-numeric: tabular-nums;
 }
 
@@ -479,12 +525,32 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 600;
+  color: color-mix(in srgb, rgb(var(--block-rgb, 255, 255, 255)) 75%, var(--color-text));
+  background: rgba(var(--block-rgb, 255, 255, 255), 0.12);
+  border: 1px solid rgba(var(--block-rgb, 255, 255, 255), 0.28);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--color-text-muted);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 5px;
-  padding: 2px 7px;
+  border-radius: 999px;
+  padding: 1px 7px;
   font-variant-numeric: tabular-nums;
+}
+
+.stepCountBadgeDone {
+  color: color-mix(in srgb, rgb(var(--block-rgb, 16, 185, 129)) 82%, var(--color-text));
+  background: rgba(var(--block-rgb, 16, 185, 129), 0.18);
+  border-color: rgba(var(--block-rgb, 16, 185, 129), 0.42);
 }
 
 .nowBadge {
@@ -492,12 +558,12 @@
   align-items: center;
   gap: 5px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-accent);
-  background: var(--color-surface);
-  border: 1px solid var(--color-accent);
+  color: color-mix(in srgb, rgb(var(--block-rgb, 255, 255, 255)) 85%, var(--color-text));
+  background: rgba(var(--block-rgb, 255, 255, 255), 0.18);
+  border: 1px solid rgba(var(--block-rgb, 255, 255, 255), 0.72);
   border-radius: 999px;
   padding: 1px 8px;
 }
@@ -506,7 +572,21 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: rgb(var(--block-rgb, 255, 255, 255));
+  box-shadow: 0 0 8px rgb(var(--block-rgb, 255, 255, 255));
+  animation: pulseNowDot 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseNowDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.35);
+    opacity: 0.65;
+  }
 }
 
 .blockTitle {
@@ -617,16 +697,17 @@
 .stepIcon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--color-text-faint);
-  transition: color 0.15s ease;
+  color: rgba(var(--block-rgb, 255, 255, 255), 0.65);
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .stepBtn:hover .stepIcon {
-  color: var(--color-accent);
+  color: rgb(var(--block-rgb, 255, 255, 255));
+  transform: scale(1.08);
 }
 
 .stepDone .stepIcon {
-  color: var(--color-accent);
+  color: rgb(var(--block-rgb, 255, 255, 255));
 }
 
 .stepTextDone {
@@ -720,6 +801,37 @@
   resize: vertical;
   min-height: 96px;
   line-height: 1.5;
+}
+
+.colorSwatchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.colorSwatchBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--swatch-hex);
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(var(--swatch-rgb), 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.colorSwatchBtn:hover {
+  transform: scale(1.12);
+}
+
+.colorSwatchBtnSelected {
+  border-color: var(--color-text);
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--swatch-hex);
+  transform: scale(1.12);
 }
 
 .modalFooter {

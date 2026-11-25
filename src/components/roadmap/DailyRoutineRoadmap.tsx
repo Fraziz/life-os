@@ -21,15 +21,53 @@ import MasonryGrid from '@/components/ui/MasonryGrid';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './DailyRoutineRoadmap.module.css';
 
+export interface RoutinePaletteItem {
+  id: string;
+  label: string;
+  hex: string;
+  rgb: string;
+}
+
+export const ROUTINE_PALETTE: RoutinePaletteItem[] = [
+  { id: 'amber', label: 'Amber Gold', hex: '#f59e0b', rgb: '245, 158, 11' },
+  { id: 'emerald', label: 'Emerald', hex: '#10b981', rgb: '16, 185, 129' },
+  { id: 'sky', label: 'Sky Blue', hex: '#38bdf8', rgb: '56, 189, 248' },
+  { id: 'rose', label: 'Coral Rose', hex: '#fb7185', rgb: '251, 113, 133' },
+  { id: 'violet', label: 'Violet', hex: '#a855f7', rgb: '168, 85, 247' },
+  { id: 'cyan', label: 'Teal Cyan', hex: '#06b6d4', rgb: '6, 182, 212' },
+  { id: 'orange', label: 'Tangerine', hex: '#fb923c', rgb: '251, 146, 60' },
+  { id: 'indigo', label: 'Indigo', hex: '#818cf8', rgb: '129, 140, 248' },
+  { id: 'lime', label: 'Fresh Lime', hex: '#84cc16', rgb: '132, 204, 22' },
+];
+
+const PHASE_RGB_LIST = [
+  '245, 158, 11',  // Morning: warm amber
+  '168, 85, 247',  // Afternoon: vibrant violet
+  '129, 140, 248', // Evening: calm indigo
+];
+
 export interface RoutineBlock {
   id: string;
   timeRange: string;
   title: string;
   subLabel?: string;
   steps: string[];
+  color?: string;
   /** Start and end minutes from midnight (0-1440) for highlighting the active block. */
   startMinute?: number;
   endMinute?: number;
+}
+
+function getBlockPalette(block: RoutineBlock, index: number): RoutinePaletteItem {
+  if (block.color) {
+    const byId = ROUTINE_PALETTE.find((p) => p.id === block.color);
+    if (byId) return byId;
+  }
+  const defaultIdx = DEFAULT_DAILY_ROUTINE.findIndex((d) => d.id === block.id);
+  if (defaultIdx >= 0) {
+    return ROUTINE_PALETTE[defaultIdx % ROUTINE_PALETTE.length];
+  }
+  return ROUTINE_PALETTE[index % ROUTINE_PALETTE.length];
 }
 
 interface DailyProgressState {
@@ -210,6 +248,7 @@ export default function DailyRoutineRoadmap() {
   const [formTitle, setFormTitle] = useState('');
   const [formSubLabel, setFormSubLabel] = useState('');
   const [formStepsText, setFormStepsText] = useState('');
+  const [formColor, setFormColor] = useState<string>(ROUTINE_PALETTE[0].id);
 
   // Hydrate blocks + daily check state (resets checks automatically on a new day)
   useEffect(() => {
@@ -342,15 +381,18 @@ export default function DailyRoutineRoadmap() {
     setFormTitle('');
     setFormSubLabel('');
     setFormStepsText('');
+    setFormColor(ROUTINE_PALETTE[blocks.length % ROUTINE_PALETTE.length].id);
     setModalOpen(true);
   };
 
   const openEditModal = (block: RoutineBlock) => {
+    const idx = Math.max(0, blocks.findIndex((b) => b.id === block.id));
     setEditingBlock(block);
     setFormTimeRange(block.timeRange);
     setFormTitle(block.title);
     setFormSubLabel(block.subLabel || '');
     setFormStepsText(block.steps.join('\n'));
+    setFormColor(getBlockPalette(block, idx).id);
     setModalOpen(true);
   };
 
@@ -374,6 +416,7 @@ export default function DailyRoutineRoadmap() {
               title,
               subLabel: formSubLabel.trim() || undefined,
               steps,
+              color: formColor,
             }
           : b
       );
@@ -385,6 +428,7 @@ export default function DailyRoutineRoadmap() {
         title,
         subLabel: formSubLabel.trim() || undefined,
         steps,
+        color: formColor,
       };
       persistBlocks([...blocks, newBlock]);
     }
@@ -567,11 +611,21 @@ export default function DailyRoutineRoadmap() {
     graphPos?: { x: number; y: number }
   ) => {
     const isBlockDone = progress.completedBlockIds.includes(block.id);
+    const palette = getBlockPalette(block, index);
+    const doneStepsCount = isBlockDone
+      ? block.steps.length
+      : block.steps.filter((_, i) => progress.completedStepKeys.includes(`${block.id}:${i}`)).length;
     const isCurrentTime =
       typeof block.startMinute === 'number' &&
       typeof block.endMinute === 'number' &&
       nowMinutes >= block.startMinute &&
       nowMinutes < block.endMinute;
+
+    const cardStyle = {
+      ...(graphPos ? { left: graphPos.x, top: graphPos.y, width: GRAPH_NODE_W } : {}),
+      '--block-hex': palette.hex,
+      '--block-rgb': palette.rgb,
+    } as React.CSSProperties;
 
     return (
       <article
@@ -580,7 +634,7 @@ export default function DailyRoutineRoadmap() {
         onMouseEnter={graphPos ? () => setHoveredId(block.id) : undefined}
         onMouseLeave={graphPos ? () => setHoveredId((prev) => (prev === block.id ? null : prev)) : undefined}
         className={`${graphPos ? styles.graphNodeCard : styles.blockCard} ${isCurrentTime && !isBlockDone ? styles.blockCardCurrent : ''} ${isBlockDone ? styles.blockCardDone : ''}`}
-        style={graphPos ? { left: graphPos.x, top: graphPos.y, width: GRAPH_NODE_W } : undefined}
+        style={cardStyle}
       >
         <div className={styles.blockTopRow}>
           <div className={styles.blockMainLeft}>
@@ -596,11 +650,16 @@ export default function DailyRoutineRoadmap() {
 
             <div className={styles.blockHeadingCol}>
               <div className={styles.blockMetaRow}>
-                <span className={styles.stepIndexBadge}>{index + 1}.</span>
+                <span className={styles.stepIndexBadge}>{index + 1}</span>
                 <span className={styles.timeBadge}>
                   <Clock size={11} />
                   {block.timeRange}
                 </span>
+                {block.steps.length > 0 && (
+                  <span className={`${styles.stepCountBadge} ${isBlockDone ? styles.stepCountBadgeDone : ''}`}>
+                    {doneStepsCount}/{block.steps.length}
+                  </span>
+                )}
                 {isCurrentTime && !isBlockDone && (
                   <span className={styles.nowBadge}>
                     <span className={styles.nowDot} /> Now
@@ -678,7 +737,7 @@ export default function DailyRoutineRoadmap() {
         </div>
 
         <div className={styles.summaryRight}>
-          <div className={styles.progressBox}>
+          <div className={`${styles.progressBox} ${completionPct === 100 ? styles.progressBoxComplete : ''}`}>
             <div className={styles.progressTextRow}>
               <span>
                 {completedCount}/{blocks.length} ({completionPct}%)
@@ -794,16 +853,19 @@ export default function DailyRoutineRoadmap() {
             </svg>
 
             {/* Phase Column Pills */}
-            {phaseHeaders.map((ph) => (
-              <div
-                key={ph.colIdx}
-                className={styles.phaseHeaderChip}
-                style={{ left: ph.x, top: ph.y }}
-              >
-                <span className={styles.phaseDot} />
-                <span>{ph.label}</span>
-              </div>
-            ))}
+            {phaseHeaders.map((ph) => {
+              const phaseRgb = PHASE_RGB_LIST[ph.colIdx % PHASE_RGB_LIST.length];
+              return (
+                <div
+                  key={ph.colIdx}
+                  className={styles.phaseHeaderChip}
+                  style={{ left: ph.x, top: ph.y, '--phase-rgb': phaseRgb } as React.CSSProperties}
+                >
+                  <span className={styles.phaseDot} />
+                  <span>{ph.label}</span>
+                </div>
+              );
+            })}
 
             {/* Curved SVG Flow Paths */}
             <svg
@@ -812,17 +874,25 @@ export default function DailyRoutineRoadmap() {
               style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
             >
               <defs>
-                <marker id="routine-arrow-idle" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="var(--color-border)" />
-                </marker>
-                <marker id="routine-arrow-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="var(--color-accent)" />
-                </marker>
+                {ROUTINE_PALETTE.map((pal) => (
+                  <marker
+                    key={pal.id}
+                    id={`routine-arrow-${pal.id}`}
+                    markerWidth="6"
+                    markerHeight="6"
+                    refX="5"
+                    refY="3"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L0,6 L6,3 z" fill={pal.hex} />
+                  </marker>
+                ))}
               </defs>
 
               {graphNodes.slice(0, -1).map((fromNode, idx) => {
                 const toNode = graphNodes[idx + 1];
                 if (!toNode) return null;
+                const fromPalette = getBlockPalette(fromNode.block, fromNode.index);
                 const isPowered = progress.completedBlockIds.includes(fromNode.block.id);
                 const isHoveredEdge = hoveredId === fromNode.block.id || hoveredId === toNode.block.id;
 
@@ -831,12 +901,12 @@ export default function DailyRoutineRoadmap() {
                     <path
                       d={getFlowEdgePath(fromNode, toNode)}
                       fill="none"
-                      stroke={isPowered || isHoveredEdge ? 'var(--color-accent)' : 'var(--color-border)'}
-                      strokeWidth={isPowered ? 2.4 : isHoveredEdge ? 2 : 1.5}
-                      strokeOpacity={isPowered ? 0.9 : isHoveredEdge ? 0.85 : 0.65}
+                      stroke={fromPalette.hex}
+                      strokeWidth={isPowered ? 2.6 : isHoveredEdge ? 2.3 : 1.75}
+                      strokeOpacity={isPowered ? 0.95 : isHoveredEdge ? 0.9 : 0.45}
                       className={isPowered ? styles.flowLineActive : undefined}
-                      markerEnd={isPowered || isHoveredEdge ? 'url(#routine-arrow-active)' : 'url(#routine-arrow-idle)'}
-                      style={{ transition: 'stroke 0.2s ease, stroke-opacity 0.2s ease' }}
+                      markerEnd={`url(#routine-arrow-${fromPalette.id})`}
+                      style={{ transition: 'stroke-opacity 0.2s ease, stroke-width 0.2s ease' }}
                     />
                   </g>
                 );
@@ -965,6 +1035,28 @@ export default function DailyRoutineRoadmap() {
                   onChange={(e) => setFormSubLabel(e.target.value)}
                   placeholder="Optional label before checklist"
                 />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Block Color</label>
+                <div className={styles.colorSwatchRow} role="radiogroup" aria-label="Block accent color">
+                  {ROUTINE_PALETTE.map((pal) => {
+                    const isSelected = formColor === pal.id;
+                    return (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        aria-label={pal.label}
+                        title={pal.label}
+                        onClick={() => setFormColor(pal.id)}
+                        className={`${styles.colorSwatchBtn} ${isSelected ? styles.colorSwatchBtnSelected : ''}`}
+                        style={{ '--swatch-hex': pal.hex, '--swatch-rgb': pal.rgb } as React.CSSProperties}
+                      />
+                    );
+                  })}
+                </div>
               </div>
 
               <div className={styles.formGroup}>
