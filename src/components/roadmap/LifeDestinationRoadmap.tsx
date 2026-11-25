@@ -11,14 +11,11 @@ import {
   Trash2,
   GitBranch,
   X,
-  Target,
   RotateCcw,
   ZoomIn,
   ZoomOut,
   Maximize2,
   Check,
-  Compass,
-  ArrowRight,
 } from 'lucide-react';
 import { getAdaptiveBezierPath, useDraggableGraphNodes } from '@/utils/graphDragAndEdge';
 import styles from './LifeDestinationRoadmap.module.css';
@@ -1084,130 +1081,112 @@ export default function LifeDestinationRoadmap() {
         </div>
       </div>
 
-      {/* ── ADHD Cognitive Usability: Calm Side Detail Inspector Drawer ── */}
-      {selectedNode && (
-        <aside className={styles.detailDrawer} data-interactive="true" onClick={(e) => e.stopPropagation()}>
-          {/* Drawer Header */}
-          <div className={styles.drawerHeader}>
-            <div className={styles.drawerBadgeRow}>
-              <span
-                className={styles.drawerBranchPill}
-                style={{
-                  color: selectedNode.lifeAreaId ? AREA_COLORS[selectedNode.lifeAreaId] : 'var(--color-accent)',
-                  borderColor: selectedNode.lifeAreaId ? `${AREA_COLORS[selectedNode.lifeAreaId]}40` : 'var(--color-border)',
-                  background: selectedNode.lifeAreaId ? `${AREA_COLORS[selectedNode.lifeAreaId]}15` : 'var(--color-surface-2)',
-                }}
-              >
-                {selectedNode.branchName || `Tier ${selectedNode.tier || 1}`}
-              </span>
+      {/* ── Minimalist Side Inspector Drawer ── */}
+      {selectedNode && (() => {
+        const areaColor = selectedNode.lifeAreaId
+          ? AREA_COLORS[selectedNode.lifeAreaId] || 'var(--color-accent)'
+          : 'var(--color-accent)';
 
-              <span className={styles.drawerTierLabel}>
-                {TIER_NAMES[selectedNode.tier || 1]}
-              </span>
-            </div>
+        return (
+          <aside className={styles.detailDrawer} data-interactive="true" onClick={(e) => e.stopPropagation()}>
+            <div className={styles.drawerHeader}>
+              <div className={styles.drawerBadgeRow}>
+                <span className={styles.drawerColorDot} style={{ background: areaColor }} />
+                <span className={styles.drawerBranchText}>
+                  {selectedNode.branchName || `Tier ${selectedNode.tier || 1}`}
+                </span>
+                <span className={styles.drawerMetaSep}>·</span>
+                <span className={styles.drawerTierLabel}>
+                  {TIER_NAMES[selectedNode.tier || 1]}
+                </span>
+              </div>
 
-            <button
-              type="button"
-              className={styles.drawerCloseBtn}
-              onClick={() => setSelectedNodeId(null)}
-              title="Close inspector"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          <div className={styles.drawerBody}>
-            {/* Title */}
-            <h2 className={styles.drawerTitle}>{selectedNode.title}</h2>
-
-            {/* Target Year & Status Bar */}
-            <div className={styles.drawerStatusBar}>
               <button
                 type="button"
-                className={`${styles.drawerStatusToggle} ${
-                  selectedNode.status === 'completed' ? styles.statusToggleCompleted : ''
-                }`}
-                onClick={() => handleToggleStatus(selectedNode.id)}
+                className={styles.drawerCloseBtn}
+                onClick={() => setSelectedNodeId(null)}
+                title="Close inspector"
+                aria-label="Close inspector"
               >
-                {selectedNode.status === 'completed' ? (
-                  <>
-                    <CheckCircle2 size={16} />
-                    <span>Destination Achieved</span>
-                  </>
-                ) : selectedNode.status === 'current' ? (
-                  <>
-                    <Sparkles size={16} />
-                    <span>Current Focus (In Progress)</span>
-                  </>
-                ) : (
-                  <>
-                    <Circle size={16} />
-                    <span>Upcoming Milestone</span>
-                  </>
-                )}
+                <X size={15} />
               </button>
+            </div>
 
-              {selectedNode.targetAgeOrYear && (
-                <div className={styles.drawerTargetPill}>
-                  <Target size={12} />
-                  <span>{selectedNode.targetAgeOrYear}</span>
+            <div className={styles.drawerBody}>
+              <div className={styles.drawerHero}>
+                <h2 className={styles.drawerTitle}>{selectedNode.title}</h2>
+
+                <div className={styles.drawerStatusBar}>
+                  <button
+                    type="button"
+                    className={`${styles.drawerStatusToggle} ${
+                      selectedNode.status === 'completed' ? styles.statusToggleCompleted : ''
+                    }`}
+                    onClick={() => handleToggleStatus(selectedNode.id)}
+                  >
+                    {selectedNode.status === 'completed' ? (
+                      <>
+                        <CheckCircle2 size={13} />
+                        <span>Achieved</span>
+                      </>
+                    ) : selectedNode.status === 'current' ? (
+                      <>
+                        <Sparkles size={13} />
+                        <span>Current Focus</span>
+                      </>
+                    ) : (
+                      <>
+                        <Circle size={13} />
+                        <span>Upcoming</span>
+                      </>
+                    )}
+                  </button>
+
+                  {selectedNode.targetAgeOrYear && (
+                    <span className={styles.drawerTargetText}>
+                      {selectedNode.targetAgeOrYear}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {selectedNode.whyItMatters && (
+                <div className={styles.drawerSection}>
+                  <div className={styles.drawerSectionLabel}>Why it matters</div>
+                  <p className={styles.drawerBodyText}>{selectedNode.whyItMatters}</p>
                 </div>
               )}
-            </div>
 
-            {/* North Star Box (The ADHD Anchor: Why this matters so you never get lost) */}
-            {selectedNode.whyItMatters && (
-              <div className={styles.drawerNorthStar}>
-                <div className={styles.northStarHeader}>
-                  <Compass size={13} />
-                  <span>My North Star (Why This Matters)</span>
+              {selectedNode.description && (
+                <div className={styles.drawerSection}>
+                  <div className={styles.drawerSectionLabel}>Vision</div>
+                  <p className={styles.drawerMutedText}>{selectedNode.description}</p>
                 </div>
-                <p className={styles.northStarText}>{selectedNode.whyItMatters}</p>
-              </div>
-            )}
+              )}
 
-            {/* Vision / Description */}
-            {selectedNode.description && (
-              <div className={styles.drawerSection}>
-                <div className={styles.drawerSectionLabel}>Vision &amp; Reality</div>
-                <p className={styles.drawerDescText}>{selectedNode.description}</p>
-              </div>
-            )}
-
-            {/* Milestone Criteria Checklist */}
-            {selectedNode.criteria && selectedNode.criteria.length > 0 && (
-              <div className={styles.drawerSection}>
-                <div className={styles.drawerSectionLabel}>Milestone Pillars</div>
-                <div className={styles.drawerCriteriaList}>
-                  {selectedNode.criteria.map((c, i) => (
-                    <div key={i} className={styles.drawerCriteriaItem}>
-                      <div
-                        className={styles.criteriaPillarDot}
-                        style={{
-                          background: selectedNode.lifeAreaId
-                            ? AREA_COLORS[selectedNode.lifeAreaId]
-                            : 'var(--color-accent)',
-                        }}
-                      />
-                      <span>{c}</span>
-                    </div>
-                  ))}
+              {selectedNode.criteria && selectedNode.criteria.length > 0 && (
+                <div className={styles.drawerSection}>
+                  <div className={styles.drawerSectionLabel}>Milestones</div>
+                  <ul className={styles.drawerCriteriaList}>
+                    {selectedNode.criteria.map((c, i) => (
+                      <li key={i} className={styles.drawerCriteriaItem}>
+                        <span className={styles.criteriaPillarDot} style={{ background: areaColor }} />
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Actions: Sprout Branch, Edit, Delete */}
-            <div className={styles.drawerActions}>
-              <button
-                type="button"
-                className={styles.drawerBranchBtn}
-                onClick={(e) => handleAddChildBranch(selectedNode, e)}
-              >
-                <Plus size={13} />
-                <span>Sprout Child Branch</span>
-              </button>
-
-              <div className={styles.drawerActionGroup}>
+              <div className={styles.drawerActions}>
+                <button
+                  type="button"
+                  className={styles.drawerBranchBtn}
+                  onClick={(e) => handleAddChildBranch(selectedNode, e)}
+                >
+                  <Plus size={13} />
+                  <span>Add Branch</span>
+                </button>
                 <button
                   type="button"
                   className={styles.drawerEditBtn}
@@ -1221,14 +1200,15 @@ export default function LifeDestinationRoadmap() {
                   className={styles.drawerDeleteBtn}
                   onClick={(e) => handleDelete(selectedNode.id, e)}
                   title="Delete destination"
+                  aria-label="Delete destination"
                 >
                   <Trash2 size={13} />
                 </button>
               </div>
             </div>
-          </div>
-        </aside>
-      )}
+          </aside>
+        );
+      })()}
 
       {/* ── Edit / Add Destination Modal ── */}
       {isModalOpen && editingDest && (

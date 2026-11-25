@@ -455,27 +455,29 @@
   border-radius: 3px;
 }
 
-/* ── ADHD Cognitive Detail Inspector Drawer ── */
+/* ── Minimalist Detail Inspector Drawer ── */
 .detailDrawer {
   position: absolute;
-  top: 45px;
-  right: 0;
-  bottom: 0;
-  width: 360px;
-  max-width: 90vw;
+  top: 58px;
+  right: 12px;
+  bottom: 12px;
+  width: 336px;
+  max-width: calc(100vw - 24px);
   background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   z-index: 35;
   display: flex;
   flex-direction: column;
-  animation: drawerSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  animation: drawerSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes drawerSlideIn {
   from {
-    transform: translateX(100%);
-    opacity: 0.5;
+    transform: translateX(18px);
+    opacity: 0;
   }
   to {
     transform: translateX(0);
@@ -487,44 +489,54 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-2);
+  padding: 16px 18px 0;
+  flex-shrink: 0;
 }
 
 .drawerBadgeRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
-.drawerBranchPill {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  border-radius: 4px;
-  border: 1px solid;
+.drawerColorDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.drawerBranchText {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.drawerMetaSep {
+  font-size: 11px;
+  color: var(--color-text-faint);
 }
 
 .drawerTierLabel {
   font-size: 11px;
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
 }
 
 .drawerCloseBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .drawerCloseBtn:hover {
@@ -533,27 +545,37 @@
 }
 
 .drawerBody {
-  padding: 18px 20px 30px;
+  padding: 12px 18px 18px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
   scrollbar-width: thin;
 }
 
+.drawerHero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
 .drawerTitle {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 16.5px;
+  font-weight: 600;
   color: var(--color-text);
   line-height: 1.35;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .drawerStatusBar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -561,15 +583,15 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .drawerStatusToggle:hover {
@@ -579,51 +601,14 @@
 
 .statusToggleCompleted {
   background: rgba(34, 211, 165, 0.12);
-  border-color: rgba(34, 211, 165, 0.4);
+  border-color: rgba(34, 211, 165, 0.35);
   color: #22d3a5;
 }
 
-.drawerTargetPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.drawerTargetText {
   font-size: 11px;
-  color: var(--color-text-muted);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-}
-
-/* North Star Box inside Drawer */
-.drawerNorthStar {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.northStarHeader {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--color-text-faint);
-}
-
-.northStarText {
-  font-size: 12px;
-  font-style: italic;
-  color: var(--color-text);
-  line-height: 1.5;
-  margin: 0;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
 }
 
 .drawerSection {
@@ -633,36 +618,42 @@
 }
 
 .drawerSectionLabel {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  letter-spacing: 0.02em;
 }
 
-.drawerDescText {
-  font-size: 12px;
+.drawerBodyText {
+  font-size: 12.5px;
+  color: var(--color-text);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.drawerMutedText {
+  font-size: 12.5px;
   color: var(--color-text-muted);
-  line-height: 1.6;
+  line-height: 1.55;
   margin: 0;
 }
 
 .drawerCriteriaList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
 .drawerCriteriaItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  font-size: 11px;
-  color: var(--color-text);
-  padding: 6px 10px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
 }
 
 .criteriaPillarDot {
@@ -670,63 +661,61 @@
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 6px;
 }
 
-/* Drawer Actions */
+/* Minimalist Single-Row Drawer Footer */
 .drawerActions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--color-border-subtle);
 }
 
 .drawerBranchBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 34px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--color-text);
-  color: var(--color-text-inverse);
-  border: 1px solid var(--color-text);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.drawerBranchBtn:hover {
-  opacity: 0.9;
-}
-
-.drawerActionGroup {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.drawerEditBtn {
   flex: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   height: 32px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 500;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
   color: var(--color-text);
-  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.drawerBranchBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
+.drawerEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .drawerEditBtn:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   color: var(--color-text);
   border-color: var(--color-border);
 }
@@ -737,16 +726,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-2);
+  background: transparent;
   border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-muted);
-  border-radius: 6px;
+  color: var(--color-text-faint);
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .drawerDeleteBtn:hover {
-  background: rgba(255, 107, 107, 0.12);
+  background: rgba(255, 107, 107, 0.1);
   border-color: rgba(255, 107, 107, 0.3);
   color: #ff6b6b;
 }
@@ -940,7 +930,13 @@
   }
 
   .detailDrawer {
-    width: 100vw;
+    top: auto;
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    width: auto;
+    max-width: none;
+    max-height: 72dvh;
   }
 
   .formRow {
