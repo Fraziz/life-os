@@ -730,10 +730,6 @@ export default function DailyRoutineRoadmap() {
       <header className={styles.summaryHeader}>
         <div className={styles.summaryLeft}>
           <h1 className={styles.summaryTitle}>Daily Routine</h1>
-          <span className={styles.schedulePill}>
-            <Clock size={11} />
-            7:00 AM – 9:00 PM
-          </span>
         </div>
 
         <div className={styles.summaryRight}>
