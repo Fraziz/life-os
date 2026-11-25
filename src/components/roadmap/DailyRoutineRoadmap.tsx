@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckSquare,
   Square,
@@ -11,6 +11,10 @@ import {
   RotateCcw,
   LayoutGrid,
   LayoutList,
+  GitBranch,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
   X,
 } from 'lucide-react';
 import MasonryGrid from '@/components/ui/MasonryGrid';
@@ -156,6 +160,26 @@ function getTodayDateKey(): string {
   return `${y}-${m}-${day}`;
 }
 
+const GRAPH_NODE_W = 296;
+const GRAPH_COL_GAP = 96;
+const GRAPH_ROW_GAP = 42;
+const GRAPH_PAD_X = 48;
+const GRAPH_TOP_Y = 64;
+
+interface GraphPositionedNode {
+  block: RoutineBlock;
+  index: number;
+  colIdx: number;
+  x: number;
+  y: number;
+  height: number;
+}
+
+function estimateGraphNodeHeight(block: RoutineBlock): number {
+  const stepLines = block.steps.reduce((sum, s) => sum + Math.max(1, Math.ceil(s.length / 32)), 0);
+  return 82 + (block.subLabel ? 20 : 0) + stepLines * 22 + Math.max(0, block.steps.length - 1) * 4;
+}
+
 export default function DailyRoutineRoadmap() {
   const [blocks, setBlocks] = useState<RoutineBlock[]>(DEFAULT_DAILY_ROUTINE);
   const [progress, setProgress] = useState<DailyProgressState>({
@@ -163,11 +187,21 @@ export default function DailyRoutineRoadmap() {
     completedStepKeys: [],
     completedBlockIds: [],
   });
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'timeline'>('grid');
+  const [layoutMode, setLayoutMode] = useState<'graph' | 'grid' | 'timeline'>('graph');
   const [nowMinutes, setNowMinutes] = useState<number>(() => {
     const d = new Date();
     return d.getHours() * 60 + d.getMinutes();
   });
+
+  // Graph Flow Pan & Zoom state
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(0.9);
+  const [pan, setPan] = useState({ x: 24, y: 12 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const pinchDistRef = useRef<number | null>(null);
+  const pinchZoomRef = useRef<number>(0.9);
 
   // Add / Edit modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -371,7 +405,167 @@ export default function DailyRoutineRoadmap() {
 
   const completionPct = blocks.length > 0 ? Math.round((completedCount / blocks.length) * 100) : 0;
 
-  const renderBlockCard = (block: RoutineBlock, index: number) => {
+  // Compute Graph Flow node coordinates grouped into Morning -> Afternoon -> Evening columns
+  const { graphNodes, graphWidth, graphHeight, phaseHeaders } = useMemo(() => {
+    const colBuckets: { block: RoutineBlock; index: number }[][] = [];
+    blocks.forEach((block, index) => {
+      let colIdx = 0;
+      if (typeof block.startMinute === 'number') {
+        colIdx = block.startMinute < 12 * 60 ? 0 : block.startMinute < 17 * 60 ? 1 : 2;
+      } else {
+        colIdx = index < 4 ? 0 : index < 7 ? 1 : 2 + Math.floor((index - 7) / 4);
+      }
+      while (colBuckets.length <= colIdx) colBuckets.push([]);
+      colBuckets[colIdx].push({ block, index });
+    });
+
+    const positioned: GraphPositionedNode[] = [];
+    const headers: { colIdx: number; label: string; x: number; y: number }[] = [];
+    const PHASE_NAMES = ['Morning Flow · 7 AM – 12 PM', 'Afternoon Flow · 1 – 5 PM', 'Evening Wind-Down · 7 – 9 PM'];
+
+    let maxY = 500;
+    colBuckets.forEach((colItems, colIdx) => {
+      if (colItems.length === 0) return;
+      const x = GRAPH_PAD_X + colIdx * (GRAPH_NODE_W + GRAPH_COL_GAP);
+      headers.push({
+        colIdx,
+        label: PHASE_NAMES[colIdx] || `Phase ${colIdx + 1}`,
+        x,
+        y: 20,
+      });
+
+      let curY = GRAPH_TOP_Y;
+      colItems.forEach(({ block, index }) => {
+        const h = estimateGraphNodeHeight(block);
+        positioned.push({ block, index, colIdx, x, y: curY, height: h });
+        curY += h + GRAPH_ROW_GAP;
+      });
+      if (curY > maxY) maxY = curY;
+    });
+
+    // Ensure sequential visual order matches block index order for edge connections
+    positioned.sort((a, b) => a.index - b.index);
+
+    const totalCols = Math.max(1, colBuckets.length);
+    const width = Math.max(1180, GRAPH_PAD_X * 2 + totalCols * GRAPH_NODE_W + (totalCols - 1) * GRAPH_COL_GAP);
+    const height = Math.max(760, maxY + 48);
+
+    return { graphNodes: positioned, graphWidth: width, graphHeight: height, phaseHeaders: headers };
+  }, [blocks]);
+
+  const fitGraphToViewport = useCallback(() => {
+    const vp = viewportRef.current;
+    if (!vp) {
+      setZoom(0.9);
+      setPan({ x: 24, y: 12 });
+      return;
+    }
+    const rect = vp.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const scaleX = (rect.width - 32) / graphWidth;
+    const scaleY = (rect.height - 24) / graphHeight;
+    const nextZoom = Math.max(0.45, Math.min(1.0, Math.min(scaleX, scaleY)));
+    const nextX = Math.max(16, Math.round((rect.width - graphWidth * nextZoom) / 2));
+    setZoom(Number(nextZoom.toFixed(2)));
+    setPan({ x: nextX, y: 10 });
+  }, [graphWidth, graphHeight]);
+
+  useEffect(() => {
+    if (layoutMode === 'graph') {
+      fitGraphToViewport();
+    }
+  }, [layoutMode, fitGraphToViewport]);
+
+  const handleGraphWheel = useCallback(
+    (e: WheelEvent) => {
+      if (layoutMode !== 'graph') return;
+      e.preventDefault();
+      setZoom((z) => Math.max(0.35, Math.min(1.6, Number((z - e.deltaY * 0.001).toFixed(3)))));
+    },
+    [layoutMode]
+  );
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || layoutMode !== 'graph') return;
+    el.addEventListener('wheel', handleGraphWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleGraphWheel);
+  }, [handleGraphWheel, layoutMode]);
+
+  const handleGraphMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button, a, input, textarea, [data-interactive="true"]')) {
+      return;
+    }
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleGraphMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handleGraphMouseUp = () => setIsDragging(false);
+
+  const handleGraphTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, textarea, [data-interactive="true"]')) {
+      return;
+    }
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+    } else if (e.touches.length === 2) {
+      setIsDragging(false);
+      pinchDistRef.current = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchZoomRef.current = zoom;
+    }
+  };
+
+  const handleGraphTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDragging) {
+      setPan({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
+    } else if (e.touches.length === 2 && pinchDistRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setZoom(Math.max(0.35, Math.min(1.6, pinchZoomRef.current * (dist / pinchDistRef.current))));
+    }
+  };
+
+  const handleGraphTouchEnd = () => {
+    setIsDragging(false);
+    pinchDistRef.current = null;
+  };
+
+  const getFlowEdgePath = (from: GraphPositionedNode, to: GraphPositionedNode): string => {
+    if (from.colIdx === to.colIdx) {
+      // Vertical flow inside same phase column
+      const sx = from.x + GRAPH_NODE_W / 2;
+      const sy = from.y + from.height;
+      const tx = to.x + GRAPH_NODE_W / 2;
+      const ty = to.y;
+      const midY = (sy + ty) / 2;
+      return `M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`;
+    }
+    // Cross-column S-curve bridge to next phase
+    const sx = from.x + GRAPH_NODE_W;
+    const sy = from.y + from.height / 2;
+    const tx = to.x;
+    const ty = to.y + to.height / 2;
+    const dx = Math.abs(tx - sx) * 0.52;
+    return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`;
+  };
+
+  const renderBlockCard = (
+    block: RoutineBlock,
+    index: number,
+    graphPos?: { x: number; y: number }
+  ) => {
     const isBlockDone = progress.completedBlockIds.includes(block.id);
     const isCurrentTime =
       typeof block.startMinute === 'number' &&
@@ -382,7 +576,11 @@ export default function DailyRoutineRoadmap() {
     return (
       <article
         key={block.id}
-        className={`${styles.blockCard} ${isCurrentTime && !isBlockDone ? styles.blockCardCurrent : ''} ${isBlockDone ? styles.blockCardDone : ''}`}
+        data-interactive={graphPos ? 'true' : undefined}
+        onMouseEnter={graphPos ? () => setHoveredId(block.id) : undefined}
+        onMouseLeave={graphPos ? () => setHoveredId((prev) => (prev === block.id ? null : prev)) : undefined}
+        className={`${graphPos ? styles.graphNodeCard : styles.blockCard} ${isCurrentTime && !isBlockDone ? styles.blockCardCurrent : ''} ${isBlockDone ? styles.blockCardDone : ''}`}
+        style={graphPos ? { left: graphPos.x, top: graphPos.y, width: GRAPH_NODE_W } : undefined}
       >
         <div className={styles.blockTopRow}>
           <div className={styles.blockMainLeft}>
@@ -469,7 +667,7 @@ export default function DailyRoutineRoadmap() {
 
   return (
     <div className={styles.routineContainer}>
-      <div className={styles.routineInner}>
+      <div className={styles.routineTopWrap}>
         {/* ── Summary Header ── */}
         <header className={styles.summaryHeader}>
           <div className={styles.summaryLeft}>
@@ -481,7 +679,7 @@ export default function DailyRoutineRoadmap() {
               </span>
             </div>
             <p className={styles.summarySubtitle}>
-              Tap any step or block as you move through your day. Resets automatically every morning.
+              Check off each step or block to power up the flow through your day. Resets automatically every morning.
             </p>
           </div>
 
@@ -502,6 +700,15 @@ export default function DailyRoutineRoadmap() {
             </div>
 
             <div className={styles.layoutToggle} role="group" aria-label="Routine view layout">
+              <button
+                type="button"
+                className={`${styles.layoutBtn} ${layoutMode === 'graph' ? styles.layoutBtnActive : ''}`}
+                onClick={() => setLayoutMode('graph')}
+                title="Graph Flow view"
+              >
+                <GitBranch size={12} />
+                <span>Graph Flow</span>
+              </button>
               <button
                 type="button"
                 className={`${styles.layoutBtn} ${layoutMode === 'grid' ? styles.layoutBtnActive : ''}`}
@@ -554,25 +761,156 @@ export default function DailyRoutineRoadmap() {
             </button>
           </div>
         </header>
-
-        {/* ── Routine Blocks (Responsive Grid or Chronological Timeline) ── */}
-        {layoutMode === 'timeline' ? (
-          <div className={styles.timelineList}>
-            {blocks.map((block, index) => renderBlockCard(block, index))}
-          </div>
-        ) : (
-          <MasonryGrid
-            items={blocks}
-            getKey={(b) => b.id}
-            minColumnWidth={310}
-            maxColumns={3}
-            gap={14}
-            fallbackClassName={styles.fallbackGrid}
-            estimateWeight={(b) => 96 + (b.subLabel ? 22 : 0) + b.steps.length * 26}
-            renderItem={(block, index) => renderBlockCard(block, index)}
-          />
-        )}
       </div>
+
+      {/* ── Graph Flow View OR Scrollable Grid / Timeline ── */}
+      {layoutMode === 'graph' ? (
+        <div
+          ref={viewportRef}
+          className={`${styles.graphViewport} ${isDragging ? styles.graphViewportDragging : ''}`}
+          onMouseDown={handleGraphMouseDown}
+          onMouseMove={handleGraphMouseMove}
+          onMouseUp={handleGraphMouseUp}
+          onMouseLeave={handleGraphMouseUp}
+          onTouchStart={handleGraphTouchStart}
+          onTouchMove={handleGraphTouchMove}
+          onTouchEnd={handleGraphTouchEnd}
+          onTouchCancel={handleGraphTouchEnd}
+        >
+          <div
+            className={styles.graphCanvas}
+            style={{
+              width: graphWidth,
+              height: graphHeight,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: '0 0',
+            }}
+          >
+            {/* Dot Grid Background */}
+            <svg
+              className={styles.dotGrid}
+              width={graphWidth}
+              height={graphHeight}
+              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+            >
+              <defs>
+                <pattern id="routine-dotgrid" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1.15" fill="currentColor" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#routine-dotgrid)" />
+            </svg>
+
+            {/* Phase Column Pills */}
+            {phaseHeaders.map((ph) => (
+              <div
+                key={ph.colIdx}
+                className={styles.phaseHeaderChip}
+                style={{ left: ph.x, top: ph.y }}
+              >
+                <span className={styles.phaseDot} />
+                <span>{ph.label}</span>
+              </div>
+            ))}
+
+            {/* Curved SVG Flow Paths */}
+            <svg
+              width={graphWidth}
+              height={graphHeight}
+              style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+            >
+              <defs>
+                <marker id="routine-arrow-idle" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="var(--color-border)" />
+                </marker>
+                <marker id="routine-arrow-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="var(--color-accent)" />
+                </marker>
+              </defs>
+
+              {graphNodes.slice(0, -1).map((fromNode, idx) => {
+                const toNode = graphNodes[idx + 1];
+                if (!toNode) return null;
+                const isPowered = progress.completedBlockIds.includes(fromNode.block.id);
+                const isHoveredEdge = hoveredId === fromNode.block.id || hoveredId === toNode.block.id;
+
+                return (
+                  <g key={`${fromNode.block.id}->${toNode.block.id}`}>
+                    <path
+                      d={getFlowEdgePath(fromNode, toNode)}
+                      fill="none"
+                      stroke={isPowered || isHoveredEdge ? 'var(--color-accent)' : 'var(--color-border)'}
+                      strokeWidth={isPowered ? 2.4 : isHoveredEdge ? 2 : 1.5}
+                      strokeOpacity={isPowered ? 0.9 : isHoveredEdge ? 0.85 : 0.65}
+                      className={isPowered ? styles.flowLineActive : undefined}
+                      markerEnd={isPowered || isHoveredEdge ? 'url(#routine-arrow-active)' : 'url(#routine-arrow-idle)'}
+                      style={{ transition: 'stroke 0.2s ease, stroke-opacity 0.2s ease' }}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Interactive Flow Nodes */}
+            {graphNodes.map(({ block, index, x, y }) => renderBlockCard(block, index, { x, y }))}
+          </div>
+
+          <div className={styles.graphHintBadge}>Drag canvas to pan · Scroll to zoom</div>
+
+          {/* Floating Zoom & Fit Controls */}
+          <div className={styles.graphFloatingControls} data-interactive="true">
+            <button
+              type="button"
+              className={styles.zoomBtn}
+              onClick={() => setZoom((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))}
+              title="Zoom Out"
+              aria-label="Zoom Out"
+            >
+              <ZoomOut size={13} />
+            </button>
+            <span className={styles.zoomPct}>{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              className={styles.zoomBtn}
+              onClick={() => setZoom((z) => Math.min(1.6, Number((z + 0.1).toFixed(2))))}
+              title="Zoom In"
+              aria-label="Zoom In"
+            >
+              <ZoomIn size={13} />
+            </button>
+            <button
+              type="button"
+              className={styles.zoomBtn}
+              onClick={fitGraphToViewport}
+              title="Fit Routine Graph to Screen"
+              aria-label="Fit View"
+            >
+              <Maximize2 size={13} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.routineScrollArea}>
+          <div className={styles.routineInner}>
+            {layoutMode === 'timeline' ? (
+              <div className={styles.timelineList}>
+                {blocks.map((block, index) => renderBlockCard(block, index))}
+              </div>
+            ) : (
+              <MasonryGrid
+                items={blocks}
+                getKey={(b) => b.id}
+                minColumnWidth={310}
+                maxColumns={3}
+                gap={14}
+                fallbackClassName={styles.fallbackGrid}
+                estimateWeight={(b) => 96 + (b.subLabel ? 22 : 0) + b.steps.length * 26}
+                renderItem={(block, index) => renderBlockCard(block, index)}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Add / Edit Routine Block Modal ── */}
       {modalOpen && (
