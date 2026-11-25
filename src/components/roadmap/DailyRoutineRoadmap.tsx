@@ -53,12 +53,6 @@ export const ROUTINE_PALETTE: RoutinePaletteItem[] = [
   { id: 'lime', label: 'Fresh Lime', hex: '#84cc16', rgb: '132, 204, 22' },
 ];
 
-const PHASE_RGB_LIST = [
-  '245, 158, 11',  // Morning: warm amber
-  '168, 85, 247',  // Afternoon: vibrant violet
-  '129, 140, 248', // Evening: calm indigo
-];
-
 function getBlockPalette(block: RoutineBlock, index: number): RoutinePaletteItem {
   if (block.color) {
     const byId = ROUTINE_PALETTE.find((p) => p.id === block.color);
@@ -75,7 +69,7 @@ const GRAPH_NODE_W = 296;
 const GRAPH_COL_GAP = 104;
 const GRAPH_ROW_GAP = 48;
 const GRAPH_PAD_X = 48;
-const GRAPH_TOP_Y = 64;
+const GRAPH_TOP_Y = 28;
 const ROUTINE_POSITIONS_STORAGE_KEY = 'life_os_daily_routine_positions_v1';
 
 interface GraphPositionedNode {
@@ -380,7 +374,7 @@ export default function DailyRoutineRoadmap() {
   }, [blocks, layoutMode, progress.completedBlockIds, nodeHeights]);
 
   // Compute Graph Flow node coordinates grouped into Morning -> Afternoon -> Evening columns
-  const { graphNodes, graphWidth, graphHeight, phaseHeaders } = useMemo(() => {
+  const { graphNodes, graphWidth, graphHeight } = useMemo(() => {
     const colBuckets: { block: RoutineBlock; index: number }[][] = [];
     blocks.forEach((block, index) => {
       let colIdx = 0;
@@ -394,20 +388,12 @@ export default function DailyRoutineRoadmap() {
     });
 
     const positioned: GraphPositionedNode[] = [];
-    const headers: { colIdx: number; label: string; x: number; y: number }[] = [];
-    const PHASE_NAMES = ['Morning Flow · 7 AM – 12 PM', 'Afternoon Flow · 1 – 5 PM', 'Evening Wind-Down · 7 – 9 PM'];
 
     let maxX = 1180;
     let maxY = 500;
     colBuckets.forEach((colItems, colIdx) => {
       if (colItems.length === 0) return;
       const defaultX = GRAPH_PAD_X + colIdx * (GRAPH_NODE_W + GRAPH_COL_GAP);
-      headers.push({
-        colIdx,
-        label: PHASE_NAMES[colIdx] || `Phase ${colIdx + 1}`,
-        x: defaultX,
-        y: 20,
-      });
 
       let curY = GRAPH_TOP_Y;
       colItems.forEach(({ block, index }) => {
@@ -431,7 +417,7 @@ export default function DailyRoutineRoadmap() {
     const width = Math.max(baseWidth, maxX);
     const height = Math.max(760, maxY);
 
-    return { graphNodes: positioned, graphWidth: width, graphHeight: height, phaseHeaders: headers };
+    return { graphNodes: positioned, graphWidth: width, graphHeight: height };
   }, [blocks, nodePositions, nodeHeights]);
 
   const fitGraphToViewport = useCallback(() => {
@@ -904,20 +890,6 @@ export default function DailyRoutineRoadmap() {
               </defs>
               <rect width="100%" height="100%" fill="url(#routine-dotgrid)" />
             </svg>
-
-            {/* Phase Column Pills */}
-            {phaseHeaders.map((ph) => {
-              const phaseRgb = PHASE_RGB_LIST[ph.colIdx % PHASE_RGB_LIST.length];
-              return (
-                <div
-                  key={ph.colIdx}
-                  className={styles.phaseHeaderChip}
-                  style={{ left: ph.x + GRAPH_NODE_W / 2, top: ph.y, '--phase-rgb': phaseRgb } as React.CSSProperties}
-                >
-                  <span>{ph.label}</span>
-                </div>
-              );
-            })}
 
             {/* Curved SVG Flow Paths */}
             <svg
