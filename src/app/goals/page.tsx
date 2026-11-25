@@ -35,7 +35,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -434,8 +435,20 @@ export default function GoalsPage() {
           </p>
         </div>
       ) : (
-        <div className={styles.goalsGrid}>
-          {filteredGoals.map((goal) => {
+        <MasonryGrid
+          items={filteredGoals}
+          getKey={(g) => g.id}
+          minColumnWidth={320}
+          maxColumns={4}
+          gap={16}
+          fallbackClassName={styles.goalsGrid}
+          estimateWeight={(g) =>
+            160 +
+            Math.ceil((g.title?.length || 0) / 30) * 18 +
+            Math.ceil((g.description?.length || 0) / 34) * 18 +
+            (coachState[g.id]?.open ? 180 : 0)
+          }
+          renderItem={(goal) => {
             const parentDream = dreams.find((d) => d.id === goal.parentDreamId);
             const area = activeAreas.find((a) => a.id === goal.lifeAreaId);
             const isHighlighted = highlightId === goal.id;
@@ -446,17 +459,24 @@ export default function GoalsPage() {
             const doneTasks = directTasks.filter((t) => t.status === 'done');
 
             const isSelected = selectedGoalIds.has(goal.id);
+            const isSelectionActive = isSelectMode || selectedGoalIds.size > 0;
 
             return (
               <article
                 key={goal.id}
                 id={`goal-card-${goal.id}`}
                 className={styles.goalCard}
+                onClick={(e) => {
+                  if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+                    toggleSelectGoal(goal.id);
+                  }
+                }}
                 style={{
                   transition: 'all 0.2s ease',
                   background: isSelected ? 'var(--color-surface-2)' : undefined,
                   boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
                   borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
+                  cursor: isSelectionActive ? 'pointer' : undefined,
                 }}
               >
                 {/* ── Hierarchy Eyebrow (Dream -> Goal) ── */}
@@ -690,8 +710,8 @@ export default function GoalsPage() {
                 </div>
               </article>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* ── Modal Dialog for Create / Edit ── */}

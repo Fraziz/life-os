@@ -24,7 +24,8 @@ import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import EntityFiles from '@/components/files/EntityFiles';
 import AutoLinkText from '@/components/ui/AutoLinkText';
@@ -314,13 +315,23 @@ export default function HabitsPage() {
       </div>
 
       {/* ── Habits Grid ── */}
-      <div className={styles.habitsGrid}>
-        {filteredHabits.length === 0 ? (
+      <MasonryGrid
+        items={filteredHabits}
+        getKey={(h) => h.id}
+        minColumnWidth={300}
+        maxColumns={4}
+        fallbackClassName={styles.habitsGrid}
+        estimateWeight={(h) =>
+          170 +
+          Math.ceil((h.title?.length || 0) / 30) * 18 +
+          Math.ceil((h.description?.length || 0) / 34) * 16
+        }
+        emptyState={
           <div className={styles.emptyFilterState}>
             <p>No habits matching this filter.</p>
           </div>
-        ) : (
-          filteredHabits.map((habit) => {
+        }
+        renderItem={(habit) => {
           const completedToday = isHabitCompletedOnDate(habit.id, todayStr);
           const weeklyCount = getWeeklyCompletionsCount(habit.id);
           const totalCount = getTotalCompletionsCount(habit.id);
@@ -331,11 +342,17 @@ export default function HabitsPage() {
           const accentColor = habit.color || 'var(--color-accent)';
 
           const isSelected = selectedHabitIds.has(habit.id);
+          const isSelectionActive = isSelectMode || selectedHabitIds.size > 0;
 
           return (
             <article
               key={habit.id}
               className={styles.habitCard}
+              onClick={(e) => {
+                if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+                  toggleSelectHabit(habit.id);
+                }
+              }}
               style={{
                 background: isSelected
                   ? 'var(--color-surface-2)'
@@ -346,6 +363,7 @@ export default function HabitsPage() {
                   : undefined,
                 boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                 borderColor: isSelected ? 'var(--color-accent)' : undefined,
+                cursor: isSelectionActive ? 'pointer' : undefined,
               }}
             >
               <div className={styles.cardTop}>
@@ -441,8 +459,8 @@ export default function HabitsPage() {
               </div>
             </article>
           );
-        }))}
-      </div>
+        }}
+      />
 
       {/* ── Modal: Add Habit ── */}
       {addModalOpen && (

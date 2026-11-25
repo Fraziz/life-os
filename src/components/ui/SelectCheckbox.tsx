@@ -12,6 +12,29 @@ export interface SelectCheckboxProps {
   selectionMode?: boolean;
 }
 
+/**
+ * Returns true when clicking anywhere on a selectable card/row should toggle its selection:
+ * active only during selection mode, ignoring interactive controls and dragged text selections.
+ */
+export function shouldToggleSelectionOnCardClick(
+  e: React.MouseEvent<HTMLElement>,
+  isSelectionActive: boolean
+): boolean {
+  if (!isSelectionActive) return false;
+  const target = e.target as HTMLElement | null;
+  if (!target) return false;
+  if (
+    target.closest(
+      'a, button, input, textarea, select, option, label, [role="button"], [role="checkbox"], [contenteditable="true"], [data-no-select-toggle="true"]'
+    )
+  ) {
+    return false;
+  }
+  const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString() : '';
+  if (winSel && winSel.length > 0) return false;
+  return true;
+}
+
 export default function SelectCheckbox({
   checked,
   onToggle,

@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -345,21 +346,40 @@ export default function DreamsPage() {
           </p>
         </div>
       ) : (
-        <div className={styles.dreamsGrid}>
-          {filteredDreams.map((d) => {
+        <MasonryGrid
+          items={filteredDreams}
+          getKey={(d) => d.id}
+          minColumnWidth={300}
+          maxColumns={4}
+          fallbackClassName={styles.dreamsGrid}
+          estimateWeight={(d) =>
+            160 +
+            (d.imageUrl ? 160 : 0) +
+            Math.ceil((d.title?.length || 0) / 30) * 18 +
+            Math.ceil((d.description?.length || 0) / 34) * 18 +
+            Math.ceil((d.whyItMatters?.length || 0) / 34) * 18
+          }
+          renderItem={(d) => {
             const area = activeAreas.find((a) => a.id === d.lifeAreaId);
             const statusInfo = STATUS_CONFIG[d.status] || STATUS_CONFIG.dream;
 
             const isSelected = selectedDreamIds.has(d.id);
+            const isSelectionActive = isSelectMode || selectedDreamIds.size > 0;
 
             return (
               <article
                 key={d.id}
                 className={styles.dreamCard}
+                onClick={(e) => {
+                  if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+                    toggleSelectDream(d.id);
+                  }
+                }}
                 style={{
                   background: isSelected ? 'var(--color-surface-2)' : undefined,
                   boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                   borderColor: isSelected ? 'var(--color-accent)' : undefined,
+                  cursor: isSelectionActive ? 'pointer' : undefined,
                 }}
               >
                 {d.imageUrl && (
@@ -511,8 +531,8 @@ export default function DreamsPage() {
                 </div>
               </article>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* ── Modal Dialog for Create / Edit ── */}

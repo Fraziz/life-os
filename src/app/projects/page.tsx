@@ -33,7 +33,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
@@ -102,6 +103,11 @@ function ProjectRow({
   return (
     <article
       id={`project-card-${project.id}`}
+      onClick={(e) => {
+        if (onToggleSelect && shouldToggleSelectionOnCardClick(e, Boolean(selectionMode))) {
+          onToggleSelect();
+        }
+      }}
       style={{
         display: 'flex',
         gap: '12px',
@@ -113,6 +119,7 @@ function ProjectRow({
         transition: 'all 0.2s ease',
         boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
         borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
+        cursor: selectionMode && onToggleSelect ? 'pointer' : undefined,
       }}
     >
       {onToggleSelect && (
@@ -285,9 +292,20 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   const { toggleProjectReminder } = useProjects();
   const { tasks } = useTasks();
   if (projects.length === 0) return <EmptyState />;
+  const isSelectionActive = Boolean(isSelectMode || (selectedIds && selectedIds.size > 0));
   return (
-    <div className={styles.projectsGrid}>
-      {projects.map((p) => {
+    <MasonryGrid
+      items={projects}
+      getKey={(p) => p.id}
+      minColumnWidth={300}
+      maxColumns={4}
+      fallbackClassName={styles.projectsGrid}
+      estimateWeight={(p) =>
+        140 +
+        Math.ceil((p.title?.length || 0) / 30) * 18 +
+        Math.ceil((p.description?.length || 0) / 34) * 18
+      }
+      renderItem={(p) => {
         const linkedTasks = tasks.filter(
           (t) =>
             t.projectId === p.id ||
@@ -305,10 +323,16 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
             key={p.id}
             id={`project-card-${p.id}`}
             className={styles.projectCard}
+            onClick={(e) => {
+              if (onToggleSelect && shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+                onToggleSelect(p.id);
+              }
+            }}
             style={{
               background: isSelected ? 'var(--color-surface-2)' : undefined,
               boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
               borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
+              cursor: isSelectionActive && onToggleSelect ? 'pointer' : undefined,
             }}
           >
             {/* Top header row: tags + actions */}
@@ -449,8 +473,8 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
             </div>
           </article>
         );
-      })}
-    </div>
+      }}
+    />
   );
 }
 

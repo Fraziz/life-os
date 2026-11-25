@@ -92,7 +92,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
 import LinkPreviewCard from '@/components/ui/LinkPreviewCard';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -5063,7 +5063,16 @@ export default function KnowledgePage() {
                   <div
                     key={doc.id}
                     className={`${styles.docRow} ${isActive ? styles.docRowActive : ''}`}
-                    onClick={() => handleSelectDoc(doc.id)}
+                    onClick={(e) => {
+                      const isSelectionActive = isSelectMode || selectedDocIds.size > 0;
+                      if (isSelectionActive) {
+                        if (shouldToggleSelectionOnCardClick(e, true)) {
+                          toggleSelectDoc(doc.id);
+                        }
+                        return;
+                      }
+                      handleSelectDoc(doc.id);
+                    }}
                   >
                     <div className={styles.docRowContent}>
                       <div className={styles.docRowTitleRow}>

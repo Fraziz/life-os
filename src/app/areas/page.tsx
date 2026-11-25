@@ -31,6 +31,7 @@ import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AutoLinkText from '@/components/ui/AutoLinkText';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 
 // Available icon options for custom Life Areas
 const ICON_OPTIONS: Record<string, LucideIcon> = {
@@ -186,8 +187,19 @@ export default function LifeAreasPage() {
           </p>
         </div>
       ) : (
-        <div className={styles.areasGrid}>
-          {currentList.map((area, idx) => (
+        <MasonryGrid
+          items={currentList}
+          getKey={(a) => a.id}
+          minColumnWidth={280}
+          maxColumns={4}
+          gap={16}
+          fallbackClassName={styles.areasGrid}
+          estimateWeight={(a) =>
+            130 +
+            Math.ceil((a.name?.length || 0) / 28) * 18 +
+            Math.ceil((a.description?.length || 0) / 34) * 16
+          }
+          renderItem={(area, idx) => (
             <article
               key={area.id}
               className={`${styles.areaCard} ${area.isArchived ? styles.archived : ''}`}
@@ -277,8 +289,8 @@ export default function LifeAreasPage() {
                 />
               </div>
             </article>
-          ))}
-        </div>
+          )}
+        />
       )}
 
       {/* ── Modal Dialog for Create / Edit ── */}

@@ -25,6 +25,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useFocus } from '@/context/FocusContext';
 import { useHabits } from '@/context/HabitContext';
 import styles from './page.module.css';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 
 type Perspective = 'where_am_i' | 'accomplished' | 'unfinished';
 
@@ -207,8 +208,14 @@ export default function ProgressPage() {
               </Link>
             </div>
 
-            <div className={styles.cardsGrid}>
-              {inProgressGoals.map((goal) => (
+            <MasonryGrid
+              items={inProgressGoals}
+              getKey={(g) => g.id}
+              minColumnWidth={300}
+              maxColumns={4}
+              gap={16}
+              fallbackClassName={styles.cardsGrid}
+              renderItem={(goal) => (
                 <article key={goal.id} className={styles.itemCard}>
                   <div className={styles.itemTitleRow}>
                     <h3 className={styles.itemTitle}>{goal.title}</h3>
@@ -226,8 +233,8 @@ export default function ProgressPage() {
                     <span>Priority: {goal.priority}</span>
                   </div>
                 </article>
-              ))}
-            </div>
+              )}
+            />
           </section>
 
           {/* Active Projects Momentum */}
@@ -241,8 +248,14 @@ export default function ProgressPage() {
               </Link>
             </div>
 
-            <div className={styles.cardsGrid}>
-              {activeProjects.map((project) => (
+            <MasonryGrid
+              items={activeProjects}
+              getKey={(p) => p.id}
+              minColumnWidth={300}
+              maxColumns={4}
+              gap={16}
+              fallbackClassName={styles.cardsGrid}
+              renderItem={(project) => (
                 <article key={project.id} className={styles.itemCard}>
                   <div className={styles.itemTitleRow}>
                     <h3 className={styles.itemTitle}>{project.title}</h3>
@@ -260,8 +273,8 @@ export default function ProgressPage() {
                     {project.dueDate && <span>Due {project.dueDate}</span>}
                   </div>
                 </article>
-              ))}
-            </div>
+              )}
+            />
           </section>
         </div>
       )}

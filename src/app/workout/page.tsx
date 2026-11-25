@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1202,7 +1202,14 @@ export default function WorkoutPage() {
                         boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                         borderColor: isSelected ? 'var(--color-accent)' : undefined,
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        const isSelectionActive = isSelectMode || selectedSessionIds.size > 0;
+                        if (isSelectionActive) {
+                          if (shouldToggleSelectionOnCardClick(e, true)) {
+                            toggleSelectSession(s.id);
+                          }
+                          return;
+                        }
                         setActiveSessionId(s.id);
                         setActiveTab('today');
                       }}

@@ -24,6 +24,7 @@ import styles from './page.module.css';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import AutoLinkText from '@/components/ui/AutoLinkText';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 
 const STATUS_CONFIG: Record<MilestoneStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: styles.upcoming },
@@ -289,8 +290,18 @@ export default function MilestonesPage() {
           </p>
         </div>
       ) : (
-        <div className={styles.milestonesGrid}>
-          {filteredMilestones.map((milestone) => {
+        <MasonryGrid
+          items={filteredMilestones}
+          getKey={(m) => m.id}
+          minColumnWidth={300}
+          maxColumns={4}
+          fallbackClassName={styles.milestonesGrid}
+          estimateWeight={(m) =>
+            150 +
+            Math.ceil((m.title?.length || 0) / 30) * 18 +
+            Math.ceil((m.description?.length || 0) / 34) * 16
+          }
+          renderItem={(milestone) => {
             const parentGoal = goals.find((g) => g.id === milestone.goalId);
             const parentDream = parentGoal ? dreams.find((d) => d.id === parentGoal.parentDreamId) : undefined;
             const statusInfo = STATUS_CONFIG[milestone.status] || STATUS_CONFIG.upcoming;
@@ -426,8 +437,8 @@ export default function MilestonesPage() {
                 </div>
               </article>
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* ── Modal Dialog for Create / Edit ── */}

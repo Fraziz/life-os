@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Inbox,
@@ -65,7 +65,8 @@ import type { BrainDumpClassification } from '@/utils/aiEngine';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import ContextualTourBanner from '@/components/tour/ContextualTourBanner';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -615,32 +616,6 @@ export default function InboxPage() {
     setIsBulkOpen(false);
   };
 
-  // Responsive shortest-column masonry tracking for varied-height cards
-  const listContainerRef = useRef<HTMLDivElement>(null);
-  const [masonryCols, setMasonryCols] = useState<number | null>(null);
-
-  useEffect(() => {
-    const el = listContainerRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-
-    const updateCols = (width: number) => {
-      if (width <= 0) return;
-      const gap = 14;
-      const minCardWidth = 275;
-      const nextCols = Math.max(1, Math.min(5, Math.floor((width + gap) / (minCardWidth + gap))));
-      setMasonryCols((prev) => (prev === nextCols ? prev : nextCols));
-    };
-
-    updateCols(el.getBoundingClientRect().width);
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        updateCols(entry.contentRect.width);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isLoaded, filterTab, isVaultUnlocked]);
-
   const currentList =
     filterTab === 'inbox'
       ? activeItems
@@ -652,40 +627,20 @@ export default function InboxPage() {
       ? doneItems
       : convertedItems;
 
-  const masonryColumns = useMemo(() => {
-    if (!masonryCols || masonryCols <= 1 || currentList.length <= 1) return null;
-
-    const estimateWeight = (item: InboxItem): number => {
-      const content = item.content || '';
-      const explicitLines = content.split('\n').length;
-      const wrappedLines = Math.ceil(content.length / 36);
-      const contentWeight = Math.max(explicitLines, wrappedLines) * 20;
-      const notesText = item.notes || '';
-      const notesWeight = notesText
-        ? 44 + Math.max(notesText.split('\n').length, Math.ceil(notesText.length / 34)) * 18
-        : 0;
-      const extra =
-        (item.reminderTime ? 24 : 0) +
-        (editingItemId === item.id || editingNotesItemId === item.id ? 140 : 0);
-      return 88 + contentWeight + notesWeight + extra;
-    };
-
-    const cols: { item: InboxItem; index: number }[][] = Array.from({ length: masonryCols }, () => []);
-    const heights = new Array<number>(masonryCols).fill(0);
-
-    currentList.forEach((item, index) => {
-      let shortestCol = 0;
-      for (let c = 1; c < masonryCols; c++) {
-        if (heights[c] < heights[shortestCol]) {
-          shortestCol = c;
-        }
-      }
-      cols[shortestCol].push({ item, index });
-      heights[shortestCol] += estimateWeight(item) + 14;
-    });
-
-    return cols;
-  }, [masonryCols, currentList, editingItemId, editingNotesItemId]);
+  const estimateInboxCardWeight = (item: InboxItem): number => {
+    const content = item.content || '';
+    const explicitLines = content.split('\n').length;
+    const wrappedLines = Math.ceil(content.length / 36);
+    const contentWeight = Math.max(explicitLines, wrappedLines) * 20;
+    const notesText = item.notes || '';
+    const notesWeight = notesText
+      ? 44 + Math.max(notesText.split('\n').length, Math.ceil(notesText.length / 34)) * 18
+      : 0;
+    const extra =
+      (item.reminderTime ? 24 : 0) +
+      (editingItemId === item.id || editingNotesItemId === item.id ? 140 : 0);
+    return 88 + contentWeight + notesWeight + extra;
+  };
 
   if (!isLoaded) {
     return <PageSkeleton variant="tasks" cardsCount={5} showMetrics={false} showControls={true} />;
@@ -1122,38 +1077,51 @@ export default function InboxPage() {
           </div>
         </section>
       ) : (
-        <div ref={listContainerRef} className={styles.inboxListWrap}>
-        {currentList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', width: '100%' }}>
-            <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
-              {filterTab === 'inbox'
-                ? 'Your head is completely clear! Nothing in the inbox.'
-                : filterTab === 'important'
-                ? 'No notes yet. Click the note icon on any thought or convert to Note to hide it here in your secret vault.'
-                : filterTab === 'done'
-                ? 'No already done ideas yet. Check any idea to mark it applied/done.'
-                : filterTab === 'reminders'
-                ? 'No active reminders.'
-                : filterTab === 'converted'
-                ? 'No converted ideas yet.'
-                : 'No items in this category.'}
-            </p>
-          </div>
-        ) : (() => {
-          const renderCard = (item: InboxItem, index: number) => {
+        <MasonryGrid
+          items={currentList}
+          getKey={(item) => item.id}
+          estimateWeight={estimateInboxCardWeight}
+          minColumnWidth={275}
+          maxColumns={5}
+          fallbackClassName={styles.inboxList}
+          emptyState={
+            <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', width: '100%' }}>
+              <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
+                {filterTab === 'inbox'
+                  ? 'Your head is completely clear! Nothing in the inbox.'
+                  : filterTab === 'important'
+                  ? 'No notes yet. Click the note icon on any thought or convert to Note to hide it here in your secret vault.'
+                  : filterTab === 'done'
+                  ? 'No already done ideas yet. Check any idea to mark it applied/done.'
+                  : filterTab === 'reminders'
+                  ? 'No active reminders.'
+                  : filterTab === 'converted'
+                  ? 'No converted ideas yet.'
+                  : 'No items in this category.'}
+              </p>
+            </div>
+          }
+          renderItem={(item, index) => {
             const isSelected = selectedItemIds.has(item.id);
+            const isSelectionActive = isSelectMode || selectedItemIds.size > 0;
             return (
             <article
               key={item.id}
               data-tour={index === 0 ? 'inbox-first-card' : undefined}
               className={`${styles.inboxItemCard} ${item.color && (styles as any)[`cardColor_${item.color}`] ? (styles as any)[`cardColor_${item.color}`] : ''}`}
+              onClick={(e) => {
+                if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+                  toggleSelectItem(item.id);
+                }
+              }}
               style={{
                 background: isSelected ? 'var(--color-surface-2)' : undefined,
                 boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                 borderColor: isSelected ? 'var(--color-accent)' : undefined,
                 position: openColorPickerId === item.id ? 'relative' : undefined,
                 zIndex: openColorPickerId === item.id ? 30 : undefined,
+                cursor: isSelectionActive ? 'pointer' : undefined,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
@@ -1307,6 +1275,7 @@ export default function InboxPage() {
                       <div
                         className={styles.itemNotesBox}
                         onClick={(e) => {
+                          if (isSelectMode || selectedItemIds.size > 0) return;
                           e.stopPropagation();
                           handleStartEditNotes(item);
                         }}
@@ -1759,27 +1728,8 @@ export default function InboxPage() {
               </div>
             </article>
             );
-          };
-
-          if (masonryColumns) {
-            return (
-              <div className={styles.inboxMasonry}>
-                {masonryColumns.map((col, colIdx) => (
-                  <div key={colIdx} className={styles.inboxMasonryCol}>
-                    {col.map(({ item, index }) => renderCard(item, index))}
-                  </div>
-                ))}
-              </div>
-            );
-          }
-
-          return (
-            <div className={styles.inboxList}>
-              {currentList.map((item, index) => renderCard(item, index))}
-            </div>
-          );
-        })()}
-        </div>
+          }}
+        />
       )}
 
       {/* ── Conversion Modal ── */}

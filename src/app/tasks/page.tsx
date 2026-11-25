@@ -47,7 +47,8 @@ import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import BulkActionBar from '@/components/ui/BulkActionBar';
-import SelectCheckbox from '@/components/ui/SelectCheckbox';
+import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/ui/SelectCheckbox';
+import MasonryGrid from '@/components/ui/MasonryGrid';
 import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
 import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 
@@ -454,16 +455,23 @@ export default function TasksPage() {
     const isHighlighted = highlightId === task.id;
 
     const isCompactSelected = selectedTaskIds.has(task.id);
+    const isSelectionActive = isSelectMode || selectedTaskIds.size > 0;
 
     return (
       <div
         key={task.id}
         id={`task-card-${task.id}`}
         className={styles.compactDoneRow}
+        onClick={(e) => {
+          if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+            toggleSelectTask(task.id);
+          }
+        }}
         style={{
           boxShadow: isCompactSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
           borderColor: isCompactSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
           background: isCompactSelected ? 'var(--color-surface-2)' : undefined,
+          cursor: isSelectionActive ? 'pointer' : undefined,
         }}
       >
         <SelectCheckbox
@@ -550,16 +558,23 @@ export default function TasksPage() {
 
     const isHighlighted = highlightId === task.id;
     const isSelected = selectedTaskIds.has(task.id);
+    const isSelectionActive = isSelectMode || selectedTaskIds.size > 0;
 
     return (
       <article
         key={task.id}
         id={`task-card-${task.id}`}
         className={`${styles.taskCard} ${isDone ? styles.doneCard : ''}`}
+        onClick={(e) => {
+          if (shouldToggleSelectionOnCardClick(e, isSelectionActive)) {
+            toggleSelectTask(task.id);
+          }
+        }}
         style={{
           background: isSelected ? 'var(--color-surface-2)' : cardBg,
           boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : isHighlighted ? '0 0 0 2px var(--color-accent)' : undefined,
           borderColor: isSelected ? 'var(--color-accent)' : isHighlighted ? 'var(--color-accent)' : undefined,
+          cursor: isSelectionActive ? 'pointer' : undefined,
         }}
       >
         <div className={styles.taskTopRow}>
@@ -1181,20 +1196,28 @@ export default function TasksPage() {
       </div>
 
       {taskLayout === 'notes' ? (
-        <div className={styles.notesMasonryGrid}>
-          {filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter).length === 0 ? (
-            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%', gridColumn: '1 / -1' }}>
+        <MasonryGrid
+          items={filteredTasks.filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter)}
+          getKey={(t) => t.id}
+          minColumnWidth={290}
+          maxColumns={5}
+          fallbackClassName={styles.notesMasonryGrid}
+          estimateWeight={(t) =>
+            110 +
+            Math.ceil((t.title?.length || 0) / 30) * 18 +
+            Math.ceil((t.description?.length || 0) / 34) * 16 +
+            (t.subtasks?.length || 0) * 26
+          }
+          emptyState={
+            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%' }}>
               No tasks match current filter
             </p>
-          ) : (
-            filteredTasks
-              .filter((t) => mobileColFilter === 'all' || t.status === mobileColFilter)
-              .map((task) => {
-                const col = STATUS_COLUMNS.find((c) => c.id === task.status) || STATUS_COLUMNS[0];
-                return renderTaskCard(task, col);
-              })
-          )}
-        </div>
+          }
+          renderItem={(task) => {
+            const col = STATUS_COLUMNS.find((c) => c.id === task.status) || STATUS_COLUMNS[0];
+            return renderTaskCard(task, col);
+          }}
+        />
       ) : (
         /* ── Board Grid: Backlog | To Do | Doing | Done ── */
         <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
