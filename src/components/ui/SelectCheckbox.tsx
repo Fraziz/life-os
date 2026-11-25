@@ -36,9 +36,9 @@ export default function SelectCheckbox({
       role="checkbox"
     >
       {checked ? (
-        <CheckSquare size={16} className={styles.iconChecked} />
+        <CheckSquare size={17} className={styles.iconChecked} />
       ) : (
-        <Square size={16} className={styles.iconUnchecked} />
+        <Square size={17} className={styles.iconUnchecked} />
       )}
     </button>
   );
