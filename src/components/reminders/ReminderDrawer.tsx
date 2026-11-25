@@ -10,6 +10,7 @@ import { useInbox } from '@/context/InboxContext';
 import { useProjects } from '@/context/ProjectContext';
 import { isDocVideoLesson } from '@/utils/videoLesson';
 import { playSuccessChime, triggerDopamineBurst } from '@/utils/soundAndDopamine';
+import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import type { ReminderItem } from '@/types';
 import {
   Bell,
@@ -116,7 +117,7 @@ const PRIORITY_BADGES: Record<
 
 interface UnifiedUserReminder {
   id: string;
-  type: 'book' | 'video' | 'task' | 'idea' | 'project';
+  type: 'routine' | 'book' | 'video' | 'task' | 'idea' | 'project';
   typeLabel: string;
   title: string;
   subtitle: string;
@@ -151,6 +152,7 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
   const { docs, toggleDocReminder } = useKnowledge();
   const { activeReminders: inboxReminders, toggleItemApplied, toggleItemReminder } = useInbox();
   const { activeProjects, toggleProjectReminder } = useProjects();
+  const dailyRoutine = useDailyRoutineReminder();
 
   const [activeTab, setActiveTab] = useState<'all' | 'reminders' | 'urgent' | 'unread'>('all');
 
@@ -167,9 +169,27 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Aggregate user reminders across all 5 areas (Books, Videos, Tasks, Ideas, Projects)
+  // Aggregate user reminders across all areas (Daily Routine, Tasks, Books, Videos, Ideas, Projects)
   const userReminders = useMemo<UnifiedUserReminder[]>(() => {
     const list: UnifiedUserReminder[] = [];
+
+    // 0. Recurring Daily Routine (resets automatically every new day)
+    if (dailyRoutine.isActiveToday) {
+      list.push({
+        id: 'daily-routine-today',
+        type: 'routine',
+        typeLabel: 'Daily Routine',
+        title: 'Daily Routine',
+        subtitle: dailyRoutine.subtitle,
+        href: '/routine',
+        icon: <Clock size={16} strokeWidth={2} />,
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        border: 'rgba(245, 158, 11, 0.28)',
+        onFinish: dailyRoutine.markDoneToday,
+        onClearReminder: dailyRoutine.markDoneToday,
+      });
+    }
 
     // 1. Tasks
     tasks
@@ -251,7 +271,7 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
       });
 
     return list;
-  }, [tasks, docs, inboxReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleDocReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+  }, [dailyRoutine.isActiveToday, dailyRoutine.subtitle, dailyRoutine.markDoneToday, tasks, docs, inboxReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleDocReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
 
   const filteredNotifications = useMemo(() => {
     switch (activeTab) {

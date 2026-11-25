@@ -33,6 +33,7 @@ import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { isDocVideoLesson } from '@/utils/videoLesson';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import type { AppTheme } from '@/types';
 import styles from './RightSidebar.module.css';
 
@@ -47,17 +48,34 @@ export default function RightSidebar() {
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
   const { activeReminders: inboxReminders, toggleItemApplied } = useInbox();
   const { docs, toggleDocReminder } = useKnowledge();
+  const dailyRoutine = useDailyRoutineReminder();
 
   const allSidebarReminders = React.useMemo(() => {
     const list: Array<{
       id: string;
-      type: 'book' | 'video' | 'task' | 'idea' | 'project';
+      type: 'routine' | 'book' | 'video' | 'task' | 'idea' | 'project';
       typeLabel: string;
       title: string;
       subtitle?: string;
       href: string;
       onDone: () => void;
     }> = [];
+
+    // 0. Recurring Daily Routine (returns automatically every new day)
+    if (dailyRoutine.isActiveToday) {
+      list.push({
+        id: 'daily-routine-today',
+        type: 'routine',
+        typeLabel: 'ROUTINE',
+        title: 'Daily Routine',
+        subtitle: dailyRoutine.subtitle,
+        href: '/routine',
+        onDone: () => {
+          dailyRoutine.markDoneToday();
+          playSuccessChime();
+        },
+      });
+    }
 
     // 1. Books & Videos marked as reminder
     docs
@@ -141,6 +159,9 @@ export default function RightSidebar() {
 
     return list;
   }, [
+    dailyRoutine.isActiveToday,
+    dailyRoutine.subtitle,
+    dailyRoutine.markDoneToday,
     docs,
     tasks,
     inboxReminders,

@@ -19,7 +19,20 @@ import {
 } from 'lucide-react';
 import MasonryGrid from '@/components/ui/MasonryGrid';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import {
+  DEFAULT_DAILY_ROUTINE,
+  ROUTINE_STORAGE_KEY,
+  PROGRESS_STORAGE_KEY,
+  getTodayDateKey,
+  notifyDailyRoutineUpdated,
+  clearDailyRoutineReminderDoneToday,
+  type RoutineBlock,
+  type DailyProgressState,
+} from '@/utils/dailyRoutineReminder';
 import styles from './DailyRoutineRoadmap.module.css';
+
+export type { RoutineBlock };
+export { DEFAULT_DAILY_ROUTINE };
 
 export interface RoutinePaletteItem {
   id: string;
@@ -46,18 +59,6 @@ const PHASE_RGB_LIST = [
   '129, 140, 248', // Evening: calm indigo
 ];
 
-export interface RoutineBlock {
-  id: string;
-  timeRange: string;
-  title: string;
-  subLabel?: string;
-  steps: string[];
-  color?: string;
-  /** Start and end minutes from midnight (0-1440) for highlighting the active block. */
-  startMinute?: number;
-  endMinute?: number;
-}
-
 function getBlockPalette(block: RoutineBlock, index: number): RoutinePaletteItem {
   if (block.color) {
     const byId = ROUTINE_PALETTE.find((p) => p.id === block.color);
@@ -68,134 +69,6 @@ function getBlockPalette(block: RoutineBlock, index: number): RoutinePaletteItem
     return ROUTINE_PALETTE[defaultIdx % ROUTINE_PALETTE.length];
   }
   return ROUTINE_PALETTE[index % ROUTINE_PALETTE.length];
-}
-
-interface DailyProgressState {
-  date: string;
-  completedStepKeys: string[];
-  completedBlockIds: string[];
-}
-
-const ROUTINE_STORAGE_KEY = 'life_os_daily_routine_blocks_v1';
-const PROGRESS_STORAGE_KEY = 'life_os_daily_routine_progress_v1';
-
-export const DEFAULT_DAILY_ROUTINE: RoutineBlock[] = [
-  {
-    id: 'routine-1',
-    timeRange: '7:00 – 8:00 AM',
-    title: 'Morning reset',
-    startMinute: 7 * 60,
-    endMinute: 8 * 60,
-    steps: [
-      'Wake up and make your bed',
-      'Brush teeth, wash face',
-      'Drink water and eat breakfast',
-      'Avoid scrolling on your phone',
-    ],
-  },
-  {
-    id: 'routine-2',
-    timeRange: '8:00 – 9:00 AM',
-    title: 'Exercise',
-    startMinute: 8 * 60,
-    endMinute: 9 * 60,
-    steps: [
-      'Push-ups, squats, pull-ups or walking',
-      'Stretch',
-      'Build strength consistently',
-    ],
-  },
-  {
-    id: 'routine-3',
-    timeRange: '9:00 – 10:00 AM',
-    title: 'English practice',
-    startMinute: 9 * 60,
-    endMinute: 10 * 60,
-    steps: [
-      'Read one short passage',
-      'Learn 3 useful expressions',
-      'Speak out loud for 5–10 minutes',
-      'Explain something in your own words',
-    ],
-  },
-  {
-    id: 'routine-4',
-    timeRange: '10:00 – 12:00 PM',
-    title: 'Main priority',
-    startMinute: 10 * 60,
-    endMinute: 12 * 60,
-    steps: [
-      'Capstone, studies, or important responsibilities',
-      'Focus on one task at a time',
-    ],
-  },
-  {
-    id: 'routine-5',
-    timeRange: '1:00 – 2:00 PM',
-    title: 'Guitar practice',
-    startMinute: 13 * 60,
-    endMinute: 14 * 60,
-    steps: [
-      '10 minutes: technique',
-      '15 minutes: chords and progressions',
-      '20 minutes: actual songs',
-      '15 minutes: play without tutorials',
-    ],
-  },
-  {
-    id: 'routine-6',
-    timeRange: '2:00 – 4:00 PM',
-    title: 'Build useful skills',
-    subLabel: 'Rotate between:',
-    startMinute: 14 * 60,
-    endMinute: 16 * 60,
-    steps: [
-      'Business and money',
-      'Technology and projects',
-      'Practical knowledge',
-    ],
-  },
-  {
-    id: 'routine-7',
-    timeRange: '4:00 – 5:00 PM',
-    title: 'Personal time',
-    startMinute: 16 * 60,
-    endMinute: 17 * 60,
-    steps: ['Walk, relax, socialize or enjoy a hobby.'],
-  },
-  {
-    id: 'routine-8',
-    timeRange: '7:00 – 8:00 PM',
-    title: 'Learning and reflection',
-    startMinute: 19 * 60,
-    endMinute: 20 * 60,
-    steps: [
-      'Read about philosophy or Stoicism',
-      'Review what you learned',
-      'Write down your thoughts',
-    ],
-  },
-  {
-    id: 'routine-9',
-    timeRange: '8:00 – 9:00 PM',
-    title: 'Prepare for tomorrow',
-    startMinute: 20 * 60,
-    endMinute: 21 * 60,
-    steps: [
-      'Organize your things',
-      'Review unfinished tasks',
-      "Write tomorrow's most important task",
-      'Sleep at a consistent time',
-    ],
-  },
-];
-
-function getTodayDateKey(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 const GRAPH_NODE_W = 296;
@@ -299,6 +172,7 @@ export default function DailyRoutineRoadmap() {
     try {
       localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
     } catch {}
+    notifyDailyRoutineUpdated();
   };
 
   const persistProgress = (next: DailyProgressState) => {
@@ -306,6 +180,7 @@ export default function DailyRoutineRoadmap() {
     try {
       localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(next));
     } catch {}
+    notifyDailyRoutineUpdated();
   };
 
   const toggleBlockDone = (block: RoutineBlock) => {
@@ -367,6 +242,7 @@ export default function DailyRoutineRoadmap() {
       completedBlockIds: [],
       completedStepKeys: [],
     });
+    clearDailyRoutineReminderDoneToday();
   };
 
   const handleRestoreDefaultRoutine = () => {

@@ -42,6 +42,7 @@ import { useHabits } from '@/context/HabitContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst, playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
+import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import { formatTagLabel, getTagCategory } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
 import LifeDomainPill from '@/components/layout/LifeDomainPill';
@@ -71,6 +72,7 @@ export default function TodayDashboardContent() {
   const { activeGoals, goals } = useGoals();
   const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
+  const dailyRoutine = useDailyRoutineReminder();
   const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { docs, addDoc } = useKnowledge();
 
@@ -308,11 +310,11 @@ export default function TodayDashboardContent() {
 
   const [showCompleted, setShowCompleted] = useState(true);
 
-  // ── Unified Today's Reminders (Books, Videos, Tasks, Ideas, Projects) ──
+  // ── Unified Today's Reminders (Daily Routine, Tasks, Ideas, Projects) ──
   const todayReminders = useMemo(() => {
     const list: Array<{
       id: string;
-      type: 'task' | 'book' | 'video' | 'idea' | 'project';
+      type: 'routine' | 'task' | 'book' | 'video' | 'idea' | 'project';
       typeLabel: string;
       title: string;
       subtitle?: string;
@@ -320,6 +322,20 @@ export default function TodayDashboardContent() {
       onFinish?: () => void;
       onClearReminder: () => void;
     }> = [];
+
+    // 0. Recurring Daily Routine reminder (returns automatically every new day)
+    if (dailyRoutine.isActiveToday) {
+      list.push({
+        id: 'daily-routine-today',
+        type: 'routine',
+        typeLabel: 'DAILY ROUTINE',
+        title: 'Daily Routine',
+        subtitle: dailyRoutine.subtitle,
+        href: '/routine',
+        onFinish: dailyRoutine.markDoneToday,
+        onClearReminder: dailyRoutine.markDoneToday,
+      });
+    }
 
     // 1. Tasks marked as reminder
     tasks
@@ -369,7 +385,7 @@ export default function TodayDashboardContent() {
       });
 
     return list;
-  }, [tasks, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+  }, [dailyRoutine.isActiveToday, dailyRoutine.subtitle, dailyRoutine.markDoneToday, tasks, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
 
   const [addingTask, setAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -803,6 +819,7 @@ export default function TodayDashboardContent() {
                     )}
 
                     <span className={`${styles.reminderTypeBadge} ${styles[`typeBadge_${rem.type}`] || ''}`}>
+                      {rem.type === 'routine' && <Clock size={10} />}
                       {rem.type === 'book' && <BookOpen size={10} />}
                       {rem.type === 'video' && <Video size={10} />}
                       {rem.type === 'task' && <CheckSquare size={10} />}

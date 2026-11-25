@@ -2809,6 +2809,7 @@ a.summaryPill:hover {
   flex-shrink: 0;
 }
 
+.typeBadge_routine,
 .typeBadge_book,
 .typeBadge_video,
 .typeBadge_task,

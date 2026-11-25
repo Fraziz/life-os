@@ -10,6 +10,7 @@ import { useMilestones } from './MilestoneContext';
 import { useHabits } from './HabitContext';
 import { useCalendar } from './CalendarContext';
 import { useReview } from './ReviewContext';
+import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 
 const SNOOZE_STORAGE_KEY = 'life_os_snoozed_reminders_v1';
 const DISMISSED_STORAGE_KEY = 'life_os_dismissed_reminders_v1';
@@ -55,6 +56,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   const { habits, isHabitCompletedOnDate } = useHabits();
   const { scheduledBlocks } = useCalendar();
   const { reviews, currentWeekStats } = useReview();
+  const dailyRoutine = useDailyRoutineReminder();
 
   const [snoozedMap, setSnoozedMap] = useState<Record<string, string>>({});
   const [dismissedSet, setDismissedSet] = useState<Set<string>>(new Set());
@@ -95,6 +97,24 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     const list: ReminderItem[] = [];
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
+
+    // 0. Recurring Daily Routine Reminder (reappears automatically every day)
+    if (dailyRoutine.isActiveToday) {
+      const routineNotifId = `daily-routine-${dailyRoutine.today}`;
+      list.push({
+        id: routineNotifId,
+        type: 'habit',
+        title: 'Daily Routine',
+        message: dailyRoutine.subtitle,
+        entityId: 'daily-routine',
+        href: '/routine',
+        timeStr: 'Daily',
+        priority: 'normal',
+        isRead: readSet.has(routineNotifId),
+        isDismissed: dismissedSet.has(routineNotifId),
+        createdAt: dailyRoutine.today,
+      });
+    }
 
     // 1. Task Reminders & Deadlines
     if (notifConfig.taskReminders) {
@@ -252,6 +272,9 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     });
   }, [
     notifConfig,
+    dailyRoutine.isActiveToday,
+    dailyRoutine.today,
+    dailyRoutine.subtitle,
     tasks,
     milestones,
     projects,
