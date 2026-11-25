@@ -351,12 +351,9 @@
 }
 
 .bridgeGroup {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 2px;
-  flex-wrap: wrap;
+  gap: 4px;
   opacity: 0;
   transition: opacity var(--transition-fast, 0.15s ease);
 }
@@ -372,60 +369,24 @@
   }
 }
 
-.bridgeLabel {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
 .bridgeBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .bridgeBtn:hover {
+  background: var(--color-surface-2);
   color: var(--color-text);
-  border-color: var(--color-border-hover, var(--color-accent));
-  transform: translateY(-1px);
-}
-
-.bridgeBtnGoal {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
-}
-
-.bridgeBtnGoal:hover {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: rgba(245, 158, 11, 0.6);
-  color: var(--color-text);
-}
-
-.bridgeBtnTask {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #34d399;
-}
-
-.bridgeBtnTask:hover {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.6);
-  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 
@@ -599,56 +560,47 @@
   background: rgba(248, 113, 113, 0.1);
 }
 
+.dreamTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .dreamTitle {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   line-height: 1.35;
+  margin: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .dreamDesc {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--color-text-muted);
-  line-height: 1.45;
-  margin-top: 2px;
+  line-height: 1.48;
+  margin: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
-.whyBanner {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.whyLabel {
-  font-size: 9.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-faint);
-}
-
-.whyText {
-  font-size: 11.5px;
+.whyQuote {
+  font-size: 12px;
   color: var(--color-text-muted);
-  font-style: italic;
-  line-height: 1.4;
+  line-height: 1.48;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-subtle);
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .notesText {
   font-size: 11.5px;
-  color: var(--color-text-muted);
-  line-height: 1.4;
+  color: var(--color-text-faint);
+  line-height: 1.45;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -657,22 +609,13 @@
   word-break: break-word;
 }
 
-.notesLabel {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-right: 4px;
-}
-
-/* ── Momentum / Progress Rollup ── */
+/* ── Minimal Progress Line ── */
 .progressSection {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 6px;
-  padding-top: 6px;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 10px;
   border-top: 1px solid var(--color-border-subtle);
 }
 
@@ -683,12 +626,6 @@
   font-size: 11px;
 }
 
-.progressLabelRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .progressLabel {
   font-size: 11px;
   font-weight: 500;
@@ -697,28 +634,14 @@
 
 .progressValue {
   font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.autoBadge {
-  font-size: 10px;
   font-weight: 600;
-  color: var(--color-accent);
-  background: var(--color-surface-2);
-  padding: 1.5px 6px;
-  border-radius: var(--radius-sm, 6px);
-  border: 1px solid var(--color-border-subtle);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .progressBarTrack {
   width: 100%;
-  height: 5px;
+  height: 3px;
   background: var(--color-surface-2);
   border-radius: 99px;
   overflow: hidden;
@@ -735,19 +658,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-top: auto;
-  padding-top: 4px;
+  padding-top: 2px;
   font-size: 11px;
 }
 
-.lifeAreaChip {
+.lifeAreaText {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 7px;
-  border-radius: 6px;
+  gap: 6px;
   font-size: 11px;
   font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.areaDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.footerRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .generalArea {
@@ -757,9 +695,8 @@
 
 .targetDate {
   color: var(--color-text-faint);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 /*  Modal Overlay & Card  */

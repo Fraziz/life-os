@@ -6,12 +6,10 @@ import { useGoals } from '@/context/GoalContext';
 import { useTasks } from '@/context/TaskContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Dream, DreamStatus } from '@/types';
-import { AreaIcon } from '@/app/areas/page';
 import {
   Plus,
   Edit2,
   Trash2,
-  Calendar,
   Heart,
   CheckCircle2,
   X,
@@ -430,25 +428,24 @@ export default function DreamsPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className={styles.dreamTitleGroup}>
                     <h3 className={styles.dreamTitle}><AutoLinkText text={d.title} /></h3>
                     {d.description && <p className={styles.dreamDesc}><AutoLinkText text={d.description} /></p>}
                   </div>
 
                   {d.whyItMatters && (
-                    <div className={styles.whyBanner}>
-                      <span className={styles.whyLabel}>Why it matters</span>
-                      <p className={styles.whyText}>&ldquo;<AutoLinkText text={d.whyItMatters} />&rdquo;</p>
-                    </div>
+                    <p className={styles.whyQuote}>
+                      <AutoLinkText text={d.whyItMatters} />
+                    </p>
                   )}
 
                   {d.notes && (
                     <p className={styles.notesText}>
-                      <span className={styles.notesLabel}>Notes:</span> <AutoLinkText text={d.notes} />
+                      <AutoLinkText text={d.notes} />
                     </p>
                   )}
 
-                  {/* ── Momentum / Progress Section ── */}
+                  {/* ── Minimal Progress Line ── */}
                   {(() => {
                     const linkedGoals = goals.filter((g) => g.parentDreamId === d.id);
                     const completedGoals = linkedGoals.filter((g) => g.status === 'completed' || g.progress === 100);
@@ -460,17 +457,11 @@ export default function DreamsPage() {
                     return (
                       <div className={styles.progressSection}>
                         <div className={styles.progressHeader}>
-                          <div className={styles.progressLabelRow}>
-                            <span className={styles.progressLabel}>Momentum</span>
-                            {isAutomated && (
-                              <span
-                                className={styles.autoBadge}
-                                title={`Auto-synced: ${completedGoals.length}/${linkedGoals.length} goals achieved`}
-                              >
-                                Auto ({completedGoals.length}/${linkedGoals.length} goals)
-                              </span>
-                            )}
-                          </div>
+                          <span className={styles.progressLabel}>
+                            {isAutomated
+                              ? `${completedGoals.length}/${linkedGoals.length} goals`
+                              : 'Progress'}
+                          </span>
                           <span className={styles.progressValue}>{computedMomentum}%</span>
                         </div>
                         <div className={styles.progressBarTrack}>
@@ -485,48 +476,38 @@ export default function DreamsPage() {
 
                   <div className={styles.cardFooter}>
                     {area ? (
-                      <span
-                        className={styles.lifeAreaChip}
-                        style={{
-                          backgroundColor: `${area.color}15`,
-                          color: area.color,
-                          border: `1px solid ${area.color}35`,
-                        }}
-                      >
-                        <AreaIcon name={area.icon} size={12} /> {area.name}
+                      <span className={styles.lifeAreaText}>
+                        <span className={styles.areaDot} style={{ background: area.color }} />
+                        <span>{area.name}</span>
                       </span>
                     ) : (
-                      <span className={styles.generalArea}>General Life</span>
+                      <span className={styles.generalArea}>General</span>
                     )}
 
-                    {d.targetDate && (
-                      <span className={styles.targetDate}>
-                        <Calendar size={12} /> {d.targetDate}
-                      </span>
-                    )}
-                  </div>
+                    <div className={styles.footerRight}>
+                      {d.targetDate && (
+                        <span className={styles.targetDate}>{d.targetDate}</span>
+                      )}
 
-                  {/* ── 1-Click ADHD Bridge (Dream ➔ Goal or Task) ── */}
-                  <div className={styles.bridgeGroup}>
-                    <span className={styles.bridgeLabel}>
-                      Next step
-                    </span>
-                    <button
-                      type="button"
-                      className={`${styles.bridgeBtn} ${styles.bridgeBtnGoal}`}
-                      onClick={() => openBridge('goal', d)}
-                      title="Create a 90-day Goal directly from this Dream"
-                    >
-                      + Goal
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.bridgeBtn} ${styles.bridgeBtnTask}`}
-                      onClick={() => openBridge('task', d)}
-                      title="Create a 15-minute starter action task for this Dream"
-                    >
-                      + Task
-                    </button>
+                      <div className={styles.bridgeGroup}>
+                        <button
+                          type="button"
+                          className={styles.bridgeBtn}
+                          onClick={() => openBridge('goal', d)}
+                          title="Create a Goal from this Dream"
+                        >
+                          + Goal
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.bridgeBtn}
+                          onClick={() => openBridge('task', d)}
+                          title="Create a starter Task for this Dream"
+                        >
+                          + Task
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </article>
