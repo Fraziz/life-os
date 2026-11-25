@@ -16,7 +16,6 @@ import {
   RotateCcw,
   Clock,
   Ban,
-  Sparkles,
   X,
   Target,
   Folder,

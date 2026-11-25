@@ -5,7 +5,6 @@ import {
   Sun,
   Moon,
   X,
-  Sparkles,
   RefreshCw,
   Copy,
   Check,

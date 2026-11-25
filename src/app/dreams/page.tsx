@@ -17,7 +17,6 @@ import {
   CloudSun,
   Target,
   CheckSquare,
-  Sparkles,
   Zap,
   ArrowRight,
 } from 'lucide-react';

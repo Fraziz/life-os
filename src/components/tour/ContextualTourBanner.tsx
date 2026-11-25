@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useTour } from '@/context/TourContext';
-import { Sparkles } from 'lucide-react';
 import styles from './ContextualTourBanner.module.css';
 
 interface ContextualTourBannerProps {
@@ -29,7 +28,6 @@ export default function ContextualTourBanner({ tourId, featureName }: Contextual
   return (
     <div className={styles.banner} role="region" aria-label="Feature Guide Prompt">
       <div className={styles.leftGroup}>
-        <Sparkles size={14} className={styles.icon} />
         <span>
           New here? Take a quick tour of {featureName || 'this feature'}.
         </span>

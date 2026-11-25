@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Circle,
   Flag,
-  Sparkles,
   Edit2,
   Plus,
   Trash2,
@@ -1065,7 +1064,7 @@ export default function LifeDestinationRoadmap() {
 
                   {isCurrent && (
                     <span className={styles.inFocusBadge}>
-                      <Sparkles size={9} /> You Are Here
+                      You Are Here
                     </span>
                   )}
 
@@ -1131,7 +1130,7 @@ export default function LifeDestinationRoadmap() {
                       </>
                     ) : selectedNode.status === 'current' ? (
                       <>
-                        <Sparkles size={13} />
+                        <Circle size={13} />
                         <span>Current Focus</span>
                       </>
                     ) : (

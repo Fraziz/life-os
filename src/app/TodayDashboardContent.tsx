@@ -25,7 +25,6 @@ import {
   CheckSquare,
   Square,
   BookOpen,
-  Sparkles,
   Bell,
   Dumbbell,
   Video,
@@ -1450,7 +1449,6 @@ export default function TodayDashboardContent() {
                   handleOpenBriefing('evening');
                 }}
               >
-                <Sparkles size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
                 AI Evening Reflection
               </button>
               <button

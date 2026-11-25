@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, X, Check, Globe, Sparkles, BookMarked } from 'lucide-react';
+import { BookOpen, X, Check, Globe, BookMarked } from 'lucide-react';
 import styles from './AddManhwaModal.module.css';
 import { parseManhwaUrl, type ParsedManhwaInfo } from '@/utils/manhwa';
 import type { DocumentReadStatus } from '@/types';

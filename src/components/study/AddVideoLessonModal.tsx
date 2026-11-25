@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Video, X, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Video, X, Check, AlertCircle } from 'lucide-react';
 import styles from './AddVideoLessonModal.module.css';
 import { parseUniversalVideoUrl, type ParsedVideoInfo } from '@/utils/universalVideo';
 

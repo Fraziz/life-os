@@ -39,7 +39,6 @@ import {
   FileUp,
   Loader2,
   BookMarked,
-  Sparkles,
   Undo2,
   Redo2,
   Bold,
@@ -745,11 +744,7 @@ function MarkdownToolbar({
           title="Smart Auto Format: analyze structure and format into a professional book or study guide (manual click only)"
           style={{ marginLeft: 'auto' }}
         >
-          {isAutoFormatting ? (
-            <Loader2 size={11} className={styles.spin} />
-          ) : (
-            <Sparkles size={11} style={{ color: 'var(--color-accent-light)' }} />
-          )}
+          {isAutoFormatting && <Loader2 size={11} className={styles.spin} />}
           <span>{isAutoFormatting ? 'Analyzing...' : 'Auto Format'}</span>
         </button>
       </div>
@@ -5460,7 +5455,6 @@ export default function KnowledgePage() {
                         onClick={() => setAiModalOpen(true)}
                         title="AI Tools: Auto-Format, Summary, Study Quiz, Ask AI"
                       >
-                        <Sparkles size={13} style={{ color: 'var(--color-accent-light)' }} />
                         <span>AI</span>
                       </button>
 
@@ -6742,7 +6736,6 @@ export default function KnowledgePage() {
           <div className={styles.formatReviewModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.formatReviewHeader}>
               <div className={styles.formatReviewTitleRow}>
-                <Sparkles size={20} style={{ color: 'var(--color-accent)' }} />
                 <div>
                   <h3 className={styles.formatReviewTitle}>Smart Auto Format Review</h3>
                   <p className={styles.formatReviewSubtitle}>

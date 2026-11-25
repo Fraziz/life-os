@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Keyboard, X, Search, Compass, Headphones, Sparkles, Plus } from 'lucide-react';
+import { Keyboard, X, Search, Compass, Headphones, Plus } from 'lucide-react';
 import styles from './KeyboardShortcutsModal.module.css';
 
 interface KeyboardShortcutsModalProps {

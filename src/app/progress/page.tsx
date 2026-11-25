@@ -12,7 +12,6 @@ import {
   CheckSquare,
   Repeat,
   Headphones,
-  Sparkles,
   ArrowRight,
   ListFilter,
   Flame,

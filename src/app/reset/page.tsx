@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   RotateCcw,
-  Sparkles,
   Calendar,
   Clock,
   CheckCircle2,
@@ -156,7 +155,6 @@ export default function ResetPage() {
       {/* ── Compassionate Philosophy Banner ── */}
       <section className={styles.philosophyBanner}>
         <div className={styles.bannerQuoteArea}>
-          <Sparkles size={24} style={{ color: 'var(--color-accent-light)', flexShrink: 0 }} />
           <div>
             <h2 className={styles.bannerQuote}>
               &ldquo;Your plan didn&apos;t work. Let&apos;s make a better one.&rdquo;

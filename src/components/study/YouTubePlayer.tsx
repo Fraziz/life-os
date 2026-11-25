@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ExternalLink, AlertCircle, Copy, Check, Maximize2, Sparkles } from 'lucide-react';
+import { ExternalLink, AlertCircle, Copy, Check, Maximize2 } from 'lucide-react';
 import styles from './YouTubePlayer.module.css';
 import { parseUniversalVideoUrl, extractYouTubeVideoDetails } from '@/utils/universalVideo';
 
@@ -182,7 +182,6 @@ export default function YouTubePlayer({
       {isSocialPlatform && (
         <div className={styles.playerTipBanner}>
           <div className={styles.playerTipText}>
-            <Sparkles size={13} style={{ color: 'var(--color-accent-light)' }} />
             <span>If {platformName} shows &ldquo;Unavailable&rdquo; in the frame, tap Pop-out to watch with your logged-in account.</span>
           </div>
           <button type="button" className={styles.playerTipBtn} onClick={handlePopout}>

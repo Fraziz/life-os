@@ -21,7 +21,6 @@ import {
   ArrowRight,
   X,
   RotateCcw,
-  Sparkles,
   ChevronRight,
   ChevronDown,
   ListTodo,

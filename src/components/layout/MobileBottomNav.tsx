@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, Inbox, Headphones, CheckSquare, Compass, BookOpen } from 'lucide-react';
+import { Home, Inbox, CheckSquare, Compass, BookOpen } from 'lucide-react';
 import styles from './MobileBottomNav.module.css';
 
 interface MobileBottomNavProps {
@@ -14,7 +14,7 @@ export default function MobileBottomNav({ onOpenNextAction }: MobileBottomNavPro
   const pathname = usePathname();
 
   const navItems = [
-    { label: 'Today', href: '/', icon: Sparkles },
+    { label: 'Today', href: '/', icon: Home },
     { label: 'Inbox', href: '/inbox', icon: Inbox },
     { label: 'Action', isCenterAction: true, icon: Compass },
     { label: 'Knowledge', href: '/knowledge', icon: BookOpen },

@@ -28,7 +28,6 @@ import {
   RotateCcw,
   TrendingUp,
   Zap,
-  Sparkles,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -137,7 +136,7 @@ export default function Sidebar({
     }
     try {
       localStorage.setItem('life_os_sidebar_pinned', String(nextPinned));
-    } catch {}
+    } catch { }
   };
 
   const handleNavClick = () => {
@@ -221,9 +220,8 @@ export default function Sidebar({
                       <span className={styles.sectionTitle}>{section.label}</span>
                       <ChevronDown
                         size={13}
-                        className={`${styles.moreChevron} ${
-                          moreOpen ? styles.moreChevronOpen : ''
-                        }`}
+                        className={`${styles.moreChevron} ${moreOpen ? styles.moreChevronOpen : ''
+                          }`}
                       />
                     </button>
                   ) : (
@@ -250,9 +248,8 @@ export default function Sidebar({
                             prefetch={true}
                             onClick={handleNavClick}
                             data-tour={`nav-${item.id}`}
-                            className={`${styles.navItem} ${
-                              isActive ? styles.activeItem : ''
-                            }`}
+                            className={`${styles.navItem} ${isActive ? styles.activeItem : ''
+                              }`}
                             title={!isExpanded ? item.label : undefined}
                           >
                             <span className={styles.navIconBox}>
@@ -318,9 +315,8 @@ export default function Sidebar({
 
             <ChevronDown
               size={14}
-              className={`${styles.userChevron} ${
-                profileMenuOpen ? styles.userChevronOpen : ''
-              }`}
+              className={`${styles.userChevron} ${profileMenuOpen ? styles.userChevronOpen : ''
+                }`}
             />
           </div>
 
@@ -343,7 +339,7 @@ export default function Sidebar({
                   toggleSimpleMode();
                 }}
               >
-                <Sparkles size={14} color="var(--color-accent)" />
+                <Zap size={14} color="var(--color-accent)" />
                 <span>{settings.simpleMode ? 'Switch to Full Mode' : 'Switch to Simple Mode'}</span>
               </button>
               <button

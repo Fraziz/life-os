@@ -15,7 +15,6 @@ import {
   Edit2,
   Trash2,
   Calendar,
-  Sparkles,
   Target,
   Flag,
   X,

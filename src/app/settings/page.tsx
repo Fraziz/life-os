@@ -31,7 +31,6 @@ import {
   Eye,
   EyeOff,
   X,
-  Sparkles,
   Copy,
   Plus,
   Key,
@@ -1427,7 +1426,6 @@ export default function SettingsPage() {
                   }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
                         <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Main System Tour</strong>
                       </div>
                       <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>

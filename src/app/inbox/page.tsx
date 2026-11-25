@@ -15,7 +15,6 @@ import {
   FileText,
   Clock,
   RotateCcw,
-  Sparkles,
   Zap,
   Layers,
   ArrowRight,
@@ -388,7 +387,7 @@ export default function InboxPage() {
       case 'goal': return <Target size={16} style={{ color: '#7c6fff' }} />;
       case 'project': return <Folder size={16} style={{ color: '#3b82f6' }} />;
       case 'dream': return <CloudSun size={16} style={{ color: '#f59e0b' }} />;
-      case 'idea': return <Sparkles size={16} style={{ color: '#ec4899' }} />;
+      case 'idea': return <Lightbulb size={16} style={{ color: '#ec4899' }} />;
       default: return <FileText size={16} style={{ color: '#64748b' }} />;
     }
   };
@@ -1489,7 +1488,6 @@ export default function InboxPage() {
                               onClick={() => handleActivateGroqKey(item.content)}
                               title="Set this Groq API Key as the active key in your Sariling Mundo"
                             >
-                              <Sparkles size={11} />
                               {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
                                 ? '✓ Active Groq Key'
                                 : '⚡ Set as Groq Key'}
@@ -1943,7 +1941,6 @@ export default function InboxPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} style={{ color: '#818cf8' }} />
                 <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
                   Groq AI Thought Breakdown
                 </h3>

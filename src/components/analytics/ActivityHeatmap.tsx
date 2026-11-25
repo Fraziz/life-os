@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useTasks } from '@/context/TaskContext';
 import { useHabits } from '@/context/HabitContext';
-import { Sparkles, Calendar, Flame } from 'lucide-react';
+import { Calendar, Flame } from 'lucide-react';
 import styles from './ActivityHeatmap.module.css';
 
 interface ActivityHeatmapProps {

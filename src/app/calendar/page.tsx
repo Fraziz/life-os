@@ -13,7 +13,6 @@ import {
   Trash2,
   X,
   Target,
-  Sparkles,
   Layers,
   RotateCcw,
   ExternalLink,

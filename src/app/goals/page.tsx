@@ -16,7 +16,6 @@ import {
   Edit2,
   Trash2,
   Calendar,
-  Sparkles,
   CloudSun,
   CheckCircle2,
   X,
