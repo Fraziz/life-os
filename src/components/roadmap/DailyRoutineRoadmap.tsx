@@ -667,101 +667,93 @@ export default function DailyRoutineRoadmap() {
 
   return (
     <div className={styles.routineContainer}>
-      <div className={styles.routineTopWrap}>
-        {/* ── Summary Header ── */}
-        <header className={styles.summaryHeader}>
-          <div className={styles.summaryLeft}>
-            <div className={styles.summaryTitleRow}>
-              <h2 className={styles.summaryTitle}>My Daily Routine</h2>
-              <span className={styles.schedulePill}>
-                <Clock size={11} />
-                Suggested schedule: 7:00 AM – 9:00 PM
+      {/* ── Minimalist Top Bar (Matches Roadmap & System Tab Headers) ── */}
+      <header className={styles.summaryHeader}>
+        <div className={styles.summaryLeft}>
+          <h1 className={styles.summaryTitle}>Daily Routine</h1>
+          <span className={styles.schedulePill}>
+            <Clock size={11} />
+            7:00 AM – 9:00 PM
+          </span>
+        </div>
+
+        <div className={styles.summaryRight}>
+          <div className={styles.progressBox}>
+            <div className={styles.progressTextRow}>
+              <span>
+                {completedCount}/{blocks.length} ({completionPct}%)
               </span>
             </div>
-            <p className={styles.summarySubtitle}>
-              Check off each step or block to power up the flow through your day. Resets automatically every morning.
-            </p>
+            <div className={styles.progressTrack}>
+              <div
+                className={styles.progressFill}
+                style={{ transform: `scaleX(${completionPct / 100})` }}
+              />
+            </div>
           </div>
 
-          <div className={styles.summaryRight}>
-            <div className={styles.progressBox}>
-              <div className={styles.progressTextRow}>
-                <span>Today&apos;s Progress</span>
-                <span>
-                  {completedCount} / {blocks.length} ({completionPct}%)
-                </span>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressFill}
-                  style={{ transform: `scaleX(${completionPct / 100})` }}
-                />
-              </div>
-            </div>
+          <div className={styles.layoutToggle} role="group" aria-label="Routine view layout">
+            <button
+              type="button"
+              className={`${styles.layoutBtn} ${layoutMode === 'graph' ? styles.layoutBtnActive : ''}`}
+              onClick={() => setLayoutMode('graph')}
+              title="Graph Flow view"
+            >
+              <GitBranch size={12} />
+              <span>Graph Flow</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.layoutBtn} ${layoutMode === 'grid' ? styles.layoutBtnActive : ''}`}
+              onClick={() => setLayoutMode('grid')}
+              title="Grid view"
+            >
+              <LayoutGrid size={12} />
+              <span>Grid</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.layoutBtn} ${layoutMode === 'timeline' ? styles.layoutBtnActive : ''}`}
+              onClick={() => setLayoutMode('timeline')}
+              title="Timeline view"
+            >
+              <LayoutList size={12} />
+              <span>Timeline</span>
+            </button>
+          </div>
 
-            <div className={styles.layoutToggle} role="group" aria-label="Routine view layout">
-              <button
-                type="button"
-                className={`${styles.layoutBtn} ${layoutMode === 'graph' ? styles.layoutBtnActive : ''}`}
-                onClick={() => setLayoutMode('graph')}
-                title="Graph Flow view"
-              >
-                <GitBranch size={12} />
-                <span>Graph Flow</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.layoutBtn} ${layoutMode === 'grid' ? styles.layoutBtnActive : ''}`}
-                onClick={() => setLayoutMode('grid')}
-                title="Grid view"
-              >
-                <LayoutGrid size={12} />
-                <span>Grid</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.layoutBtn} ${layoutMode === 'timeline' ? styles.layoutBtnActive : ''}`}
-                onClick={() => setLayoutMode('timeline')}
-                title="Timeline view"
-              >
-                <LayoutList size={12} />
-                <span>Timeline</span>
-              </button>
-            </div>
-
-            {completedCount > 0 && (
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={handleResetTodayChecks}
-                title="Uncheck all routine blocks for today"
-              >
-                <RotateCcw size={12} />
-                <span>Clear Checks</span>
-              </button>
-            )}
-
+          {completedCount > 0 && (
             <button
               type="button"
               className={styles.actionBtn}
-              onClick={handleRestoreDefaultRoutine}
-              title="Restore default 7 AM – 9 PM schedule"
+              onClick={handleResetTodayChecks}
+              title="Uncheck all routine blocks for today"
             >
               <RotateCcw size={12} />
-              <span>Default</span>
+              <span>Clear</span>
             </button>
+          )}
 
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${styles.primaryBtn}`}
-              onClick={openAddModal}
-            >
-              <Plus size={13} />
-              <span>Add Block</span>
-            </button>
-          </div>
-        </header>
-      </div>
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={handleRestoreDefaultRoutine}
+            title="Restore default 7 AM – 9 PM schedule"
+          >
+            <RotateCcw size={12} />
+            <span>Default</span>
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${styles.primaryBtn}`}
+            onClick={openAddModal}
+          >
+            <Plus size={13} />
+            <span>Add Block</span>
+          </button>
+        </div>
+      </header>
 
       {/* ── Graph Flow View OR Scrollable Grid / Timeline ── */}
       {layoutMode === 'graph' ? (

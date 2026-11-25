@@ -58,7 +58,6 @@
   touch-action: none;
   user-select: none;
   background: var(--color-bg);
-  border-top: 1px solid var(--color-border-subtle);
 }
 
 .graphViewportDragging {
@@ -135,6 +134,7 @@
   from {
     stroke-dashoffset: 24;
   }
+
   to {
     stroke-dashoffset: 0;
   }
@@ -209,31 +209,34 @@
   gap: 16px;
   flex-wrap: wrap;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg, 12px);
-  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 12px 24px 12px 56px;
+  flex-shrink: 0;
+  z-index: 25;
+}
+
+@media (max-width: 768px) {
+  .summaryHeader {
+    padding: 12px 14px;
+    gap: 10px;
+  }
 }
 
 .summaryLeft {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   min-width: 0;
 }
 
-.summaryTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .summaryTitle {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
   color: var(--color-text);
   margin: 0;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .schedulePill {
@@ -246,28 +249,22 @@
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full, 999px);
-  padding: 2px 10px;
+  padding: 2px 9px;
   font-variant-numeric: tabular-nums;
-}
-
-.summarySubtitle {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin: 0;
 }
 
 .summaryRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .progressBox {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-width: 150px;
+  gap: 4px;
+  min-width: 96px;
 }
 
 .progressTextRow {
