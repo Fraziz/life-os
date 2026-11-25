@@ -72,10 +72,11 @@ function getBlockPalette(block: RoutineBlock, index: number): RoutinePaletteItem
 }
 
 const GRAPH_NODE_W = 296;
-const GRAPH_COL_GAP = 96;
-const GRAPH_ROW_GAP = 42;
+const GRAPH_COL_GAP = 104;
+const GRAPH_ROW_GAP = 48;
 const GRAPH_PAD_X = 48;
 const GRAPH_TOP_Y = 64;
+const ROUTINE_POSITIONS_STORAGE_KEY = 'life_os_daily_routine_positions_v1';
 
 interface GraphPositionedNode {
   block: RoutineBlock;
@@ -87,8 +88,8 @@ interface GraphPositionedNode {
 }
 
 function estimateGraphNodeHeight(block: RoutineBlock): number {
-  const stepLines = block.steps.reduce((sum, s) => sum + Math.max(1, Math.ceil(s.length / 32)), 0);
-  return 82 + (block.subLabel ? 20 : 0) + stepLines * 22 + Math.max(0, block.steps.length - 1) * 4;
+  const stepLines = block.steps.reduce((sum, s) => sum + Math.max(1, Math.ceil(s.length / 30)), 0);
+  return 104 + (block.subLabel ? 22 : 0) + stepLines * 24 + Math.max(0, block.steps.length - 1) * 6;
 }
 
 export default function DailyRoutineRoadmap() {
@@ -104,13 +105,24 @@ export default function DailyRoutineRoadmap() {
     return d.getHours() * 60 + d.getMinutes();
   });
 
-  // Graph Flow Pan & Zoom state
+  // Graph Flow Pan, Zoom & Draggable Node state
   const viewportRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.9);
   const [pan, setPan] = useState({ x: 24, y: 12 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
+  const [draggingNode, setDraggingNode] = useState<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    origX: number;
+    origY: number;
+  } | null>(null);
+  const nodePositionsRef = useRef<Record<string, { x: number; y: number }>>({});
+  const nodeRefs = useRef<Record<string, HTMLElement | null>>({});
   const pinchDistRef = useRef<number | null>(null);
   const pinchZoomRef = useRef<number>(0.9);
 
@@ -123,7 +135,7 @@ export default function DailyRoutineRoadmap() {
   const [formStepsText, setFormStepsText] = useState('');
   const [formColor, setFormColor] = useState<string>(ROUTINE_PALETTE[0].id);
 
-  // Hydrate blocks + daily check state (resets checks automatically on a new day)
+  // Hydrate blocks + custom positions + daily check state (resets checks automatically on a new day)
   useEffect(() => {
     try {
       const savedBlocks = localStorage.getItem(ROUTINE_STORAGE_KEY);
@@ -131,6 +143,17 @@ export default function DailyRoutineRoadmap() {
         const parsed = JSON.parse(savedBlocks);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setBlocks(parsed);
+        }
+      }
+    } catch {}
+
+    try {
+      const savedPos = localStorage.getItem(ROUTINE_POSITIONS_STORAGE_KEY);
+      if (savedPos) {
+        const parsed = JSON.parse(savedPos);
+        if (parsed && typeof parsed === 'object') {
+          setNodePositions(parsed);
+          nodePositionsRef.current = parsed;
         }
       }
     } catch {}
@@ -245,10 +268,19 @@ export default function DailyRoutineRoadmap() {
     clearDailyRoutineReminderDoneToday();
   };
 
+  const handleResetNodePositions = useCallback(() => {
+    setNodePositions({});
+    nodePositionsRef.current = {};
+    try {
+      localStorage.removeItem(ROUTINE_POSITIONS_STORAGE_KEY);
+    } catch {}
+  }, []);
+
   const handleRestoreDefaultRoutine = () => {
     if (!confirm('Restore the default 7:00 AM – 9:00 PM Daily Routine?')) return;
     persistBlocks(DEFAULT_DAILY_ROUTINE);
     handleResetTodayChecks();
+    handleResetNodePositions();
   };
 
   const openAddModal = () => {
@@ -325,6 +357,28 @@ export default function DailyRoutineRoadmap() {
 
   const completionPct = blocks.length > 0 ? Math.round((completedCount / blocks.length) * 100) : 0;
 
+  // Measure rendered card heights in Graph Flow so arrows attach accurately to card edges
+  useEffect(() => {
+    if (layoutMode !== 'graph') return;
+    const measure = () => {
+      const next: Record<string, number> = {};
+      let changed = false;
+      blocks.forEach((b) => {
+        const el = nodeRefs.current[b.id];
+        if (el) {
+          const h = el.offsetHeight;
+          if (h > 0) {
+            next[b.id] = h;
+            if (nodeHeights[b.id] !== h) changed = true;
+          }
+        }
+      });
+      if (changed) setNodeHeights(next);
+    };
+    const raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
+  }, [blocks, layoutMode, progress.completedBlockIds, nodeHeights]);
+
   // Compute Graph Flow node coordinates grouped into Morning -> Afternoon -> Evening columns
   const { graphNodes, graphWidth, graphHeight, phaseHeaders } = useMemo(() => {
     const colBuckets: { block: RoutineBlock; index: number }[][] = [];
@@ -343,35 +397,42 @@ export default function DailyRoutineRoadmap() {
     const headers: { colIdx: number; label: string; x: number; y: number }[] = [];
     const PHASE_NAMES = ['Morning Flow · 7 AM – 12 PM', 'Afternoon Flow · 1 – 5 PM', 'Evening Wind-Down · 7 – 9 PM'];
 
+    let maxX = 1180;
     let maxY = 500;
     colBuckets.forEach((colItems, colIdx) => {
       if (colItems.length === 0) return;
-      const x = GRAPH_PAD_X + colIdx * (GRAPH_NODE_W + GRAPH_COL_GAP);
+      const defaultX = GRAPH_PAD_X + colIdx * (GRAPH_NODE_W + GRAPH_COL_GAP);
       headers.push({
         colIdx,
         label: PHASE_NAMES[colIdx] || `Phase ${colIdx + 1}`,
-        x,
+        x: defaultX,
         y: 20,
       });
 
       let curY = GRAPH_TOP_Y;
       colItems.forEach(({ block, index }) => {
-        const h = estimateGraphNodeHeight(block);
-        positioned.push({ block, index, colIdx, x, y: curY, height: h });
+        const h = nodeHeights[block.id] || estimateGraphNodeHeight(block);
+        const custom = nodePositions[block.id];
+        const x = custom ? custom.x : defaultX;
+        const y = custom ? custom.y : curY;
+        positioned.push({ block, index, colIdx, x, y, height: h });
+        if (x + GRAPH_NODE_W + 64 > maxX) maxX = x + GRAPH_NODE_W + 64;
+        if (y + h + 64 > maxY) maxY = y + h + 64;
         curY += h + GRAPH_ROW_GAP;
+        if (curY + 48 > maxY) maxY = curY + 48;
       });
-      if (curY > maxY) maxY = curY;
     });
 
     // Ensure sequential visual order matches block index order for edge connections
     positioned.sort((a, b) => a.index - b.index);
 
     const totalCols = Math.max(1, colBuckets.length);
-    const width = Math.max(1180, GRAPH_PAD_X * 2 + totalCols * GRAPH_NODE_W + (totalCols - 1) * GRAPH_COL_GAP);
-    const height = Math.max(760, maxY + 48);
+    const baseWidth = Math.max(1180, GRAPH_PAD_X * 2 + totalCols * GRAPH_NODE_W + (totalCols - 1) * GRAPH_COL_GAP);
+    const width = Math.max(baseWidth, maxX);
+    const height = Math.max(760, maxY);
 
     return { graphNodes: positioned, graphWidth: width, graphHeight: height, phaseHeaders: headers };
-  }, [blocks]);
+  }, [blocks, nodePositions, nodeHeights]);
 
   const fitGraphToViewport = useCallback(() => {
     const vp = viewportRef.current;
@@ -390,11 +451,14 @@ export default function DailyRoutineRoadmap() {
     setPan({ x: nextX, y: 10 });
   }, [graphWidth, graphHeight]);
 
+  const fitGraphRef = useRef(fitGraphToViewport);
+  fitGraphRef.current = fitGraphToViewport;
+
   useEffect(() => {
     if (layoutMode === 'graph') {
-      fitGraphToViewport();
+      fitGraphRef.current();
     }
-  }, [layoutMode, fitGraphToViewport]);
+  }, [layoutMode]);
 
   const handleGraphWheel = useCallback(
     (e: WheelEvent) => {
@@ -412,8 +476,98 @@ export default function DailyRoutineRoadmap() {
     return () => el.removeEventListener('wheel', handleGraphWheel);
   }, [handleGraphWheel, layoutMode]);
 
-  const handleGraphMouseDown = (e: React.MouseEvent) => {
+  const handleNodeMouseDown = (
+    e: React.MouseEvent,
+    blockId: string,
+    pos: { x: number; y: number }
+  ) => {
     if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button, a, input, textarea')) {
+      return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+    setDraggingNode({
+      id: blockId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      origX: pos.x,
+      origY: pos.y,
+    });
+  };
+
+  const handleNodeTouchStart = (
+    e: React.TouchEvent,
+    blockId: string,
+    pos: { x: number; y: number }
+  ) => {
+    if (e.touches.length !== 1) return;
+    if ((e.target as HTMLElement).closest('button, a, input, textarea')) {
+      return;
+    }
+    e.stopPropagation();
+    setDraggingNode({
+      id: blockId,
+      startClientX: e.touches[0].clientX,
+      startClientY: e.touches[0].clientY,
+      origX: pos.x,
+      origY: pos.y,
+    });
+  };
+
+  // Global mouse drag tracking while moving a routine card so fast drags remain smooth
+  useEffect(() => {
+    if (!draggingNode) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      const dx = (e.clientX - draggingNode.startClientX) / zoom;
+      const dy = (e.clientY - draggingNode.startClientY) / zoom;
+      const nextPos = {
+        x: Math.round(draggingNode.origX + dx),
+        y: Math.round(draggingNode.origY + dy),
+      };
+      const updated = { ...nodePositionsRef.current, [draggingNode.id]: nextPos };
+      nodePositionsRef.current = updated;
+      setNodePositions(updated);
+    };
+
+    const handleWindowTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const dx = (e.touches[0].clientX - draggingNode.startClientX) / zoom;
+      const dy = (e.touches[0].clientY - draggingNode.startClientY) / zoom;
+      const nextPos = {
+        x: Math.round(draggingNode.origX + dx),
+        y: Math.round(draggingNode.origY + dy),
+      };
+      const updated = { ...nodePositionsRef.current, [draggingNode.id]: nextPos };
+      nodePositionsRef.current = updated;
+      setNodePositions(updated);
+    };
+
+    const finishNodeDrag = () => {
+      setDraggingNode(null);
+      try {
+        localStorage.setItem(ROUTINE_POSITIONS_STORAGE_KEY, JSON.stringify(nodePositionsRef.current));
+      } catch {}
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', finishNodeDrag);
+    window.addEventListener('touchmove', handleWindowTouchMove, { passive: true });
+    window.addEventListener('touchend', finishNodeDrag);
+    window.addEventListener('touchcancel', finishNodeDrag);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', finishNodeDrag);
+      window.removeEventListener('touchmove', handleWindowTouchMove);
+      window.removeEventListener('touchend', finishNodeDrag);
+      window.removeEventListener('touchcancel', finishNodeDrag);
+    };
+  }, [draggingNode, zoom]);
+
+  const handleGraphMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 || draggingNode) return;
     if ((e.target as HTMLElement).closest('button, a, input, textarea, [data-interactive="true"]')) {
       return;
     }
@@ -422,13 +576,14 @@ export default function DailyRoutineRoadmap() {
   };
 
   const handleGraphMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || draggingNode) return;
     setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
 
   const handleGraphMouseUp = () => setIsDragging(false);
 
   const handleGraphTouchStart = (e: React.TouchEvent) => {
+    if (draggingNode) return;
     if ((e.target as HTMLElement).closest('button, a, input, textarea, [data-interactive="true"]')) {
       return;
     }
@@ -446,6 +601,7 @@ export default function DailyRoutineRoadmap() {
   };
 
   const handleGraphTouchMove = (e: React.TouchEvent) => {
+    if (draggingNode) return;
     if (e.touches.length === 1 && isDragging) {
       setPan({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
     } else if (e.touches.length === 2 && pinchDistRef.current) {
@@ -463,22 +619,36 @@ export default function DailyRoutineRoadmap() {
   };
 
   const getFlowEdgePath = (from: GraphPositionedNode, to: GraphPositionedNode): string => {
-    if (from.colIdx === to.colIdx) {
-      // Vertical flow inside same phase column
-      const sx = from.x + GRAPH_NODE_W / 2;
-      const sy = from.y + from.height;
-      const tx = to.x + GRAPH_NODE_W / 2;
-      const ty = to.y;
-      const midY = (sy + ty) / 2;
-      return `M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`;
+    const fromCx = from.x + GRAPH_NODE_W / 2;
+    const fromCy = from.y + from.height / 2;
+    const toCx = to.x + GRAPH_NODE_W / 2;
+    const toCy = to.y + to.height / 2;
+    const dx = toCx - fromCx;
+    const dy = toCy - fromCy;
+
+    // Route horizontally when horizontally separated more than vertically (supports dragging left OR right)
+    if (Math.abs(dx) >= Math.abs(dy) * 0.85) {
+      const goingRight = dx >= 0;
+      const sx = goingRight ? from.x + GRAPH_NODE_W : from.x;
+      const sy = fromCy;
+      const tx = goingRight ? to.x : to.x + GRAPH_NODE_W;
+      const ty = toCy;
+      const curve = Math.max(48, Math.abs(tx - sx) * 0.52);
+      const c1x = goingRight ? sx + curve : sx - curve;
+      const c2x = goingRight ? tx - curve : tx + curve;
+      return `M ${sx} ${sy} C ${c1x} ${sy}, ${c2x} ${ty}, ${tx} ${ty}`;
     }
-    // Cross-column S-curve bridge to next phase
-    const sx = from.x + GRAPH_NODE_W;
-    const sy = from.y + from.height / 2;
-    const tx = to.x;
-    const ty = to.y + to.height / 2;
-    const dx = Math.abs(tx - sx) * 0.52;
-    return `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`;
+
+    // Route vertically (supports dragging above OR below)
+    const goingDown = dy >= 0;
+    const sx = fromCx;
+    const sy = goingDown ? from.y + from.height : from.y;
+    const tx = toCx;
+    const ty = goingDown ? to.y : to.y + to.height;
+    const curve = Math.max(36, Math.abs(ty - sy) * 0.52);
+    const c1y = goingDown ? sy + curve : sy - curve;
+    const c2y = goingDown ? ty - curve : ty + curve;
+    return `M ${sx} ${sy} C ${sx} ${c1y}, ${tx} ${c2y}, ${tx} ${ty}`;
   };
 
   const renderBlockCard = (
@@ -503,13 +673,24 @@ export default function DailyRoutineRoadmap() {
       '--block-rgb': palette.rgb,
     } as React.CSSProperties;
 
+    const isThisDragging = draggingNode?.id === block.id;
+
     return (
       <article
         key={block.id}
+        ref={
+          graphPos
+            ? (el) => {
+                nodeRefs.current[block.id] = el;
+              }
+            : undefined
+        }
         data-interactive={graphPos ? 'true' : undefined}
+        onMouseDown={graphPos ? (e) => handleNodeMouseDown(e, block.id, graphPos) : undefined}
+        onTouchStart={graphPos ? (e) => handleNodeTouchStart(e, block.id, graphPos) : undefined}
         onMouseEnter={graphPos ? () => setHoveredId(block.id) : undefined}
         onMouseLeave={graphPos ? () => setHoveredId((prev) => (prev === block.id ? null : prev)) : undefined}
-        className={`${graphPos ? styles.graphNodeCard : styles.blockCard} ${isCurrentTime && !isBlockDone ? styles.blockCardCurrent : ''} ${isBlockDone ? styles.blockCardDone : ''}`}
+        className={`${graphPos ? styles.graphNodeCard : styles.blockCard} ${isThisDragging ? styles.graphNodeDragging : ''} ${isCurrentTime && !isBlockDone ? styles.blockCardCurrent : ''} ${isBlockDone ? styles.blockCardDone : ''}`}
         style={cardStyle}
       >
         <div className={styles.blockTopRow}>
@@ -789,10 +970,23 @@ export default function DailyRoutineRoadmap() {
             {graphNodes.map(({ block, index, x, y }) => renderBlockCard(block, index, { x, y }))}
           </div>
 
-          <div className={styles.graphHintBadge}>Drag canvas to pan · Scroll to zoom</div>
+          <div className={styles.graphHintBadge}>
+            Drag boxes to move · Drag background to pan · Scroll to zoom
+          </div>
 
-          {/* Floating Zoom & Fit Controls */}
+          {/* Floating Zoom, Fit & Auto-Arrange Controls */}
           <div className={styles.graphFloatingControls} data-interactive="true">
+            {Object.keys(nodePositions).length > 0 && (
+              <button
+                type="button"
+                className={styles.zoomBtn}
+                onClick={handleResetNodePositions}
+                title="Reset boxes to default layout"
+                aria-label="Reset boxes layout"
+              >
+                <RotateCcw size={13} />
+              </button>
+            )}
             <button
               type="button"
               className={styles.zoomBtn}
