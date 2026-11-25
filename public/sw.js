@@ -1,5 +1,5 @@
 // Sariling Mundo Service Worker for Offline Caching and PWA Installation
-const CACHE_NAME = 'sariling-mundo-v2';
+const CACHE_NAME = 'sariling-mundo-v3';
 
 const STATIC_ASSETS = [
   '/',

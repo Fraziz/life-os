@@ -23,13 +23,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
-      { url: '/favicon.ico?v=2', sizes: 'any' },
-      { url: '/favicon-32x32.png?v=2', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-16x16.png?v=2', sizes: '16x16', type: 'image/png' },
+      { url: '/logo.png?v=3', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon-32x32.png?v=3', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png?v=3', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.ico?v=3', sizes: 'any' },
     ],
-    apple: '/apple-touch-icon.png?v=2',
-    shortcut: '/icon.svg?v=2',
+    apple: '/apple-touch-icon.png?v=3',
+    shortcut: '/favicon-32x32.png?v=3',
   },
 };
 

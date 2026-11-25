@@ -258,7 +258,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   // Synchronize browser tab logo (favicon) with active brand/workspace logo in real time
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const faviconHref = settings?.customLogoUrl || '/icon.svg?v=2';
+    const faviconHref = settings?.customLogoUrl || '/logo.png?v=3';
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');

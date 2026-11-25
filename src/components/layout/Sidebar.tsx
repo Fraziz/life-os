@@ -177,7 +177,7 @@ export default function Sidebar({
           <Link href="/" className={styles.brand} title="Sariling Mundo" onClick={handleNavClick} data-tour="brand">
             <Logo
               iconOnly={!isExpanded}
-              size={22}
+              size={28}
               showTagline={isExpanded}
               taglineText="Better habits. A freer you."
             />
