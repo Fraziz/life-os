@@ -18,7 +18,7 @@ import { useTasks } from '@/context/TaskContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useSettings } from '@/context/SettingsContext';
 import { executeOptionalAICall } from '@/utils/aiEngine';
-import DailyRoutineRoadmap from '@/components/roadmap/DailyRoutineRoadmap';
+import LifeDestinationRoadmap from '@/components/roadmap/LifeDestinationRoadmap';
 import styles from './page.module.css';
 
 // ── Layout constants ──────────────────────────────────────────
@@ -54,7 +54,7 @@ const DEFAULT_COLOR = '#7c6fff';
 
 type FilterMode = 'all' | 'active' | string;
 type HorizonMode = 'all' | '90-day' | 'yearly';
-type ViewMode = 'graph' | 'timeline' | 'routine';
+type ViewMode = 'graph' | 'timeline' | 'destinations';
 
 interface NodePosition {
   id: string;
@@ -666,15 +666,15 @@ Keep language professional, crisp, and clean. No emojis.`;
               </button>
               <button
                 type="button"
-                className={`${styles.viewBtn} ${viewMode === 'routine' ? styles.viewBtnActive : ''}`}
-                onClick={() => setViewMode('routine')}
+                className={`${styles.viewBtn} ${viewMode === 'destinations' ? styles.viewBtnActive : ''}`}
+                onClick={() => setViewMode('destinations')}
               >
-                Daily Routine
+                Life Path
               </button>
             </div>
 
             {/* Compact Filter Pills */}
-            {viewMode !== 'routine' && (
+            {viewMode !== 'destinations' && (
               <div className={styles.filterGroup}>
                 <button
                   type="button"
@@ -725,8 +725,8 @@ Keep language professional, crisp, and clean. No emojis.`;
       </header>
 
       {/* ── Viewport Content ── */}
-      {viewMode === 'routine' ? (
-        <DailyRoutineRoadmap />
+      {viewMode === 'destinations' ? (
+        <LifeDestinationRoadmap />
       ) : viewMode === 'timeline' ? (
         <div className={styles.timelineViewport}>
           <div className={styles.timelineGridHeader}>

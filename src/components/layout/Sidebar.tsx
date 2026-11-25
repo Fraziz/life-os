@@ -17,6 +17,7 @@ import {
   Send,
   CheckSquare,
   Calendar,
+  Clock,
   Cloud,
   Target,
   BookOpen,
@@ -41,6 +42,7 @@ import styles from './Sidebar.module.css';
 // Mapping of navigation icon identifiers to Lucide icons
 const NAV_ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>> = {
   today: Home,
+  routine: Clock,
   focus: Play,
   inbox: Send,
   tasks: CheckSquare,

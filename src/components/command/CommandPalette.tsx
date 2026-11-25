@@ -287,6 +287,17 @@ export default function CommandPalette() {
       },
     },
     {
+      id: 'nav-routine',
+      category: 'Navigation',
+      title: 'Daily Routine',
+      subtitle: '/routine',
+      keywords: ['schedule', 'graph', 'morning', 'habits'],
+      onSelect: () => {
+        router.push('/routine');
+        closePalette();
+      },
+    },
+    {
       id: 'nav-review',
       category: 'Navigation',
       title: 'Weekly Review',

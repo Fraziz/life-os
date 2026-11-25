@@ -391,7 +391,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           <HierarchyProgressSync />
 
           <main
-            className={`${styles.content} ${pathname === '/roadmap' ? styles.noPadding : ''} ${pathname === '/knowledge' ? styles.knowledgeContent : ''}`}
+            className={`${styles.content} ${pathname === '/roadmap' || pathname === '/routine' ? styles.noPadding : ''} ${pathname === '/knowledge' ? styles.knowledgeContent : ''}`}
             id="main-content"
             tabIndex={-1}
           >

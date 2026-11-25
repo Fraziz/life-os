@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100vh;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -20,9 +21,19 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 14px clamp(16px, 3vw, 28px) 10px;
+  padding: 14px clamp(16px, 3vw, 28px) 10px 56px;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .routineContainer {
+    height: calc(100dvh - 112px);
+  }
+
+  .routineTopWrap {
+    padding: 12px 14px 8px;
+  }
 }
 
 .routineInner {
