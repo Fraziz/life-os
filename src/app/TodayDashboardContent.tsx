@@ -25,7 +25,6 @@ import {
   CheckSquare,
   Square,
   BookOpen,
-  Bell,
   Dumbbell,
   Video,
   Lightbulb,
@@ -42,7 +41,7 @@ import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst, playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
-import { formatTagLabel, getTagCategory } from '@/utils/tagUtils';
+import { formatTagLabel } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
 import LifeDomainPill from '@/components/layout/LifeDomainPill';
 
@@ -232,12 +231,6 @@ export default function TodayDashboardContent() {
     }
   };
 
-  const energyTips: Record<'low' | 'normal' | 'high', string> = {
-    low: 'Low Energy Mode: Pick just 1 tiny task. Momentum beats perfection today.',
-    normal: 'Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks.',
-    high: 'High Energy: Tackle your #1 hardest priority right now while focus is sharp.',
-  };
-
   // ── Domain Filter ───────────────────────────────────────────
   const domainTasks = useMemo(() => {
     if (!focusedAreaId) return tasks;
@@ -327,7 +320,7 @@ export default function TodayDashboardContent() {
       list.push({
         id: 'daily-routine-today',
         type: 'routine',
-        typeLabel: 'DAILY ROUTINE',
+        typeLabel: 'Routine',
         title: 'Daily Routine',
         subtitle: dailyRoutine.subtitle,
         href: '/routine',
@@ -551,26 +544,21 @@ export default function TodayDashboardContent() {
   };
 
   // ── Helpers ──────────────────────────────────────────────────
-  const getTagStyle = (tags: string[] = []) => {
-    const category = getTagCategory(tags[0] || '');
-    switch (category) {
-      case 'project':
-        return styles.tagProject;
-      case 'goal':
-        return styles.tagGoal;
-      case 'dream':
-        return styles.tagDream;
-      case 'school':
-        return styles.tagSchool;
-      case 'health':
-        return styles.tagHealth;
-      case 'ai':
-        return styles.tagAi;
-      case 'doitnow':
-        return styles.tagDoitnow;
-      default:
-        return styles.tagDefault;
-    }
+  const getTaskRowContext = (task: (typeof tasks)[number]) => {
+    const isDoItNow = Boolean(task.tags?.includes('do-it-now'));
+    const hier = resolveTaskHierarchy(task, projects, goals);
+    const contextParts = [
+      hier.parentGoal ? `Goal: ${hier.parentGoal.title}` : '',
+      hier.parentProject ? `Project: ${hier.parentProject.title}` : '',
+      task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '',
+    ].filter(Boolean);
+    const shortContext = isDoItNow
+      ? 'Do It Now'
+      : hier.parentProject?.title ||
+        (task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '') ||
+        hier.parentGoal?.title ||
+        '';
+    return { isDoItNow, shortContext, tooltip: contextParts.join(' • ') || undefined };
   };
 
   const getProjectIcon = (title: string) => {
@@ -776,23 +764,14 @@ export default function TodayDashboardContent() {
             <Link href="/tasks" className={styles.viewAllNotesLink}>All tasks →</Link>
           </div>
 
-          {/* Contextual Energy Tip */}
-          <div className={styles.todayEnergyTipBanner}>
-            <Zap size={14} className={styles.todayEnergyZapIcon} />
-            <span>{energyTips[energyLevel]}</span>
-          </div>
-
-          {/* Today's Active Reminders (Important to Finish) */}
+          {/* Reminders (Compact, Minimalist) */}
           {todayReminders.length > 0 && (
             <div className={styles.todayRemindersCard}>
               <div className={styles.todayRemindersHeader}>
                 <div className={styles.todayRemindersHeaderLeft}>
-                  <span className={styles.todayRemindersDot} />
-                  <Bell size={13} className={styles.todayRemindersBell} />
-                  <h3 className={styles.todayRemindersTitle}>Today&apos;s Reminders</h3>
+                  <h3 className={styles.todayRemindersTitle}>Reminders</h3>
                   <span className={styles.todayRemindersCountBadge}>{todayReminders.length}</span>
                 </div>
-                <span className={styles.todayRemindersSub}>Important to finish</span>
               </div>
 
               <div className={styles.todayRemindersList}>
@@ -818,18 +797,12 @@ export default function TodayDashboardContent() {
                     )}
 
                     <span className={`${styles.reminderTypeBadge} ${styles[`typeBadge_${rem.type}`] || ''}`}>
-                      {rem.type === 'routine' && <Clock size={10} />}
-                      {rem.type === 'book' && <BookOpen size={10} />}
-                      {rem.type === 'video' && <Video size={10} />}
-                      {rem.type === 'task' && <CheckSquare size={10} />}
-                      {rem.type === 'idea' && <Lightbulb size={10} />}
-                      {rem.type === 'project' && <Folder size={10} />}
                       <span>{rem.typeLabel}</span>
                     </span>
 
                     <Link href={rem.href} className={styles.reminderItemLink} title="Open item">
                       <span className={styles.reminderItemTitle}>{rem.title}</span>
-                      {rem.subtitle && <span className={styles.reminderItemSub}>• {rem.subtitle}</span>}
+                      {rem.subtitle && <span className={styles.reminderItemSub}>{rem.subtitle}</span>}
                     </Link>
 
                     <button
@@ -864,13 +837,13 @@ export default function TodayDashboardContent() {
                 </div>
               )}
               {topPriorities.map((item, idx) => {
-                const isDoItNow = item.tags?.includes('do-it-now');
-                const itemHier = resolveTaskHierarchy(item, projects, goals);
+                const { isDoItNow, shortContext, tooltip } = getTaskRowContext(item);
 
                 return (
                   <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div
                       className={`${styles.priorityRow} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
+                      title={tooltip}
                       style={isDoItNow ? {
                         background: 'rgba(212, 163, 115, 0.07)',
                         border: '1px solid rgba(212, 163, 115, 0.28)',
@@ -912,35 +885,19 @@ export default function TodayDashboardContent() {
                         )}
                       </div>
 
-                      {/* Right-aligned Meta Badges: Goal, Project, Tag */}
-                      <div className={styles.taskMetaRight}>
-                        {itemHier.parentGoal && (
-                          <span className={styles.taskGoalPill} title={`Goal: ${itemHier.parentGoal.title}`}>
-                            <span>Goal: {itemHier.parentGoal.title}</span>
-                          </span>
-                        )}
-                        {itemHier.parentProject && (
-                          <span className={styles.taskProjectPill} title={`Project: ${itemHier.parentProject.title}`}>
-                            <span>Project: {itemHier.parentProject.title}</span>
-                          </span>
-                        )}
-                        {isDoItNow ? (
-                          <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
-                            <span className={styles.tagDot} />
-                            Do It Now
-                          </span>
-                        ) : item.tags && item.tags.length > 0 ? (
-                          <span className={`${styles.tagBadge} ${getTagStyle(item.tags)}`}>
-                            <span className={styles.tagDot} />
-                            {formatTagLabel(item.tags[0])}
-                          </span>
-                        ) : null}
-                      </div>
+                      {shortContext && (
+                        <span
+                          className={`${styles.taskContextText} ${isDoItNow ? styles.taskContextDoItNow : ''}`}
+                          title={tooltip}
+                        >
+                          {shortContext}
+                        </span>
+                      )}
                     </div>
 
                     {/* Subtask Step Breakdown (Collapsible) */}
                     {item.subtasks && item.subtasks.length > 0 && expandedSubtasks[item.id] && (
-                      <div style={{ marginLeft: '36px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '6px' }}>
+                      <div style={{ marginLeft: '46px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '6px' }}>
                         {item.subtasks.map((sub) => (
                           <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
                             <button
@@ -972,12 +929,13 @@ export default function TodayDashboardContent() {
             </div>
             <div className={styles.otherTasksList}>
               {otherTasks.map((task) => {
-                const isDoItNow = task.tags?.includes('do-it-now');
-                const otherHier = resolveTaskHierarchy(task, projects, goals);
+                const { isDoItNow, shortContext, tooltip } = getTaskRowContext(task);
+
                 return (
                   <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div
                       className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
+                      title={tooltip}
                       style={isDoItNow ? {
                         background: 'rgba(212, 163, 115, 0.05)',
                         border: '1px solid rgba(212, 163, 115, 0.22)',
@@ -1006,34 +964,20 @@ export default function TodayDashboardContent() {
                           <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
                         </button>
                       )}
-                      <div className={styles.taskMetaRight} style={{ marginLeft: 'auto' }}>
-                        {otherHier.parentGoal && (
-                          <span className={styles.taskGoalPill} title={`Goal: ${otherHier.parentGoal.title}`}>
-                            <span>Goal: {otherHier.parentGoal.title}</span>
-                          </span>
-                        )}
-                        {otherHier.parentProject && (
-                          <span className={styles.taskProjectPill} title={`Project: ${otherHier.parentProject.title}`}>
-                            <span>Project: {otherHier.parentProject.title}</span>
-                          </span>
-                        )}
-                        {isDoItNow ? (
-                          <span className={`${styles.tagBadge} ${styles.tagDoitnow}`}>
-                            <span className={styles.tagDot} />
-                            Do It Now
-                          </span>
-                        ) : task.tags && task.tags.length > 0 ? (
-                          <span className={`${styles.tagBadge} ${getTagStyle(task.tags)}`}>
-                            <span className={styles.tagDot} />
-                            {formatTagLabel(task.tags[0])}
-                          </span>
-                        ) : null}
-                      </div>
+                      {shortContext && (
+                        <span
+                          className={`${styles.taskContextText} ${isDoItNow ? styles.taskContextDoItNow : ''}`}
+                          style={{ marginLeft: 'auto' }}
+                          title={tooltip}
+                        >
+                          {shortContext}
+                        </span>
+                      )}
                     </div>
 
                   {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
                   {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
-                    <div style={{ marginLeft: '28px', display: 'flex', flexDirection: 'column', gap: '3px', borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: '10px', marginBottom: '4px' }}>
+                    <div style={{ marginLeft: '32px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '4px' }}>
                       {task.subtasks.map((sub) => (
                         <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
                           <button
