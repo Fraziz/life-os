@@ -269,7 +269,7 @@
   <div id="root" class="stage">
     <!-- Mode: Circle Bubble -->
     <div id="mode-circle" class="circleBubble"
-      title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles">
+      title="Click for Edge Sidebar · Drag to move · Swipe to edge for Edge Handle · Right-click for styles">
       <img src="logo.png" alt="Sariling Mundo" class="circleLogo" />
       <span class="statusPip"></span>
     </div>
@@ -277,14 +277,14 @@
     <!-- Mode: Edge Line (Swipe / Click) -->
     <div id="mode-line" class="edgeStage right hidden">
       <div id="edge-handle" class="edgeLineHandle"
-        title="Click or swipe inward for quick focus · Drag up/down to move · Right-click for styles">
+        title="Click or swipe inward for Edge Sidebar · Drag up/down to move · Right-click for styles">
         <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
       </div>
     </div>
 
     <!-- Mode: Compact Pill -->
     <div id="mode-pill" class="pillHandle hidden"
-      title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles">
+      title="Click for Edge Sidebar · Drag to move · Right-click for styles">
       <img src="logo.png" alt="Sariling Mundo" class="pillLogo" />
       <span id="pill-label" class="pillLabel">Sariling Mundo</span>
       <span class="pillDot"></span>
@@ -334,20 +334,6 @@
     }
 
     let pointerDown = null;
-    let clickTimer = null;
-
-    function handleActivate() {
-      if (clickTimer) {
-        clearTimeout(clickTimer);
-        clickTimer = null;
-        window.sarilingBubble?.toggleApp();
-        return;
-      }
-      clickTimer = setTimeout(() => {
-        clickTimer = null;
-        window.sarilingBubble?.togglePopover();
-      }, 170);
-    }
 
     function attachInteractions(targetEl, isEdgeLine = false) {
       targetEl.addEventListener('pointerdown', (e) => {
@@ -398,7 +384,7 @@
         if (wasMoved) {
           window.sarilingBubble?.dragEnd(e.screenX, e.screenY);
         } else {
-          handleActivate();
+          window.sarilingBubble?.togglePopover();
         }
       });
 
