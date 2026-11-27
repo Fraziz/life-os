@@ -239,9 +239,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         } else if (k === 'f') {
           e.preventDefault();
           router.push('/focus'); // Focus Space
-        } else if (k === 'b') {
-          e.preventDefault();
-          router.push('/habits'); // Habits
         } else if (k === 'r') {
           e.preventDefault();
           router.push('/review'); // Weekly Review

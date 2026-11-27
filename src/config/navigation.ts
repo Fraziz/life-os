@@ -24,13 +24,6 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'habits',
-        label: 'Habits',
-        href: '/habits',
-        icon: 'habits',
-        isAvailable: true,
-      },
-      {
         id: 'focus',
         label: 'Focus Space',
         href: '/focus',
@@ -96,13 +89,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Books & Lessons',
         href: '/knowledge',
         icon: 'knowledge',
-        isAvailable: true,
-      },
-      {
-        id: 'workout',
-        label: 'Workout',
-        href: '/workout',
-        icon: 'workout',
         isAvailable: true,
       },
       {

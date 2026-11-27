@@ -230,7 +230,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
             title: `Habit Practice: ${h.title}`,
             message: h.reminderNote || `Time for daily habit practice (${h.reminderTime}).`,
             entityId: h.id,
-            href: '/habits',
+            href: '/routine',
             timeStr: h.reminderTime,
             priority: 'normal',
             isRead: readSet.has(`habit-${h.id}`),

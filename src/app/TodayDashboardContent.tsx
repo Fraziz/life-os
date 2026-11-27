@@ -25,7 +25,6 @@ import {
   CheckSquare,
   Square,
   BookOpen,
-  Dumbbell,
   Video,
   Lightbulb,
   Folder,
@@ -36,7 +35,6 @@ import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
-import { useHabits } from '@/context/HabitContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { playSuccessChime, playSubtaskTick, triggerDopamineBurst, playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
@@ -51,17 +49,6 @@ import DailyAccomplishReminder from '@/components/reminders/DailyAccomplishRemin
 import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 import styles from './page.module.css';
 
-const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DEFAULT_WORKOUT_SCHEDULE = [
-  { dayOfWeek: 0, label: 'Sunday', sessionName: 'Active Recovery', isRestDay: true },
-  { dayOfWeek: 1, label: 'Monday', sessionName: 'Upper Body', isRestDay: false },
-  { dayOfWeek: 2, label: 'Tuesday', sessionName: 'Lower Body', isRestDay: false },
-  { dayOfWeek: 3, label: 'Wednesday', sessionName: 'Rest & Stretch', isRestDay: true },
-  { dayOfWeek: 4, label: 'Thursday', sessionName: 'Push', isRestDay: false },
-  { dayOfWeek: 5, label: 'Friday', sessionName: 'Pull & Core', isRestDay: false },
-  { dayOfWeek: 6, label: 'Saturday', sessionName: 'Cardio & Mobility', isRestDay: true },
-];
-
 export default function TodayDashboardContent() {
   const { settings } = useSettings();
   const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
@@ -70,7 +57,6 @@ export default function TodayDashboardContent() {
   const { focusedAreaId, areas } = useLifeAreas();
   const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
   const dailyRoutine = useDailyRoutineReminder();
-  const { habits, isHabitCompletedOnDate, toggleHabitCheckIn } = useHabits();
   const { docs, addDoc } = useKnowledge();
 
   const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
@@ -252,11 +238,6 @@ export default function TodayDashboardContent() {
     });
   }, [tasks, focusedAreaId, areas, projects, goals]);
 
-  const domainHabits = useMemo(() => {
-    if (!focusedAreaId) return habits;
-    return habits.filter((h) => h.lifeAreaId === focusedAreaId);
-  }, [habits, focusedAreaId]);
-
   // ── Tasks ────────────────────────────────────────────────────
   const doItNowActive = domainTasks.filter((t) => t.status !== 'done' && t.tags?.includes('do-it-now'));
   const otherHighPriority = domainTasks.filter(
@@ -408,80 +389,6 @@ export default function TodayDashboardContent() {
     triggerDopamineBurst(e.clientX, e.clientY);
   };
 
-  // ── Habits ───────────────────────────────────────────────────
-  const todayHabits = domainHabits.slice(0, 6);
-  const habitsCompletedToday = todayHabits.filter((h) =>
-    isHabitCompletedOnDate(h.id, todayStr)
-  ).length;
-
-  const handleToggleHabit = (habitId: string, e: React.MouseEvent) => {
-    toggleHabitCheckIn(habitId, todayStr);
-    playSuccessChime();
-    triggerDopamineBurst(e.clientX, e.clientY);
-  };
-
-  // ── Workout State & Logic ─────────────────────────────────────
-  const [workoutSessions, setWorkoutSessions] = useState<{
-    id: string;
-    date: string;
-    name: string;
-    completed: boolean;
-    completedAt?: string;
-  }[]>([]);
-  const [workoutSchedule, setWorkoutSchedule] = useState(DEFAULT_WORKOUT_SCHEDULE);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('life-os-workouts-v1');
-      if (raw) setWorkoutSessions(JSON.parse(raw));
-      const rawSched = localStorage.getItem('life-os-workout-schedule-v1');
-      if (rawSched) setWorkoutSchedule(JSON.parse(rawSched));
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const todayDow = new Date().getDay();
-  const todaySched = workoutSchedule[todayDow] || DEFAULT_WORKOUT_SCHEDULE[todayDow];
-  const todayWorkoutSession = workoutSessions.find((s) => s.date === todayStr);
-  const isWorkoutDone = Boolean(todayWorkoutSession?.completed);
-  const todayWorkoutName = todayWorkoutSession?.name || todaySched?.sessionName || (todaySched?.isRestDay ? 'Rest & Recovery' : 'Daily Workout');
-
-  const handleToggleTodayWorkout = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      let updated: typeof workoutSessions;
-      if (todayWorkoutSession) {
-        const nextCompleted = !todayWorkoutSession.completed;
-        updated = workoutSessions.map((s) =>
-          s.id === todayWorkoutSession.id
-            ? { ...s, completed: nextCompleted, completedAt: nextCompleted ? new Date().toISOString() : undefined }
-            : s
-        );
-        if (nextCompleted) {
-          playSuccessChime();
-          triggerDopamineBurst(e.clientX, e.clientY);
-        }
-      } else {
-        const newSession = {
-          id: Math.random().toString(36).slice(2) + Date.now().toString(36),
-          name: todayWorkoutName,
-          date: todayStr,
-          dayOfWeek: todayDow,
-          completed: true,
-          completedAt: new Date().toISOString(),
-        };
-        updated = [newSession, ...workoutSessions];
-        playSuccessChime();
-        triggerDopamineBurst(e.clientX, e.clientY);
-      }
-      setWorkoutSessions(updated);
-      localStorage.setItem('life-os-workouts-v1', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-  };
-
   // ── Brain Dump (Single Unified Source of Truth) ───────────────
   const [dumpText, setDumpText] = useState('');
   const [dumpIsReminder, setDumpIsReminder] = useState(false);
@@ -568,7 +475,6 @@ export default function TodayDashboardContent() {
   };
 
   const tasksDone = tasks.filter((t) => t.status === 'done').length;
-  const habitColor = (color?: string) => color || '#6366f1';
   const getActionTitleFontSize = (text: string) => {
     if (text.length > 28) return '0.70rem';
     if (text.length > 18) return '0.76rem';
@@ -610,10 +516,10 @@ export default function TodayDashboardContent() {
             <Check size={13} className={styles.pillIconGreen} />
             <span><strong>{tasksDone}</strong> / {tasks.length} tasks done</span>
           </div>
-          <div className={styles.summaryPill}>
-            <Flame size={13} className={styles.pillIconOrange} />
-            <span><strong>{habitsCompletedToday}</strong> / {todayHabits.length} habits</span>
-          </div>
+          <Link href="/routine" className={styles.summaryPill}>
+            <Clock size={13} className={styles.pillIconOrange} />
+            <span><strong>{dailyRoutine.completedCount}</strong> / {dailyRoutine.totalCount} routine</span>
+          </Link>
           <button
             type="button"
             className={`${styles.summaryPill} ${styles.summaryPillOptimize}`}
@@ -1073,91 +979,6 @@ export default function TodayDashboardContent() {
           )}
         </section>
 
-        {/* Habits & Workout */}
-        <section className={styles.contentSectionCard}>
-          <div className={styles.sectionHeaderRow}>
-            <div className={styles.sectionHeaderLeft}>
-              <h2 className={styles.sectionHeading}>Habits &amp; Workout</h2>
-              <span className={styles.sectionHeaderDate}>
-                {habitsCompletedToday}/{todayHabits.length} habits done
-              </span>
-              {isWorkoutDone ? (
-                <span className={styles.workoutStatusDoneBadge}>
-                  <Check size={10} strokeWidth={3} /> Workout done
-                </span>
-              ) : todaySched?.isRestDay ? (
-                <span className={styles.workoutStatusRestBadge}>Rest day</span>
-              ) : (
-                <span className={styles.workoutStatusSchedBadge}>{todayWorkoutName}</span>
-              )}
-            </div>
-            <div className={styles.sectionHeaderLinks}>
-              <Link href="/habits" className={styles.viewAllNotesLink}>All habits →</Link>
-              <span className={styles.linkDivider}>•</span>
-              <Link href="/workout" className={styles.viewAllNotesLink}>Workout tracker →</Link>
-            </div>
-          </div>
-
-          {/* Today's Workout Banner Row */}
-          <div className={`${styles.workoutBannerRow} ${isWorkoutDone ? styles.workoutBannerDone : ''}`}>
-            <div className={styles.workoutBannerLeft}>
-              <button
-                type="button"
-                className={styles.checkboxBtn}
-                onClick={handleToggleTodayWorkout}
-                title={isWorkoutDone ? 'Mark workout pending' : 'Mark workout completed'}
-              >
-                {isWorkoutDone ? (
-                  <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
-                ) : (
-                  <div className={styles.emptyCircle} />
-                )}
-              </button>
-              <Dumbbell size={16} className={styles.workoutIcon} />
-              <div className={styles.workoutBannerText}>
-                <span className={styles.workoutBannerTitle}>{todayWorkoutName}</span>
-                <span className={styles.workoutBannerMeta}>
-                  {isWorkoutDone
-                    ? 'Completed for today ✓'
-                    : todaySched?.isRestDay
-                      ? `${DAYS_OF_WEEK[todayDow]} • Scheduled recovery day`
-                      : `${DAYS_OF_WEEK[todayDow]} routine • 45 min`}
-                </span>
-              </div>
-            </div>
-            <Link href="/workout" className={styles.workoutActionBtn}>
-              {isWorkoutDone ? 'View workout' : 'Start workout'} →
-            </Link>
-          </div>
-
-          {/* Daily Habits Quick Check Grid */}
-          <div className={styles.habitsGrid}>
-            {todayHabits.length === 0 && (
-              <div className={styles.emptyState}>
-                No habits yet.{' '}
-                <Link href="/habits" className={styles.viewAllNotesLink}>Add habits →</Link>
-              </div>
-            )}
-            {todayHabits.map((habit) => {
-              const done = isHabitCompletedOnDate(habit.id, todayStr);
-              return (
-                <button
-                  key={habit.id}
-                  type="button"
-                  className={`${styles.habitChip} ${done ? styles.habitChipDone : ''}`}
-                  onClick={(e) => handleToggleHabit(habit.id, e)}
-                  style={{ '--habit-color': habitColor(habit.color) } as React.CSSProperties}
-                >
-                  <span className={`${styles.habitDot} ${done ? styles.habitDotDone : ''}`}>
-                    {done && <Check size={10} strokeWidth={3} />}
-                  </span>
-                  <span className={styles.habitChipLabel}>{habit.title}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
         {/* Projects & Goals */}
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
@@ -1368,8 +1189,8 @@ export default function TodayDashboardContent() {
                 <span className={styles.modalStatLabel}>Tasks Completed</span>
               </div>
               <div className={styles.modalStatCard}>
-                <span className={styles.modalStatNumber}>{habitsCompletedToday}</span>
-                <span className={styles.modalStatLabel}>Habits Kept</span>
+                <span className={styles.modalStatNumber}>{dailyRoutine.completedCount}</span>
+                <span className={styles.modalStatLabel}>Routine Done</span>
               </div>
             </div>
 

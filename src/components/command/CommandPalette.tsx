@@ -221,28 +221,6 @@ export default function CommandPalette() {
       },
     },
     {
-      id: 'nav-workout',
-      category: 'Navigation',
-      title: 'Workout & Fitness',
-      subtitle: '/workout',
-      keywords: ['exercise', 'gym', 'weight', '60kg'],
-      onSelect: () => {
-        router.push('/workout');
-        closePalette();
-      },
-    },
-    {
-      id: 'nav-habits',
-      category: 'Navigation',
-      title: 'Habits Tracker',
-      subtitle: '/habits',
-      keywords: ['streaks', 'routines', 'daily'],
-      onSelect: () => {
-        router.push('/habits');
-        closePalette();
-      },
-    },
-    {
       id: 'nav-projects',
       category: 'Navigation',
       title: 'Projects',

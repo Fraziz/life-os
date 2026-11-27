@@ -25,7 +25,6 @@ import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useTasks } from '@/context/TaskContext';
-import { useHabits } from '@/context/HabitContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useCalendar } from '@/context/CalendarContext';
@@ -42,7 +41,6 @@ export default function RightSidebar() {
   const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
   const { tasks, toggleTaskDone } = useTasks();
-  const { habits, isHabitCompletedOnDate } = useHabits();
   const { activeProjects, toggleProjectReminder } = useProjects();
   const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
@@ -241,11 +239,11 @@ export default function RightSidebar() {
   const todayStr = new Date().toISOString().split('T')[0];
   const tasksDone = tasks.filter((t) => t.status === 'done').length;
   const totalTasks = tasks.length;
-  const habitsDone = habits.filter((h) => isHabitCompletedOnDate(h.id, todayStr)).length;
-  const totalHabits = habits.length;
+  const routineDone = dailyRoutine.completedCount;
+  const totalRoutine = dailyRoutine.totalCount;
 
-  const totalActions = totalTasks + totalHabits;
-  const completedActions = tasksDone + habitsDone;
+  const totalActions = totalTasks + totalRoutine;
+  const completedActions = tasksDone + routineDone;
   const momentumPercent = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
 
   // ── Notification State (Strictly focused on notifications, not reminders) ──
@@ -611,8 +609,8 @@ export default function RightSidebar() {
           </div>
 
           <div className={styles.momentumCell}>
-            <span className={styles.momentumCellLabel}>Habits Kept</span>
-            <span className={styles.momentumCellValue}>{habitsDone} / {totalHabits}</span>
+            <span className={styles.momentumCellLabel}>Routine Done</span>
+            <span className={styles.momentumCellValue}>{routineDone} / {totalRoutine}</span>
           </div>
 
           <div className={styles.momentumCell}>

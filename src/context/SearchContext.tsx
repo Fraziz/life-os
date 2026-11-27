@@ -85,11 +85,6 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       .map((t) => ({ id: t.id, type: 'task' as const, title: t.title, subtitle: t.description, href: '/tasks', color: t.color, tags: t.tags, status: t.status }))
       : []),
 
-    ...(activeTypes.includes('habit') ? habits
-      .filter((h) => h.title.toLowerCase().includes(q) || h.description?.toLowerCase().includes(q))
-      .map((h) => ({ id: h.id, type: 'habit' as const, title: h.title, subtitle: h.description, href: '/habits', color: h.color }))
-      : []),
-
     ...(activeTypes.includes('brain_dump') ? items
       .filter((i) => i.content.toLowerCase().includes(q) && i.status !== 'archived')
       .map((i) => ({ id: i.id, type: 'brain_dump' as const, title: i.content.slice(0, 80), subtitle: `Brain Dump — ${i.status}`, href: '/inbox' }))
