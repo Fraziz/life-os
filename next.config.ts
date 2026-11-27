@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseio.com https://www.googletagmanager.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.groq.com https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://openrouter.ai https://api.mistral.com https://api-inference.huggingface.co https://api.cohere.com wss://*.firebaseio.com http://localhost:* http://127.0.0.1:*",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.groq.com https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://openrouter.ai https://api.mistral.com https://api-inference.huggingface.co https://api.cohere.com wss://*.firebaseio.com wss://*.googleapis.com ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*",
   "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.youtube.com https://youtube.com",
   "object-src 'none'",
   "base-uri 'self'",

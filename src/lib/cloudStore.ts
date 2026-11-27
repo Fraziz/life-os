@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, setDoc, writeBatch, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { getFirebaseDb } from './firebase';
+import { getFirebaseAuth, getFirebaseDb } from './firebase';
 import { readUpdateMeta, touchUpdateMeta } from './localStore';
 import { idbClear } from './idbStore';
 
@@ -63,12 +63,59 @@ function snapshotLocal(): Array<[string, string]> {
   return rows;
 }
 
+/**
+ * Clears all local workspace keys directly via raw Storage.prototype.removeItem
+ * so logging out or switching accounts NEVER triggers patchedRemoveItem -> Firestore deletes!
+ */
+export function clearLocalWorkspaceSilently() {
+  if (typeof localStorage === 'undefined') return;
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (
+      k &&
+      (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
+      k !== 'life_os_sidebar_collapsed'
+    ) {
+      toRemove.push(k);
+    }
+  }
+  toRemove.forEach((k) => {
+    try {
+      if (rawRemoveItem) rawRemoveItem.call(localStorage, k);
+      else localStorage.removeItem(k);
+    } catch {}
+  });
+  try {
+    if (rawRemoveItem) rawRemoveItem.call(localStorage, 'life_os_active_uid');
+    else localStorage.removeItem('life_os_active_uid');
+  } catch {}
+}
+
 export async function flushCloudNow(): Promise<void> {
   if (timer) {
     clearTimeout(timer);
     timer = null;
   }
-  if (!activeUid) return;
+  if (!activeUid) {
+    pending.clear();
+    pendingDeletions.clear();
+    return;
+  }
+
+  // Never flush to Firestore unless the currently authenticated Firebase user matches activeUid
+  let currentAuthUid: string | null = null;
+  try {
+    currentAuthUid = getFirebaseAuth().currentUser?.uid || null;
+  } catch {
+    currentAuthUid = null;
+  }
+  if (!currentAuthUid || currentAuthUid !== activeUid) {
+    pending.clear();
+    pendingDeletions.clear();
+    return;
+  }
+
   if (pending.size === 0 && pendingDeletions.size === 0) return;
 
   const uid = activeUid;
@@ -106,11 +153,15 @@ export async function flushCloudNow(): Promise<void> {
       });
       await batch.commit();
     }
-  } catch (err) {
-    // If flush fails, re-queue the entries so they retry on next flush
+  } catch (err: unknown) {
+    const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
+    if (code === 'permission-denied' || code === 'unauthenticated') {
+      // Drop stale entries on auth failure rather than re-queuing them across sessions
+      return;
+    }
+    // If transient network flush fails while still authenticated for this user, re-queue updates (not deletions across sign-out)
     console.warn('[LifeOS] Cloud flush failed, will retry:', err);
     entriesToSet.forEach(([k, v]) => pending.set(k, v));
-    entriesToDelete.forEach((k) => pendingDeletions.add(k));
     scheduleFlush();
   }
 }
@@ -175,25 +226,13 @@ function patchLocalStorage() {
  * If Firestore already has user data, syncs the cloud state to localStorage.
  */
 export async function hydrateFromCloud(uid: string): Promise<void> {
-  // Check if last active user was different to isolate user data
+  // Check if last active user was different to isolate user data safely without deleting Firestore docs
   if (typeof localStorage !== 'undefined') {
     const lastUid = localStorage.getItem('life_os_active_uid');
     if (lastUid && lastUid !== uid) {
-      const toRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (
-          k &&
-          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
-          k !== 'life_os_sidebar_collapsed'
-        ) {
-          toRemove.push(k);
-        }
-      }
-      toRemove.forEach((k) => {
-        if (rawRemoveItem) rawRemoveItem.call(localStorage, k);
-        else localStorage.removeItem(k);
-      });
+      pending.clear();
+      pendingDeletions.clear();
+      clearLocalWorkspaceSilently();
       await idbClear();
     }
     if (rawSetItem) rawSetItem.call(localStorage, 'life_os_active_uid', uid);
@@ -201,7 +240,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   }
 
   const fetchDocsPromise = getDocs(collection(getFirebaseDb(), 'users', uid, 'kv'));
-  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000));
+  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
   
   const snap = await Promise.race([fetchDocsPromise, timeoutPromise]);
   if (!snap) {
@@ -338,12 +377,21 @@ export function startCloudSync(uid: string) {
   });
 }
 
-export async function stopCloudSync() {
+export async function stopCloudSync(options: { flushWrites?: boolean } = {}) {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
   if (unsubscribeSnapshot) {
     unsubscribeSnapshot();
     unsubscribeSnapshot = null;
   }
-  await flushCloudNow();
+  pendingDeletions.clear();
+  if (options.flushWrites) {
+    await flushCloudNow();
+  }
+  pending.clear();
+  pendingDeletions.clear();
   activeUid = null;
 }
 

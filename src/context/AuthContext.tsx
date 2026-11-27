@@ -20,6 +20,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { explainFirebaseError, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { removeCurrentDeviceSession, revokeAllOtherDeviceSessions } from '@/lib/deviceSessions';
 import { idbClear } from '@/lib/idbStore';
+import { clearLocalWorkspaceSilently, stopCloudSync } from '@/lib/cloudStore';
 
 export interface AppUser {
   uid: string;
@@ -131,30 +132,7 @@ async function verifyLocalPin(pin: string, stored: string): Promise<boolean> {
 }
 
 function clearUserLocalStorageSync() {
-  if (typeof localStorage === 'undefined') return;
-  const toRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (
-      k &&
-      (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
-      k !== 'life_os_sidebar_collapsed'
-    ) {
-      toRemove.push(k);
-    }
-  }
-  toRemove.forEach((k) => {
-    try {
-      localStorage.removeItem(k);
-    } catch {
-      // ignore
-    }
-  });
-  try {
-    localStorage.removeItem('life_os_active_uid');
-  } catch {
-    // ignore
-  }
+  clearLocalWorkspaceSilently();
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -361,6 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setError(null);
     try {
+      await stopCloudSync({ flushWrites: true });
       if (!isGuest) {
         const current = getFirebaseAuth().currentUser;
         if (current) await removeCurrentDeviceSession(current.uid);
