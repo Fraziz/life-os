@@ -67,32 +67,34 @@ export default function AuthGate({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, isGuest]);
 
+  const activeAuthUid = user && !isGuest ? user.uid : null;
+
   // Cloud sync in background - NEVER blocks rendering - Firebase users only
   useEffect(() => {
-    if (!user || isGuest) {
+    if (!activeAuthUid) {
       lastSyncedUid.current = null;
-      if (user && isGuest && typeof window !== 'undefined') {
+      if (isGuest && typeof window !== 'undefined') {
         (window as Window & {
           sarilingDesktop?: { notifyWorkspaceReady?: () => void };
         }).sarilingDesktop?.notifyWorkspaceReady?.();
       }
       return;
     }
-    if (lastSyncedUid.current === user.uid) return;
-    lastSyncedUid.current = user.uid;
+    if (lastSyncedUid.current === activeAuthUid) return;
+    lastSyncedUid.current = activeAuthUid;
 
     let cancelled = false;
-    // CRITICAL: Start cloud sync FIRST so localStorage.setItem is patched
-    // immediately. Any writes (task toggles, brain dumps) during hydration
-    // will be captured and queued to Firebase.
-    startCloudSync(user.uid);
 
     (async () => {
       try {
-        await hydrateFromCloud(user.uid);
-        if (!cancelled) setHydrateError(null);
+        // Hydrate from Firestore first so mount-time defaults do not race ahead of existing cloud data
+        await hydrateFromCloud(activeAuthUid);
+        if (cancelled) return;
+        startCloudSync(activeAuthUid);
+        setHydrateError(null);
       } catch (err) {
         if (!cancelled) {
+          startCloudSync(activeAuthUid);
           setHydrateError(err instanceof Error ? err.message : 'Cloud sync not ready.');
         }
       }
@@ -100,9 +102,10 @@ export default function AuthGate({
 
     return () => {
       cancelled = true;
+      lastSyncedUid.current = null;
       void stopCloudSync();
     };
-  }, [user, isGuest]);
+  }, [activeAuthUid, isGuest]);
 
   const [takingLong, setTakingLong] = useState(false);
 

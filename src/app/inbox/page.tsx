@@ -1079,8 +1079,8 @@ export default function InboxPage() {
           maxColumns={5}
           fallbackClassName={styles.inboxList}
           emptyState={
-            <div style={{ textAlign: 'center', padding: 'var(--space-12) 0', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', width: '100%' }}>
-              <Inbox size={32} style={{ color: 'var(--color-text-faint)', marginBottom: '8px' }} />
+            <div style={{ textAlign: 'center', padding: 'var(--space-12) 16px', background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', border: '1px solid var(--color-border-subtle)', width: '100%' }}>
+              <Inbox size={32} style={{ color: 'var(--color-text-muted)', marginBottom: '8px' }} />
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
                 {filterTab === 'inbox'
                   ? 'Your head is completely clear! Nothing in the inbox.'
@@ -1094,6 +1094,33 @@ export default function InboxPage() {
                   ? 'No converted ideas yet.'
                   : 'No items in this category.'}
               </p>
+              {filterTab === 'inbox' && items.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetToDefaultInbox();
+                    showToast('Restored starter ideas to Idea Parking');
+                  }}
+                  style={{
+                    marginTop: '14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    minHeight: '38px',
+                    padding: '0 14px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RotateCcw size={13} />
+                  <span>Restore Starter Ideas</span>
+                </button>
+              )}
             </div>
           }
           renderItem={(item, index) => {

@@ -14,6 +14,7 @@ let pendingDeletions = new Set<string>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 let patched = false;
 let unsubscribeSnapshot: (() => void) | null = null;
+let hydrationEpoch = 0;
 
 function kvRef(uid: string, key: string) {
   return doc(getFirebaseDb(), 'users', uid, 'kv', key);
@@ -226,6 +227,8 @@ function patchLocalStorage() {
  * If Firestore already has user data, syncs the cloud state to localStorage.
  */
 export async function hydrateFromCloud(uid: string): Promise<void> {
+  const myEpoch = ++hydrationEpoch;
+
   // Check if last active user was different to isolate user data safely without deleting Firestore docs
   if (typeof localStorage !== 'undefined') {
     const lastUid = localStorage.getItem('life_os_active_uid');
@@ -234,6 +237,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
       pendingDeletions.clear();
       clearLocalWorkspaceSilently();
       await idbClear();
+      if (myEpoch !== hydrationEpoch) return;
     }
     if (rawSetItem) rawSetItem.call(localStorage, 'life_os_active_uid', uid);
     else localStorage.setItem('life_os_active_uid', uid);
@@ -243,6 +247,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
   
   const snap = await Promise.race([fetchDocsPromise, timeoutPromise]);
+  if (myEpoch !== hydrationEpoch) return;
   if (!snap) {
     activeUid = uid;
     if (typeof window !== 'undefined') {
@@ -275,6 +280,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   activeUid = uid;
   if (pending.size > 0 || pendingDeletions.size > 0) {
     await flushCloudNow();
+    if (myEpoch !== hydrationEpoch) return;
   }
 
   // Notify all components and desktop companion that cloud data is loaded
@@ -378,6 +384,7 @@ export function startCloudSync(uid: string) {
 }
 
 export async function stopCloudSync(options: { flushWrites?: boolean } = {}) {
+  hydrationEpoch += 1;
   if (timer) {
     clearTimeout(timer);
     timer = null;

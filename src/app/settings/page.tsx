@@ -5,7 +5,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
-import { wipeCloudKv } from '@/lib/cloudStore';
+import { flushCloudNow, wipeCloudKv } from '@/lib/cloudStore';
 import { wipeCloudBooks } from '@/lib/bookCloudSync';
 import { idbGet, idbSet } from '@/lib/idbStore';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
@@ -288,10 +288,11 @@ export default function SettingsPage() {
         }
       }
 
-      // Notify all active contexts that data was updated
+      // Notify all active contexts that data was updated and flush immediately to Firestore
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
       }
+      await flushCloudNow();
 
       setRestoreStatus(`Successfully restored ${keys.length} categories!`);
       await alertDialog({
