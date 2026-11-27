@@ -278,6 +278,63 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     return activeReminders.filter((r) => !r.isRead).length;
   }, [activeReminders]);
 
+  // Mobile/Web PWA notification dispatch via ServiceWorkerRegistration.showNotification (required on Android)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if ('sarilingDesktop' in window) return; // Desktop wrapper manages its own outside toast & ring
+    if (!notifConfig.enabled || !notifConfig.browserNotifications || isQuietHourNow) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const todayKey = new Date().toISOString().split('T')[0];
+    const sentStorageKey = `life_os_web_notified_${todayKey}`;
+    let alreadySent: string[] = [];
+    try {
+      const raw = sessionStorage.getItem(sentStorageKey);
+      if (raw) alreadySent = JSON.parse(raw);
+    } catch {}
+
+    const nextToNotify = activeReminders.find(
+      (r) =>
+        !r.isRead &&
+        (r.priority === 'urgent' || r.priority === 'high' || r.type === 'scheduled_work') &&
+        !alreadySent.includes(r.id)
+    );
+    if (!nextToNotify) return;
+
+    alreadySent.push(nextToNotify.id);
+    try {
+      sessionStorage.setItem(sentStorageKey, JSON.stringify(alreadySent.slice(-50)));
+    } catch {}
+
+    const options: NotificationOptions = {
+      body: nextToNotify.message,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: nextToNotify.id,
+      data: { url: nextToNotify.href || '/' },
+    };
+
+    try {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([80, 40, 80]);
+      }
+    } catch {}
+
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.ready
+        .then((reg) => reg.showNotification(nextToNotify.title, options))
+        .catch(() => {
+          try {
+            new Notification(nextToNotify.title, options);
+          } catch {}
+        });
+    } else {
+      try {
+        new Notification(nextToNotify.title, options);
+      } catch {}
+    }
+  }, [activeReminders, notifConfig.enabled, notifConfig.browserNotifications, isQuietHourNow]);
+
   const markAsRead = useCallback((id: string) => {
     setReadSet((prev) => new Set([...prev, id]));
   }, []);

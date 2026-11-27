@@ -23,7 +23,15 @@ export function isManagedKvKey(key: string): boolean {
   if (!key) return false;
   const isPrefixMatch = key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_');
   if (!isPrefixMatch) return false;
-  if (key === 'life_os_kv_updated_v1' || key === 'life_os_active_uid') return false;
+  if (
+    key === 'life_os_kv_updated_v1' ||
+    key === 'life_os_active_uid' ||
+    key === 'life_os_guest_vault_pin' ||
+    key === 'life_os_guest_mode' ||
+    key === 'life_os_light_default_migrated_v1'
+  ) {
+    return false;
+  }
 
   // Books and knowledge documents have their own dedicated cloud sync via bookCloudSync.ts with multi-chunk storage.
   // They must NEVER be stored in or pruned by the single-document KV collection.
@@ -230,11 +238,14 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
     await flushCloudNow();
   }
 
-  // Notify all components that cloud data is loaded
+  // Notify all components and desktop companion that cloud data is loaded
   if (typeof window !== 'undefined') {
     (window as Window & { __lifeOsCloudHydratedUid?: string }).__lifeOsCloudHydratedUid = uid;
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+      (window as Window & {
+        sarilingDesktop?: { notifyWorkspaceReady?: () => void };
+      }).sarilingDesktop?.notifyWorkspaceReady?.();
     }, 0);
   }
 }

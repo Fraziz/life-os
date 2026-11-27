@@ -10,6 +10,18 @@ import type {
   CalendarEvent,
   KnowledgeDocument,
 } from '@/types';
+import { getFirebaseAuth } from '@/lib/firebase';
+
+async function getOptionalFirebaseToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return null;
+    return await user.getIdToken();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Deterministic rules engine when AI is disabled or offline.
@@ -399,10 +411,11 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
   latencyMs: number;
   modelUsed?: string;
 }> {
-  if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
+  const hasServerAuth = Boolean(await getOptionalFirebaseToken());
+  if (!aiSettings.apiKey && aiSettings.provider !== 'custom' && !hasServerAuth) {
     return {
       success: false,
-      message: 'API key is missing. Please enter your API key.',
+      message: 'API key is missing. Sign in or enter your API key in Settings.',
       latencyMs: 0,
     };
   }
@@ -462,8 +475,9 @@ export async function executeOptionalAICall(
     systemPrompt = `${systemPrompt}${PLAIN_ENGLISH_RULE}`;
   }
 
-  if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
-    throw new Error('API key is missing. Please configure your API key in Settings.');
+  const idToken = await getOptionalFirebaseToken();
+  if (!aiSettings.apiKey && aiSettings.provider !== 'custom' && !idToken) {
+    throw new Error('API key is missing. Sign in or configure your API key in Settings.');
   }
 
   // Budget safeguard
@@ -477,9 +491,13 @@ export async function executeOptionalAICall(
   // to avoid browser CORS preflight blocking (e.g. Groq & OpenAI APIs return "Failed to fetch" in browser)
   if (typeof window !== 'undefined') {
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (idToken) {
+        headers.Authorization = `Bearer ${idToken}`;
+      }
       const serverResp = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ prompt, systemPrompt, aiSettings }),
       });
 
@@ -502,7 +520,10 @@ export async function executeOptionalAICall(
       if (proxyErr?.message && !proxyErr.message.includes('Failed to fetch') && !proxyErr.message.includes('NetworkError')) {
         throw proxyErr;
       }
-      // If proxy was unreachable, continue to direct client-side fetch below
+      if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
+        throw new Error('AI proxy is unreachable and no local API key is configured.');
+      }
+      // If proxy was unreachable and user provided a BYOK key, continue to direct client-side fetch below
     }
   }
 

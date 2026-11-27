@@ -71,6 +71,11 @@ export default function AuthGate({
   useEffect(() => {
     if (!user || isGuest) {
       lastSyncedUid.current = null;
+      if (user && isGuest && typeof window !== 'undefined') {
+        (window as Window & {
+          sarilingDesktop?: { notifyWorkspaceReady?: () => void };
+        }).sarilingDesktop?.notifyWorkspaceReady?.();
+      }
       return;
     }
     if (lastSyncedUid.current === user.uid) return;

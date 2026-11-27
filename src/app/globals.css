@@ -831,6 +831,15 @@ textarea:focus-visible {
     -webkit-tap-highlight-color: transparent;
   }
 
+  button,
+  a,
+  [role='button'],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
   input:not([type='checkbox']):not([type='radio']),
   select,
   textarea {

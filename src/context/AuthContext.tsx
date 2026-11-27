@@ -105,6 +105,31 @@ async function claimOrVerifyOwner(user: User | AppUser): Promise<OwnerRecord> {
   return existing;
 }
 
+async function hashLocalPin(pin: string, existingSalt?: string): Promise<string> {
+  if (typeof window !== 'undefined' && window.crypto?.subtle) {
+    const salt = existingSalt || Array.from(window.crypto.getRandomValues(new Uint8Array(8)))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    const bytes = new TextEncoder().encode(`${salt}:${pin}`);
+    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    const hex = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return `sha256:${salt}:${hex}`;
+  }
+  return pin;
+}
+
+async function verifyLocalPin(pin: string, stored: string): Promise<boolean> {
+  if (stored.startsWith('sha256:')) {
+    const parts = stored.split(':');
+    if (parts.length !== 3) return false;
+    const expected = await hashLocalPin(pin, parts[1]);
+    return expected === stored;
+  }
+  return stored === pin;
+}
+
 function clearUserLocalStorageSync() {
   if (typeof localStorage === 'undefined') return;
   const toRemove: string[] = [];
@@ -172,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               void idbClear();
             }
             localStorage.removeItem('life_os_guest_mode');
+            localStorage.removeItem('life_os_guest_vault_pin');
             localStorage.setItem('life_os_active_uid', next.uid);
           } catch {}
         }
@@ -231,8 +257,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await clearUserLocalStorage();
         }
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.removeItem('life_os_guest_vault_pin');
         localStorage.setItem('life_os_active_uid', cred.user.uid);
-        localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
       setUser(cred.user);
@@ -272,8 +298,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await clearUserLocalStorage();
         }
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.removeItem('life_os_guest_vault_pin');
         localStorage.setItem('life_os_active_uid', cred.user.uid);
-        localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
       setUser(cred.user);
@@ -403,22 +429,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await reauthenticateWithCredential(currentUser, credential);
         // Update Firebase Auth password
         await updatePassword(currentUser, newPassword.trim());
-        // Also keep local fallback pin in sync
+        // Never retain plaintext passwords in localStorage
         try {
-          localStorage.setItem('life_os_guest_vault_pin', newPassword.trim());
+          localStorage.removeItem('life_os_guest_vault_pin');
         } catch {}
         return;
       }
 
-      // Guest / Offline Mode Password
+      // Guest / Offline Mode PIN (stored only locally as salted SHA-256 digest)
       const stored = typeof window !== 'undefined' ? localStorage.getItem('life_os_guest_vault_pin') : null;
-      if (stored && stored !== currentPassword.trim()) {
+      if (stored && !(await verifyLocalPin(currentPassword.trim(), stored))) {
         const msg = 'Current password is incorrect.';
         setError(msg);
         throw new Error(msg);
       }
 
-      localStorage.setItem('life_os_guest_vault_pin', newPassword.trim());
+      const hashedPin = await hashLocalPin(newPassword.trim());
+      localStorage.setItem('life_os_guest_vault_pin', hashedPin);
     } catch (err: unknown) {
       const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
       let message = explainFirebaseError(err);

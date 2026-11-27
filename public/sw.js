@@ -1,8 +1,13 @@
-// Sariling Mundo Service Worker for Offline Caching and PWA Installation
-const CACHE_NAME = 'sariling-mundo-v4';
+// Sariling Mundo Service Worker for Offline Caching, PWA Installation & Mobile Notifications
+const CACHE_NAME = 'sariling-mundo-v5';
 
 const STATIC_ASSETS = [
   '/',
+  '/routine',
+  '/tasks',
+  '/inbox',
+  '/focus',
+  '/settings',
   '/manifest.webmanifest',
   '/logo.png',
   '/icon-192.png',
@@ -12,7 +17,11 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
+      return Promise.all(
+        STATIC_ASSETS.map((url) =>
+          cache.add(url).catch(() => {})
+        )
+      );
     })
   );
   self.skipWaiting();
@@ -39,11 +48,58 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Handle mobile & desktop PWA notification taps: focus existing window or navigate to target route
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus().then((focused) => {
+            if (focused && 'navigate' in focused && targetUrl && !focused.url.endsWith(targetUrl)) {
+              return focused.navigate(targetUrl).catch(() => focused);
+            }
+            return focused;
+          });
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+      return undefined;
+    })
+  );
+});
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  try {
+    const payload = event.data.json();
+    const title = payload.title || 'Sariling Mundo Reminder';
+    const options = {
+      body: payload.body || 'Tap to open your workspace.',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: payload.tag || 'sariling-mundo-alert',
+      data: { url: payload.url || '/' },
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch {
+    // ignore malformed push payload
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // For page navigation, always fetch fresh from network first so users instantly get the latest deployment
+  // Never cache dynamic API endpoints
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) return;
+
+  // For page navigation, always fetch fresh from network first so users get latest updates
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request, { cache: 'no-cache' })
@@ -85,4 +141,3 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
-

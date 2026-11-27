@@ -45,6 +45,8 @@
     border-radius: 10px;
     transition: color 0.16s ease, background-color 0.16s ease, transform 0.14s ease;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
   }
 
   .navLink:active {

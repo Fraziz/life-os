@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('sarilingDesktop', {
   setStartupEnabled: (enabled) => ipcRenderer.invoke('desktop:set-startup', enabled),
   setAlertSoundEnabled: (enabled) => ipcRenderer.invoke('desktop:set-sound', enabled),
   testAlertRing: () => ipcRenderer.invoke('desktop:test-ring'),
+  notifyWorkspaceReady: () => ipcRenderer.send('desktop:workspace-ready'),
 });

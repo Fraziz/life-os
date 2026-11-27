@@ -1,12 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // App owner record for single-tenant lock
+    // App owner record — require authentication so public visitors cannot scrape owner identity
     match /app/owner {
-      allow read: if true;
-      // Allow creation only if the document does not exist yet (first-time setup)
+      allow read: if request.auth != null;
       allow create: if request.auth != null && !exists(/databases/$(database)/documents/app/owner);
-      // Allow updates or deletion only by the established owner
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 

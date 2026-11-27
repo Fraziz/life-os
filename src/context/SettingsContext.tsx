@@ -3,9 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { UserSettings } from '@/types';
 
-const DEFAULT_GROQ_KEY_1 = process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '';
-const DEFAULT_GROQ_KEY_2 = process.env.NEXT_PUBLIC_GROQ_API_KEY_2 || '';
-
 const SETTINGS_STORAGE_KEY = 'life_os_user_settings_v1';
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -48,32 +45,15 @@ export const DEFAULT_SETTINGS: UserSettings = {
   aiSettings: {
     enabled: true,
     provider: 'groq',
-    apiKey: DEFAULT_GROQ_KEY_1,
+    apiKey: '',
     model: 'openai/gpt-oss-120b',
     monthlyBudgetUSD: 10,
     spentBudgetUSD: 0,
     totalTokensUsed: 0,
     temperature: 0.7,
     autoFailover: true,
-    savedKeys: [
-      ...(DEFAULT_GROQ_KEY_1 ? [{
-        id: 'groq-key-1',
-        name: 'Groq API 1 (Primary)',
-        apiKey: DEFAULT_GROQ_KEY_1,
-        provider: 'groq' as const,
-        model: 'openai/gpt-oss-120b',
-        createdAt: '2026-09-28T03:08:00.000Z',
-      }] : []),
-      ...(DEFAULT_GROQ_KEY_2 ? [{
-        id: 'groq-key-2',
-        name: 'Groq API 2 (Backup Failover)',
-        apiKey: DEFAULT_GROQ_KEY_2,
-        provider: 'groq' as const,
-        model: 'openai/gpt-oss-120b',
-        createdAt: '2026-09-28T03:09:00.000Z',
-      }] : []),
-    ],
-    activeKeyId: DEFAULT_GROQ_KEY_1 ? 'groq-key-1' : undefined,
+    savedKeys: [],
+    activeKeyId: undefined,
   },
   simpleMode: false,
   starterPreset: 'default',
@@ -112,17 +92,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (parsed.aiSettings?.provider === 'groq' && (parsed.aiSettings?.model === 'llama-3.3-70b-versatile' || !parsed.aiSettings?.model)) {
           parsed.aiSettings.model = 'openai/gpt-oss-120b';
         }
-        // If no API key configured or using old default, ensure Groq is available with the keys
-        if (!parsed.aiSettings?.apiKey || parsed.aiSettings.apiKey.trim() === '') {
+        // Ensure aiSettings defaults exist without baking server API keys into client bundles
+        if (!parsed.aiSettings) {
+          parsed.aiSettings = { ...DEFAULT_SETTINGS.aiSettings };
+        } else {
           parsed.aiSettings = {
             ...DEFAULT_SETTINGS.aiSettings,
-            ...(parsed.aiSettings || {}),
-            enabled: true,
-            provider: 'groq',
-            apiKey: DEFAULT_GROQ_KEY_1,
-            model: parsed.aiSettings?.model || 'openai/gpt-oss-120b',
-            savedKeys: (parsed.aiSettings?.savedKeys && parsed.aiSettings.savedKeys.length > 0) ? parsed.aiSettings.savedKeys : (DEFAULT_SETTINGS.aiSettings?.savedKeys || []),
-            autoFailover: true,
+            ...parsed.aiSettings,
+            autoFailover: parsed.aiSettings.autoFailover ?? true,
           };
         }
         // Normalize legacy themes and migrate default theme once to clean Light Mode

@@ -9,6 +9,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const CONFIG_PATH = () => path.join(app.getPath('userData'), 'desktop-config.json');
 const BOUNDS_PATH = () => path.join(app.getPath('userData'), 'window-bounds.json');
 const BUBBLE_CONFIG_PATH = () => path.join(app.getPath('userData'), 'bubble-config.json');
+const LAST_SNAPSHOT_PATH = () => path.join(app.getPath('userData'), 'last-snapshot.json');
 const startedAtLogin = process.argv.includes('--autostart');
 
 let mainWindow = null;
@@ -94,10 +95,35 @@ function checkLocalhostAlive(url = 'http://localhost:3000') {
   });
 }
 
+function isValidWorkspaceUrl(rawUrl) {
+  try {
+    const parsed = new URL(String(rawUrl || '').trim());
+    const isLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    if (parsed.protocol === 'https:') return true;
+    if (parsed.protocol === 'http:' && isLocal) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function getConfiguredUrl() {
-  if (process.env.LIFE_OS_URL) return process.env.LIFE_OS_URL;
+  if (process.env.LIFE_OS_URL && isValidWorkspaceUrl(process.env.LIFE_OS_URL)) {
+    return process.env.LIFE_OS_URL;
+  }
   const cfg = readJson(CONFIG_PATH(), {});
-  return typeof cfg.url === 'string' && cfg.url.trim() ? cfg.url.trim() : null;
+  return typeof cfg.url === 'string' && isValidWorkspaceUrl(cfg.url) ? cfg.url.trim() : null;
+}
+
+function isMainWindowTrustedOrigin() {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  try {
+    const curUrl = mainWindow.webContents.getURL();
+    if (!curUrl || curUrl.startsWith('file://')) return false;
+    return isValidWorkspaceUrl(curUrl);
+  } catch {
+    return false;
+  }
 }
 
 function isSameAppOrAuthOrigin(targetUrl, appUrl) {
@@ -279,6 +305,7 @@ function createBubbleWindow() {
       preload: path.join(__dirname, 'bubble-preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -293,8 +320,17 @@ function createBubbleWindow() {
 
 // ── Compact Anchored Action Popover ────────────────────────────
 async function readWorkspaceSnapshot() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+  const soundEnabled = getAlertSoundEnabled();
+  const getCachedFallback = () => {
+    const cached = readJson(LAST_SNAPSHOT_PATH(), null);
+    if (cached && cached.ready) {
+      return { ...cached, soundEnabled, cachedOffline: true };
+    }
+    return { ready: false, theme: 'light', soundEnabled, upNext: [], summary: 'Workspace loading' };
+  };
+
+  if (!mainWindow || mainWindow.isDestroyed() || !isMainWindowTrustedOrigin()) {
+    return getCachedFallback();
   }
   try {
     const snap = await mainWindow.webContents.executeJavaScript(`
@@ -740,8 +776,28 @@ async function readWorkspaceSnapshot() {
       })()
     `);
 
-    const soundEnabled = getAlertSoundEnabled();
     const enriched = snap && typeof snap === 'object' ? { ...snap, soundEnabled } : snap;
+    if (enriched && enriched.ready) {
+      writeJson(LAST_SNAPSHOT_PATH(), {
+        ready: true,
+        theme: enriched.theme,
+        primary: enriched.primary,
+        upNext: enriched.upNext,
+        taskItems: enriched.taskItems,
+        routineItems: enriched.routineItems,
+        reminderItems: enriched.reminderItems,
+        routineSummary: enriched.routineSummary,
+        alertCandidate: enriched.alertCandidate,
+        startupCandidate: enriched.startupCandidate,
+        hasWork: enriched.hasWork,
+        summary: enriched.summary,
+      });
+    } else if (enriched && !enriched.needsAuth) {
+      const cached = readJson(LAST_SNAPSHOT_PATH(), null);
+      if (cached && cached.ready) {
+        return { ...cached, soundEnabled, cachedOffline: true };
+      }
+    }
     const hasWork = Boolean(enriched && enriched.hasWork);
     const pillText = enriched && enriched.primary
       ? (enriched.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
@@ -752,7 +808,7 @@ async function readWorkspaceSnapshot() {
     }
     return enriched;
   } catch {
-    return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+    return getCachedFallback();
   }
 }
 
@@ -827,6 +883,7 @@ function createToastWindow() {
       preload: path.join(__dirname, 'toast-preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -951,6 +1008,7 @@ function createPopoverWindow() {
       preload: path.join(__dirname, 'popup-preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -1328,12 +1386,21 @@ if (!gotSingleLock) {
     ipcMain.handle('desktop:get-url', () => getConfiguredUrl() || '');
     ipcMain.handle('desktop:save-url', (_event, rawUrl) => {
       const cleaned = String(rawUrl || '').trim();
-      if (!/^https?:\/\//i.test(cleaned)) {
-        throw new Error('URL must start with http:// or https://');
+      if (!isValidWorkspaceUrl(cleaned)) {
+        throw new Error('URL must use https:// (or http://localhost for local development)');
       }
       writeJson(CONFIG_PATH(), { ...readJson(CONFIG_PATH(), {}), url: cleaned });
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(cleaned);
       return cleaned;
+    });
+
+    ipcMain.on('desktop:workspace-ready', () => {
+      void refreshPopover();
+      if (!startupBriefingDone) {
+        setTimeout(() => {
+          void evaluateAndNotifyAlerts(false, { allowStartupBriefing: true });
+        }, 650);
+      }
     });
 
     ipcMain.handle('desktop:get-companion-config', () => ({
@@ -1436,7 +1503,7 @@ if (!gotSingleLock) {
 
     ipcMain.handle('popover:complete-task', async (_event, taskId) => {
       let ok = false;
-      if (mainWindow && !mainWindow.isDestroyed() && taskId) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && taskId) {
         const safeId = JSON.stringify(String(taskId));
         ok = await mainWindow.webContents.executeJavaScript(`
           (() => {
@@ -1461,7 +1528,7 @@ if (!gotSingleLock) {
 
     ipcMain.handle('popover:toggle-subtask', async (_event, taskId, subtaskId) => {
       let result = { ok: false, completed: false, allDone: false };
-      if (mainWindow && !mainWindow.isDestroyed() && taskId && subtaskId) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && taskId && subtaskId) {
         const safeTaskId = JSON.stringify(String(taskId));
         const safeSubId = JSON.stringify(String(subtaskId));
         result = await mainWindow.webContents.executeJavaScript(`
@@ -1506,7 +1573,7 @@ if (!gotSingleLock) {
 
     ipcMain.handle('popover:toggle-routine-block', async (_event, blockId) => {
       let result = { ok: false, isDone: false };
-      if (mainWindow && !mainWindow.isDestroyed() && blockId) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && blockId) {
         const safeId = JSON.stringify(String(blockId));
         result = await mainWindow.webContents.executeJavaScript(`
           (() => {
@@ -1553,7 +1620,7 @@ if (!gotSingleLock) {
 
     ipcMain.handle('popover:toggle-routine-step', async (_event, blockId, stepIdx) => {
       let result = { ok: false, stepDone: false, blockCompleted: false };
-      if (mainWindow && !mainWindow.isDestroyed() && blockId && Number.isInteger(Number(stepIdx))) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && blockId && Number.isInteger(Number(stepIdx))) {
         const safeId = JSON.stringify(String(blockId));
         const safeIdx = Number(stepIdx);
         result = await mainWindow.webContents.executeJavaScript(`
@@ -1606,7 +1673,7 @@ if (!gotSingleLock) {
     });
 
     ipcMain.handle('popover:dismiss-reminder', async (_event, reminderId) => {
-      if (mainWindow && !mainWindow.isDestroyed() && reminderId) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && reminderId) {
         const safeId = JSON.stringify(String(reminderId));
         await mainWindow.webContents.executeJavaScript(`
           (() => {
@@ -1653,7 +1720,7 @@ if (!gotSingleLock) {
 
     ipcMain.handle('popover:add-task', async (_event, rawTitle) => {
       const cleanTitle = String(rawTitle || '').trim();
-      if (mainWindow && !mainWindow.isDestroyed() && cleanTitle) {
+      if (mainWindow && !mainWindow.isDestroyed() && isMainWindowTrustedOrigin() && cleanTitle) {
         const safeTitle = JSON.stringify(cleanTitle);
         await mainWindow.webContents.executeJavaScript(`
           (() => {

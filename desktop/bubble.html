@@ -109,6 +109,24 @@
 
     .edgeLineHandle {
       position: relative;
+      width: 14px;
+      height: 74px;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .edgeStage.left .edgeLineHandle {
+      justify-content: flex-start;
+    }
+
+    .edgeStage.right .edgeLineHandle {
+      justify-content: flex-end;
+    }
+
+    .edgeSliver {
       width: 5px;
       height: 58px;
       background: rgba(148, 163, 184, 0.34);
@@ -117,7 +135,6 @@
       border: 1px solid rgba(255, 255, 255, 0.16);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
       opacity: 0.44;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -131,23 +148,28 @@
         box-shadow 0.18s ease;
     }
 
-    .edgeStage.left .edgeLineHandle {
+    .edgeStage.left .edgeSliver {
       border-radius: 0 10px 10px 0;
       border-left: none;
     }
 
-    .edgeStage.right .edgeLineHandle {
+    .edgeStage.right .edgeSliver {
       border-radius: 10px 0 0 10px;
       border-right: none;
     }
 
-    .edgeLineHandle.hasWork {
+    .edgeLineHandle.hasWork .edgeSliver {
       background: rgba(203, 213, 225, 0.46);
       opacity: 0.58;
     }
 
     .edgeLineHandle:hover,
     .edgeLineHandle.active {
+      width: 30px;
+    }
+
+    .edgeLineHandle:hover .edgeSliver,
+    .edgeLineHandle.active .edgeSliver {
       width: 28px;
       height: 68px;
       opacity: 1;
@@ -248,7 +270,9 @@
     <div id="mode-line" class="edgeStage right hidden">
       <div id="edge-handle" class="edgeLineHandle"
         title="Click or swipe inward for Edge Sidebar · Drag up/down to move · Right-click for styles">
-        <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
+        <span class="edgeSliver">
+          <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
+        </span>
       </div>
     </div>
 

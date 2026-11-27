@@ -56,8 +56,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   color: var(--color-text);
   background: transparent;
@@ -65,6 +67,7 @@
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   flex-shrink: 0;
 }
 
@@ -92,8 +95,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   background: transparent;
   border: none;
@@ -101,6 +106,7 @@
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease, transform 0.12s ease;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .iconBtn:active {
@@ -135,6 +141,13 @@
 }
 
 @keyframes badgePopTop {
-  0% { transform: scale(0.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

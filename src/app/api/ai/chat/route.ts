@@ -3,11 +3,42 @@ import { checkRateLimit, getClientIp, isPrivateOrReservedHost } from '@/lib/rate
 
 export const dynamic = 'force-dynamic';
 
+const FIREBASE_WEB_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '';
+
+async function verifyFirebaseIdToken(authHeader: string | null): Promise<string | null> {
+  if (!authHeader || !authHeader.startsWith('Bearer ') || !FIREBASE_WEB_API_KEY) {
+    return null;
+  }
+  const idToken = authHeader.slice(7).trim();
+  if (!idToken || idToken.length > 4096) return null;
+
+  try {
+    const resp = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_WEB_API_KEY)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify({ idToken }),
+      }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const uid = data?.users?.[0]?.localId;
+    return typeof uid === 'string' && uid.length > 0 ? uid : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    // Rate limiting: max 25 AI generation requests per minute per IP
     const clientIp = getClientIp(request);
-    const rateCheck = checkRateLimit(`ai-chat:${clientIp}`, 25, 60 * 1000);
+    const verifiedUid = await verifyFirebaseIdToken(request.headers.get('authorization'));
+    const rateKey = verifiedUid ? `ai-chat:user:${verifiedUid}` : `ai-chat:ip:${clientIp}`;
+
+    // Rate limiting: max 25 AI generation requests per minute per user or IP
+    const rateCheck = checkRateLimit(rateKey, 25, 60 * 1000);
     if (!rateCheck.success) {
       return NextResponse.json(
         { error: 'Rate limit exceeded: Please wait a moment before sending more AI requests.' },
@@ -18,6 +49,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { prompt, systemPrompt = '', aiSettings } = body;
 
+    if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 32000) {
+      return NextResponse.json({ error: 'Prompt must be a non-empty string under 32,000 characters.' }, { status: 400 });
+    }
+
     if (!aiSettings) {
       return NextResponse.json({ error: 'AI Settings are required' }, { status: 400 });
     }
@@ -25,29 +60,12 @@ export async function POST(request: Request) {
     const provider = aiSettings.provider || 'gemini';
     const rawApiKey = (aiSettings.apiKey || '').trim();
 
-    // Fallback to secure server env keys (supports server-only and legacy env formats)
-    const envGroqKey1 =
-      process.env.GROQ_API_KEY_1 ||
-      process.env.GROQ_API_KEY ||
-      process.env.NEXT_PUBLIC_GROQ_API_KEY_1 ||
-      process.env.NEXT_PUBLIC_GROQ_API_KEY ||
-      '';
-    const envGroqKey2 =
-      process.env.GROQ_API_KEY_2 ||
-      process.env.NEXT_PUBLIC_GROQ_API_KEY_2 ||
-      '';
-    const envGeminiKey =
-      process.env.GEMINI_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-      '';
-    const envOpenAIKey =
-      process.env.OPENAI_API_KEY ||
-      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-      '';
-    const envAnthropicKey =
-      process.env.ANTHROPIC_API_KEY ||
-      process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY ||
-      '';
+    // Server-only environment keys: strictly require an authenticated Firebase user before spending server quota
+    const envGroqKey1 = verifiedUid ? (process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY || '') : '';
+    const envGroqKey2 = verifiedUid ? (process.env.GROQ_API_KEY_2 || '') : '';
+    const envGeminiKey = verifiedUid ? (process.env.GEMINI_API_KEY || '') : '';
+    const envOpenAIKey = verifiedUid ? (process.env.OPENAI_API_KEY || '') : '';
+    const envAnthropicKey = verifiedUid ? (process.env.ANTHROPIC_API_KEY || '') : '';
 
     const effectiveApiKey =
       rawApiKey ||
@@ -63,8 +81,12 @@ export async function POST(request: Request) {
 
     if (!effectiveApiKey && provider !== 'custom') {
       return NextResponse.json(
-        { error: `API key is missing for ${provider.toUpperCase()}. Please configure your API key in Settings.` },
-        { status: 400 }
+        {
+          error: verifiedUid
+            ? `API key is missing for ${provider.toUpperCase()}. Please configure your API key in Settings.`
+            : 'Authentication required to use server AI keys, or provide your own API key in Settings.',
+        },
+        { status: verifiedUid ? 400 : 401 }
       );
     }
 
