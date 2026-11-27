@@ -105,6 +105,33 @@ async function claimOrVerifyOwner(user: User | AppUser): Promise<OwnerRecord> {
   return existing;
 }
 
+function clearUserLocalStorageSync() {
+  if (typeof localStorage === 'undefined') return;
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (
+      k &&
+      (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
+      k !== 'life_os_sidebar_collapsed'
+    ) {
+      toRemove.push(k);
+    }
+  }
+  toRemove.forEach((k) => {
+    try {
+      localStorage.removeItem(k);
+    } catch {
+      // ignore
+    }
+  });
+  try {
+    localStorage.removeItem('life_os_active_uid');
+  } catch {
+    // ignore
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<(User | AppUser) | null>(null);
   const [owner, setOwner] = useState<OwnerRecord | null>(null);
@@ -136,6 +163,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const auth = getFirebaseAuth();
       unsub = onAuthStateChanged(auth, async (next) => {
         clearTimeout(fallbackTimer);
+        if (next && typeof localStorage !== 'undefined') {
+          try {
+            const lastUid = localStorage.getItem('life_os_active_uid');
+            const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
+            if (wasGuest || (lastUid && lastUid !== next.uid)) {
+              clearUserLocalStorageSync();
+              void idbClear();
+            }
+            localStorage.removeItem('life_os_guest_mode');
+            localStorage.setItem('life_os_active_uid', next.uid);
+          } catch {}
+        }
         setUser(next);
         setIsGuest(false);
         setReady(true);
@@ -186,8 +225,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       const cred = await Promise.race([authPromise, timeoutPromise]);
       try {
-        await clearUserLocalStorage();
+        const lastUid = localStorage.getItem('life_os_active_uid');
+        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
+        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
+          await clearUserLocalStorage();
+        }
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.setItem('life_os_active_uid', cred.user.uid);
         localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
@@ -222,8 +266,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       try {
-        await clearUserLocalStorage();
+        const lastUid = localStorage.getItem('life_os_active_uid');
+        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
+        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
+          await clearUserLocalStorage();
+        }
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.setItem('life_os_active_uid', cred.user.uid);
         localStorage.setItem('life_os_guest_vault_pin', password.trim());
       } catch {}
       setIsGuest(false);
@@ -250,8 +299,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.setCustomParameters({ prompt: 'select_account' });
       const cred = await signInWithPopup(auth, provider);
       try {
-        await clearUserLocalStorage();
+        const lastUid = localStorage.getItem('life_os_active_uid');
+        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
+        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
+          await clearUserLocalStorage();
+        }
         localStorage.removeItem('life_os_guest_mode');
+        localStorage.setItem('life_os_active_uid', cred.user.uid);
       } catch {}
       setIsGuest(false);
       setUser(cred.user);
@@ -274,31 +328,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearUserLocalStorage = async () => {
-    if (typeof localStorage !== 'undefined') {
-      const toRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (
-          k &&
-          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
-          k !== 'life_os_sidebar_collapsed'
-        ) {
-          toRemove.push(k);
-        }
-      }
-      toRemove.forEach((k) => {
-        try {
-          localStorage.removeItem(k);
-        } catch {
-          // ignore
-        }
-      });
-      try {
-        localStorage.removeItem('life_os_active_uid');
-      } catch {
-        // ignore
-      }
-    }
+    clearUserLocalStorageSync();
     await idbClear();
   };
 

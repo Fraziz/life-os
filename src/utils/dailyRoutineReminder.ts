@@ -161,7 +161,7 @@ export function getDailyRoutineSnapshot(): DailyRoutineSnapshot {
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  let blocks: RoutineBlock[] = DEFAULT_DAILY_ROUTINE;
+  let blocks: RoutineBlock[] = [];
   let completedIds: string[] = [];
   let doneDate: string | null = null;
 
@@ -219,7 +219,9 @@ export function getDailyRoutineSnapshot(): DailyRoutineSnapshot {
 
   const focusBlock = activeBlock || nextBlock;
   const progressLabel = `${completedCount}/${totalCount} done`;
-  const subtitle = activeBlock
+  const subtitle = totalCount === 0
+    ? 'No routine blocks yet'
+    : activeBlock
     ? `Now: ${activeBlock.title} (${activeBlock.timeRange}) • ${progressLabel}`
     : focusBlock
     ? `Next: ${focusBlock.title} (${focusBlock.timeRange}) • ${progressLabel}`
@@ -267,14 +269,14 @@ export function clearDailyRoutineReminderDoneToday(): void {
 export function useDailyRoutineReminder() {
   const [snapshot, setSnapshot] = useState<DailyRoutineSnapshot>(() => ({
     today: getTodayDateKey(),
-    blocks: DEFAULT_DAILY_ROUTINE,
+    blocks: [],
     completedCount: 0,
-    totalCount: DEFAULT_DAILY_ROUTINE.length,
+    totalCount: 0,
     isDoneToday: false,
-    isActiveToday: true,
+    isActiveToday: false,
     activeBlock: null,
-    nextBlock: DEFAULT_DAILY_ROUTINE[0] || null,
-    subtitle: `0/${DEFAULT_DAILY_ROUTINE.length} done • Repeats daily`,
+    nextBlock: null,
+    subtitle: 'No routine blocks yet',
   }));
 
   const refresh = useCallback(() => {

@@ -39,7 +39,7 @@ function parseMinutesRange(timeRange: string): { startMinute?: number; endMinute
 
 export default function DailyRoutineChecklist() {
   const { confirm: confirmDialog } = useConfirm();
-  const [blocks, setBlocks] = useState<RoutineBlock[]>(DEFAULT_DAILY_ROUTINE);
+  const [blocks, setBlocks] = useState<RoutineBlock[]>([]);
   const [progress, setProgress] = useState<DailyProgressState>({
     date: getTodayDateKey(),
     completedStepKeys: [],
@@ -58,37 +58,49 @@ export default function DailyRoutineChecklist() {
   const [formStepsText, setFormStepsText] = useState('');
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(ROUTINE_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setBlocks(parsed);
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem(ROUTINE_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setBlocks(Array.isArray(parsed) ? parsed : []);
+        } else {
+          setBlocks([]);
         }
+      } catch {
+        setBlocks([]);
       }
-    } catch {}
 
-    const today = getTodayDateKey();
-    try {
-      const savedProgress = localStorage.getItem(PROGRESS_STORAGE_KEY);
-      if (savedProgress) {
-        const parsed: DailyProgressState = JSON.parse(savedProgress);
-        if (parsed && parsed.date === today) {
-          setProgress({
-            date: today,
-            completedStepKeys: Array.isArray(parsed.completedStepKeys) ? parsed.completedStepKeys : [],
-            completedBlockIds: Array.isArray(parsed.completedBlockIds) ? parsed.completedBlockIds : [],
-          });
-          return;
+      const today = getTodayDateKey();
+      try {
+        const savedProgress = localStorage.getItem(PROGRESS_STORAGE_KEY);
+        if (savedProgress) {
+          const parsed: DailyProgressState = JSON.parse(savedProgress);
+          if (parsed && parsed.date === today) {
+            setProgress({
+              date: today,
+              completedStepKeys: Array.isArray(parsed.completedStepKeys) ? parsed.completedStepKeys : [],
+              completedBlockIds: Array.isArray(parsed.completedBlockIds) ? parsed.completedBlockIds : [],
+            });
+            return;
+          }
         }
-      }
-    } catch {}
+      } catch {}
 
-    const fresh: DailyProgressState = { date: today, completedStepKeys: [], completedBlockIds: [] };
-    setProgress(fresh);
-    try {
-      localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(fresh));
-    } catch {}
+      const fresh: DailyProgressState = { date: today, completedStepKeys: [], completedBlockIds: [] };
+      setProgress(fresh);
+      try {
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(fresh));
+      } catch {}
+    };
+
+    loadFromStorage();
+    window.addEventListener('life_os_cloud_synced', loadFromStorage);
+    window.addEventListener('storage', loadFromStorage);
+    return () => {
+      window.removeEventListener('life_os_cloud_synced', loadFromStorage);
+      window.removeEventListener('storage', loadFromStorage);
+    };
   }, []);
 
   useEffect(() => {

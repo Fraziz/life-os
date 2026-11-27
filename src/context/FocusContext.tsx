@@ -84,7 +84,9 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(FOCUS_HISTORY_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setFocusHistory(parsed);
+        setFocusHistory(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setFocusHistory([]);
       }
     } catch (err) {
       console.error('Failed to load focus history:', err);

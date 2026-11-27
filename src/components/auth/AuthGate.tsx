@@ -20,7 +20,7 @@ export default function AuthGate({
   const pathname = usePathname();
   const router = useRouter();
   const [hydrateError, setHydrateError] = useState<string | null>(null);
-  const syncStarted = useRef(false);
+  const lastSyncedUid = useRef<string | null>(null);
   const sessionMountedAt = useRef(Date.now());
 
   const isAuthRoute = pathname === '/login' || pathname === '/register';
@@ -70,11 +70,11 @@ export default function AuthGate({
   // Cloud sync in background - NEVER blocks rendering - Firebase users only
   useEffect(() => {
     if (!user || isGuest) {
-      syncStarted.current = false;
+      lastSyncedUid.current = null;
       return;
     }
-    if (syncStarted.current) return;
-    syncStarted.current = true;
+    if (lastSyncedUid.current === user.uid) return;
+    lastSyncedUid.current = user.uid;
 
     let cancelled = false;
     // CRITICAL: Start cloud sync FIRST so localStorage.setItem is patched

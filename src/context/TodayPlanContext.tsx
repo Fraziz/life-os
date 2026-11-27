@@ -77,10 +77,12 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         setTodayPlan(parsed);
-      } else if (settings?.availableHoursPerDay) {
+      } else {
         setTodayPlan({
           ...DEFAULT_TODAY_PLAN,
-          availableMinutes: settings.availableHoursPerDay * 60,
+          availableMinutes: settings?.availableHoursPerDay
+            ? settings.availableHoursPerDay * 60
+            : DEFAULT_TODAY_PLAN.availableMinutes,
         });
       }
     } catch (err) {
