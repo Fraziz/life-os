@@ -5,11 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronDown,
-  Sun,
-  LogOut,
-  Settings,
-  ShieldAlert,
-  Compass,
   Pin,
   PinOff,
   Home,
@@ -28,7 +23,7 @@ import {
   RotateCcw,
   TrendingUp,
   Zap,
-  Monitor,
+  Compass,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -36,7 +31,6 @@ import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTour } from '@/context/TourContext';
-import { useConfirm } from '@/context/ConfirmContext';
 import { usePwaInstall } from '@/utils/usePwaInstall';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
@@ -85,9 +79,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { settings, toggleSimpleMode } = useSettings();
-  const { user, logout, logoutAllDevices } = useAuth();
+  const { user, logout } = useAuth();
   const { startTour } = useTour();
-  const { confirm: confirmDialog } = useConfirm();
   const { canPromptInstall, isStandalone, promptInstall } = usePwaInstall();
 
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
@@ -333,7 +326,6 @@ export default function Sidebar({
                 data-tour="nav-settings"
                 onClick={() => setProfileMenuOpen(false)}
               >
-                <Settings size={14} />
                 <span>Settings</span>
               </Link>
               <button
@@ -344,7 +336,6 @@ export default function Sidebar({
                   toggleSimpleMode();
                 }}
               >
-                <Zap size={14} color="var(--color-accent)" />
                 <span>{settings.simpleMode ? 'Switch to Full Mode' : 'Switch to Simple Mode'}</span>
               </button>
               <button
@@ -355,8 +346,24 @@ export default function Sidebar({
                   startTour();
                 }}
               >
-                <Compass size={14} />
                 <span>Interactive Tour</span>
+              </button>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  const desktopApi = (window as Window & {
+                    sarilingDesktop?: { toggleBubblePopover?: () => Promise<unknown> };
+                  }).sarilingDesktop;
+                  if (desktopApi?.toggleBubblePopover) {
+                    void desktopApi.toggleBubblePopover();
+                  } else {
+                    window.dispatchEvent(new CustomEvent('open-ai-chat'));
+                  }
+                }}
+              >
+                <span>Floating Bubble</span>
               </button>
               {!isStandalone && (
                 canPromptInstall ? (
@@ -368,7 +375,6 @@ export default function Sidebar({
                       void promptInstall();
                     }}
                   >
-                    <Monitor size={14} />
                     <span>Install Desktop App</span>
                   </button>
                 ) : (
@@ -377,7 +383,6 @@ export default function Sidebar({
                     className={styles.dropdownItem}
                     onClick={() => setProfileMenuOpen(false)}
                   >
-                    <Monitor size={14} />
                     <span>Desktop App (Windows)</span>
                   </Link>
                 )
@@ -390,22 +395,7 @@ export default function Sidebar({
                   void logout();
                 }}
               >
-                <LogOut size={14} />
                 <span>Sign Out</span>
-              </button>
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                style={{ color: 'var(--color-danger, #ef4444)' }}
-                onClick={async () => {
-                  setProfileMenuOpen(false);
-                  if (await confirmDialog({ title: 'Log Out All Devices', message: 'Log out of all devices? This will invalidate all your sessions across all phones and computers.', confirmLabel: 'Log Out All' })) {
-                    void logoutAllDevices();
-                  }
-                }}
-              >
-                <ShieldAlert size={14} />
-                <span>Log out all devices</span>
               </button>
             </div>
           )}

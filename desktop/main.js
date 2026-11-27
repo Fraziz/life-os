@@ -797,6 +797,56 @@ if (!gotSingleLock) {
       return cleaned;
     });
 
+    ipcMain.handle('desktop:get-bubble-config', () => {
+      const cfg = getBubbleConfig();
+      const popoverVisible = Boolean(popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible());
+      return {
+        visible: Boolean(cfg.visible),
+        mode: cfg.mode || 'circle',
+        edge: cfg.edge || 'right',
+        popoverVisible,
+      };
+    });
+
+    ipcMain.handle('desktop:set-bubble-visible', (_event, visible) => {
+      const next = { ...getBubbleConfig(), visible: Boolean(visible) };
+      saveBubbleConfig(next);
+      if (next.visible) {
+        if (!bubbleWindow || bubbleWindow.isDestroyed()) createBubbleWindow();
+        bubbleWindow.showInactive();
+        positionAndResizeBubble(next);
+      } else {
+        hidePopover();
+        bubbleWindow?.hide();
+      }
+      if (tray) tray.setContextMenu(buildTrayMenu());
+      return next;
+    });
+
+    ipcMain.handle('desktop:set-bubble-mode', (_event, mode) => {
+      const validMode = ['circle', 'line', 'pill'].includes(mode) ? mode : 'circle';
+      const cur = getBubbleConfig();
+      saveBubbleConfig({ ...cur, visible: true });
+      if (!bubbleWindow || bubbleWindow.isDestroyed()) createBubbleWindow();
+      bubbleWindow.showInactive();
+      setBubbleMode(validMode);
+      return getBubbleConfig();
+    });
+
+    ipcMain.handle('desktop:trigger-bubble', async () => {
+      const cur = getBubbleConfig();
+      if (!cur.visible) {
+        const next = { ...cur, visible: true };
+        saveBubbleConfig(next);
+        if (!bubbleWindow || bubbleWindow.isDestroyed()) createBubbleWindow();
+        bubbleWindow.showInactive();
+        positionAndResizeBubble(next);
+        if (tray) tray.setContextMenu(buildTrayMenu());
+      }
+      await showPopover();
+      return getBubbleConfig();
+    });
+
     ipcMain.handle('bubble:get-state', () => {
       const cfg = getBubbleConfig();
       const appVisible = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());

@@ -84,6 +84,27 @@ export default function SettingsPage() {
   const { startTour, resetAllTours } = useTour();
   const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
+  const [hasDesktopBridge, setHasDesktopBridge] = useState(false);
+  const [desktopBubble, setDesktopBubble] = useState<{
+    visible: boolean;
+    mode: 'circle' | 'line' | 'pill';
+    edge: 'left' | 'right';
+    popoverVisible?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const desktopApi = (window as Window & {
+      sarilingDesktop?: {
+        getBubbleConfig?: () => Promise<{ visible: boolean; mode: 'circle' | 'line' | 'pill'; edge: 'left' | 'right'; popoverVisible?: boolean }>;
+      };
+    }).sarilingDesktop;
+    if (desktopApi?.getBubbleConfig) {
+      setHasDesktopBridge(true);
+      void desktopApi.getBubbleConfig().then((cfg) => {
+        if (cfg) setDesktopBubble(cfg);
+      }).catch(() => {});
+    }
+  }, []);
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
@@ -1483,6 +1504,112 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Desktop Floating Bubble Trigger & Style Controls */}
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid var(--color-border-subtle)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                          Floating Bubble
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>
+                          {hasDesktopBridge
+                            ? 'Show, hide, or trigger the quick action bubble on your screen.'
+                            : 'Open in the Windows Desktop App to control the desktop screen-edge bubble.'}
+                        </div>
+                      </div>
+                      {hasDesktopBridge && (
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            border: '1px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface-2)',
+                            color: desktopBubble?.visible ? 'var(--color-text)' : 'var(--color-text-muted)',
+                          }}
+                        >
+                          {desktopBubble?.visible ? 'Visible' : 'Hidden'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className={styles.logoActionsRow}>
+                      {hasDesktopBridge ? (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.btnPrimary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  setBubbleVisible?: (v: boolean) => Promise<typeof desktopBubble>;
+                                };
+                              }).sarilingDesktop;
+                              if (!api?.setBubbleVisible) return;
+                              const next = await api.setBubbleVisible(!desktopBubble?.visible);
+                              if (next) setDesktopBubble(next);
+                            }}
+                          >
+                            {desktopBubble?.visible ? 'Hide Floating Bubble' : 'Show Floating Bubble'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnSecondary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  toggleBubblePopover?: () => Promise<typeof desktopBubble>;
+                                };
+                              }).sarilingDesktop;
+                              if (!api?.toggleBubblePopover) return;
+                              const next = await api.toggleBubblePopover();
+                              if (next) setDesktopBubble(next);
+                            }}
+                          >
+                            Trigger Quick Action
+                          </button>
+                          {(['circle', 'line', 'pill'] as const).map((modeKey) => (
+                            <button
+                              key={modeKey}
+                              type="button"
+                              className={desktopBubble?.mode === modeKey ? styles.btnPrimary : styles.btnSecondary}
+                              onClick={async () => {
+                                const api = (window as Window & {
+                                  sarilingDesktop?: {
+                                    setBubbleMode?: (m: 'circle' | 'line' | 'pill') => Promise<typeof desktopBubble>;
+                                  };
+                                }).sarilingDesktop;
+                                if (!api?.setBubbleMode) return;
+                                const next = await api.setBubbleMode(modeKey);
+                                if (next) setDesktopBubble(next);
+                              }}
+                            >
+                              {modeKey === 'circle' ? 'Circle' : modeKey === 'line' ? 'Edge Line' : 'Pill'}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}
+                        >
+                          Trigger Floating Assistant
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
