@@ -67,7 +67,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [activeDoc, setActiveDoc] = useState<KnowledgeDocument | null>(null);
   const [activeTargetType, setActiveTargetType] = useState<'task' | 'knowledge'>('task');
-  const [customTaskTitle, setCustomTaskTitle] = useState<string>('Create Blobbit environment');
+  const [customTaskTitle, setCustomTaskTitle] = useState<string>('');
   const [mode, setMode] = useState<FocusModeType>('pomodoro');
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(25 * 60);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);

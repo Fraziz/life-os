@@ -124,3 +124,23 @@ export async function idbGetAll<T = unknown>(): Promise<T[]> {
     return [];
   }
 }
+
+export async function idbClear(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const db = await getDb();
+    await new Promise<void>((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+  } catch {
+    /* noop */
+  }
+}

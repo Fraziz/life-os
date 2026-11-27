@@ -122,22 +122,10 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Goal>(GOALS_STORAGE_KEY);
-      if (parsed && parsed.length > 0) {
-        // Ensure default goals are available if user had older partial storage
-        const existingIds = new Set(parsed.map((g) => g.id));
-        const missing = DEFAULT_GOALS.filter((dg) => !existingIds.has(dg.id));
-        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed;
-        setGoals(combined);
-        if (missing.length > 0) {
-          try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(combined)); } catch {}
-        }
-      } else {
-        setGoals(DEFAULT_GOALS);
-        try { localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(DEFAULT_GOALS)); } catch {}
-      }
+      setGoals(parsed && parsed.length > 0 ? parsed : []);
     } catch (err) {
       console.error('Failed to load Life OS goals:', err);
-      setGoals(DEFAULT_GOALS);
+      setGoals([]);
     }
   };
 

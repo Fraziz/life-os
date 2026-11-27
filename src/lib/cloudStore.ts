@@ -1,6 +1,7 @@
 import { collection, doc, getDocs, setDoc, writeBatch, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
 import { readUpdateMeta, touchUpdateMeta } from './localStore';
+import { idbClear } from './idbStore';
 
 const PREFIX = 'life_os_';
 const rawSetItem = typeof Storage !== 'undefined' ? Storage.prototype.setItem : undefined;
@@ -175,10 +176,8 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
         const k = localStorage.key(i);
         if (
           k &&
-          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_')) &&
-          k !== 'life_os_sidebar_collapsed' &&
-          k !== 'life_os_knowledge_docs_v1' &&
-          k !== 'life_os_knowledge_docs_backup'
+          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_') || k === 'knowledge_docs') &&
+          k !== 'life_os_sidebar_collapsed'
         ) {
           toRemove.push(k);
         }
@@ -187,6 +186,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
         if (rawRemoveItem) rawRemoveItem.call(localStorage, k);
         else localStorage.removeItem(k);
       });
+      await idbClear();
     }
     if (rawSetItem) rawSetItem.call(localStorage, 'life_os_active_uid', uid);
     else localStorage.setItem('life_os_active_uid', uid);

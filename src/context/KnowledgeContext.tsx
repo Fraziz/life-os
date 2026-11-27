@@ -857,14 +857,9 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 4. Defaults & User Books preservation: ONLY on initial blank setup if not yet initialized
+    // 4. Start new accounts fresh with an empty library (starter books can still be restored manually)
     if (!isInitialized && map.size === 0) {
-      const defaults = defaultDocs();
-      defaults.forEach((d) => {
-        if (!deletedIds.has(d.id)) {
-          map.set(d.id, d);
-        }
-      });
+      // Intentionally keep library empty on initial setup
     }
 
     // 5. Ensure no non-book objects or deleted IDs leaked into the library

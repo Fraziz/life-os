@@ -59,39 +59,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const reloadFromStorage = () => {
     try {
       const parsed = loadJsonArray<Project>(PROJECTS_STORAGE_KEY);
-      if (parsed && parsed.length > 0) {
-        // Ensure default projects exist in storage if missing
-        const existingIds = new Set(parsed.map((p) => p.id));
-        const missing = DEFAULT_PROJECTS.filter((dp) => !existingIds.has(dp.id));
-        const combined = missing.length > 0 ? [...parsed, ...missing] : parsed;
-
-        // Auto-heal / backfill missing goalId if applicable
-        const healed = combined.map((p) => {
-          if (!p.goalId) {
-            const def = DEFAULT_PROJECTS.find(
-              (dp) => dp.id === p.id || dp.title.toLowerCase() === p.title.toLowerCase()
-            );
-            if (def?.goalId) {
-              return { ...p, goalId: def.goalId, lifeAreaId: p.lifeAreaId || def.lifeAreaId };
-            }
-            if (p.title.toLowerCase().includes('link or dare')) {
-              return { ...p, goalId: 'goal-4', lifeAreaId: 'area-creative' };
-            }
-            if (p.title.toLowerCase().includes('gainroot')) {
-              return { ...p, goalId: 'goal-4', lifeAreaId: 'area-career' };
-            }
-          }
-          return p;
-        });
-        setProjects(healed);
-        try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(healed)); } catch {}
-      } else {
-        setProjects(DEFAULT_PROJECTS);
-        try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(DEFAULT_PROJECTS)); } catch {}
-      }
+      setProjects(parsed && parsed.length > 0 ? parsed : []);
     } catch (err) {
       console.error('Failed to load Life OS projects:', err);
-      setProjects(DEFAULT_PROJECTS);
+      setProjects([]);
     }
   };
 

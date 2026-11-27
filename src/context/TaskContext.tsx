@@ -158,87 +158,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = loadJsonArray<Task>(TASKS_STORAGE_KEY);
       if (parsed && parsed.length > 0) {
-        // Auto-heal / backfill missing projectId or goalId
-        const healed = parsed.map((t) => {
-          const updated = {
-            ...t,
-            tags: Array.isArray(t.tags) ? t.tags : [],
-          };
-          const titleLower = (t.title || '').toLowerCase();
-          const tagsLower = (t.tags || []).map((tg) => tg.toLowerCase());
-
-          // Match default task by id or title
-          const def = DEFAULT_TASKS.find(
-            (dt) => dt.id === t.id || dt.title.toLowerCase() === titleLower
-          );
-          if (def) {
-            if (!updated.projectId && def.projectId) updated.projectId = def.projectId;
-            if (!updated.goalId && def.goalId) updated.goalId = def.goalId;
-            if (!updated.lifeAreaId && def.lifeAreaId) updated.lifeAreaId = def.lifeAreaId;
-          }
-
-          // Infer project and goal from tags or title
-          if (!updated.projectId) {
-            if (
-              tagsLower.some((tg) => tg.includes('link or dare')) ||
-              titleLower.includes('link or dare') ||
-              titleLower.includes('cardmasters') ||
-              titleLower.includes('sariling mundo')
-            ) {
-              updated.projectId = 'project-link-or-dare';
-              if (!updated.goalId) updated.goalId = 'goal-4';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-creative';
-            } else if (
-              tagsLower.some((tg) => tg.includes('gainroot')) ||
-              titleLower.includes('gainroot')
-            ) {
-              updated.projectId = 'project-gainroot';
-              if (!updated.goalId) updated.goalId = 'goal-4';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-career';
-            }
-          }
-
-          if (!updated.goalId) {
-            if (
-              titleLower.includes('english') ||
-              tagsLower.some((tg) => tg.includes('english') || tg.includes('study'))
-            ) {
-              updated.goalId = 'goal-5';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-learning';
-            } else if (
-              titleLower.includes('workout') ||
-              titleLower.includes('pull ups') ||
-              tagsLower.some((tg) => tg.includes('health') || tg.includes('fitness'))
-            ) {
-              updated.goalId = 'goal-6';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-health';
-            } else if (
-              titleLower.includes('reading') ||
-              titleLower.includes('stoic') ||
-              tagsLower.some((tg) => tg.includes('reading'))
-            ) {
-              updated.goalId = 'goal-5';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-learning';
-            } else if (titleLower.includes('guitar') || titleLower.includes('music')) {
-              updated.goalId = 'goal-1';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-creative';
-            } else if (titleLower.includes('clean') || titleLower.includes('room')) {
-              updated.goalId = 'goal-2';
-              if (!updated.lifeAreaId) updated.lifeAreaId = 'area-money';
-            }
-          }
-
-          return updated;
-        });
-        setTasks(healed);
-        try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(healed)); } catch {}
+        const normalized = parsed.map((t) => ({
+          ...t,
+          tags: Array.isArray(t.tags) ? t.tags : [],
+        }));
+        setTasks(normalized);
       } else {
-        setTasks(DEFAULT_TASKS);
-        try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(DEFAULT_TASKS)); } catch {}
+        setTasks([]);
       }
     } catch (err) {
       console.error('Failed to load Life OS tasks:', err);
-      setTasks(DEFAULT_TASKS);
+      setTasks([]);
     }
   };
 
