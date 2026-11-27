@@ -2605,16 +2605,22 @@ a.summaryPill:hover {
 }
 
 @media (max-width: 768px) {
+  .heroBanner {
+    min-height: auto;
+  }
+
   .heroOverlay {
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
-    padding: 16px;
+    gap: 10px;
+    padding: 14px;
+    min-height: auto;
   }
 
   .heroQuoteCard {
     width: 100%;
     max-width: 100%;
+    padding: 8px 12px;
   }
 
   .projectGoalsGrid {
@@ -2624,21 +2630,26 @@ a.summaryPill:hover {
   .scheduleItemsGrid {
     grid-template-columns: 1fr;
   }
+
+  .taskCheckBtn {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 @media (max-width: 480px) {
   .quickActionsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 8px;
   }
 
   .actionCard {
-    padding: 8px 10px;
-    min-height: 80px;
+    padding: 10px;
+    min-height: 76px;
   }
 
   .actionCardTitle {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
   .heroOverlay {
@@ -2650,8 +2661,9 @@ a.summaryPill:hover {
   }
 
   .summaryPill {
-    padding: 5px 10px;
+    padding: 6px 10px;
     font-size: 0.75rem;
+    min-height: 32px;
   }
 }
 

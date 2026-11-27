@@ -72,6 +72,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen, openSearch } = useSearch();
+  const { unreadCount } = useReminders();
   const { settings } = useSettings();
 
   // Desktop: pinned state — when true, sidebar is locked open at 248px.
@@ -383,6 +384,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
             pageTitle={getPageTitle(pathname)}
             onMenuToggle={() => setMobileOpen(true)}
             onOpenNextAction={() => setNextActionOpen(true)}
+            onOpenSearch={openSearch}
+            onOpenReminders={() => setRemindersOpen(true)}
+            unreadCount={unreadCount}
           />
 
           {/* Automatic Tasks -> Projects -> Goals -> Dreams Progress Cascade */}

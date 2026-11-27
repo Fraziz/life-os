@@ -810,3 +810,18 @@ textarea:focus-visible {
   }
 }
 
+@media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: clip;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+

@@ -97,8 +97,15 @@
 }
 
 @keyframes badgePop {
-  0% { transform: scale(0.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /*  Generic Widget Card  */
@@ -361,8 +368,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .agendaHeader {
@@ -435,14 +449,11 @@
   transform: translateX(2px);
 }
 
-.agendaDeadlineItem {
-}
+.agendaDeadlineItem {}
 
-.agendaEventItem {
-}
+.agendaEventItem {}
 
-.agendaBlockItem {
-}
+.agendaBlockItem {}
 
 .agendaItemIconWrap {
   margin-top: 1px;
@@ -854,16 +865,16 @@
 @media (max-width: 768px) {
   .rightSidebar {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 4px;
     gap: 12px;
   }
 
   .topUtilityRow {
-    flex-wrap: wrap;
+    display: none;
   }
 
   .searchBox {
-    min-width: 200px;
+    min-width: 0;
   }
 }
 
@@ -1030,5 +1041,3 @@
   font-weight: 700;
   font-size: 0.8rem;
 }
-
-

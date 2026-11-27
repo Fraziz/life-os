@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Logo from '@/components/ui/Logo';
-import { Compass } from 'lucide-react';
+import { Bell, Compass, Search } from 'lucide-react';
 import styles from './TopBar.module.css';
 
 interface TopBarProps {
   pageTitle: string;
   onMenuToggle: () => void;
   onOpenNextAction?: () => void;
+  onOpenSearch?: () => void;
+  onOpenReminders?: () => void;
+  unreadCount?: number;
 }
 
 function HamburgerIcon() {
@@ -95,11 +97,15 @@ export default function TopBar({
   pageTitle,
   onMenuToggle,
   onOpenNextAction,
+  onOpenSearch,
+  onOpenReminders,
+  unreadCount = 0,
 }: TopBarProps) {
   return (
     <header className={styles.topBar} role="banner">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+      <div className={styles.leftGroup}>
         <button
+          type="button"
           className={styles.menuButton}
           onClick={onMenuToggle}
           aria-label="Open navigation menu"
@@ -111,8 +117,20 @@ export default function TopBar({
         <span className={styles.pageTitle}>{pageTitle}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} data-tour="topbar-actions">
+      <div className={styles.rightGroup} data-tour="topbar-actions">
         <CloudSyncDot />
+
+        {onOpenSearch && (
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={onOpenSearch}
+            title="Search"
+            aria-label="Search workspace"
+          >
+            <Search size={18} strokeWidth={1.9} />
+          </button>
+        )}
 
         {onOpenNextAction && (
           <button
@@ -123,11 +141,26 @@ export default function TopBar({
             aria-label="What to do"
             data-tour="topbar-compass"
           >
-            <Compass size={18} />
+            <Compass size={18} strokeWidth={1.9} />
           </button>
         )}
 
-        <Logo iconOnly size={26} />
+        {onOpenReminders && (
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={onOpenReminders}
+            title="Notifications & Reminders"
+            aria-label={`Notifications (${unreadCount} unread)`}
+          >
+            <Bell size={18} strokeWidth={1.9} />
+            {unreadCount > 0 && (
+              <span className={styles.badge}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </header>
   );
