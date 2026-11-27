@@ -111,7 +111,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 13px 16px;
+        padding: 12px 15px;
         border-bottom: 1px solid var(--border-subtle);
         flex-shrink: 0;
       }
@@ -182,13 +182,65 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+        transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
       }
 
       .iconBtn:hover {
+        transform: scale(1.06);
         background: var(--bg-well);
         border-color: var(--border-subtle);
         color: var(--text-main);
+      }
+
+      /* ── Compact Filter Tabs ── */
+      .filterTabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 15px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-well);
+        flex-shrink: 0;
+      }
+
+      .filterTab {
+        flex: 1;
+        height: 28px;
+        padding: 0 6px;
+        border-radius: 7px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+      }
+
+      .filterTab:hover {
+        color: var(--text-main);
+        background: var(--bg-hover);
+      }
+
+      .filterTab.active {
+        background: var(--bg-card);
+        color: var(--text-main);
+        border-color: var(--border-subtle);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      .tabBadge {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: var(--pill-bg);
+        color: var(--text-muted);
       }
 
       /* ── Scrollable Body ── */
@@ -196,10 +248,10 @@
         flex: 1;
         min-height: 0;
         overflow-y: auto;
-        padding: 14px 16px;
+        padding: 13px 15px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 13px;
       }
 
       .scrollBody::-webkit-scrollbar {
@@ -216,22 +268,22 @@
         background: var(--bg-well);
         border: 1px solid var(--border-subtle);
         border-radius: 13px;
-        padding: 13px;
+        padding: 12px;
         display: flex;
         flex-direction: column;
-        gap: 11px;
+        gap: 10px;
       }
 
       .cueRow {
         display: flex;
         align-items: flex-start;
-        gap: 11px;
+        gap: 10px;
       }
 
       .handBadge {
         position: relative;
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 10px;
         background: var(--hand-bg);
         color: var(--hand-fg);
@@ -243,8 +295,8 @@
       }
 
       .handIcon {
-        width: 19px;
-        height: 19px;
+        width: 18px;
+        height: 18px;
         will-change: transform;
       }
 
@@ -297,13 +349,13 @@
       }
 
       .cuePrompt {
-        font-size: 11px;
+        font-size: 10.8px;
         font-weight: 600;
         color: var(--text-muted);
       }
 
       .cueTitle {
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 650;
         line-height: 1.35;
         color: var(--text-main);
@@ -312,7 +364,7 @@
       }
 
       .cueMeta {
-        font-size: 11.5px;
+        font-size: 11px;
         color: var(--text-secondary);
         margin-top: 2px;
       }
@@ -320,28 +372,29 @@
       .actionRow {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
       }
 
       .btnPrimary {
         flex: 1;
-        height: 33px;
-        padding: 0 12px;
-        border-radius: 9px;
+        height: 31px;
+        padding: 0 11px;
+        border-radius: 8px;
         border: 1px solid transparent;
         background: var(--btn-primary-bg);
         color: var(--btn-primary-fg);
-        font-size: 12px;
+        font-size: 11.8px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        transition: background 0.14s ease, transform 0.12s ease;
+        gap: 5px;
+        transition: background 0.14s ease, transform 0.14s ease;
       }
 
       .btnPrimary:hover {
+        transform: translateY(-1px);
         background: var(--btn-primary-hover);
       }
 
@@ -350,13 +403,13 @@
       }
 
       .btnGhost {
-        height: 33px;
-        padding: 0 12px;
-        border-radius: 9px;
+        height: 31px;
+        padding: 0 11px;
+        border-radius: 8px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
         color: var(--text-main);
-        font-size: 12px;
+        font-size: 11.8px;
         font-weight: 500;
         cursor: pointer;
         display: inline-flex;
@@ -388,7 +441,7 @@
         background: var(--bg-well);
         color: var(--text-main);
         font-family: inherit;
-        font-size: 12.2px;
+        font-size: 12px;
         outline: none;
         transition: border-color 0.15s ease, background 0.15s ease;
       }
@@ -432,12 +485,28 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 11px;
-        font-weight: 650;
+        font-size: 10.8px;
+        font-weight: 700;
         color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.045em;
         padding: 0 2px;
+      }
+
+      .sectionAction {
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 10.8px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 1px 4px;
+        border-radius: 5px;
+      }
+
+      .sectionAction:hover {
+        background: var(--bg-well);
+        color: var(--text-main);
       }
 
       .queueList {
@@ -449,8 +518,8 @@
       .queueItem {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 9px 11px;
+        gap: 9px;
+        padding: 8px 10px;
         border-radius: 10px;
         background: var(--bg-card);
         border: 1px solid var(--border-subtle);
@@ -461,6 +530,15 @@
         transform: translateX(3px);
         background: var(--bg-well);
         border-color: var(--border-strong);
+      }
+
+      .queueItem.doneRow {
+        opacity: 0.6;
+      }
+
+      .queueItem.doneRow .queueTitle {
+        text-decoration: line-through;
+        color: var(--text-muted);
       }
 
       .checkCircle {
@@ -485,14 +563,27 @@
         color: var(--text-main);
       }
 
+      .checkCircle.checked {
+        background: var(--btn-primary-bg);
+        border-color: var(--btn-primary-bg);
+        color: var(--btn-primary-fg);
+      }
+
       .queueMain {
         flex: 1;
         min-width: 0;
         cursor: pointer;
       }
 
+      .queueTitleRow {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
       .queueTitle {
-        font-size: 12.5px;
+        font-size: 12.2px;
         font-weight: 550;
         color: var(--text-main);
         white-space: nowrap;
@@ -500,22 +591,89 @@
         text-overflow: ellipsis;
       }
 
+      .miniTag {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--pill-bg);
+        color: var(--pill-fg);
+        border: 1px solid var(--border-subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        flex-shrink: 0;
+      }
+
+      .miniTag.urgent {
+        background: var(--pill-urgent-bg);
+        color: var(--pill-urgent-fg);
+        border-color: var(--pill-urgent-border);
+      }
+
+      .miniTag.work {
+        background: var(--pill-work-bg);
+        color: var(--pill-work-fg);
+        border-color: var(--pill-work-border);
+      }
+
       .queueMeta {
-        font-size: 11px;
+        font-size: 10.8px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
+      .dismissBtn {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.55;
+        flex-shrink: 0;
+        transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
+      }
+
+      .queueItem:hover .dismissBtn {
+        opacity: 1;
+      }
+
+      .dismissBtn:hover {
+        background: var(--bg-hover);
+        color: var(--text-main);
+      }
+
       .emptyMini {
-        padding: 12px;
+        padding: 10px 12px;
         border-radius: 10px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-well);
-        font-size: 12px;
+        font-size: 11.8px;
         color: var(--text-muted);
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .emptyLink {
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .emptyLink:hover {
+        text-decoration: underline;
       }
 
       /* ── Footer ── */
@@ -524,14 +682,14 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 11px 16px;
+        padding: 10px 15px;
         border-top: 1px solid var(--border-subtle);
         background: var(--bg-well);
         flex-shrink: 0;
       }
 
       .footerStat {
-        font-size: 11.5px;
+        font-size: 11.2px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
@@ -542,7 +700,7 @@
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
         color: var(--text-main);
-        font-size: 11.5px;
+        font-size: 11.2px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
@@ -602,9 +760,26 @@
           </div>
         </header>
 
+        <!-- Category Tabs -->
+        <nav id="filter-tabs" class="filterTabs" aria-label="Sidebar Views">
+          <button type="button" class="filterTab active" data-tab="all">All</button>
+          <button type="button" class="filterTab" data-tab="tasks">
+            <span>Tasks</span>
+            <span id="tab-tasks-count" class="tabBadge">0</span>
+          </button>
+          <button type="button" class="filterTab" data-tab="routine">
+            <span>Routine</span>
+            <span id="tab-routine-count" class="tabBadge">0/0</span>
+          </button>
+          <button type="button" class="filterTab" data-tab="reminders">
+            <span>Alerts</span>
+            <span id="tab-reminders-count" class="tabBadge">0</span>
+          </button>
+        </nav>
+
         <main class="scrollBody">
-          <!-- Primary Action Cue with Animated Horizontal Pointing Hand -->
-          <section class="focusBox" aria-live="polite">
+          <!-- Primary Focus Cue Card -->
+          <section id="focus-box" class="focusBox" aria-live="polite">
             <div class="cueRow">
               <div id="hand-badge" class="handBadge animated" aria-hidden="true">
                 <svg id="icon-hand" class="handIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -624,7 +799,7 @@
               </div>
             </div>
 
-            <div class="actionRow">
+            <div id="action-row" class="actionRow">
               <button id="btn-primary" type="button" class="btnPrimary">
                 <span>Mark Done</span>
               </button>
@@ -634,7 +809,7 @@
             </div>
           </section>
 
-          <!-- Instant Task Capture inside the Edge Sidebar -->
+          <!-- Instant Task Capture -->
           <form id="quick-add-form" class="quickAddForm">
             <input
               id="quick-input"
@@ -650,18 +825,27 @@
           <section id="tasks-section" class="sectionBlock">
             <div class="sectionHeader">
               <span>Tasks &amp; Deadlines</span>
-              <span id="tasks-count">0</span>
+              <button type="button" id="btn-open-tasks" class="sectionAction">View all →</button>
             </div>
             <div id="tasks-list" class="queueList"></div>
           </section>
 
-          <!-- Daily Routine Section (shown if blocks exist) -->
-          <section id="routine-section" class="sectionBlock hidden">
+          <!-- Daily Routine Section (Always available) -->
+          <section id="routine-section" class="sectionBlock">
             <div class="sectionHeader">
-              <span>Daily Routine</span>
-              <span id="routine-count">0/0</span>
+              <span>Daily Routine (<span id="routine-count">0/0</span>)</span>
+              <button type="button" id="btn-open-routine" class="sectionAction">Manage →</button>
             </div>
             <div id="routine-list" class="queueList"></div>
+          </section>
+
+          <!-- Reminders & Alerts Section -->
+          <section id="reminders-section" class="sectionBlock">
+            <div class="sectionHeader">
+              <span>Reminders &amp; Alerts</span>
+              <span id="reminders-count">0</span>
+            </div>
+            <div id="reminders-list" class="queueList"></div>
           </section>
         </main>
 
@@ -686,59 +870,127 @@
       const cuePromptEl = document.getElementById('cue-prompt');
       const cueTitleEl = document.getElementById('cue-title');
       const cueMetaEl = document.getElementById('cue-meta');
+      const actionRowEl = document.getElementById('action-row');
       const btnPrimaryEl = document.getElementById('btn-primary');
       const btnSecondaryEl = document.getElementById('btn-secondary');
       const quickAddFormEl = document.getElementById('quick-add-form');
       const quickInputEl = document.getElementById('quick-input');
+
+      const tabTasksCountEl = document.getElementById('tab-tasks-count');
+      const tabRoutineCountEl = document.getElementById('tab-routine-count');
+      const tabRemindersCountEl = document.getElementById('tab-reminders-count');
+      const focusBoxEl = document.getElementById('focus-box');
+
       const tasksSectionEl = document.getElementById('tasks-section');
-      const tasksCountEl = document.getElementById('tasks-count');
       const tasksListEl = document.getElementById('tasks-list');
       const routineSectionEl = document.getElementById('routine-section');
       const routineCountEl = document.getElementById('routine-count');
       const routineListEl = document.getElementById('routine-list');
+      const remindersSectionEl = document.getElementById('reminders-section');
+      const remindersCountEl = document.getElementById('reminders-count');
+      const remindersListEl = document.getElementById('reminders-list');
       const footerStatEl = document.getElementById('footer-stat');
+
+      let activeTab = 'all';
+      let lastSnapshot = null;
+
+      function applyTabVisibility() {
+        const ready = Boolean(lastSnapshot && lastSnapshot.ready);
+        if (!ready) {
+          tasksSectionEl.classList.add('hidden');
+          routineSectionEl.classList.add('hidden');
+          remindersSectionEl.classList.add('hidden');
+          return;
+        }
+        focusBoxEl.classList.toggle('hidden', activeTab !== 'all');
+        tasksSectionEl.classList.toggle('hidden', activeTab !== 'all' && activeTab !== 'tasks');
+        routineSectionEl.classList.toggle('hidden', activeTab !== 'all' && activeTab !== 'routine');
+        remindersSectionEl.classList.toggle('hidden', activeTab !== 'all' && activeTab !== 'reminders');
+      }
+
+      document.querySelectorAll('.filterTab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeTab = btn.getAttribute('data-tab') || 'all';
+          document.querySelectorAll('.filterTab').forEach((b) => b.classList.toggle('active', b === btn));
+          applyTabVisibility();
+        });
+      });
 
       function renderQueueRow(item) {
         const row = document.createElement('div');
-        row.className = 'queueItem';
+        row.className = 'queueItem' + (item.isDone ? ' doneRow' : '');
 
-        const checkBtn = document.createElement('button');
-        checkBtn.type = 'button';
-        checkBtn.className = 'checkCircle';
-        checkBtn.title = 'Mark complete';
-        checkBtn.setAttribute('aria-label', `Complete ${item.title}`);
-        checkBtn.innerHTML =
-          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-        checkBtn.onclick = async () => {
-          checkBtn.disabled = true;
-          if (item.kind === 'routine') {
-            await window.sarilingPopover?.completeRoutineBlock(item.id);
-          } else {
-            await window.sarilingPopover?.completeTask(item.id);
-          }
-        };
+        if (item.kind !== 'reminder') {
+          const checkBtn = document.createElement('button');
+          checkBtn.type = 'button';
+          checkBtn.className = 'checkCircle' + (item.isDone ? ' checked' : '');
+          checkBtn.title = item.isDone ? 'Mark incomplete' : 'Mark complete';
+          checkBtn.setAttribute('aria-label', `Toggle ${item.title}`);
+          checkBtn.innerHTML =
+            '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+          checkBtn.onclick = async () => {
+            checkBtn.disabled = true;
+            if (item.kind === 'routine') {
+              await window.sarilingPopover?.toggleRoutineBlock(item.id);
+            } else {
+              await window.sarilingPopover?.completeTask(item.id);
+            }
+          };
+          row.appendChild(checkBtn);
+        }
 
         const main = document.createElement('div');
         main.className = 'queueMain';
-        main.onclick = () => window.sarilingPopover?.openWorkspace(item.kind === 'routine' ? '/routine' : '/tasks');
+        main.onclick = () => window.sarilingPopover?.openWorkspace(item.href || (item.kind === 'routine' ? '/routine' : '/tasks'));
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'queueTitleRow';
+
+        if (item.badge) {
+          const tag = document.createElement('span');
+          tag.className = 'miniTag' + (item.tone === 'urgent' ? ' urgent' : item.tone === 'work' ? ' work' : '');
+          tag.textContent = item.badge;
+          titleRow.appendChild(tag);
+        }
 
         const title = document.createElement('div');
         title.className = 'queueTitle';
         title.textContent = item.title;
+        titleRow.appendChild(title);
 
-        const meta = document.createElement('div');
-        meta.className = 'queueMeta';
-        meta.textContent = item.meta || '';
+        main.appendChild(titleRow);
 
-        main.appendChild(title);
-        if (item.meta) main.appendChild(meta);
-        row.appendChild(checkBtn);
+        if (item.meta) {
+          const meta = document.createElement('div');
+          meta.className = 'queueMeta';
+          meta.textContent = item.meta;
+          main.appendChild(meta);
+        }
+
         row.appendChild(main);
+
+        if (item.kind === 'reminder') {
+          const dismissBtn = document.createElement('button');
+          dismissBtn.type = 'button';
+          dismissBtn.className = 'dismissBtn';
+          dismissBtn.title = 'Dismiss reminder';
+          dismissBtn.setAttribute('aria-label', 'Dismiss reminder');
+          dismissBtn.innerHTML =
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+          dismissBtn.onclick = async (e) => {
+            e.stopPropagation();
+            dismissBtn.disabled = true;
+            await window.sarilingPopover?.dismissReminder(item.id);
+          };
+          row.appendChild(dismissBtn);
+        }
+
         return row;
       }
 
       function renderSnapshot(data) {
         if (!data) return;
+        lastSnapshot = data;
 
         document.documentElement.setAttribute('data-theme', data.theme === 'dark' ? 'dark' : 'light');
 
@@ -755,18 +1007,17 @@
           cueMetaEl.textContent = data.needsAuth
             ? 'Open the full app once to sign in.'
             : 'Reading live workspace data.';
+          actionRowEl.classList.remove('hidden');
           btnPrimaryEl.innerHTML = '<span>Open Full App</span>';
           btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
           btnSecondaryEl.classList.add('hidden');
           quickAddFormEl.classList.add('hidden');
-          tasksSectionEl.classList.add('hidden');
-          routineSectionEl.classList.add('hidden');
+          applyTabVisibility();
           footerStatEl.textContent = 'Sariling Mundo Desktop';
           return;
         }
 
         quickAddFormEl.classList.remove('hidden');
-        tasksSectionEl.classList.remove('hidden');
 
         if (primary) {
           handBadgeEl.classList.add('animated');
@@ -782,6 +1033,7 @@
           cueMetaEl.textContent = primary.meta || '';
           cueMetaEl.classList.toggle('hidden', !primary.meta);
 
+          actionRowEl.classList.remove('hidden');
           btnPrimaryEl.innerHTML =
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
             '<span>' + (primary.kind === 'routine' ? 'Complete Block' : 'Complete Task') + '</span>';
@@ -790,7 +1042,7 @@
             btnPrimaryEl.disabled = true;
             try {
               if (primary.kind === 'routine') {
-                await window.sarilingPopover?.completeRoutineBlock(primary.id);
+                await window.sarilingPopover?.toggleRoutineBlock(primary.id);
               } else {
                 await window.sarilingPopover?.completeTask(primary.id);
               }
@@ -812,44 +1064,79 @@
           statusChipEl.textContent = 'Clear';
           cuePromptEl.textContent = 'All caught up';
           cueTitleEl.textContent = 'No pending tasks or active work blocks';
-          cueMetaEl.textContent = 'Capture a quick task below or open the full workspace.';
+          cueMetaEl.textContent = 'Capture a quick task below or check your routine.';
           cueMetaEl.classList.remove('hidden');
 
-          btnPrimaryEl.innerHTML = '<span>Open Full App</span>';
-          btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
-          btnSecondaryEl.classList.add('hidden');
+          actionRowEl.classList.remove('hidden');
+          btnPrimaryEl.innerHTML = '<span>+ Quick Task</span>';
+          btnPrimaryEl.onclick = () => quickInputEl.focus();
+          btnSecondaryEl.classList.remove('hidden');
+          btnSecondaryEl.textContent = 'Open Routine';
+          btnSecondaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/routine');
         }
 
+        // Tasks section
         const taskItems = Array.isArray(data.taskItems) ? data.taskItems : [];
-        tasksCountEl.textContent = String(taskItems.length);
+        tabTasksCountEl.textContent = String(taskItems.length);
         tasksListEl.innerHTML = '';
         if (taskItems.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'emptyMini';
-          empty.textContent = 'No pending tasks right now.';
+          empty.innerHTML = '<span>No pending tasks.</span>';
+          const addBtn = document.createElement('button');
+          addBtn.type = 'button';
+          addBtn.className = 'emptyLink';
+          addBtn.textContent = '+ Add';
+          addBtn.onclick = () => quickInputEl.focus();
+          empty.appendChild(addBtn);
           tasksListEl.appendChild(empty);
         } else {
           taskItems.forEach((item) => tasksListEl.appendChild(renderQueueRow(item)));
         }
 
+        // Daily Routine section (always visible)
         const routineItems = Array.isArray(data.routineItems) ? data.routineItems : [];
-        if (data.routineSummary && data.routineSummary.total > 0) {
-          routineSectionEl.classList.remove('hidden');
-          routineCountEl.textContent = `${data.routineSummary.done}/${data.routineSummary.total}`;
-          routineListEl.innerHTML = '';
-          if (routineItems.length === 0) {
-            const doneBox = document.createElement('div');
-            doneBox.className = 'emptyMini';
-            doneBox.textContent = 'All routine blocks completed today.';
-            routineListEl.appendChild(doneBox);
-          } else {
-            routineItems.forEach((item) => routineListEl.appendChild(renderQueueRow(item)));
-          }
+        const rDone = data.routineSummary ? data.routineSummary.done : 0;
+        const rTotal = data.routineSummary ? data.routineSummary.total : 0;
+        routineCountEl.textContent = `${rDone}/${rTotal}`;
+        tabRoutineCountEl.textContent = `${rDone}/${rTotal}`;
+        routineListEl.innerHTML = '';
+        if (rTotal === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'emptyMini';
+          empty.innerHTML = '<span>No routine blocks set.</span>';
+          const setupBtn = document.createElement('button');
+          setupBtn.type = 'button';
+          setupBtn.className = 'emptyLink';
+          setupBtn.textContent = 'Set up →';
+          setupBtn.onclick = () => window.sarilingPopover?.openWorkspace('/routine');
+          empty.appendChild(setupBtn);
+          routineListEl.appendChild(empty);
         } else {
-          routineSectionEl.classList.add('hidden');
-          routineListEl.innerHTML = '';
+          routineItems.forEach((item) => routineListEl.appendChild(renderQueueRow(item)));
         }
 
+        // Reminders & Alerts section (always visible)
+        const reminderItems = Array.isArray(data.reminderItems) ? data.reminderItems : [];
+        remindersCountEl.textContent = String(reminderItems.length);
+        tabRemindersCountEl.textContent = String(reminderItems.length);
+        remindersListEl.innerHTML = '';
+        if (reminderItems.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'emptyMini';
+          empty.innerHTML = '<span>All reminders clear.</span>';
+          const calBtn = document.createElement('button');
+          calBtn.type = 'button';
+          calBtn.className = 'emptyLink';
+          calBtn.textContent = 'Calendar →';
+          calBtn.onclick = () => window.sarilingPopover?.openWorkspace('/calendar');
+          empty.appendChild(calBtn);
+          remindersListEl.appendChild(empty);
+        } else {
+          reminderItems.forEach((item) => remindersListEl.appendChild(renderQueueRow(item)));
+        }
+
+        applyTabVisibility();
         footerStatEl.textContent = data.summary || 'Synced with workspace';
       }
 
@@ -865,6 +1152,14 @@
           quickInputEl.disabled = false;
           quickInputEl.focus();
         }
+      });
+
+      document.getElementById('btn-open-tasks').addEventListener('click', () => {
+        window.sarilingPopover?.openWorkspace('/tasks');
+      });
+
+      document.getElementById('btn-open-routine').addEventListener('click', () => {
+        window.sarilingPopover?.openWorkspace('/routine');
       });
 
       document.getElementById('btn-close').addEventListener('click', () => {

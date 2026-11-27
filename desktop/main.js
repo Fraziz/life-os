@@ -311,6 +311,30 @@ async function readWorkspaceSnapshot() {
 
           const rawBlocks = localStorage.getItem('life_os_scheduled_blocks_v1');
           const schedBlocks = Array.isArray(rawBlocks ? JSON.parse(rawBlocks) : null) ? JSON.parse(rawBlocks) : [];
+          const rawEvents = localStorage.getItem('life_os_calendar_events_v1');
+          const calEvents = Array.isArray(rawEvents ? JSON.parse(rawEvents) : null) ? JSON.parse(rawEvents) : [];
+          const rawInbox = localStorage.getItem('life_os_inbox_v1');
+          const inboxItems = Array.isArray(rawInbox ? JSON.parse(rawInbox) : null) ? JSON.parse(rawInbox) : [];
+          const rawDocs = localStorage.getItem('life_os_knowledge_docs_v1');
+          const docs = Array.isArray(rawDocs ? JSON.parse(rawDocs) : null) ? JSON.parse(rawDocs) : [];
+          const rawMilestones = localStorage.getItem('life_os_milestones_v1');
+          const milestones = Array.isArray(rawMilestones ? JSON.parse(rawMilestones) : null) ? JSON.parse(rawMilestones) : [];
+          const rawProjects = localStorage.getItem('life_os_projects_v1');
+          const projects = Array.isArray(rawProjects ? JSON.parse(rawProjects) : null) ? JSON.parse(rawProjects) : [];
+
+          let dismissedIds = new Set();
+          try {
+            const rawDis = localStorage.getItem('life_os_dismissed_reminders_v1');
+            const parsedDis = rawDis ? JSON.parse(rawDis) : [];
+            if (Array.isArray(parsedDis)) dismissedIds = new Set(parsedDis);
+          } catch {}
+
+          let snoozedMap = {};
+          try {
+            const rawSnooze = localStorage.getItem('life_os_snoozed_reminders_v1');
+            if (rawSnooze) snoozedMap = JSON.parse(rawSnooze) || {};
+          } catch {}
+          const nowIso = d.toISOString();
 
           const notifCfg = settings && settings.notifications ? settings.notifications : null;
           const notificationsEnabled = !notifCfg || notifCfg.enabled !== false;
@@ -438,18 +462,166 @@ async function readWorkspaceSnapshot() {
             ].filter(Boolean).join(' · ') || 'Task',
           }));
 
-          const routineItems = pendingBlocks.slice(0, 6).map((b) => ({
-            kind: 'routine',
-            id: b.id,
-            title: b.title,
-            meta: b.timeRange || 'Today',
-          }));
+          const routineItems = blocks.map((b) => {
+            const isDone = completedBlockIds.includes(b.id);
+            const isNow = !isDone && typeof b.startMinute === 'number' && typeof b.endMinute === 'number' && nowMin >= b.startMinute && nowMin < b.endMinute;
+            return {
+              kind: 'routine',
+              id: b.id,
+              isDone,
+              badge: isNow ? 'NOW' : null,
+              tone: isNow ? 'work' : 'neutral',
+              title: b.title,
+              meta: (b.timeRange || 'Today') + (Array.isArray(b.steps) && b.steps.length ? ' · ' + b.steps.length + ' steps' : ''),
+              href: '/routine',
+            };
+          });
+
+          const reminderItems = [];
+          const pushReminder = (item) => {
+            if (!item || !item.id) return;
+            if (dismissedIds.has(item.id)) return;
+            const snUntil = snoozedMap[item.id];
+            if (snUntil && snUntil > nowIso) return;
+            reminderItems.push(item);
+          };
+
+          if (activeBlock) {
+            pushReminder({
+              kind: 'reminder',
+              id: 'routine-active-' + activeBlock.id,
+              badge: 'ROUTINE',
+              tone: 'work',
+              title: activeBlock.title,
+              meta: 'Active now (' + (activeBlock.timeRange || 'Today') + ')',
+              href: '/routine',
+            });
+          } else if (nextBlock) {
+            pushReminder({
+              kind: 'reminder',
+              id: 'routine-next-' + nextBlock.id,
+              badge: 'ROUTINE',
+              tone: 'work',
+              title: nextBlock.title,
+              meta: 'Up next · ' + (nextBlock.timeRange || 'Today'),
+              href: '/routine',
+            });
+          }
+
+          sortedTasks.forEach((t) => {
+            if (t.dueDate && t.dueDate < todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'task-overdue-' + t.id,
+                badge: 'OVERDUE',
+                tone: 'urgent',
+                title: t.title,
+                meta: 'Was due ' + t.dueDate,
+                href: '/tasks',
+              });
+            } else if (t.dueDate && t.dueDate === todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'task-due-' + t.id,
+                badge: 'DUE TODAY',
+                tone: 'work',
+                title: t.title,
+                meta: t.estimatedDuration ? t.estimatedDuration + 'm · Due today' : 'Due today',
+                href: '/tasks',
+              });
+            }
+          });
+
+          schedBlocks.forEach((sb) => {
+            if (sb && sb.id && sb.date === todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'sched-' + sb.id,
+                badge: 'FOCUS',
+                tone: 'work',
+                title: sb.taskTitle || sb.title || 'Scheduled block',
+                meta: sb.startTime + ' – ' + sb.endTime,
+                href: '/calendar',
+              });
+            }
+          });
+
+          calEvents.forEach((ev) => {
+            if (ev && ev.id && ev.date === todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'event-' + ev.id,
+                badge: 'EVENT',
+                tone: 'neutral',
+                title: ev.title || 'Calendar event',
+                meta: ev.startTime || 'Today',
+                href: '/calendar',
+              });
+            }
+          });
+
+          milestones.forEach((m) => {
+            if (m && m.id && m.status !== 'completed' && m.targetDate && m.targetDate <= todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'milestone-' + m.id,
+                badge: 'DEADLINE',
+                tone: 'urgent',
+                title: m.title,
+                meta: 'Milestone · ' + m.targetDate,
+                href: '/milestones',
+              });
+            }
+          });
+
+          projects.forEach((p) => {
+            if (p && p.id && p.status !== 'completed' && p.dueDate && p.dueDate <= todayStr) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'project-' + p.id,
+                badge: 'DEADLINE',
+                tone: 'urgent',
+                title: p.title,
+                meta: 'Project · ' + p.dueDate,
+                href: '/projects',
+              });
+            }
+          });
+
+          inboxItems.forEach((item) => {
+            if (item && item.id && item.status !== 'converted' && (item.itemType === 'reminder' || item.reminderTime)) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'inbox-rem-' + item.id,
+                badge: 'IDEA',
+                tone: 'neutral',
+                title: item.content,
+                meta: item.reminderTime || 'Idea Parking reminder',
+                href: '/inbox',
+              });
+            }
+          });
+
+          docs.forEach((docItem) => {
+            if (docItem && docItem.id && docItem.status === 'active' && docItem.isReminder) {
+              pushReminder({
+                kind: 'reminder',
+                id: 'doc-rem-' + docItem.id,
+                badge: 'BOOK',
+                tone: 'neutral',
+                title: docItem.title || 'Book reminder',
+                meta: docItem.preferredReadingTime || 'Reading reminder',
+                href: '/knowledge',
+              });
+            }
+          });
 
           const routineTotal = blocks.length;
           const routineDone = blocks.filter((b) => completedBlockIds.includes(b.id)).length;
           const parts = [];
-          parts.push(pendingTasks.length + ' task' + (pendingTasks.length === 1 ? '' : 's') + ' left');
-          if (routineTotal > 0) parts.push(routineDone + '/' + routineTotal + ' routine');
+          parts.push(pendingTasks.length + ' task' + (pendingTasks.length === 1 ? '' : 's'));
+          parts.push(routineDone + '/' + routineTotal + ' routine');
+          if (reminderItems.length > 0) parts.push(reminderItems.length + ' alert' + (reminderItems.length === 1 ? '' : 's'));
 
           return {
             ready: true,
@@ -458,9 +630,10 @@ async function readWorkspaceSnapshot() {
             upNext,
             taskItems,
             routineItems,
+            reminderItems,
             routineSummary: { done: routineDone, total: routineTotal },
             alertCandidate,
-            hasWork: Boolean(primary),
+            hasWork: Boolean(primary || reminderItems.length > 0),
             summary: parts.join(' · '),
           };
         } catch {
@@ -1118,7 +1291,7 @@ if (!gotSingleLock) {
       await refreshPopover();
     });
 
-    ipcMain.handle('popover:complete-routine-block', async (_event, blockId) => {
+    ipcMain.handle('popover:toggle-routine-block', async (_event, blockId) => {
       if (mainWindow && !mainWindow.isDestroyed() && blockId) {
         const safeId = JSON.stringify(String(blockId));
         await mainWindow.webContents.executeJavaScript(`
@@ -1134,9 +1307,13 @@ if (!gotSingleLock) {
               const prog = parsed && parsed.date === todayStr
                 ? parsed
                 : { date: todayStr, completedStepKeys: [], completedBlockIds: [] };
-              const nextIds = Array.from(new Set([...(prog.completedBlockIds || []), ${safeId}]));
-              const stepKeys = Array.isArray(prog.completedStepKeys) ? [...prog.completedStepKeys] : [];
-              if (block && Array.isArray(block.steps)) {
+              const curIds = Array.isArray(prog.completedBlockIds) ? prog.completedBlockIds : [];
+              const wasDone = curIds.includes(${safeId});
+              const nextIds = wasDone ? curIds.filter((id) => id !== ${safeId}) : Array.from(new Set([...curIds, ${safeId}]));
+              let stepKeys = Array.isArray(prog.completedStepKeys) ? [...prog.completedStepKeys] : [];
+              if (wasDone) {
+                stepKeys = stepKeys.filter((k) => !String(k).startsWith(${safeId} + ':'));
+              } else if (block && Array.isArray(block.steps)) {
                 block.steps.forEach((_, idx) => {
                   const k = ${safeId} + ':' + idx;
                   if (!stepKeys.includes(k)) stepKeys.push(k);
@@ -1148,6 +1325,28 @@ if (!gotSingleLock) {
                 completedStepKeys: stepKeys,
               }));
               window.dispatchEvent(new Event('life_os_daily_routine_reminder_updated'));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return true;
+            } catch {
+              return false;
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
+    });
+
+    ipcMain.handle('popover:dismiss-reminder', async (_event, reminderId) => {
+      if (mainWindow && !mainWindow.isDestroyed() && reminderId) {
+        const safeId = JSON.stringify(String(reminderId));
+        await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const raw = localStorage.getItem('life_os_dismissed_reminders_v1');
+              const list = raw ? JSON.parse(raw) : [];
+              const arr = Array.isArray(list) ? list : [];
+              if (!arr.includes(${safeId})) arr.push(${safeId});
+              localStorage.setItem('life_os_dismissed_reminders_v1', JSON.stringify(arr));
               window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
               return true;
             } catch {

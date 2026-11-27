@@ -9,7 +9,8 @@ contextBridge.exposeInMainWorld('sarilingPopover', {
   },
   addTask: (title) => ipcRenderer.invoke('popover:add-task', title),
   completeTask: (taskId) => ipcRenderer.invoke('popover:complete-task', taskId),
-  completeRoutineBlock: (blockId) => ipcRenderer.invoke('popover:complete-routine-block', blockId),
+  toggleRoutineBlock: (blockId) => ipcRenderer.invoke('popover:toggle-routine-block', blockId),
+  dismissReminder: (reminderId) => ipcRenderer.invoke('popover:dismiss-reminder', reminderId),
   openWorkspace: (route) => ipcRenderer.invoke('popover:open-workspace', route || '/'),
   closePopover: () => ipcRenderer.send('popover:close'),
 });
