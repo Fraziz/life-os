@@ -581,7 +581,7 @@ export default function TodayDashboardContent() {
                 style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
                 title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Study & Books'}
               >
-                <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', marginBottom: 0 }}>
+                <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ marginBottom: 0 }}>
                   <BookOpen size={19} strokeWidth={2.2} />
                 </div>
               </Link>

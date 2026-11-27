@@ -294,7 +294,7 @@ export default function RightSidebar() {
       <div className={styles.widgetCard}>
         <div className={styles.cardHeader}>
           <div className={styles.cardHeaderLeft}>
-            <Bell size={15} style={{ color: '#f59e0b' }} />
+            <Bell size={15} style={{ color: 'var(--color-text-muted)' }} />
             <span className={styles.cardTitle}>Reminders</span>
             {allSidebarReminders.length > 0 && (
               <span className={styles.reminderBadgeCount}>{allSidebarReminders.length}</span>
@@ -589,7 +589,7 @@ export default function RightSidebar() {
       <div className={styles.momentumCard}>
         <div className={styles.momentumHeader}>
           <div className={styles.momentumTitle}>
-            <TrendingUp size={16} style={{ color: '#6366f1' }} />
+            <TrendingUp size={16} style={{ color: 'var(--color-text-muted)' }} />
             <span>Daily Momentum</span>
           </div>
           <span className={styles.momentumBadge}>{momentumPercent}%</span>
@@ -636,7 +636,7 @@ export default function RightSidebar() {
         <div className={styles.shortcutLinksList}>
           <Link href="/focus" className={styles.shortcutLinkItem}>
             <div className={styles.shortcutItemLeft}>
-              <Flame size={14} style={{ color: '#ef4444' }} />
+              <Flame size={14} style={{ color: 'var(--color-text-muted)' }} />
               <span>Focus Space</span>
             </div>
             <ArrowRight size={13} />
@@ -644,7 +644,7 @@ export default function RightSidebar() {
 
           <Link href="/review" className={styles.shortcutLinkItem}>
             <div className={styles.shortcutItemLeft}>
-              <Repeat size={14} style={{ color: '#6366f1' }} />
+              <Repeat size={14} style={{ color: 'var(--color-text-muted)' }} />
               <span>Weekly Review</span>
             </div>
             <ArrowRight size={13} />
@@ -652,7 +652,7 @@ export default function RightSidebar() {
 
           <Link href="/reset" className={styles.shortcutLinkItem}>
             <div className={styles.shortcutItemLeft}>
-              <CheckCircle2 size={14} style={{ color: '#10b981' }} />
+              <CheckCircle2 size={14} style={{ color: 'var(--color-text-muted)' }} />
               <span>Reset Plan</span>
             </div>
             <ArrowRight size={13} />

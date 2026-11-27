@@ -319,15 +319,15 @@
 }
 
 .calDotDeadline {
-  background-color: #ef4444;
+  background-color: var(--color-text);
 }
 
 .calDotEvent {
-  background-color: #0ea5e9;
+  background-color: var(--color-text-muted);
 }
 
 .calDotBlock {
-  background-color: #a855f7;
+  background-color: var(--color-text-faint);
 }
 
 /* Legend Row */
@@ -384,8 +384,9 @@
   font-size: 0.65rem;
   padding: 1px 6px;
   border-radius: 99px;
-  background-color: var(--color-primary-light, rgba(99, 102, 241, 0.15));
-  color: var(--color-primary, #6366f1);
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-subtle);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -395,16 +396,16 @@
   background: none;
   border: none;
   font-size: 0.7rem;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 2px 4px;
   font-weight: 600;
   border-radius: 4px;
-  transition: opacity var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
 .jumpTodayBtn:hover {
-  opacity: 0.75;
+  color: var(--color-text);
   text-decoration: underline;
 }
 
@@ -452,15 +453,15 @@
 }
 
 .deadlineIcon {
-  color: #ef4444;
+  color: var(--color-text);
 }
 
 .eventIcon {
-  color: #0ea5e9;
+  color: var(--color-text-muted);
 }
 
 .blockIcon {
-  color: #a855f7;
+  color: var(--color-text-faint);
 }
 
 .agendaItemContent {
@@ -513,14 +514,14 @@
   margin-top: 2px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-text-muted);
   text-decoration: none;
   padding: 4px 0;
-  transition: opacity var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
 .openCalendarLink:hover {
-  opacity: 0.8;
+  color: var(--color-text);
   text-decoration: underline;
 }
 
@@ -686,8 +687,9 @@
 .momentumBadge {
   font-size: 0.74rem;
   font-weight: 700;
-  color: var(--color-accent, #6366f1);
-  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
   padding: 2px 8px;
   border-radius: 99px;
 }
@@ -703,7 +705,7 @@
 .momentumProgressFill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #6366f1, #22c55e);
+  background: var(--color-accent);
   transition: width 0.3s ease;
 }
 
