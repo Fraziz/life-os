@@ -10,6 +10,7 @@ const BUBBLE_CONFIG_PATH = () => path.join(app.getPath('userData'), 'bubble-conf
 let mainWindow = null;
 let bubbleWindow = null;
 let popoverWindow = null;
+let toastWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragOrigin = null;
@@ -17,6 +18,10 @@ let lastMainBlurAt = 0;
 let lastPopoverShownAt = 0;
 let lastPopoverBlurAt = 0;
 let popoverPollTimer = null;
+let toastAutoHideTimer = null;
+let toastHovered = false;
+let currentAlertKey = null;
+const alertCooldowns = new Map();
 let currentBubbleWorkState = { hasWork: false, pillText: 'Sariling Mundo' };
 
 function readJson(filePath, fallback) {
@@ -151,6 +156,9 @@ function positionAndResizeBubble(cfg) {
   if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
     const pb = popoverWindow.getBounds();
     positionPopoverNextToBubble(pb.width, pb.height);
+  }
+  if (toastWindow && !toastWindow.isDestroyed() && toastWindow.isVisible()) {
+    positionWindowNextToBubble(toastWindow, 318, 124);
   }
   sendBubbleState();
 }
@@ -301,18 +309,56 @@ async function readWorkspaceSnapshot() {
             return (prioRank[a.priority] ?? 2) - (prioRank[b.priority] ?? 2);
           });
 
+          const rawBlocks = localStorage.getItem('life_os_scheduled_blocks_v1');
+          const schedBlocks = Array.isArray(rawBlocks ? JSON.parse(rawBlocks) : null) ? JSON.parse(rawBlocks) : [];
+
+          const notifCfg = settings && settings.notifications ? settings.notifications : null;
+          const notificationsEnabled = !notifCfg || notifCfg.enabled !== false;
+
+          let activeSchedBlock = null;
+          for (const sb of schedBlocks) {
+            if (!sb || !sb.id || sb.date !== todayStr || !sb.startTime || !sb.endTime) continue;
+            const [sh, sm] = String(sb.startTime).split(':').map(Number);
+            const [eh, em] = String(sb.endTime).split(':').map(Number);
+            const startMin = sh * 60 + (sm || 0);
+            const endMin = eh * 60 + (em || 0);
+            if (nowMin >= startMin - 10 && nowMin < endMin) {
+              activeSchedBlock = { ...sb, startMin, endMin };
+              break;
+            }
+          }
+
           let primary = null;
           const upNext = [];
+          let alertCandidate = null;
 
           if (activeBlock) {
+            const minsLeft = typeof activeBlock.endMinute === 'number' ? Math.max(1, activeBlock.endMinute - nowMin) : null;
             primary = {
               kind: 'routine',
               id: activeBlock.id,
-              badge: 'WORK TIME',
+              badge: minsLeft ? 'WORK TIME · ' + minsLeft + 'M LEFT' : 'WORK TIME',
               tone: 'work',
-              prompt: 'Hey — routine block active now',
+              prompt: minsLeft ? 'Hey — work time is running (' + minsLeft + 'm left)' : 'Hey — work time is running',
               title: activeBlock.title,
               meta: (activeBlock.timeRange || 'Now') + (Array.isArray(activeBlock.steps) && activeBlock.steps.length ? ' · ' + activeBlock.steps[0] : ''),
+            };
+            alertCandidate = {
+              alertKey: 'routine:' + activeBlock.id + ':' + todayStr,
+              badge: minsLeft ? 'WORK TIME · ' + minsLeft + 'M LEFT' : 'WORK TIME RUNNING',
+              tone: 'work',
+              headline: 'Hey — work time is running',
+              sub: activeBlock.title + (activeBlock.timeRange ? ' (' + activeBlock.timeRange + ')' : ''),
+            };
+          } else if (activeSchedBlock) {
+            const startsIn = activeSchedBlock.startMin - nowMin;
+            const minsLeft = Math.max(1, activeSchedBlock.endMin - nowMin);
+            alertCandidate = {
+              alertKey: 'sched:' + activeSchedBlock.id + ':' + todayStr,
+              badge: startsIn > 0 ? 'STARTS IN ' + startsIn + 'M' : 'TIME RUNNING · ' + minsLeft + 'M LEFT',
+              tone: 'work',
+              headline: startsIn > 0 ? 'Scheduled focus starting soon' : 'Hey — scheduled work time is running',
+              sub: activeSchedBlock.title + ' (' + activeSchedBlock.startTime + ' – ' + activeSchedBlock.endTime + ')',
             };
           } else if (sortedTasks.length > 0) {
             const top = sortedTasks[0];
@@ -363,6 +409,25 @@ async function readWorkspaceSnapshot() {
             });
           }
 
+          if (!alertCandidate && sortedTasks.length > 0) {
+            const urgentOrDue = sortedTasks.find((t) => (t.dueDate && t.dueDate <= todayStr) || t.priority === 'urgent' || (todayPlan && todayPlan.mainFocusTaskId === t.id));
+            if (urgentOrDue) {
+              const isOver = Boolean(urgentOrDue.dueDate && urgentOrDue.dueDate < todayStr);
+              const isToday = Boolean(urgentOrDue.dueDate && urgentOrDue.dueDate === todayStr);
+              alertCandidate = {
+                alertKey: 'task:' + urgentOrDue.id + ':' + todayStr,
+                badge: isOver ? 'OVERDUE DEADLINE' : isToday ? 'DEADLINE TODAY' : 'REMINDER',
+                tone: isOver || urgentOrDue.priority === 'urgent' ? 'urgent' : 'work',
+                headline: isOver ? 'Deadline passed — finish this task' : isToday ? 'Deadline today — do the work now' : 'Hey — focus task waiting',
+                sub: urgentOrDue.title,
+              };
+            }
+          }
+
+          if (!notificationsEnabled) {
+            alertCandidate = null;
+          }
+
           const routineTotal = blocks.length;
           const routineDone = blocks.filter((b) => completedBlockIds.includes(b.id)).length;
           const parts = [];
@@ -374,6 +439,7 @@ async function readWorkspaceSnapshot() {
             theme,
             primary,
             upNext,
+            alertCandidate,
             hasWork: Boolean(primary),
             summary: parts.join(' · '),
           };
@@ -397,8 +463,8 @@ async function readWorkspaceSnapshot() {
   }
 }
 
-function positionPopoverNextToBubble(width = 344, height = 320) {
-  if (!popoverWindow || popoverWindow.isDestroyed()) return;
+function positionWindowNextToBubble(targetWin, width = 356, height = 320) {
+  if (!targetWin || targetWin.isDestroyed()) return;
   const bubbleBounds = bubbleWindow && !bubbleWindow.isDestroyed()
     ? bubbleWindow.getBounds()
     : { x: 0, y: 200, width: 64, height: 64 };
@@ -416,12 +482,114 @@ function positionPopoverNextToBubble(width = 344, height = 320) {
   let targetY = bubbleBounds.y - Math.round((height - bubbleBounds.height) / 2);
   targetY = Math.max(wa.y + 8, Math.min(targetY, wa.y + wa.height - height - 8));
 
-  popoverWindow.setBounds({ x: Math.round(targetX), y: Math.round(targetY), width, height });
+  targetWin.setBounds({ x: Math.round(targetX), y: Math.round(targetY), width, height });
+}
+
+function positionPopoverNextToBubble(width = 356, height = 320) {
+  positionWindowNextToBubble(popoverWindow, width, height);
+}
+
+function createToastWindow() {
+  toastWindow = new BrowserWindow({
+    width: 318,
+    height: 124,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    hasShadow: false,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'toast-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  toastWindow.setAlwaysOnTop(true, 'screen-saver');
+  toastWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  toastWindow.loadFile(path.join(__dirname, 'toast.html'));
+
+  toastWindow.on('closed', () => {
+    toastWindow = null;
+    if (toastAutoHideTimer) {
+      clearTimeout(toastAutoHideTimer);
+      toastAutoHideTimer = null;
+    }
+  });
+}
+
+function hideToast() {
+  if (toastAutoHideTimer) {
+    clearTimeout(toastAutoHideTimer);
+    toastAutoHideTimer = null;
+  }
+  toastHovered = false;
+  if (toastWindow && !toastWindow.isDestroyed() && toastWindow.isVisible()) {
+    toastWindow.hide();
+  }
+}
+
+function scheduleToastAutoHide() {
+  if (toastAutoHideTimer) clearTimeout(toastAutoHideTimer);
+  toastAutoHideTimer = setTimeout(() => {
+    if (!toastHovered) hideToast();
+  }, 10500);
+}
+
+function showOutsideToast(payload) {
+  if (!payload) return;
+  if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) return;
+  if (!toastWindow || toastWindow.isDestroyed()) {
+    createToastWindow();
+  }
+  currentAlertKey = payload.alertKey || null;
+  positionWindowNextToBubble(toastWindow, 318, 124);
+  toastWindow.showInactive();
+  toastWindow.webContents.send('toast:show', payload);
+  scheduleToastAutoHide();
+}
+
+async function evaluateAndNotifyAlerts(force = false) {
+  const snap = await readWorkspaceSnapshot();
+  if (!snap || !snap.ready) return;
+
+  const candidate = snap.alertCandidate;
+  if (!candidate) {
+    if (force) {
+      showOutsideToast({
+        alertKey: 'manual:clear:' + Date.now(),
+        badge: 'ALL CLEAR',
+        tone: 'neutral',
+        headline: 'You are caught up right now',
+        sub: snap.summary || 'No urgent deadlines or active blocks.',
+        theme: snap.theme,
+      });
+    }
+    return;
+  }
+
+  const now = Date.now();
+  const blockedUntil = alertCooldowns.get(candidate.alertKey) || 0;
+  if (!force && blockedUntil > now) return;
+
+  if (!force) {
+    // Remember this alert until tomorrow unless snoozed for 15 minutes
+    alertCooldowns.set(candidate.alertKey, now + 12 * 60 * 60 * 1000);
+  }
+
+  showOutsideToast({ ...candidate, theme: snap.theme });
 }
 
 function createPopoverWindow() {
   popoverWindow = new BrowserWindow({
-    width: 344,
+    width: 356,
     height: 300,
     frame: false,
     transparent: true,
@@ -481,12 +649,13 @@ function hidePopover() {
 }
 
 async function showPopover() {
+  hideToast();
   if (!popoverWindow || popoverWindow.isDestroyed()) {
     createPopoverWindow();
   }
   const snap = await readWorkspaceSnapshot();
   const bounds = popoverWindow.getBounds();
-  positionPopoverNextToBubble(bounds.width || 344, bounds.height || 300);
+  positionPopoverNextToBubble(bounds.width || 356, bounds.height || 300);
   lastPopoverShownAt = Date.now();
   popoverWindow.show();
   popoverWindow.focus();
@@ -518,6 +687,10 @@ function showBubbleContextMenu() {
     {
       label: 'Open / Hide Sariling Mundo',
       click: () => toggleMainApp(),
+    },
+    {
+      label: 'Check Reminders Now',
+      click: () => { void evaluateAndNotifyAlerts(true); },
     },
     { type: 'separator' },
     {
@@ -745,6 +918,10 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
+      label: 'Check Reminders Now',
+      click: () => { void evaluateAndNotifyAlerts(true); },
+    },
+    {
       label: 'Launch at Windows Startup',
       type: 'checkbox',
       checked: openAtLogin,
@@ -969,7 +1146,38 @@ if (!gotSingleLock) {
     ipcMain.on('popover:resize', (_event, height) => {
       if (!popoverWindow || popoverWindow.isDestroyed()) return;
       const clampedH = Math.max(190, Math.min(Number(height) || 300, 520));
-      positionPopoverNextToBubble(344, clampedH);
+      positionPopoverNextToBubble(356, clampedH);
+    });
+
+    ipcMain.handle('toast:open-popover', async () => {
+      hideToast();
+      await showPopover();
+    });
+
+    ipcMain.handle('toast:snooze', (_event, alertKey) => {
+      const key = alertKey || currentAlertKey;
+      if (key) {
+        alertCooldowns.set(key, Date.now() + 15 * 60 * 1000);
+      }
+      hideToast();
+    });
+
+    ipcMain.on('toast:dismiss', (_event, alertKey) => {
+      const key = alertKey || currentAlertKey;
+      if (key) {
+        alertCooldowns.set(key, Date.now() + 12 * 60 * 60 * 1000);
+      }
+      hideToast();
+    });
+
+    ipcMain.on('toast:hover', (_event, hovered) => {
+      toastHovered = Boolean(hovered);
+      if (!toastHovered && toastWindow && !toastWindow.isDestroyed() && toastWindow.isVisible()) {
+        scheduleToastAutoHide();
+      } else if (toastHovered && toastAutoHideTimer) {
+        clearTimeout(toastAutoHideTimer);
+        toastAutoHideTimer = null;
+      }
     });
 
     ipcMain.handle('bubble:set-mode', (_event, mode) => {
@@ -1058,9 +1266,11 @@ if (!gotSingleLock) {
 
     createWindow();
     createPopoverWindow();
+    createToastWindow();
     createBubbleWindow();
     createTray();
-    setTimeout(() => { void readWorkspaceSnapshot(); }, 1800);
+    setTimeout(() => { void evaluateAndNotifyAlerts(false); }, 4000);
+    setInterval(() => { void evaluateAndNotifyAlerts(false); }, 30000);
   });
 
   app.on('before-quit', () => {

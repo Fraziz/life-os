@@ -27,6 +27,8 @@
       "bubble-preload.js",
       "popup.html",
       "popup-preload.js",
+      "toast.html",
+      "toast-preload.js",
       "logo.png",
       "icon.ico"
     ],

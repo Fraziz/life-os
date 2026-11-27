@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sariling Mundo Alert</title>
+    <style>
+      :root,
+      [data-theme='light'] {
+        --bg-card: #ffffff;
+        --bg-well: #f4f5f8;
+        --bg-hover: #eaedf2;
+        --text-main: #0d0f14;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --border-subtle: #e2e5ec;
+        --border-strong: #cbd5e1;
+        --hand-bg: #0d0f14;
+        --hand-fg: #ffffff;
+        --hand-ring: rgba(13, 15, 20, 0.12);
+        --pill-bg: #eaedf2;
+        --pill-fg: #334155;
+        --pill-work-bg: #fffbeb;
+        --pill-work-fg: #b45309;
+        --pill-work-border: #fde68a;
+        --pill-urgent-bg: #fef2f2;
+        --pill-urgent-fg: #b91c1c;
+        --pill-urgent-border: #fecaca;
+        --btn-primary-bg: #0d0f14;
+        --btn-primary-fg: #ffffff;
+        --shadow-card: 0 14px 34px rgba(13, 15, 20, 0.16), 0 3px 10px rgba(13, 15, 20, 0.08);
+      }
+
+      [data-theme='dark'] {
+        --bg-card: #12151c;
+        --bg-well: #1a1e28;
+        --bg-hover: #232836;
+        --text-main: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border-subtle: rgba(255, 255, 255, 0.12);
+        --border-strong: rgba(255, 255, 255, 0.2);
+        --hand-bg: #f8fafc;
+        --hand-fg: #0d0f14;
+        --hand-ring: rgba(248, 250, 252, 0.15);
+        --pill-bg: #1e2430;
+        --pill-fg: #cbd5e1;
+        --pill-work-bg: rgba(245, 158, 11, 0.15);
+        --pill-work-fg: #fcd34d;
+        --pill-work-border: rgba(245, 158, 11, 0.28);
+        --pill-urgent-bg: rgba(239, 68, 68, 0.15);
+        --pill-urgent-fg: #fca5a5;
+        --pill-urgent-border: rgba(239, 68, 68, 0.28);
+        --btn-primary-bg: #f8fafc;
+        --btn-primary-fg: #0d0f14;
+        --shadow-card: 0 16px 36px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: var(--text-main);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .frame {
+        padding: 6px;
+        width: 100%;
+      }
+
+      .toastCard {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        box-shadow: var(--shadow-card);
+        padding: 11px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        animation: toastSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes toastSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(10px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+      }
+
+      .topRow {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .handBadge {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: var(--hand-bg);
+        color: var(--hand-fg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        animation: ringPulse 2.1s ease-out infinite;
+      }
+
+      .handIcon {
+        width: 17px;
+        height: 17px;
+        will-change: transform;
+        animation: handNudge 1.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+      }
+
+      @keyframes handNudge {
+        0%,
+        100% {
+          transform: translateX(-1px);
+        }
+        45% {
+          transform: translateX(3.5px);
+        }
+        70% {
+          transform: translateX(1px);
+        }
+      }
+
+      @keyframes ringPulse {
+        0% {
+          box-shadow: 0 0 0 0 var(--hand-ring);
+        }
+        70% {
+          box-shadow: 0 0 0 6px transparent;
+        }
+        100% {
+          box-shadow: 0 0 0 0 transparent;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .handBadge,
+        .handIcon {
+          animation: none;
+        }
+      }
+
+      .content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .metaHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 1.5px 6px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        background: var(--pill-bg);
+        color: var(--pill-fg);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .badge.work {
+        background: var(--pill-work-bg);
+        color: var(--pill-work-fg);
+        border-color: var(--pill-work-border);
+      }
+
+      .badge.urgent {
+        background: var(--pill-urgent-bg);
+        color: var(--pill-urgent-fg);
+        border-color: var(--pill-urgent-border);
+      }
+
+      .closeBtn {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .closeBtn:hover {
+        background: var(--bg-well);
+        color: var(--text-main);
+      }
+
+      .headline {
+        font-size: 12.5px;
+        font-weight: 650;
+        color: var(--text-main);
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+      }
+
+      .subTitle {
+        font-size: 11.5px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btnDoNow {
+        flex: 1;
+        height: 28px;
+        border-radius: 8px;
+        border: none;
+        background: var(--btn-primary-bg);
+        color: var(--btn-primary-fg);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btnDoNow:hover {
+        opacity: 0.92;
+      }
+
+      .btnLater {
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        font-size: 11.5px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .btnLater:hover {
+        background: var(--bg-hover);
+        color: var(--text-main);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div id="toast-card" class="toastCard" role="status" aria-live="polite">
+        <div class="topRow">
+          <div class="handBadge" aria-hidden="true">
+            <svg class="handIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 10h7.5a1.5 1.5 0 0 1 0 3H14" />
+              <path d="M14 13h2.2a1.4 1.4 0 0 1 0 2.8H13.5" />
+              <path d="M13.5 15.8h1.5a1.35 1.35 0 0 1 0 2.7H10.5c-2.6 0-4.6-1.2-5.5-2.8L3.5 13V9.5c0-1 .7-1.8 1.6-2l4.4-1a2 2 0 0 1 2.2 1.2L13 10Z" />
+            </svg>
+          </div>
+          <div class="content">
+            <div class="metaHeader">
+              <span id="toast-badge" class="badge work">WORK TIME</span>
+              <button id="btn-close" type="button" class="closeBtn" title="Dismiss" aria-label="Dismiss">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+            <div id="toast-headline" class="headline">Hey — work time is running</div>
+            <div id="toast-sub" class="subTitle">Open to view your focus item</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="btn-open" type="button" class="btnDoNow">View &amp; Start</button>
+          <button id="btn-later" type="button" class="btnLater">15m</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const cardEl = document.getElementById('toast-card');
+      const badgeEl = document.getElementById('toast-badge');
+      const headlineEl = document.getElementById('toast-headline');
+      const subEl = document.getElementById('toast-sub');
+
+      let activeAlertKey = null;
+
+      function applyToast(payload) {
+        if (!payload) return;
+        document.documentElement.setAttribute('data-theme', payload.theme === 'dark' ? 'dark' : 'light');
+        activeAlertKey = payload.alertKey || null;
+
+        badgeEl.className = 'badge';
+        if (payload.tone === 'urgent') badgeEl.classList.add('urgent');
+        else if (payload.tone === 'work') badgeEl.classList.add('work');
+
+        badgeEl.textContent = payload.badge || 'REMINDER';
+        headlineEl.textContent = payload.headline || 'Hey — do the work now';
+        subEl.textContent = payload.sub || '';
+      }
+
+      document.getElementById('btn-open').addEventListener('click', () => {
+        window.sarilingToast?.openPopover();
+      });
+
+      document.getElementById('btn-later').addEventListener('click', () => {
+        window.sarilingToast?.snooze(activeAlertKey);
+      });
+
+      document.getElementById('btn-close').addEventListener('click', () => {
+        window.sarilingToast?.dismiss(activeAlertKey);
+      });
+
+      cardEl.addEventListener('mouseenter', () => {
+        window.sarilingToast?.setHovered(true);
+      });
+      cardEl.addEventListener('mouseleave', () => {
+        window.sarilingToast?.setHovered(false);
+      });
+
+      if (window.sarilingToast) {
+        window.sarilingToast.onShow(applyToast);
+      }
+    </script>
+  </body>
+</html>
