@@ -12,9 +12,6 @@ import {
   Plus,
   Trash2,
   X,
-  Target,
-  Layers,
-  RotateCcw,
   ExternalLink,
   Play,
 } from 'lucide-react';
@@ -30,11 +27,15 @@ type CalendarView = 'day' | 'week' | 'month';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 07:00 to 22:00
 
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export default function CalendarPage() {
   const {
-    events,
-    scheduledBlocks,
-    deadlines,
     addEvent,
     deleteEvent,
     scheduleTaskBlock,
@@ -42,7 +43,6 @@ export default function CalendarPage() {
     getDeadlinesForDate,
     getScheduledBlocksForDate,
     getEventsForDate,
-    resetToDefaultCalendar,
     isLoaded,
   } = useCalendar();
 
@@ -51,10 +51,10 @@ export default function CalendarPage() {
   const { goals, updateGoal } = useGoals();
   const { milestones, updateMilestone } = useMilestones();
 
+  const todayStr = useMemo(() => toLocalDateStr(new Date()), []);
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
 
   // Modals
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -63,14 +63,14 @@ export default function CalendarPage() {
 
   // Form states for scheduling a task block
   const [selectedTaskId, setSelectedTaskId] = useState('');
-  const [schedDate, setSchedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [schedDate, setSchedDate] = useState(todayStr);
   const [schedTime, setSchedTime] = useState('19:00');
   const [schedDuration, setSchedDuration] = useState('60');
   const [schedNotes, setSchedNotes] = useState('');
 
   // Form states for creating a calendar event
   const [eventTitle, setEventTitle] = useState('');
-  const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [eventDate, setEventDate] = useState(todayStr);
   const [eventStartTime, setEventStartTime] = useState('14:00');
   const [eventEndTime, setEventEndTime] = useState('15:00');
   const [eventNotes, setEventNotes] = useState('');
@@ -79,27 +79,24 @@ export default function CalendarPage() {
   const [dlEntityType, setDlEntityType] = useState<'task' | 'project' | 'goal' | 'milestone' | 'new_task'>('task');
   const [dlEntityId, setDlEntityId] = useState('');
   const [dlNewTaskTitle, setDlNewTaskTitle] = useState('');
-  const [dlDate, setDlDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dlDate, setDlDate] = useState(todayStr);
 
-  // Unified Add Menu dropdown states & refs
+  // Single unified New Entry dropdown state & ref
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [sideAddMenuOpen, setSideAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement>(null);
-  const sideAddMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
         setAddMenuOpen(false);
       }
-      if (sideAddMenuRef.current && !sideAddMenuRef.current.contains(e.target as Node)) {
-        setSideAddMenuOpen(false);
-      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setAddMenuOpen(false);
-        setSideAddMenuOpen(false);
+        setScheduleModalOpen(false);
+        setEventModalOpen(false);
+        setDeadlineModalOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -110,7 +107,6 @@ export default function CalendarPage() {
     };
   }, []);
 
-  // Helper date formatters & quick-add launchers
   const formatFullFriendlyDate = (dateStr: string) => {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -143,7 +139,7 @@ export default function CalendarPage() {
     return <PageSkeleton variant="calendar" cardsCount={4} showMetrics={false} showControls={true} />;
   }
 
-  const currentDateStr = currentDate.toISOString().split('T')[0];
+  const currentDateStr = toLocalDateStr(currentDate);
 
   const getDeadlineHref = (sourceType: string, entityId: string) => {
     if (sourceType === 'task') return `/tasks?highlight=${entityId}`;
@@ -180,7 +176,7 @@ export default function CalendarPage() {
   const getWeekDates = (centerDate: Date) => {
     const start = new Date(centerDate);
     const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
     start.setDate(diff);
 
     return Array.from({ length: 7 }, (_, i) => {
@@ -190,40 +186,10 @@ export default function CalendarPage() {
     });
   };
 
-  // Month View dates calculation
-  const getMonthDays = (centerDate: Date) => {
-    const year = centerDate.getFullYear();
-    const month = centerDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    const days: { date: Date; isCurrentMonth: boolean }[] = [];
-
-    // Preceding padding days
-    const firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    for (let i = firstDayOfWeek; i > 0; i--) {
-      const d = new Date(year, month, 1 - i);
-      days.push({ date: d, isCurrentMonth: false });
-    }
-
-    // Current month days
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push({ date: new Date(year, month, i), isCurrentMonth: true });
-    }
-
-    // Trailing padding days to fill grid
-    while (days.length % 7 !== 0) {
-      const d = new Date(year, month + 1, days.length - lastDay.getDate() - firstDayOfWeek + 1);
-      days.push({ date: d, isCurrentMonth: false });
-    }
-
-    return days;
-  };
-
   const handleScheduleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTaskId) return;
-    scheduleTaskBlock(selectedTaskId, schedDate, schedTime, parseInt(schedDuration) || 60, schedNotes);
+    scheduleTaskBlock(selectedTaskId, schedDate, schedTime, parseInt(schedDuration, 10) || 60, schedNotes);
     setScheduleModalOpen(false);
     setSchedNotes('');
   };
@@ -269,7 +235,8 @@ export default function CalendarPage() {
     setDlEntityId('');
   };
 
-  const activeDeadlinesForCurrentDate = getDeadlinesForDate(currentDateStr);
+  const bannerDateStr = view === 'month' ? selectedDate : currentDateStr;
+  const activeDeadlinesForBanner = getDeadlinesForDate(bannerDateStr);
 
   return (
     <div className={styles.page}>
@@ -277,6 +244,9 @@ export default function CalendarPage() {
       <header className={styles.header}>
         <div className={styles.titleArea}>
           <h1 className={styles.title}>Calendar & Planning</h1>
+          <p className={styles.subtitle}>
+            Coordinate dedicated deep-work blocks, external events, and target deadlines in a single schedule.
+          </p>
         </div>
 
         <div className={styles.actionButtons} ref={addMenuRef}>
@@ -286,18 +256,19 @@ export default function CalendarPage() {
               className={styles.btnNewEntry}
               onClick={() => setAddMenuOpen((prev) => !prev)}
               aria-expanded={addMenuOpen}
-              aria-haspopup="true"
-              title="Add a new event, focus block, or deadline"
+              aria-haspopup="menu"
+              title="Create a new event, focus block, or deadline"
             >
-              <Plus size={15} strokeWidth={2.5} />
+              <Plus size={15} strokeWidth={2.25} />
               <span>New Entry</span>
-              <ChevronDown size={13} className={`${styles.chevron} ${addMenuOpen ? styles.chevronOpen : ''}`} />
+              <ChevronDown size={14} className={`${styles.chevron} ${addMenuOpen ? styles.chevronOpen : ''}`} />
             </button>
 
             {addMenuOpen && (
-              <div className={styles.newEntryDropdownMenu}>
+              <div className={styles.newEntryDropdownMenu} role="menu">
                 <button
                   type="button"
+                  role="menuitem"
                   className={styles.dropdownMenuItem}
                   onClick={() => {
                     setAddMenuOpen(false);
@@ -305,16 +276,17 @@ export default function CalendarPage() {
                   }}
                 >
                   <div className={`${styles.menuItemIcon} ${styles.iconEvent}`}>
-                    <CalendarIcon size={14} />
+                    <CalendarIcon size={15} />
                   </div>
                   <div className={styles.menuItemText}>
                     <span className={styles.menuItemTitle}>Event</span>
-                    <span className={styles.menuItemDesc}>Meeting, appointment, or personal event</span>
+                    <span className={styles.menuItemDesc}>Meeting, appointment, or external commitment</span>
                   </div>
                 </button>
 
                 <button
                   type="button"
+                  role="menuitem"
                   className={styles.dropdownMenuItem}
                   onClick={() => {
                     setAddMenuOpen(false);
@@ -322,16 +294,17 @@ export default function CalendarPage() {
                   }}
                 >
                   <div className={`${styles.menuItemIcon} ${styles.iconBlock}`}>
-                    <Clock size={14} />
+                    <Clock size={15} />
                   </div>
                   <div className={styles.menuItemText}>
                     <span className={styles.menuItemTitle}>Focus Block</span>
-                    <span className={styles.menuItemDesc}>Schedule dedicated focus time for a task</span>
+                    <span className={styles.menuItemDesc}>Allocate dedicated focus time for a task</span>
                   </div>
                 </button>
 
                 <button
                   type="button"
+                  role="menuitem"
                   className={styles.dropdownMenuItem}
                   onClick={() => {
                     setAddMenuOpen(false);
@@ -339,11 +312,11 @@ export default function CalendarPage() {
                   }}
                 >
                   <div className={`${styles.menuItemIcon} ${styles.iconDeadline}`}>
-                    <Flag size={14} />
+                    <Flag size={15} />
                   </div>
                   <div className={styles.menuItemText}>
                     <span className={styles.menuItemTitle}>Deadline</span>
-                    <span className={styles.menuItemDesc}>Hard target due date for task, project, or goal</span>
+                    <span className={styles.menuItemDesc}>Target due date for task, project, or goal</span>
                   </div>
                 </button>
               </div>
@@ -355,13 +328,25 @@ export default function CalendarPage() {
       {/* ── View Controls Bar ── */}
       <div className={styles.controlsBar}>
         <div className={styles.dateNavGroup}>
-          <button className={styles.btnSecondary} onClick={navigatePrev} title="Previous">
+          <button
+            type="button"
+            className={styles.navIconBtn}
+            onClick={navigatePrev}
+            aria-label={`Previous ${view}`}
+            title={`Previous ${view}`}
+          >
             <ChevronLeft size={16} />
           </button>
-          <button className={styles.btnSecondary} onClick={navigateToday}>
+          <button type="button" className={styles.btnSecondary} onClick={navigateToday}>
             Today
           </button>
-          <button className={styles.btnSecondary} onClick={navigateNext} title="Next">
+          <button
+            type="button"
+            className={styles.navIconBtn}
+            onClick={navigateNext}
+            aria-label={`Next ${view}`}
+            title={`Next ${view}`}
+          >
             <ChevronRight size={16} />
           </button>
 
@@ -372,20 +357,29 @@ export default function CalendarPage() {
           </span>
         </div>
 
-        <div className={styles.viewTabs}>
+        <div className={styles.viewTabs} role="tablist" aria-label="Calendar view">
           <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'day'}
             className={`${styles.viewTab} ${view === 'day' ? styles.activeViewTab : ''}`}
             onClick={() => setView('day')}
           >
             Day
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'week'}
             className={`${styles.viewTab} ${view === 'week' ? styles.activeViewTab : ''}`}
             onClick={() => setView('week')}
           >
             Week
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'month'}
             className={`${styles.viewTab} ${view === 'month' ? styles.activeViewTab : ''}`}
             onClick={() => setView('month')}
           >
@@ -394,40 +388,38 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* ── Distinct Top Deadlines Banner ── */}
-      <section className={styles.deadlinesBanner}>
-        <div className={styles.deadlinesHeader}>
-          <span className={styles.deadlinesTitle}>
-            <Flag size={13} /> Deadlines Due on {currentDateStr} ({activeDeadlinesForCurrentDate.length})
-          </span>
-          <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-            Target obligations — click to jump directly to specific tab
-          </span>
-        </div>
-
-        <div className={styles.deadlinesChipList}>
-          {activeDeadlinesForCurrentDate.length === 0 ? (
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-              No hard deadlines due on this date.
+      {/* ── Active Deadlines Alert Banner (Progressive Disclosure: hidden when none due) ── */}
+      {activeDeadlinesForBanner.length > 0 && (
+        <section className={styles.deadlinesBanner} aria-label="Active deadlines due">
+          <div className={styles.deadlinesHeader}>
+            <span className={styles.deadlinesTitle}>
+              <Flag size={13} style={{ color: 'var(--color-danger)' }} />
+              <span>
+                Obligations Due — {formatFullFriendlyDate(bannerDateStr)} ({activeDeadlinesForBanner.length})
+              </span>
             </span>
-          ) : (
-            activeDeadlinesForCurrentDate.map((dl) => (
+            <span className={styles.deadlinesSubtitle}>
+              Select any obligation to navigate directly to its record
+            </span>
+          </div>
+
+          <div className={styles.deadlinesChipList}>
+            {activeDeadlinesForBanner.map((dl) => (
               <Link
                 key={dl.id}
                 href={getDeadlineHref(dl.sourceType, dl.entityId)}
                 className={styles.deadlineChip}
-                style={{ textDecoration: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                title={`Click to open ${dl.title} in ${dl.sourceType} tab`}
+                title={`Open ${dl.title} in ${dl.sourceType}`}
               >
-                <Flag size={11} style={{ color: '#ef4444' }} />
+                <Flag size={12} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
                 <span>{dl.title}</span>
-                <span style={{ fontSize: '9px', opacity: 0.75, background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '3px' }}>{dl.sourceType}</span>
-                <ExternalLink size={10} style={{ opacity: 0.7 }} />
+                <span className={styles.deadlineSourceBadge}>{dl.sourceType}</span>
+                <ExternalLink size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
               </Link>
-            ))
-          )}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── DAY VIEW ── */}
       {view === 'day' && (
@@ -437,13 +429,13 @@ export default function CalendarPage() {
               const hourStr = `${String(hour).padStart(2, '0')}:00`;
 
               const blocksInHour = getScheduledBlocksForDate(currentDateStr).filter((b) => {
-                const bHour = parseInt(b.startTime.split(':')[0]);
+                const bHour = parseInt(b.startTime.split(':')[0], 10);
                 return bHour === hour;
               });
 
               const eventsInHour = getEventsForDate(currentDateStr).filter((e) => {
                 if (!e.startTime) return false;
-                const eHour = parseInt(e.startTime.split(':')[0]);
+                const eHour = parseInt(e.startTime.split(':')[0], 10);
                 return eHour === hour;
               });
 
@@ -451,46 +443,59 @@ export default function CalendarPage() {
                 <div key={hour} className={styles.timelineHourRow}>
                   <div className={styles.hourLabel}>{hourStr}</div>
                   <div className={styles.hourSlot}>
-                    {/* Events */}
                     {eventsInHour.map((evt) => (
                       <div key={evt.id} className={styles.eventCard}>
-                        <div>
-                          <strong>{evt.title}</strong> • {evt.startTime} - {evt.endTime}
-                          {evt.notes && <span style={{ opacity: 0.8, marginLeft: '6px' }}>({evt.notes})</span>}
+                        <div className={styles.cardMainContent}>
+                          <CalendarIcon size={13} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
+                          <strong>{evt.title}</strong>
+                          <span className={styles.cardMetaTime}>
+                            {evt.startTime}
+                            {evt.endTime ? ` – ${evt.endTime}` : ''}
+                          </span>
+                          {evt.notes && <span className={styles.cardSubtleNote}>({evt.notes})</span>}
                         </div>
                         <button
-                          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }}
+                          type="button"
+                          className={styles.iconActionBtn}
                           onClick={() => deleteEvent(evt.id)}
+                          aria-label={`Delete event ${evt.title}`}
+                          title="Delete event"
                         >
-                          <Trash2 size={11} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     ))}
 
-                    {/* Scheduled Work Blocks */}
                     {blocksInHour.map((block) => (
                       <div key={block.id} className={styles.scheduledWorkCard}>
-                        <div>
-                          <Clock size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                          <Link href={`/tasks?highlight=${block.taskId}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
-                            Focus Block: {block.taskTitle} <ExternalLink size={10} style={{ display: 'inline', opacity: 0.7 }} />
-                          </Link> • {block.startTime} ({block.durationMinutes}m)
-                          {block.notes && <span style={{ opacity: 0.8, marginLeft: '6px' }}>&ldquo;{block.notes}&rdquo;</span>}
+                        <div className={styles.cardMainContent}>
+                          <Clock size={13} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                          <Link href={`/tasks?highlight=${block.taskId}`} className={styles.cardInlineLink}>
+                            <span>Focus Block: {block.taskTitle}</span>
+                            <ExternalLink size={11} style={{ color: 'var(--color-text-muted)' }} />
+                          </Link>
+                          <span className={styles.cardMetaTime}>
+                            {block.startTime} · {block.durationMinutes}m
+                          </span>
+                          {block.notes && <span className={styles.cardSubtleNote}>&ldquo;{block.notes}&rdquo;</span>}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div className={styles.cardActionsRow}>
                           <Link
                             href={`/focus?taskId=${block.taskId}`}
-                            className={styles.btnSecondary}
-                            style={{ padding: '2px 8px', fontSize: '10px', background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                            className={styles.focusNowBtn}
                             title="Start Focus Session for this block"
                           >
-                            <Play size={10} /> Focus Now
+                            <Play size={11} />
+                            <span>Focus Now</span>
                           </Link>
                           <button
-                            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }}
+                            type="button"
+                            className={styles.iconActionBtn}
                             onClick={() => removeScheduledBlock(block.id)}
+                            aria-label={`Remove block ${block.taskTitle}`}
+                            title="Remove scheduled block"
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </div>
@@ -508,15 +513,15 @@ export default function CalendarPage() {
         <div className={styles.gridScrollWrap}>
           <div className={styles.weekGrid}>
             {getWeekDates(currentDate).map((dayDate, idx) => {
-              const dayStr = dayDate.toISOString().split('T')[0];
-              const isToday = dayStr === new Date().toISOString().split('T')[0];
+              const dayStr = toLocalDateStr(dayDate);
+              const isToday = dayStr === todayStr;
               const dayDeadlines = getDeadlinesForDate(dayStr);
               const dayBlocks = getScheduledBlocksForDate(dayStr);
               const dayEvents = getEventsForDate(dayStr);
 
               return (
                 <div key={idx} className={styles.weekCol}>
-                  <div className={styles.weekColHeader} style={{ background: isToday ? 'rgba(124, 106, 255, 0.15)' : undefined }}>
+                  <div className={`${styles.weekColHeader} ${isToday ? styles.weekColToday : ''}`}>
                     <div className={styles.weekDayName}>
                       {dayDate.toLocaleDateString([], { weekday: 'short' })}
                     </div>
@@ -524,60 +529,65 @@ export default function CalendarPage() {
                   </div>
 
                   <div className={styles.weekColBody}>
-                    {/* Daily Deadlines Row */}
                     {dayDeadlines.map((dl) => (
                       <Link
                         key={dl.id}
                         href={getDeadlineHref(dl.sourceType, dl.entityId)}
-                        className={`${styles.monthItemBadge} ${styles.monthDeadlineBadge}`}
-                        style={{ textDecoration: 'none', cursor: 'pointer', display: 'block' }}
-                        title={`Click to view ${dl.title} in ${dl.sourceType} tab`}
+                        className={styles.weekDeadlineBadge}
+                        title={`View ${dl.title} in ${dl.sourceType}`}
                       >
-                        <Flag size={9} style={{ display: 'inline', marginRight: '2px' }} />
-                        {dl.title}
+                        <Flag size={11} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
+                        <span>{dl.title}</span>
                       </Link>
                     ))}
 
-                    {/* Daily Events */}
                     {dayEvents.map((evt) => (
-                      <div key={evt.id} className={styles.eventCard}>
-                        <div>
-                          <strong>{evt.title}</strong>
-                          <div style={{ fontSize: '9px', opacity: 0.8 }}>{evt.startTime}</div>
+                      <div key={evt.id} className={`${styles.eventCard} ${styles.weekCardCompact}`}>
+                        <div className={styles.weekCardCompactTop}>
+                          <strong style={{ fontSize: 'var(--text-xs)' }}>{evt.title}</strong>
+                          <button
+                            type="button"
+                            className={styles.iconActionBtn}
+                            onClick={() => deleteEvent(evt.id)}
+                            aria-label={`Delete event ${evt.title}`}
+                            title="Delete event"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
-                        <button
-                          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
-                          onClick={() => deleteEvent(evt.id)}
-                        >
-                          <Trash2 size={10} />
-                        </button>
+                        <div className={styles.cardMetaTime}>{evt.startTime}</div>
                       </div>
                     ))}
 
-                    {/* Daily Scheduled Work */}
                     {dayBlocks.map((block) => (
-                      <div key={block.id} className={styles.scheduledWorkCard}>
-                        <div>
-                          <Clock size={10} style={{ display: 'inline', marginRight: '2px' }} />
-                          <Link href={`/tasks?highlight=${block.taskId}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
-                            {block.taskTitle}
+                      <div key={block.id} className={`${styles.scheduledWorkCard} ${styles.weekCardCompact}`}>
+                        <div className={styles.weekCardCompactTop}>
+                          <Link href={`/tasks?highlight=${block.taskId}`} className={styles.cardInlineLink}>
+                            <Clock size={11} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                            <span>{block.taskTitle}</span>
                           </Link>
-                          <div style={{ fontSize: '9px', opacity: 0.8 }}>{block.startTime} ({block.durationMinutes}m)</div>
+                          <div className={styles.cardActionsRow}>
+                            <Link
+                              href={`/focus?taskId=${block.taskId}`}
+                              className={styles.iconActionBtn}
+                              aria-label={`Focus on ${block.taskTitle}`}
+                              title="Focus Now"
+                            >
+                              <Play size={12} />
+                            </Link>
+                            <button
+                              type="button"
+                              className={styles.iconActionBtn}
+                              onClick={() => removeScheduledBlock(block.id)}
+                              aria-label={`Remove block ${block.taskTitle}`}
+                              title="Remove block"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          <Link
-                            href={`/focus?taskId=${block.taskId}`}
-                            style={{ color: 'var(--color-accent-light)', display: 'inline-flex', padding: 0 }}
-                            title="Focus Now"
-                          >
-                            <Play size={10} />
-                          </Link>
-                          <button
-                            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer', padding: 0 }}
-                            onClick={() => removeScheduledBlock(block.id)}
-                          >
-                            <Trash2 size={10} />
-                          </button>
+                        <div className={styles.cardMetaTime}>
+                          {block.startTime} ({block.durationMinutes}m)
                         </div>
                       </div>
                     ))}
@@ -589,11 +599,11 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* ── MONTH VIEW: Today's Tab Design with Event Dots & Full Detail Side Panel ── */}
+      {/* ── MONTH VIEW: Executive Grid & Aligned Daily Agenda Panel ── */}
       {view === 'month' && (() => {
         const monthYear = currentDate.getFullYear();
         const monthIdx = currentDate.getMonth();
-        const firstDayOfMonthIdx = new Date(monthYear, monthIdx, 1).getDay(); // 0 = Sunday
+        const firstDayOfMonthIdx = new Date(monthYear, monthIdx, 1).getDay();
         const totalDaysInMonth = new Date(monthYear, monthIdx + 1, 0).getDate();
 
         const monthCalendarDays: (number | null)[] = [];
@@ -614,7 +624,7 @@ export default function CalendarPage() {
 
         return (
           <div className={styles.monthViewSplit}>
-            {/* Left Column: Month Grid with Event Dots */}
+            {/* Left Column: Month Grid */}
             <div className={styles.monthCard}>
               <div className={styles.calDaysHeader}>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
@@ -627,7 +637,7 @@ export default function CalendarPage() {
               <div className={styles.calGridDays}>
                 {monthCalendarDays.map((d, index) => {
                   if (d === null) {
-                    return <div key={`empty-${index}`} className={styles.calEmptyCell} />;
+                    return <div key={`empty-${index}`} className={styles.calEmptyCell} aria-hidden="true" />;
                   }
 
                   const dayDateStr = formatDayDateString(monthYear, monthIdx, d);
@@ -638,6 +648,7 @@ export default function CalendarPage() {
                   const hasDeadline = dayDeadlines.length > 0;
                   const hasEvent = dayEvents.length > 0;
                   const hasBlock = dayBlocks.length > 0;
+                  const dayTotal = dayDeadlines.length + dayEvents.length + dayBlocks.length;
                   const isSelected = dayDateStr === selectedDate;
                   const isToday = dayDateStr === todayStr;
 
@@ -645,225 +656,95 @@ export default function CalendarPage() {
                   if (hasEvent) tooltipParts.push(`${dayEvents.length} Event(s)`);
                   if (hasDeadline) tooltipParts.push(`${dayDeadlines.length} Deadline(s)`);
                   if (hasBlock) tooltipParts.push(`${dayBlocks.length} Focus Block(s)`);
-                  const tooltipText = tooltipParts.length > 0 ? `${dayDateStr} (${tooltipParts.join(', ')})` : dayDateStr;
+                  const tooltipText = tooltipParts.length > 0 ? `${dayDateStr} — ${tooltipParts.join(', ')}` : dayDateStr;
 
                   return (
-                    <div
+                    <button
                       key={`day-${d}`}
+                      type="button"
                       onClick={() => setSelectedDate(dayDateStr)}
                       className={`${styles.calDayCell} ${isToday ? styles.calActiveDay : ''} ${isSelected ? styles.calSelectedDay : ''}`}
                       title={tooltipText}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          setSelectedDate(dayDateStr);
-                        }
-                      }}
+                      aria-pressed={isSelected}
                       aria-label={`${dayDateStr} ${tooltipParts.join('. ')}`}
                     >
-                      <span className={styles.calDayNumber}>{d}</span>
+                      <div className={styles.calDayTop}>
+                        <span className={styles.calDayNumber}>{d}</span>
+                        {dayTotal > 0 && <span className={styles.calDayCountBadge}>{dayTotal}</span>}
+                      </div>
                       <div className={styles.calDotsRow}>
                         {hasDeadline && <span className={`${styles.calDot} ${styles.calDotDeadline}`} />}
                         {hasEvent && <span className={`${styles.calDot} ${styles.calDotEvent}`} />}
                         {hasBlock && <span className={`${styles.calDot} ${styles.calDotBlock}`} />}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
 
-              {/* Dot Legend Row */}
               <div className={styles.calLegendRow}>
-                <span className={styles.legendItem}>
-                  <span className={`${styles.calDot} ${styles.calDotDeadline}`} /> Deadline
-                </span>
-                <span className={styles.legendItem}>
-                  <span className={`${styles.calDot} ${styles.calDotEvent}`} /> Event
-                </span>
-                <span className={styles.legendItem}>
-                  <span className={`${styles.calDot} ${styles.calDotBlock}`} /> Focus Block
-                </span>
+                <div className={styles.legendGroup}>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.calDot} ${styles.calDotDeadline}`} />
+                    <span>Deadline</span>
+                  </span>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.calDot} ${styles.calDotEvent}`} />
+                    <span>Event</span>
+                  </span>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.calDot} ${styles.calDotBlock}`} />
+                    <span>Focus Block</span>
+                  </span>
+                </div>
+                <span className={styles.legendHint}>Select any date to inspect its agenda</span>
               </div>
             </div>
 
-            {/* Right Column: Full Detail Side Panel */}
-            <aside className={styles.sideDetailPanel} aria-label="Selected date full details">
+            {/* Right Column: Selected Date Agenda Panel (No duplicate entry triggers) */}
+            <aside className={styles.sideDetailPanel} aria-label="Selected date agenda">
               <div className={styles.sideDetailHeader}>
-                <div className={styles.sideDetailTitleRow}>
-                  <span className={styles.sideDetailDate}>
-                    {formatFullFriendlyDate(selectedDate)}
+                <div className={styles.sideDetailHeadingGroup}>
+                  <div className={styles.sideDetailTitleRow}>
+                    <span className={styles.sideDetailDate}>{formatFullFriendlyDate(selectedDate)}</span>
+                    {selectedDate === todayStr && <span className={styles.todayBadge}>Today</span>}
+                  </div>
+                  <span className={styles.sideDetailMetaCount}>
+                    {totalSelectedItems === 0
+                      ? 'Clear schedule'
+                      : `${totalSelectedItems} scheduled ${totalSelectedItems === 1 ? 'entry' : 'entries'}`}
                   </span>
-                  {selectedDate === todayStr && (
-                    <span className={styles.todayBadge}>Today</span>
-                  )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {selectedDate !== todayStr && (
-                    <button
-                      type="button"
-                      className={styles.jumpTodayBtn}
-                      onClick={() => {
-                        setSelectedDate(todayStr);
-                        setCurrentDate(new Date());
-                      }}
-                    >
-                      Jump to Today
-                    </button>
-                  )}
-                  {totalSelectedItems > 0 && (
-                    <div className={styles.headerAddDropdownWrap} ref={sideAddMenuRef}>
-                      <button
-                        type="button"
-                        className={styles.headerAddEntryBtn}
-                        onClick={() => setSideAddMenuOpen((prev) => !prev)}
-                        aria-expanded={sideAddMenuOpen}
-                        title="Add event, focus block, or deadline"
-                      >
-                        <Plus size={12} strokeWidth={2.5} />
-                        <span>Add</span>
-                      </button>
 
-                      {sideAddMenuOpen && (
-                        <div className={styles.sideAddDropdownMenu} style={{ right: 0, left: 'auto', minWidth: '220px' }}>
-                          <button
-                            type="button"
-                            className={styles.dropdownMenuItem}
-                            onClick={() => {
-                              setSideAddMenuOpen(false);
-                              openAddEvent(selectedDate);
-                            }}
-                          >
-                            <div className={`${styles.menuItemIcon} ${styles.iconEvent}`}>
-                              <CalendarIcon size={13} />
-                            </div>
-                            <div className={styles.menuItemText}>
-                              <span className={styles.menuItemTitle}>Event</span>
-                              <span className={styles.menuItemDesc}>Appointment or meeting</span>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.dropdownMenuItem}
-                            onClick={() => {
-                              setSideAddMenuOpen(false);
-                              openScheduleBlock(selectedDate);
-                            }}
-                          >
-                            <div className={`${styles.menuItemIcon} ${styles.iconBlock}`}>
-                              <Clock size={13} />
-                            </div>
-                            <div className={styles.menuItemText}>
-                              <span className={styles.menuItemTitle}>Focus Block</span>
-                              <span className={styles.menuItemDesc}>Scheduled task focus</span>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.dropdownMenuItem}
-                            onClick={() => {
-                              setSideAddMenuOpen(false);
-                              openAddDeadline(selectedDate);
-                            }}
-                          >
-                            <div className={`${styles.menuItemIcon} ${styles.iconDeadline}`}>
-                              <Flag size={13} />
-                            </div>
-                            <div className={styles.menuItemText}>
-                              <span className={styles.menuItemTitle}>Deadline</span>
-                              <span className={styles.menuItemDesc}>Target due date</span>
-                            </div>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                {selectedDate !== todayStr && (
+                  <button
+                    type="button"
+                    className={styles.jumpTodayBtn}
+                    onClick={() => {
+                      setSelectedDate(todayStr);
+                      setCurrentDate(new Date());
+                    }}
+                  >
+                    Today
+                  </button>
+                )}
               </div>
 
               <div className={`${styles.sideSectionsList} ${totalSelectedItems === 0 ? styles.sideSectionsListEmpty : ''}`}>
                 {totalSelectedItems === 0 ? (
                   <div className={styles.emptyDayNotice}>
                     <CalendarIcon size={24} className={styles.emptyDayIcon} />
-                    <p className={styles.emptyDayText}>No scheduled items for this date.</p>
-                    <div className={styles.emptyDayActions} ref={sideAddMenuRef}>
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          type="button"
-                          onClick={() => setSideAddMenuOpen((prev) => !prev)}
-                          className={styles.emptyAddBtn}
-                          aria-expanded={sideAddMenuOpen}
-                        >
-                          <Plus size={12} strokeWidth={2.5} />
-                          <span>Add Entry for this day</span>
-                        </button>
-
-                        {sideAddMenuOpen && (
-                          <div className={styles.sideAddDropdownMenu} style={{ left: '50%', right: 'auto', transform: 'translateX(-50%)', minWidth: '220px' }}>
-                            <button
-                              type="button"
-                              className={styles.dropdownMenuItem}
-                              onClick={() => {
-                                setSideAddMenuOpen(false);
-                                openAddEvent(selectedDate);
-                              }}
-                            >
-                              <div className={`${styles.menuItemIcon} ${styles.iconEvent}`}>
-                                <CalendarIcon size={13} />
-                              </div>
-                              <div className={styles.menuItemText}>
-                                <span className={styles.menuItemTitle}>Event</span>
-                                <span className={styles.menuItemDesc}>Appointment or meeting</span>
-                              </div>
-                            </button>
-
-                            <button
-                              type="button"
-                              className={styles.dropdownMenuItem}
-                              onClick={() => {
-                                setSideAddMenuOpen(false);
-                                openScheduleBlock(selectedDate);
-                              }}
-                            >
-                              <div className={`${styles.menuItemIcon} ${styles.iconBlock}`}>
-                                <Clock size={13} />
-                              </div>
-                              <div className={styles.menuItemText}>
-                                <span className={styles.menuItemTitle}>Focus Block</span>
-                                <span className={styles.menuItemDesc}>Scheduled task focus</span>
-                              </div>
-                            </button>
-
-                            <button
-                              type="button"
-                              className={styles.dropdownMenuItem}
-                              onClick={() => {
-                                setSideAddMenuOpen(false);
-                                openAddDeadline(selectedDate);
-                              }}
-                            >
-                              <div className={`${styles.menuItemIcon} ${styles.iconDeadline}`}>
-                                <Flag size={13} />
-                              </div>
-                              <div className={styles.menuItemText}>
-                                <span className={styles.menuItemTitle}>Deadline</span>
-                                <span className={styles.menuItemDesc}>Target due date</span>
-                              </div>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <p className={styles.emptyDayTitle}>No Scheduled Entries</p>
+                    <p className={styles.emptyDayText}>
+                      Nothing is planned for this date. Use <strong>New Entry</strong> in the header to add an event, focus block, or deadline.
+                    </p>
                   </div>
                 ) : (
                   <>
-                    {/* Events with Full Detail */}
                     {selectedEvents.length > 0 && (
                       <div className={styles.sideSectionGroup}>
                         <div className={styles.sideSectionTitle}>
-                          <CalendarIcon size={12} style={{ color: '#0ea5e9' }} />
+                          <CalendarIcon size={13} style={{ color: 'var(--color-info)' }} />
                           <span>Events ({selectedEvents.length})</span>
                         </div>
                         {selectedEvents.map((evt) => (
@@ -877,35 +758,34 @@ export default function CalendarPage() {
                                 title="Delete event"
                                 aria-label={`Delete event ${evt.title}`}
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={14} />
                               </button>
                             </div>
                             <div className={styles.sideCardMeta}>
-                              <Clock size={11} style={{ opacity: 0.7 }} />
-                              <span>{evt.startTime}{evt.endTime ? ` – ${evt.endTime}` : ''}</span>
+                              <Clock size={12} />
+                              <span>
+                                {evt.startTime}
+                                {evt.endTime ? ` – ${evt.endTime}` : ''}
+                              </span>
                             </div>
-                            {evt.notes && (
-                              <p className={styles.sideCardNotes}>{evt.notes}</p>
-                            )}
+                            {evt.notes && <p className={styles.sideCardNotes}>{evt.notes}</p>}
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Scheduled Focus Blocks with Full Detail */}
                     {selectedBlocks.length > 0 && (
                       <div className={styles.sideSectionGroup}>
                         <div className={styles.sideSectionTitle}>
-                          <Clock size={12} style={{ color: '#a855f7' }} />
-                          <span>Scheduled Focus ({selectedBlocks.length})</span>
+                          <Clock size={13} style={{ color: 'var(--color-success)' }} />
+                          <span>Focus Blocks ({selectedBlocks.length})</span>
                         </div>
                         {selectedBlocks.map((block) => (
                           <div key={block.id} className={styles.sideDetailCard}>
                             <div className={styles.sideCardTop}>
                               <Link
                                 href={`/tasks?highlight=${block.taskId}`}
-                                className={styles.sideCardTitle}
-                                style={{ textDecoration: 'none', color: 'inherit' }}
+                                className={styles.sideCardTitleLink}
                                 title="Open task in tasks tab"
                               >
                                 {block.taskTitle}
@@ -917,35 +797,33 @@ export default function CalendarPage() {
                                 title="Remove scheduled block"
                                 aria-label={`Remove block ${block.taskTitle}`}
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={14} />
                               </button>
                             </div>
                             <div className={styles.sideCardMeta}>
-                              <Clock size={11} style={{ opacity: 0.7 }} />
+                              <Clock size={12} />
                               <span>{block.startTime}</span>
                               <span>·</span>
-                              <span>{block.durationMinutes}m duration</span>
+                              <span>{block.durationMinutes}m</span>
                               <Link
                                 href={`/focus?taskId=${block.taskId}`}
                                 className={styles.focusNowBtn}
-                                title="Launch timer now"
+                                title="Start focus timer"
                               >
-                                <Play size={10} /> Focus Now
+                                <Play size={10} />
+                                <span>Focus</span>
                               </Link>
                             </div>
-                            {block.notes && (
-                              <p className={styles.sideCardNotes}>{block.notes}</p>
-                            )}
+                            {block.notes && <p className={styles.sideCardNotes}>{block.notes}</p>}
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Deadlines with Full Detail */}
                     {selectedDeadlines.length > 0 && (
                       <div className={styles.sideSectionGroup}>
                         <div className={styles.sideSectionTitle}>
-                          <Flag size={12} style={{ color: '#ef4444' }} />
+                          <Flag size={13} style={{ color: 'var(--color-danger)' }} />
                           <span>Obligations Due ({selectedDeadlines.length})</span>
                         </div>
                         {selectedDeadlines.map((dl) => (
@@ -953,28 +831,18 @@ export default function CalendarPage() {
                             key={dl.id}
                             href={getDeadlineHref(dl.sourceType, dl.entityId)}
                             className={styles.sideDetailCard}
-                            style={{ textDecoration: 'none' }}
                             title={`Jump to ${dl.sourceType}: ${dl.title}`}
                           >
                             <div className={styles.sideCardTop}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Flag size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
+                              <div className={styles.sideCardTitleGroup}>
+                                <Flag size={13} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
                                 <span className={styles.sideCardTitle}>{dl.title}</span>
                               </div>
-                              <ExternalLink size={12} style={{ color: 'var(--color-text-faint)' }} />
+                              <ExternalLink size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
                             </div>
                             <div className={styles.sideCardMeta}>
                               <span className={styles.sourceBadge}>{dl.sourceType}</span>
-                              {dl.priority && (
-                                <span className={`${styles.priorityBadge} ${
-                                  dl.priority === 'urgent' ? styles.priorityUrgent :
-                                  dl.priority === 'high' ? styles.priorityHigh :
-                                  dl.priority === 'medium' ? styles.priorityMedium :
-                                  styles.priorityLow
-                                }`}>
-                                  {dl.priority}
-                                </span>
-                              )}
+                              {dl.priority && <span className={styles.priorityBadge}>{dl.priority}</span>}
                             </div>
                           </Link>
                         ))}
@@ -990,41 +858,45 @@ export default function CalendarPage() {
 
       {/* ── Modal: Add Deadline to Calendar ── */}
       {deadlineModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setDeadlineModalOpen(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setDeadlineModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deadline-modal-title"
+        >
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Flag size={16} style={{ color: '#ef4444' }} /> Add Deadline to Calendar
+            <div className={styles.modalHeader}>
+              <h3 id="deadline-modal-title" className={styles.modalTitle}>
+                <Flag size={16} style={{ color: 'var(--color-danger)' }} />
+                <span>Add Deadline to Calendar</span>
               </h3>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setDeadlineModalOpen(false)}>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={() => setDeadlineModalOpen(false)}
+                aria-label="Close modal"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Set a target due date on a Task, Project, Goal, or Milestone to automatically track it on your calendar.
+            <p className={styles.modalDesc}>
+              Assign a target due date to a Task, Project, Goal, or Milestone to track key obligations on your calendar.
             </p>
 
-            <form onSubmit={handleDeadlineSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+            <form onSubmit={handleDeadlineSubmit} className={styles.modalForm}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel} htmlFor="dl-entity-type">
                   Item Type
                 </label>
                 <select
+                  id="dl-entity-type"
+                  className={styles.formSelect}
                   value={dlEntityType}
                   onChange={(e) => {
-                    setDlEntityType(e.target.value as any);
+                    setDlEntityType(e.target.value as 'task' | 'project' | 'goal' | 'milestone' | 'new_task');
                     setDlEntityId('');
-                  }}
-                  style={{
-                    width: '100%',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '8px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
                   }}
                 >
                   <option value="task">Task</option>
@@ -1036,46 +908,30 @@ export default function CalendarPage() {
               </div>
 
               {dlEntityType === 'new_task' ? (
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="dl-new-task-title">
                     New Task Title
                   </label>
                   <input
+                    id="dl-new-task-title"
+                    className={styles.formInput}
                     type="text"
                     value={dlNewTaskTitle}
                     onChange={(e) => setDlNewTaskTitle(e.target.value)}
-                    placeholder="e.g. Submit project proposal"
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
+                    placeholder="e.g. Submit quarterly review"
                     required
                   />
                 </div>
               ) : (
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="dl-entity-select">
                     Select {dlEntityType.charAt(0).toUpperCase() + dlEntityType.slice(1)}
                   </label>
                   <select
+                    id="dl-entity-select"
+                    className={styles.formSelect}
                     value={dlEntityId}
                     onChange={(e) => setDlEntityId(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   >
                     <option value="">-- Choose {dlEntityType} --</option>
@@ -1107,59 +963,48 @@ export default function CalendarPage() {
                 </div>
               )}
 
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel} htmlFor="dl-date">
                   Target Deadline Date
                 </label>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <div className={styles.quickDateRow}>
                   <button
                     type="button"
-                    className={styles.btnSecondary}
-                    style={{ padding: '2px 8px', fontSize: '10px' }}
-                    onClick={() => setDlDate(new Date().toISOString().split('T')[0])}
+                    className={styles.quickDateBtn}
+                    onClick={() => setDlDate(toLocalDateStr(new Date()))}
                   >
                     Today
                   </button>
                   <button
                     type="button"
-                    className={styles.btnSecondary}
-                    style={{ padding: '2px 8px', fontSize: '10px' }}
-                    onClick={() => setDlDate(new Date(Date.now() + 86400000).toISOString().split('T')[0])}
+                    className={styles.quickDateBtn}
+                    onClick={() => setDlDate(toLocalDateStr(new Date(Date.now() + 86400000)))}
                   >
                     Tomorrow
                   </button>
                   <button
                     type="button"
-                    className={styles.btnSecondary}
-                    style={{ padding: '2px 8px', fontSize: '10px' }}
-                    onClick={() => setDlDate(new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0])}
+                    className={styles.quickDateBtn}
+                    onClick={() => setDlDate(toLocalDateStr(new Date(Date.now() + 86400000 * 7)))}
                   >
                     Next Week
                   </button>
                 </div>
                 <input
+                  id="dl-date"
+                  className={styles.formInput}
                   type="date"
                   value={dlDate}
                   onChange={(e) => setDlDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '8px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
-                  }}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-2)' }}>
+              <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSecondary} onClick={() => setDeadlineModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.btnSchedule} style={{ background: '#ef4444' }}>
+                <button type="submit" className={styles.btnSchedule}>
                   Save Deadline
                 </button>
               </div>
@@ -1168,41 +1013,45 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* ── Modal: Schedule Task Block ── */}
+      {/* ── Modal: Schedule Task Focus Block ── */}
       {scheduleModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setScheduleModalOpen(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setScheduleModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schedule-modal-title"
+        >
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                Schedule Task Focus Block
+            <div className={styles.modalHeader}>
+              <h3 id="schedule-modal-title" className={styles.modalTitle}>
+                <Clock size={16} style={{ color: 'var(--color-success)' }} />
+                <span>Schedule Focus Block</span>
               </h3>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setScheduleModalOpen(false)}>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={() => setScheduleModalOpen(false)}
+                aria-label="Close modal"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>
-              Dedicate a specific time slot to sit down and do focused work.
+            <p className={styles.modalDesc}>
+              Reserve a dedicated time block on your calendar to execute focused work on a specific task.
             </p>
 
-            <form onSubmit={handleScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+            <form onSubmit={handleScheduleSubmit} className={styles.modalForm}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel} htmlFor="sched-task">
                   Select Task
                 </label>
                 <select
+                  id="sched-task"
+                  className={styles.formSelect}
                   value={selectedTaskId}
                   onChange={(e) => setSelectedTaskId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '8px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
-                  }}
                   required
                 >
                   <option value="">-- Choose a task --</option>
@@ -1216,78 +1065,54 @@ export default function CalendarPage() {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+              <div className={styles.formGridTwo}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="sched-date">
                     Date
                   </label>
                   <input
+                    id="sched-date"
+                    className={styles.formInput}
                     type="date"
                     value={schedDate}
                     onChange={(e) => setSchedDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="sched-time">
                     Start Time
                   </label>
                   <input
+                    id="sched-time"
+                    className={styles.formInput}
                     type="time"
                     value={schedTime}
                     onChange={(e) => setSchedTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel} htmlFor="sched-duration">
                   Duration (Minutes)
                 </label>
                 <input
+                  id="sched-duration"
+                  className={styles.formInput}
                   type="number"
                   min="15"
                   max="300"
                   step="15"
                   value={schedDuration}
                   onChange={(e) => setSchedDuration(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '8px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
-                  }}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-2)' }}>
+              <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSecondary} onClick={() => setScheduleModalOpen(false)}>
                   Cancel
                 </button>
@@ -1300,112 +1125,92 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* ── Modal: Add Event ── */}
+      {/* ── Modal: Add Calendar Event ── */}
       {eventModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setEventModalOpen(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setEventModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-modal-title"
+        >
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                Add Calendar Event
+            <div className={styles.modalHeader}>
+              <h3 id="event-modal-title" className={styles.modalTitle}>
+                <CalendarIcon size={16} style={{ color: 'var(--color-info)' }} />
+                <span>Add Calendar Event</span>
               </h3>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setEventModalOpen(false)}>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={() => setEventModalOpen(false)}
+                aria-label="Close modal"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleEventSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+            <form onSubmit={handleEventSubmit} className={styles.modalForm}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel} htmlFor="event-title">
                   Event Title
                 </label>
                 <input
+                  id="event-title"
+                  className={styles.formInput}
                   type="text"
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
-                  placeholder="e.g. Dentist Appointment, Doctor, Call"
-                  style={{
-                    width: '100%',
-                    background: 'var(--color-surface-2)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '8px',
-                    color: 'var(--color-text)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
-                  }}
+                  placeholder="e.g. Client Briefing, Team Sync, Appointment"
                   required
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)' }}>
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+              <div className={styles.formGridThree}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="event-date">
                     Date
                   </label>
                   <input
+                    id="event-date"
+                    className={styles.formInput}
                     type="date"
                     value={eventDate}
                     onChange={(e) => setEventDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="event-start">
                     Start Time
                   </label>
                   <input
+                    id="event-start"
+                    className={styles.formInput}
                     type="time"
                     value={eventStartTime}
                     onChange={(e) => setEventStartTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600 }}>
+                <div className={styles.formField}>
+                  <label className={styles.formLabel} htmlFor="event-end">
                     End Time
                   </label>
                   <input
+                    id="event-end"
+                    className={styles.formInput}
                     type="time"
                     value={eventEndTime}
                     onChange={(e) => setEventEndTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'var(--color-surface-2)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px',
-                      color: 'var(--color-text)',
-                      fontSize: 'var(--text-xs)',
-                      outline: 'none',
-                    }}
                     required
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-2)' }}>
+              <div className={styles.modalActions}>
                 <button type="button" className={styles.btnSecondary} onClick={() => setEventModalOpen(false)}>
                   Cancel
                 </button>
