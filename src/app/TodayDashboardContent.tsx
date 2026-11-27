@@ -536,9 +536,6 @@ export default function TodayDashboardContent() {
           >
             <span>AI Briefing</span>
           </button>
-          <Link href="/focus" className={`${styles.summaryPill} ${styles.summaryPillFocus}`}>
-            <span>Focus Space</span>
-          </Link>
           <LifeDomainPill />
         </div>
 

@@ -64,7 +64,6 @@ interface SidebarProps {
   onCollapse?: (v: boolean) => void;
   onPinToggle?: (v: boolean) => void;
   onMobileClose: () => void;
-  onOpenAssistant?: () => void;
   onOpenNextAction?: () => void;
 }
 

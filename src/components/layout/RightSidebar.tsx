@@ -11,9 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  Zap,
   CheckCircle2,
-  Check,
   Repeat,
   ArrowRight,
   Flame,
@@ -28,10 +26,6 @@ import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useCalendar } from '@/context/CalendarContext';
-import { useInbox } from '@/context/InboxContext';
-import { useKnowledge } from '@/context/KnowledgeContext';
-import { isDocVideoLesson } from '@/utils/videoLesson';
-import { playSuccessChime } from '@/utils/soundAndDopamine';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import type { AppTheme } from '@/types';
 import styles from './RightSidebar.module.css';
@@ -40,135 +34,11 @@ export default function RightSidebar() {
   const { settings, updateSettings } = useSettings();
   const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
-  const { tasks, toggleTaskDone } = useTasks();
-  const { activeProjects, toggleProjectReminder } = useProjects();
+  const { tasks } = useTasks();
+  const { activeProjects } = useProjects();
   const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
-  const { activeReminders: inboxReminders, toggleItemApplied } = useInbox();
-  const { docs, toggleDocReminder } = useKnowledge();
   const dailyRoutine = useDailyRoutineReminder();
-
-  const allSidebarReminders = React.useMemo(() => {
-    const list: Array<{
-      id: string;
-      type: 'routine' | 'book' | 'video' | 'task' | 'idea' | 'project';
-      typeLabel: string;
-      title: string;
-      subtitle?: string;
-      href: string;
-      onDone: () => void;
-    }> = [];
-
-    // 0. Recurring Daily Routine (returns automatically every new day)
-    if (dailyRoutine.isActiveToday) {
-      list.push({
-        id: 'daily-routine-today',
-        type: 'routine',
-        typeLabel: 'ROUTINE',
-        title: 'Daily Routine',
-        subtitle: dailyRoutine.subtitle,
-        href: '/routine',
-        onDone: () => {
-          dailyRoutine.markDoneToday();
-          playSuccessChime();
-        },
-      });
-    }
-
-    // 1. Books & Videos marked as reminder
-    docs
-      .filter((d) => d.isReminder && d.status !== 'archived')
-      .forEach((d) => {
-        const isVideo = isDocVideoLesson(d);
-        list.push({
-          id: d.id,
-          type: isVideo ? 'video' : 'book',
-          typeLabel: isVideo ? 'VIDEO' : 'BOOK',
-          title: d.title,
-          subtitle: isVideo ? 'Video' : (d.category || 'Reading'),
-          href: isVideo ? '/focus' : '/knowledge',
-          onDone: () => {
-            toggleDocReminder(d.id);
-            playSuccessChime();
-          },
-        });
-      });
-
-    // 2. Tasks marked as reminder
-    tasks
-      .filter((t) => t.isReminder && t.status !== 'done')
-      .forEach((t) => {
-        list.push({
-          id: t.id,
-          type: 'task',
-          typeLabel: 'TASK',
-          title: t.title,
-          subtitle: t.dueDate ? `Due ${t.dueDate}` : (t.priority ? `${t.priority} priority` : undefined),
-          href: '/tasks',
-          onDone: () => {
-            toggleTaskDone(t.id);
-            playSuccessChime();
-          },
-        });
-      });
-
-    // 3. Idea Parking thoughts marked as reminder
-    (inboxReminders || [])
-      .filter(
-        (r) =>
-          !r.isApplied &&
-          r.status === 'inbox' &&
-          r.id !== 'daily-mandate-ticker' &&
-          r.id !== 'inbox-accomplish-now' &&
-          !r.content.toLowerCase().includes('what you need to accomplish today')
-      )
-      .forEach((r) => {
-        list.push({
-          id: r.id,
-          type: 'idea',
-          typeLabel: 'IDEA',
-          title: r.content,
-          subtitle: r.reminderTime || undefined,
-          href: '/inbox',
-          onDone: () => {
-            toggleItemApplied(r.id);
-            playSuccessChime();
-          },
-        });
-      });
-
-    // 4. Projects marked as reminder
-    (activeProjects || [])
-      .filter((p) => p.isReminder && p.status !== 'completed')
-      .forEach((p) => {
-        list.push({
-          id: p.id,
-          type: 'project',
-          typeLabel: 'PROJECT',
-          title: p.title,
-          subtitle: `${p.progress}% progress`,
-          href: '/projects',
-          onDone: () => {
-            toggleProjectReminder(p.id);
-            playSuccessChime();
-          },
-        });
-      });
-
-    return list;
-  }, [
-    dailyRoutine.isActiveToday,
-    dailyRoutine.subtitle,
-    dailyRoutine.markDoneToday,
-    docs,
-    tasks,
-    inboxReminders,
-    activeProjects,
-    toggleDocReminder,
-    toggleTaskDone,
-    toggleItemApplied,
-    toggleProjectReminder,
-  ]);
 
   // ── Theme toggle (strictly switches between: Black (Dark) ↔ White (Light)) ────
   const currentTheme = settings.theme;
@@ -288,68 +158,6 @@ export default function RightSidebar() {
             )}
           </button>
         </div>
-      </div>
-
-      {/* ── Active Reminders Card (On Top of Calendar) ── */}
-      <div className={styles.widgetCard}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <Bell size={15} style={{ color: 'var(--color-text-muted)' }} />
-            <span className={styles.cardTitle}>Reminders</span>
-            {allSidebarReminders.length > 0 && (
-              <span className={styles.reminderBadgeCount}>{allSidebarReminders.length}</span>
-            )}
-          </div>
-          <button
-            type="button"
-            className={styles.viewAllBtn}
-            onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
-            title="Open full notifications and reminders drawer"
-          >
-            Drawer →
-          </button>
-        </div>
-
-        {allSidebarReminders.length > 0 ? (
-          <div className={styles.sidebarRemindersList}>
-            {allSidebarReminders.map((r) => (
-              <div key={`${r.type}-${r.id}`} className={styles.sidebarReminderItem}>
-                <div className={styles.sidebarReminderBody}>
-                  <div className={styles.sidebarReminderHeader}>
-                    <span className={`${styles.reminderTypeBadge} ${styles[`typeBadge_${r.type}`] || ''}`}>
-                      {r.typeLabel}
-                    </span>
-                    {r.subtitle && (
-                      <span className={styles.sidebarReminderSubtitle} title={r.subtitle}>
-                        {r.subtitle}
-                      </span>
-                    )}
-                  </div>
-                  <Link href={r.href} className={styles.sidebarReminderLink} title={r.title}>
-                    <span className={styles.sidebarReminderText}>
-                      {r.title}
-                    </span>
-                  </Link>
-                </div>
-                <button
-                  type="button"
-                  className={styles.sidebarReminderDoneBtn}
-                  onClick={r.onDone}
-                  title="Mark reminder as done / dismiss"
-                  aria-label="Mark reminder done"
-                >
-                  <Check size={12} />
-                  <span>Done</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.sidebarRemindersEmpty}>
-            <span className={styles.emptyCheckDot}>✓</span>
-            <span>All reminders clear</span>
-          </div>
-        )}
       </div>
 
       {/* ── Mini Calendar Card ─────────────────────────────────── */}

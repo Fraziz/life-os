@@ -32,7 +32,6 @@ import TourWelcomeModal from '@/components/tour/TourWelcomeModal';
 import TourCompletionModal from '@/components/tour/TourCompletionModal';
 import SearchModal from '@/components/search/SearchModal';
 import ReminderDrawer from '@/components/reminders/ReminderDrawer';
-import AssistantModal from '@/components/assistant/AssistantModal';
 import NextActionModal from '@/components/assistant/NextActionModal';
 import AIAssistantPanel from '@/components/assistant/AIAssistantPanel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
@@ -84,7 +83,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
   // Modal dialog states
   const [remindersOpen, setRemindersOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -139,7 +137,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   // Listen for custom trigger events from anywhere in the app
   useEffect(() => {
     const handleOpenNextAction = () => setNextActionOpen(true);
-    const handleOpenAssistant = () => setAssistantOpen(true);
     const handleOpenAiChat = () => setAiChatOpen(true);
     const handleOpenReminders = () => setRemindersOpen(true);
     const handleToggleSidebar = () => {
@@ -151,14 +148,12 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener('open-next-action', handleOpenNextAction);
-    window.addEventListener('open-assistant', handleOpenAssistant);
     window.addEventListener('open-ai-chat', handleOpenAiChat);
     window.addEventListener('open-reminders', handleOpenReminders);
     window.addEventListener('toggle-sidebar', handleToggleSidebar);
 
     return () => {
       window.removeEventListener('open-next-action', handleOpenNextAction);
-      window.removeEventListener('open-assistant', handleOpenAssistant);
       window.removeEventListener('open-ai-chat', handleOpenAiChat);
       window.removeEventListener('open-reminders', handleOpenReminders);
       window.removeEventListener('toggle-sidebar', handleToggleSidebar);
@@ -374,7 +369,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           mobileOpen={mobileOpen}
           onPinToggle={handlePinToggle}
           onMobileClose={() => setMobileOpen(false)}
-          onOpenAssistant={() => setAssistantOpen(true)}
           onOpenNextAction={() => setNextActionOpen(true)}
         />
 
@@ -413,9 +407,6 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
       {/* Reminders Drawer */}
       <ReminderDrawer isOpen={remindersOpen} onClose={() => setRemindersOpen(false)} />
-
-      {/* AI Assistant Modal */}
-      <AssistantModal isOpen={assistantOpen} onClose={() => setAssistantOpen(false)} />
 
       {/* "I Don't Know What To Do" Next Action Modal */}
       <NextActionModal isOpen={nextActionOpen} onClose={() => setNextActionOpen(false)} />
