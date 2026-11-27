@@ -11,107 +11,53 @@ import { useProjects } from '@/context/ProjectContext';
 import { isDocVideoLesson } from '@/utils/videoLesson';
 import { playSuccessChime, triggerDopamineBurst } from '@/utils/soundAndDopamine';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
-import type { ReminderItem } from '@/types';
 import {
   Bell,
   Moon,
   Clock,
-  CheckCircle2,
   Calendar,
   Repeat,
   Target,
   CheckSquare,
   RefreshCw,
   X,
-  ArrowRight,
   ShieldCheck,
   CheckCheck,
   Settings,
-  Trash2,
   BookOpen,
   Video,
   Lightbulb,
   Folder,
   Check,
+  Pin,
 } from 'lucide-react';
 import styles from './ReminderDrawer.module.css';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 
-const TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: React.ReactNode; color: string; bg: string; border: string }
-> = {
+const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
   task: {
     label: 'Task Due',
-    icon: <CheckSquare size={16} strokeWidth={2} />,
-    color: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.1)',
-    border: 'rgba(59, 130, 246, 0.22)',
+    icon: <CheckSquare size={17} strokeWidth={1.8} />,
   },
   deadline: {
     label: 'Deadline',
-    icon: <Target size={16} strokeWidth={2} />,
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.1)',
-    border: 'rgba(239, 68, 68, 0.22)',
+    icon: <Target size={17} strokeWidth={1.8} />,
   },
   scheduled_work: {
     label: 'Focus Block',
-    icon: <Calendar size={16} strokeWidth={2} />,
-    color: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.1)',
-    border: 'rgba(139, 92, 246, 0.22)',
+    icon: <Calendar size={17} strokeWidth={1.8} />,
   },
   habit: {
-    label: 'Daily Habit',
-    icon: <Repeat size={16} strokeWidth={2} />,
-    color: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.1)',
-    border: 'rgba(16, 185, 129, 0.22)',
+    label: 'Habit',
+    icon: <Repeat size={17} strokeWidth={1.8} />,
   },
   weekly_review: {
     label: 'Weekly Review',
-    icon: <RefreshCw size={16} strokeWidth={2} />,
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.1)',
-    border: 'rgba(245, 158, 11, 0.22)',
+    icon: <RefreshCw size={17} strokeWidth={1.8} />,
   },
   reminder: {
-    label: 'System Alert',
-    icon: <Bell size={16} strokeWidth={2} />,
-    color: '#6366f1',
-    bg: 'rgba(99, 102, 241, 0.1)',
-    border: 'rgba(99, 102, 241, 0.22)',
-  },
-};
-
-const PRIORITY_BADGES: Record<
-  string,
-  { label: string; color: string; bg: string; border: string }
-> = {
-  urgent: {
-    label: 'Critical',
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.12)',
-    border: 'rgba(239, 68, 68, 0.25)',
-  },
-  high: {
-    label: 'High Priority',
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.12)',
-    border: 'rgba(245, 158, 11, 0.25)',
-  },
-  normal: {
-    label: 'Scheduled',
-    color: 'var(--color-text-muted)',
-    bg: 'var(--color-surface-2)',
-    border: 'var(--color-border-subtle)',
-  },
-  low: {
-    label: 'Info',
-    color: 'var(--color-text-faint)',
-    bg: 'transparent',
-    border: 'var(--color-border-subtle)',
+    label: 'Alert',
+    icon: <Bell size={17} strokeWidth={1.8} />,
   },
 };
 
@@ -123,9 +69,6 @@ interface UnifiedUserReminder {
   subtitle: string;
   href: string;
   icon: React.ReactNode;
-  color: string;
-  bg: string;
-  border: string;
   onFinish?: () => void;
   onClearReminder: () => void;
 }
@@ -156,24 +99,17 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
 
   const [activeTab, setActiveTab] = useState<'all' | 'reminders' | 'urgent' | 'unread'>('all');
 
-  // Handle ESC key to dismiss drawer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    if (isOpen) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Aggregate user reminders across all areas (Daily Routine, Tasks, Books, Videos, Ideas, Projects)
   const userReminders = useMemo<UnifiedUserReminder[]>(() => {
     const list: UnifiedUserReminder[] = [];
 
-    // 0. Recurring Daily Routine (resets automatically every new day)
     if (dailyRoutine.isActiveToday) {
       list.push({
         id: 'daily-routine-today',
@@ -182,16 +118,12 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
         title: 'Daily Routine',
         subtitle: dailyRoutine.subtitle,
         href: '/routine',
-        icon: <Clock size={16} strokeWidth={2} />,
-        color: '#f59e0b',
-        bg: 'rgba(245, 158, 11, 0.12)',
-        border: 'rgba(245, 158, 11, 0.28)',
+        icon: <Clock size={17} strokeWidth={1.8} />,
         onFinish: dailyRoutine.markDoneToday,
         onClearReminder: dailyRoutine.markDoneToday,
       });
     }
 
-    // 1. Tasks
     tasks
       .filter((t) => t.isReminder && t.status !== 'done')
       .forEach((t) => {
@@ -200,18 +132,14 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
           type: 'task',
           typeLabel: 'Task',
           title: t.title,
-          subtitle: t.dueDate ? `Due ${t.dueDate}` : t.priority ? `${t.priority.toUpperCase()} priority` : 'Marked important to finish',
+          subtitle: t.dueDate ? `Due ${t.dueDate}` : t.priority ? `${t.priority} priority` : 'Pinned reminder',
           href: '/tasks',
-          icon: <CheckSquare size={16} strokeWidth={2} />,
-          color: '#10b981',
-          bg: 'rgba(16, 185, 129, 0.1)',
-          border: 'rgba(16, 185, 129, 0.22)',
+          icon: <CheckSquare size={17} strokeWidth={1.8} />,
           onFinish: () => toggleTaskDone(t.id),
           onClearReminder: () => toggleTaskReminder(t.id),
         });
       });
 
-    // 2. Books & Videos
     docs
       .filter((d) => d.isReminder && d.status !== 'archived')
       .forEach((d) => {
@@ -221,17 +149,13 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
           type: isVideo ? 'video' : 'book',
           typeLabel: isVideo ? 'Video Lesson' : 'Book',
           title: d.title,
-          subtitle: isVideo ? 'Video Lesson study target' : (d.category ? `${d.category} reading` : 'Reading material'),
+          subtitle: isVideo ? 'Video lesson' : d.category || 'Reading',
           href: isVideo ? '/focus' : '/knowledge',
-          icon: isVideo ? <Video size={16} strokeWidth={2} /> : <BookOpen size={16} strokeWidth={2} />,
-          color: isVideo ? '#38bdf8' : '#a594ff',
-          bg: isVideo ? 'rgba(56, 189, 248, 0.1)' : 'rgba(165, 148, 255, 0.1)',
-          border: isVideo ? 'rgba(56, 189, 248, 0.22)' : 'rgba(165, 148, 255, 0.22)',
+          icon: isVideo ? <Video size={17} strokeWidth={1.8} /> : <BookOpen size={17} strokeWidth={1.8} />,
           onClearReminder: () => toggleDocReminder(d.id),
         });
       });
 
-    // 3. Idea Parking thoughts
     (inboxReminders || [])
       .filter((r) => !r.isApplied && r.status === 'inbox')
       .forEach((r) => {
@@ -240,18 +164,14 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
           type: 'idea',
           typeLabel: 'Idea Parking',
           title: r.content,
-          subtitle: r.reminderTime ? `Reminder time: ${r.reminderTime}` : 'Parked thought to finish',
+          subtitle: r.reminderTime ? r.reminderTime : 'Parked thought',
           href: '/inbox',
-          icon: <Lightbulb size={16} strokeWidth={2} />,
-          color: '#f59e0b',
-          bg: 'rgba(245, 158, 11, 0.1)',
-          border: 'rgba(245, 158, 11, 0.22)',
+          icon: <Lightbulb size={17} strokeWidth={1.8} />,
           onFinish: () => toggleItemApplied(r.id),
           onClearReminder: () => toggleItemReminder(r.id),
         });
       });
 
-    // 4. Projects
     (activeProjects || [])
       .filter((p) => p.isReminder && p.status !== 'completed')
       .forEach((p) => {
@@ -260,18 +180,29 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
           type: 'project',
           typeLabel: 'Project',
           title: p.title,
-          subtitle: `${p.progress}% progress • ${p.priority} priority`,
+          subtitle: `${p.progress}% progress`,
           href: '/projects',
-          icon: <Folder size={16} strokeWidth={2} />,
-          color: '#c084fc',
-          bg: 'rgba(168, 85, 247, 0.1)',
-          border: 'rgba(168, 85, 247, 0.22)',
+          icon: <Folder size={17} strokeWidth={1.8} />,
           onClearReminder: () => toggleProjectReminder(p.id),
         });
       });
 
     return list;
-  }, [dailyRoutine.isActiveToday, dailyRoutine.subtitle, dailyRoutine.markDoneToday, tasks, docs, inboxReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleDocReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+  }, [
+    dailyRoutine.isActiveToday,
+    dailyRoutine.subtitle,
+    dailyRoutine.markDoneToday,
+    tasks,
+    docs,
+    inboxReminders,
+    activeProjects,
+    toggleTaskDone,
+    toggleTaskReminder,
+    toggleDocReminder,
+    toggleItemApplied,
+    toggleItemReminder,
+    toggleProjectReminder,
+  ]);
 
   const filteredNotifications = useMemo(() => {
     switch (activeTab) {
@@ -296,8 +227,6 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
     [activeReminders]
   );
 
-  const totalActiveBadge = unreadCount + userReminders.length;
-
   if (!isOpen) return null;
 
   const handleNavigate = (href?: string, id?: string) => {
@@ -312,94 +241,125 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
       className={styles.item}
       onClick={() => handleNavigate(rem.href)}
     >
-      {/* Category Avatar */}
-      <div
-        className={styles.itemAvatar}
-        style={{
-          color: rem.color,
-          backgroundColor: rem.bg,
-          borderColor: rem.border,
-        }}
-      >
-        {rem.icon}
+      <div className={styles.avatarWrap}>
+        <div className={styles.itemAvatar}>{rem.icon}</div>
+        <span className={styles.avatarCornerBadge} aria-hidden="true">
+          <Pin size={9} />
+        </span>
       </div>
 
-      {/* Main Content Body */}
       <div className={styles.itemBody}>
-        <div className={styles.itemHeaderRow}>
-          <div className={styles.itemMetaLeft}>
-            <span className={styles.categoryLabel} style={{ color: rem.color }}>
-              {rem.typeLabel}
-            </span>
-            <span
-              className={styles.priorityPill}
-              style={{
-                color: 'var(--color-warning, #f59e0b)',
-                background: 'rgba(245, 158, 11, 0.12)',
-                borderColor: 'rgba(245, 158, 11, 0.3)',
-              }}
-            >
-              Important to finish
-            </span>
-          </div>
-        </div>
-
         <h4 className={styles.itemTitle}>
           <AutoLinkText text={rem.title} />
         </h4>
         <p className={styles.itemMsg}>
           <AutoLinkText text={rem.subtitle} />
         </p>
+        <div className={styles.itemMetaRow}>
+          <span>{rem.typeLabel}</span>
+          <span>·</span>
+          <span>Reminder</span>
+        </div>
+      </div>
 
-        {/* Inline Actions */}
-        <div className={styles.itemActions}>
-          <button
-            type="button"
-            className={styles.actionBtnPrimary}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleNavigate(rem.href);
-            }}
-          >
-            <span>Open {rem.typeLabel}</span>
-            <ArrowRight size={13} />
-          </button>
-
-          <div className={styles.itemSecondaryActions}>
-            {rem.onFinish && (
-              <button
-                type="button"
-                className={styles.actionBtnDone}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  rem.onFinish?.();
-                  playSuccessChime();
-                  triggerDopamineBurst();
-                }}
-                title="Mark as completed / done"
-              >
-                <Check size={12} />
-                <span>Finish</span>
-              </button>
-            )}
-
+      <div className={styles.itemRight}>
+        <div className={styles.rowActions}>
+          {rem.onFinish && (
             <button
               type="button"
-              className={styles.dismissBtn}
+              className={`${styles.iconActionBtn} ${styles.iconActionBtnDone}`}
               onClick={(e) => {
                 e.stopPropagation();
-                rem.onClearReminder();
+                rem.onFinish?.();
+                playSuccessChime();
+                triggerDopamineBurst();
               }}
-              title="Remove reminder"
-              aria-label="Remove reminder"
+              title="Mark done"
+              aria-label="Mark done"
             >
-              <X size={14} />
+              <Check size={14} strokeWidth={2.4} />
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            className={`${styles.iconActionBtn} ${styles.iconActionBtnDismiss}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              rem.onClearReminder();
+            }}
+            title="Remove reminder"
+            aria-label="Remove reminder"
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
     </article>
   );
+
+  const renderSystemNotificationItem = (r: (typeof activeReminders)[number]) => {
+    const cfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.reminder;
+    return (
+      <article
+        key={r.id}
+        className={`${styles.item} ${!r.isRead ? styles.unreadItem : ''}`}
+        onClick={() => (r.href ? handleNavigate(r.href, r.id) : markAsRead(r.id))}
+      >
+        <div className={styles.avatarWrap}>
+          <div className={styles.itemAvatar}>{cfg.icon}</div>
+        </div>
+
+        <div className={styles.itemBody}>
+          <h4 className={styles.itemTitle}>
+            <AutoLinkText text={r.title} />
+          </h4>
+          <p className={styles.itemMsg}>
+            <AutoLinkText text={r.message} />
+          </p>
+          <div className={styles.itemMetaRow}>
+            <span>{cfg.label}</span>
+            {r.timeStr && (
+              <>
+                <span>·</span>
+                <span>{r.timeStr}</span>
+              </>
+            )}
+            {r.priority === 'urgent' && <span className={styles.urgentTag}>Urgent</span>}
+          </div>
+        </div>
+
+        <div className={styles.itemRight}>
+          <div className={styles.rowActions}>
+            <button
+              type="button"
+              className={styles.iconActionBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                snoozeReminder(r.id, 60);
+              }}
+              title="Snooze 1 hour"
+              aria-label="Snooze 1 hour"
+            >
+              <Clock size={13} />
+            </button>
+            <button
+              type="button"
+              className={`${styles.iconActionBtn} ${styles.iconActionBtnDismiss}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissReminder(r.id);
+              }}
+              title="Dismiss"
+              aria-label="Dismiss"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          {!r.isRead && <span className={styles.unreadDot} title="Unread" />}
+        </div>
+      </article>
+    );
+  };
 
   return (
     <div
@@ -407,67 +367,67 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Notifications and Reminders Center"
+      aria-label="Notifications"
     >
       <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
-        {/* ── Formal Header ── */}
         <div className={styles.header}>
           <div className={styles.headerTopRow}>
-            <div className={styles.headerTitleGroup}>
-              <div className={styles.bellIconBox}>
-                <Bell size={18} />
-                {totalActiveBadge > 0 && (
-                  <span className={styles.bellBadgeCount}>
-                    {totalActiveBadge > 99 ? '99+' : totalActiveBadge}
-                  </span>
-                )}
-              </div>
-              <div>
-                <div className={styles.titleRow}>
-                  <h2 className={styles.title}>Notifications &amp; Reminders</h2>
-                  {totalActiveBadge > 0 ? (
-                    <span className={styles.unreadPill}>{totalActiveBadge} new</span>
-                  ) : (
-                    <span className={styles.caughtUpPill}>All caught up</span>
-                  )}
-                </div>
-                <p className={styles.subtitle}>
-                  System updates, schedule alerts, and items marked important to finish.
-                </p>
-              </div>
-            </div>
+            <h2 className={styles.title}>Notifications</h2>
 
-            <button
-              className={styles.closeBtn}
-              onClick={onClose}
-              aria-label="Close notifications panel"
-            >
-              <X size={18} />
-            </button>
+            <div className={styles.headerActions}>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  className={styles.headerTextBtn}
+                  onClick={markAllAsRead}
+                  title="Mark all as read"
+                >
+                  <CheckCheck size={14} />
+                  <span>Mark all read</span>
+                </button>
+              )}
+              {readCount > 0 && (
+                <button
+                  type="button"
+                  className={styles.headerTextBtn}
+                  onClick={dismissAllRead}
+                  title="Clear read notifications"
+                >
+                  <span>Clear</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.closeBtn}
+                onClick={onClose}
+                aria-label="Close notifications"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
-          {/* ── Segment Filter Tabs ── */}
           <div className={styles.filterTabsRow}>
             <button
               type="button"
               className={`${styles.filterTab} ${activeTab === 'all' ? styles.filterTabActive : ''}`}
               onClick={() => setActiveTab('all')}
             >
-              All <span>({activeReminders.length + userReminders.length})</span>
+              All <span className={styles.filterTabCount}>{activeReminders.length + userReminders.length}</span>
             </button>
             <button
               type="button"
               className={`${styles.filterTab} ${activeTab === 'reminders' ? styles.filterTabActive : ''}`}
               onClick={() => setActiveTab('reminders')}
             >
-              Reminders <span>({userReminders.length})</span>
+              Reminders <span className={styles.filterTabCount}>{userReminders.length}</span>
             </button>
             <button
               type="button"
               className={`${styles.filterTab} ${activeTab === 'unread' ? styles.filterTabActive : ''}`}
               onClick={() => setActiveTab('unread')}
             >
-              Unread <span>({unreadCount})</span>
+              Unread <span className={styles.filterTabCount}>{unreadCount}</span>
             </button>
             {urgentCount > 0 && (
               <button
@@ -475,69 +435,31 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
                 className={`${styles.filterTab} ${activeTab === 'urgent' ? styles.filterTabActive : ''}`}
                 onClick={() => setActiveTab('urgent')}
               >
-                Critical <span>({urgentCount})</span>
+                Urgent <span className={styles.filterTabCount}>{urgentCount}</span>
               </button>
             )}
           </div>
-
-          {/* ── Utility Toolbar ── */}
-          <div className={styles.utilityToolbar}>
-            <span className={styles.statusIndicator}>
-              <span className={styles.statusDot} />
-              {isQuietHourNow ? 'Quiet Hours' : 'Live Feed'}
-            </span>
-
-            <div className={styles.utilityActions}>
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  className={styles.btnActionSecondary}
-                  onClick={markAllAsRead}
-                  title="Mark all notifications as read"
-                >
-                  <CheckCheck size={13} />
-                  <span>Mark all read</span>
-                </button>
-              )}
-              {readCount > 0 && (
-                <button
-                  type="button"
-                  className={styles.btnActionSecondary}
-                  onClick={dismissAllRead}
-                  title="Clear acknowledged and read notifications"
-                >
-                  <Trash2 size={12} />
-                  <span>Clear read</span>
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* ── Quiet Hours Protocol Banner ── */}
         {isQuietHourNow && (
           <div className={styles.quietBanner}>
-            <div className={styles.quietIconBox}>
-              <Moon size={15} />
-            </div>
-            <div className={styles.quietText}>
-              <strong>Quiet Hours Enforced</strong>
-              <p>Auditory notifications are silenced. Notifications are logged silently here.</p>
-            </div>
+            <Moon size={14} />
+            <span>
+              <strong>Quiet Hours</strong> · Sound notifications paused
+            </span>
           </div>
         )}
 
-        {/* ── Feed List ── */}
         <div className={styles.list}>
           {activeTab === 'reminders' ? (
             userReminders.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIconCircle}>
-                  <Bell size={28} style={{ color: 'var(--color-warning, #f59e0b)' }} />
+                  <Bell size={22} />
                 </div>
-                <h3 className={styles.emptyTitle}>No active reminders</h3>
+                <h3 className={styles.emptyTitle}>No pinned reminders</h3>
                 <p className={styles.emptyDesc}>
-                  Click the Reminder button on any Book, Video Lesson, Task, Idea Parking thought, or Project to pin it here.
+                  Items marked as a reminder appear here.
                 </p>
               </div>
             ) : (
@@ -547,12 +469,10 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
             userReminders.length === 0 && filteredNotifications.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIconCircle}>
-                  <ShieldCheck size={28} />
+                  <ShieldCheck size={22} />
                 </div>
                 <h3 className={styles.emptyTitle}>You&apos;re all caught up</h3>
-                <p className={styles.emptyDesc}>
-                  No active reminders or notifications right now.
-                </p>
+                <p className={styles.emptyDesc}>No active notifications right now.</p>
                 <Link href="/settings" className={styles.settingsLink} onClick={onClose}>
                   <Settings size={13} />
                   <span>Notification Settings</span>
@@ -562,11 +482,9 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
               <>
                 {userReminders.length > 0 && (
                   <>
-                    <div className={styles.sectionDividerRow}>
-                      <span className={styles.sectionDividerTitle}>
-                        <Bell size={12} style={{ color: 'var(--color-warning, #f59e0b)' }} />
-                        Important Reminders ({userReminders.length})
-                      </span>
+                    <div className={styles.sectionHeader}>
+                      <span>Pinned Reminders</span>
+                      <span className={styles.sectionCount}>{userReminders.length}</span>
                     </div>
                     {userReminders.map(renderUserReminderItem)}
                   </>
@@ -574,131 +492,11 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
 
                 {filteredNotifications.length > 0 && (
                   <>
-                    {userReminders.length > 0 && (
-                      <div className={styles.sectionDividerRow} style={{ marginTop: '12px' }}>
-                        <span className={styles.sectionDividerTitle}>
-                          <Clock size={12} />
-                          System Notifications ({filteredNotifications.length})
-                        </span>
-                      </div>
-                    )}
-                    {filteredNotifications.map((r) => {
-                      const cfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.reminder;
-                      const pBadge = PRIORITY_BADGES[r.priority] || PRIORITY_BADGES.normal;
-
-                      return (
-                        <article
-                          key={r.id}
-                          className={`${styles.item} ${!r.isRead ? styles.unreadItem : ''}`}
-                          onClick={() => markAsRead(r.id)}
-                        >
-                          <div
-                            className={styles.itemAvatar}
-                            style={{
-                              color: cfg.color,
-                              backgroundColor: cfg.bg,
-                              borderColor: cfg.border,
-                            }}
-                          >
-                            {cfg.icon}
-                          </div>
-
-                          <div className={styles.itemBody}>
-                            <div className={styles.itemHeaderRow}>
-                              <div className={styles.itemMetaLeft}>
-                                <span className={styles.categoryLabel} style={{ color: cfg.color }}>
-                                  {cfg.label}
-                                </span>
-                                {r.timeStr && (
-                                  <span className={styles.timeTag}>
-                                    {r.timeStr}
-                                  </span>
-                                )}
-                                {r.priority === 'urgent' && (
-                                  <span
-                                    className={styles.priorityPill}
-                                    style={{
-                                      color: pBadge.color,
-                                      background: pBadge.bg,
-                                      borderColor: pBadge.border,
-                                    }}
-                                  >
-                                    {pBadge.label}
-                                  </span>
-                                )}
-                              </div>
-
-                              {!r.isRead && (
-                                <span className={styles.unreadDot} title="Unread notification" />
-                              )}
-                            </div>
-
-                            <h4 className={styles.itemTitle}>
-                              <AutoLinkText text={r.title} />
-                            </h4>
-                            <p className={styles.itemMsg}>
-                              <AutoLinkText text={r.message} />
-                            </p>
-
-                            <div className={styles.itemActions}>
-                              {r.href ? (
-                                <button
-                                  type="button"
-                                  className={styles.actionBtnPrimary}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleNavigate(r.href, r.id);
-                                  }}
-                                >
-                                  <span>Open &amp; Review</span>
-                                  <ArrowRight size={13} />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className={styles.actionBtnPrimary}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    markAsRead(r.id);
-                                  }}
-                                >
-                                  <CheckCircle2 size={13} />
-                                  <span>Acknowledge</span>
-                                </button>
-                              )}
-
-                              <div className={styles.itemSecondaryActions}>
-                                <button
-                                  type="button"
-                                  className={styles.actionBtnSecondary}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    snoozeReminder(r.id, 60);
-                                  }}
-                                  title="Snooze for 1 hour"
-                                >
-                                  <Clock size={12} />
-                                  <span>Snooze 1h</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className={styles.dismissBtn}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    dismissReminder(r.id);
-                                  }}
-                                  title="Dismiss notification"
-                                  aria-label="Dismiss notification"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
+                    <div className={styles.sectionHeader}>
+                      <span>Recent</span>
+                      <span className={styles.sectionCount}>{filteredNotifications.length}</span>
+                    </div>
+                    {filteredNotifications.map(renderSystemNotificationItem)}
                   </>
                 )}
               </>
@@ -706,135 +504,13 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
           ) : filteredNotifications.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIconCircle}>
-                <ShieldCheck size={28} />
+                <ShieldCheck size={22} />
               </div>
-              <h3 className={styles.emptyTitle}>You&apos;re all caught up</h3>
-              <p className={styles.emptyDesc}>
-                No notifications match the &ldquo;{activeTab}&rdquo; filter.
-              </p>
-              <Link href="/settings" className={styles.settingsLink} onClick={onClose}>
-                <Settings size={13} />
-                <span>Notification Settings</span>
-              </Link>
+              <h3 className={styles.emptyTitle}>No matching notifications</h3>
+              <p className={styles.emptyDesc}>You&apos;re caught up in this view.</p>
             </div>
           ) : (
-            filteredNotifications.map((r) => {
-              const cfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.reminder;
-              const pBadge = PRIORITY_BADGES[r.priority] || PRIORITY_BADGES.normal;
-
-              return (
-                <article
-                  key={r.id}
-                  className={`${styles.item} ${!r.isRead ? styles.unreadItem : ''}`}
-                  onClick={() => markAsRead(r.id)}
-                >
-                  <div
-                    className={styles.itemAvatar}
-                    style={{
-                      color: cfg.color,
-                      backgroundColor: cfg.bg,
-                      borderColor: cfg.border,
-                    }}
-                  >
-                    {cfg.icon}
-                  </div>
-
-                  <div className={styles.itemBody}>
-                    <div className={styles.itemHeaderRow}>
-                      <div className={styles.itemMetaLeft}>
-                        <span className={styles.categoryLabel} style={{ color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                        {r.timeStr && (
-                          <span className={styles.timeTag}>
-                            {r.timeStr}
-                          </span>
-                        )}
-                        {r.priority === 'urgent' && (
-                          <span
-                            className={styles.priorityPill}
-                            style={{
-                              color: pBadge.color,
-                              background: pBadge.bg,
-                              borderColor: pBadge.border,
-                            }}
-                          >
-                            {pBadge.label}
-                          </span>
-                        )}
-                      </div>
-
-                      {!r.isRead && (
-                        <span className={styles.unreadDot} title="Unread notification" />
-                      )}
-                    </div>
-
-                    <h4 className={styles.itemTitle}>
-                      <AutoLinkText text={r.title} />
-                    </h4>
-                    <p className={styles.itemMsg}>
-                      <AutoLinkText text={r.message} />
-                    </p>
-
-                    <div className={styles.itemActions}>
-                      {r.href ? (
-                        <button
-                          type="button"
-                          className={styles.actionBtnPrimary}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNavigate(r.href, r.id);
-                          }}
-                        >
-                          <span>Open &amp; Review</span>
-                          <ArrowRight size={13} />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className={styles.actionBtnPrimary}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markAsRead(r.id);
-                          }}
-                        >
-                          <CheckCircle2 size={13} />
-                          <span>Acknowledge</span>
-                        </button>
-                      )}
-
-                      <div className={styles.itemSecondaryActions}>
-                        <button
-                          type="button"
-                          className={styles.actionBtnSecondary}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            snoozeReminder(r.id, 60);
-                          }}
-                          title="Snooze for 1 hour"
-                        >
-                          <Clock size={12} />
-                          <span>Snooze 1h</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.dismissBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dismissReminder(r.id);
-                          }}
-                          title="Dismiss notification"
-                          aria-label="Dismiss notification"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
+            filteredNotifications.map(renderSystemNotificationItem)
           )}
         </div>
       </div>
