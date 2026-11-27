@@ -52,11 +52,13 @@ import { useTasks } from '@/context/TaskContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseAuth, explainFirebaseError } from '@/lib/firebase';
+import { hashLocalPin, verifyLocalPin } from '@/lib/pinHash';
 import {
   EmailAuthProvider,
+  GoogleAuthProvider,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { handleCleanPasteEvent, cleanMarkdownText } from '@/utils/textCleaner';
 import type { InboxItem, InboxConvertedType } from '@/types';
@@ -455,6 +457,11 @@ export default function InboxPage() {
   const [guestPinSetup, setGuestPinSetup] = useState(false);
   const [guestPinConfirm, setGuestPinConfirm] = useState('');
 
+  const providerIds = user && !isGuest ? (user.providerData || []).map((p) => p.providerId) : [];
+  const hasPasswordProvider = providerIds.includes('password');
+  const hasGoogleProvider = providerIds.includes('google.com');
+  const isGoogleOnlyAccount = Boolean(user && !isGuest && hasGoogleProvider && !hasPasswordProvider);
+
   // Lock Important Vault whenever user navigates away or switches tabs
   useEffect(() => {
     if (filterTab !== 'important') {
@@ -469,6 +476,33 @@ export default function InboxPage() {
     }
   }, [filterTab, user, isGuest]);
 
+  const handleUnlockVaultWithGoogle = async () => {
+    setVaultLoading(true);
+    setVaultError(null);
+    try {
+      const auth = getFirebaseAuth();
+      if (!auth.currentUser) {
+        throw new Error('Please sign in first.');
+      }
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await reauthenticateWithPopup(auth.currentUser, provider);
+      setIsVaultUnlocked(true);
+      setVaultPassword('');
+      setVaultError(null);
+      playSuccessChime();
+      showToast('Notes unlocked');
+    } catch (err: unknown) {
+      const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      setVaultError(explainFirebaseError(err));
+    } finally {
+      setVaultLoading(false);
+    }
+  };
+
   const handleUnlockVault = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!vaultPassword.trim()) {
@@ -480,8 +514,8 @@ export default function InboxPage() {
     setVaultError(null);
 
     try {
-      // 1. Account Password Verification (Firebase Auth)
-      if (user?.email && !isGuest) {
+      // 1. Account Password Verification (Firebase Email/Password Auth)
+      if (user?.email && !isGuest && !isGoogleOnlyAccount) {
         const auth = getFirebaseAuth();
         let verified = false;
 
@@ -521,7 +555,7 @@ export default function InboxPage() {
         return;
       }
 
-      // 2. Local Guest Mode / Offline Workspace Passcode
+      // 2. Local Guest Mode / Offline Workspace Passcode (supports salted SHA-256 and legacy plaintext)
       const storedPin = typeof window !== 'undefined' ? localStorage.getItem('life_os_guest_vault_pin') : null;
       if (!storedPin) {
         if (vaultPassword.trim().length < 4) {
@@ -530,7 +564,8 @@ export default function InboxPage() {
         if (guestPinConfirm.trim() !== vaultPassword.trim()) {
           throw new Error('Passcodes do not match. Please re-enter to confirm.');
         }
-        localStorage.setItem('life_os_guest_vault_pin', vaultPassword.trim());
+        const hashed = await hashLocalPin(vaultPassword.trim());
+        localStorage.setItem('life_os_guest_vault_pin', hashed);
         setIsVaultUnlocked(true);
         setVaultPassword('');
         setGuestPinConfirm('');
@@ -540,7 +575,7 @@ export default function InboxPage() {
         return;
       }
 
-      if (vaultPassword.trim() === storedPin) {
+      if (await verifyLocalPin(vaultPassword.trim(), storedPin)) {
         setIsVaultUnlocked(true);
         setVaultPassword('');
         setVaultError(null);
@@ -919,21 +954,23 @@ export default function InboxPage() {
 
         {filterTab === 'important' && isVaultUnlocked && (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              type="button"
-              className={styles.lockVaultBtn}
-              onClick={() => {
-                setShowChangePasswordModal(true);
-                setChangePassError(null);
-                setChangePassCurrent('');
-                setChangePassNew('');
-                setChangePassConfirm('');
-              }}
-              title="Change Password (syncs with account and Notes vault)"
-            >
-              <KeyRound size={12} />
-              <span>Change Password</span>
-            </button>
+            {!isGoogleOnlyAccount && (
+              <button
+                type="button"
+                className={styles.lockVaultBtn}
+                onClick={() => {
+                  setShowChangePasswordModal(true);
+                  setChangePassError(null);
+                  setChangePassCurrent('');
+                  setChangePassNew('');
+                  setChangePassConfirm('');
+                }}
+                title="Change Password (syncs with account and Notes vault)"
+              >
+                <KeyRound size={12} />
+                <span>Change Password</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -989,7 +1026,9 @@ export default function InboxPage() {
               </div>
               <h2 className={styles.vaultTitle}>Notes</h2>
               <p className={styles.vaultDesc}>
-                {user?.email && !isGuest
+                {isGoogleOnlyAccount
+                  ? 'Verify your Google account to unlock'
+                  : user?.email && !isGuest
                   ? 'Enter account password to unlock'
                   : guestPinSetup
                   ? 'Set a passcode to unlock'
@@ -997,6 +1036,40 @@ export default function InboxPage() {
               </p>
             </div>
 
+            {isGoogleOnlyAccount ? (
+              <div className={styles.vaultForm}>
+                {vaultError && (
+                  <div className={styles.vaultAlertError} role="alert">
+                    <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                    <span>{vaultError}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className={styles.vaultSubmitBtn}
+                  onClick={() => void handleUnlockVaultWithGoogle()}
+                  disabled={vaultLoading}
+                >
+                  {vaultLoading ? (
+                    <>
+                      <Loader2 size={14} className={styles.spin} />
+                      <span>Verifying…</span>
+                    </>
+                  ) : (
+                    <span>Unlock with Google</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.vaultBackBtn}
+                  onClick={() => setFilterTab('inbox')}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleUnlockVault} className={styles.vaultForm}>
               {vaultError && (
                 <div className={styles.vaultAlertError} role="alert">
@@ -1068,6 +1141,7 @@ export default function InboxPage() {
                 Cancel
               </button>
             </form>
+            )}
           </div>
         </section>
       ) : (
