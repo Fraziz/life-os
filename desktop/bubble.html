@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sariling Mundo Quick Bubble</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .stage {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ── Design 1: Messenger-style Glowing Circle Bubble ── */
+      .circleBubble {
+        position: relative;
+        width: 54px;
+        height: 54px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 25%, #1c2230 0%, #090b10 72%);
+        border: 1.5px solid rgba(56, 189, 248, 0.72);
+        box-shadow:
+          0 6px 18px rgba(0, 0, 0, 0.68),
+          0 0 14px rgba(56, 189, 248, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      }
+
+      .circleBubble:hover {
+        transform: scale(1.06);
+        border-color: #ffffff;
+        box-shadow:
+          0 8px 22px rgba(0, 0, 0, 0.75),
+          0 0 18px rgba(56, 189, 248, 0.6);
+      }
+
+      .circleBubble.active {
+        border-color: #22d3a5;
+        box-shadow:
+          0 6px 18px rgba(0, 0, 0, 0.7),
+          0 0 16px rgba(34, 211, 165, 0.48);
+      }
+
+      .circleBubble:active {
+        cursor: grabbing;
+        transform: scale(0.96);
+      }
+
+      .circleLogo {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        pointer-events: none;
+        filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.75));
+      }
+
+      .statusPip {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #38bdf8;
+        border: 2px solid #090b10;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+      }
+
+      .circleBubble.active .statusPip {
+        background: #22d3a5;
+        box-shadow: 0 0 8px rgba(34, 211, 165, 0.9);
+      }
+
+      /* ── Design 2: Swipeable Screen-Edge Line Handle ── */
+      .edgeStage {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .edgeStage.left {
+        justify-content: flex-start;
+      }
+
+      .edgeStage.right {
+        justify-content: flex-end;
+      }
+
+      .edgeLineHandle {
+        position: relative;
+        width: 10px;
+        height: 74px;
+        background: linear-gradient(180deg, #38bdf8 0%, #818cf8 55%, #22d3a5 100%);
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        box-shadow:
+          0 0 14px rgba(56, 189, 248, 0.6),
+          0 4px 12px rgba(0, 0, 0, 0.65);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        transition: width 0.18s cubic-bezier(0.16, 1, 0.3, 1), background 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .edgeStage.left .edgeLineHandle {
+        border-radius: 0 999px 999px 0;
+        border-left: none;
+      }
+
+      .edgeStage.right .edgeLineHandle {
+        border-radius: 999px 0 0 999px;
+        border-right: none;
+      }
+
+      .edgeLineHandle:hover {
+        width: 28px;
+        background: #0d111a;
+        border-color: rgba(56, 189, 248, 0.85);
+        box-shadow:
+          0 0 18px rgba(56, 189, 248, 0.65),
+          0 6px 16px rgba(0, 0, 0, 0.78);
+      }
+
+      .edgeMiniLogo {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        opacity: 0;
+        transform: scale(0.75);
+        transition: opacity 0.14s ease, transform 0.16s ease;
+        pointer-events: none;
+      }
+
+      .edgeLineHandle:hover .edgeMiniLogo {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* ── Design 3: Compact Floating Pill Badge ── */
+      .pillHandle {
+        height: 40px;
+        padding: 0 13px 0 9px;
+        border-radius: 999px;
+        background: rgba(10, 12, 18, 0.94);
+        border: 1.5px solid rgba(56, 189, 248, 0.65);
+        box-shadow:
+          0 6px 18px rgba(0, 0, 0, 0.68),
+          0 0 14px rgba(56, 189, 248, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #ffffff;
+        cursor: grab;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+      }
+
+      .pillHandle:hover {
+        transform: scale(1.03);
+        border-color: #ffffff;
+      }
+
+      .pillHandle:active {
+        cursor: grabbing;
+        transform: scale(0.97);
+      }
+
+      .pillLogo {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        pointer-events: none;
+      }
+
+      .pillLabel {
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+      }
+
+      .pillDot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #38bdf8;
+        box-shadow: 0 0 7px rgba(56, 189, 248, 0.9);
+        flex-shrink: 0;
+      }
+
+      .pillHandle.active .pillDot {
+        background: #22d3a5;
+        box-shadow: 0 0 7px rgba(34, 211, 165, 0.9);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="stage">
+      <!-- Mode: Circle Bubble -->
+      <div
+        id="mode-circle"
+        class="circleBubble"
+        title="Sariling Mundo — Click to open · Drag to move · Swipe to edge for line mode · Right-click for styles"
+      >
+        <img src="logo.png" alt="Sariling Mundo" class="circleLogo" />
+        <span class="statusPip"></span>
+      </div>
+
+      <!-- Mode: Edge Line (Swipe / Click) -->
+      <div id="mode-line" class="edgeStage right hidden">
+        <div
+          id="edge-handle"
+          class="edgeLineHandle"
+          title="Sariling Mundo — Click or swipe inward to open · Drag up/down to move · Right-click for styles"
+        >
+          <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
+        </div>
+      </div>
+
+      <!-- Mode: Compact Pill -->
+      <div
+        id="mode-pill"
+        class="pillHandle hidden"
+        title="Sariling Mundo — Click to open · Drag to move · Right-click for styles"
+      >
+        <img src="logo.png" alt="Sariling Mundo" class="pillLogo" />
+        <span class="pillLabel">Sariling Mundo</span>
+        <span class="pillDot"></span>
+      </div>
+    </div>
+
+    <script>
+      const elCircle = document.getElementById('mode-circle');
+      const elLineWrap = document.getElementById('mode-line');
+      const elLineHandle = document.getElementById('edge-handle');
+      const elPill = document.getElementById('mode-pill');
+
+      let currentState = { mode: 'circle', edge: 'right', appVisible: true };
+
+      function applyState(state) {
+        if (!state) return;
+        currentState = state;
+
+        elCircle.classList.toggle('hidden', state.mode !== 'circle');
+        elLineWrap.classList.toggle('hidden', state.mode !== 'line');
+        elPill.classList.toggle('hidden', state.mode !== 'pill');
+
+        elLineWrap.classList.toggle('left', state.edge === 'left');
+        elLineWrap.classList.toggle('right', state.edge !== 'left');
+
+        elCircle.classList.toggle('active', Boolean(state.appVisible));
+        elPill.classList.toggle('active', Boolean(state.appVisible));
+      }
+
+      if (window.sarilingBubble) {
+        window.sarilingBubble.getState().then(applyState);
+        window.sarilingBubble.onState(applyState);
+      }
+
+      let pointerDown = null;
+
+      function attachInteractions(targetEl, isEdgeLine = false) {
+        targetEl.addEventListener('pointerdown', (e) => {
+          if (e.button === 2) return;
+          if (e.button !== 0 && e.pointerType === 'mouse') return;
+          pointerDown = {
+            startScreenX: e.screenX,
+            startScreenY: e.screenY,
+            moved: false,
+            isEdgeLine,
+          };
+          try {
+            targetEl.setPointerCapture(e.pointerId);
+          } catch {}
+          window.sarilingBubble?.dragStart(e.screenX, e.screenY);
+        });
+
+        targetEl.addEventListener('pointermove', (e) => {
+          if (!pointerDown) return;
+          const dx = e.screenX - pointerDown.startScreenX;
+          const dy = e.screenY - pointerDown.startScreenY;
+
+          // Swipe inward on edge line immediately opens the main window
+          if (pointerDown.isEdgeLine && Math.abs(dx) > 16) {
+            const swipedInward =
+              (currentState.edge === 'right' && dx < -16) ||
+              (currentState.edge === 'left' && dx > 16);
+            if (swipedInward) {
+              pointerDown = null;
+              window.sarilingBubble?.toggleApp();
+              return;
+            }
+          }
+
+          if (Math.hypot(dx, dy) > 6) {
+            pointerDown.moved = true;
+            window.sarilingBubble?.dragMove(e.screenX, e.screenY);
+          }
+        });
+
+        targetEl.addEventListener('pointerup', (e) => {
+          if (!pointerDown) return;
+          const wasMoved = pointerDown.moved;
+          pointerDown = null;
+          try {
+            targetEl.releasePointerCapture(e.pointerId);
+          } catch {}
+          if (wasMoved) {
+            window.sarilingBubble?.dragEnd(e.screenX, e.screenY);
+          } else {
+            window.sarilingBubble?.toggleApp();
+          }
+        });
+
+        targetEl.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          window.sarilingBubble?.openContextMenu();
+        });
+      }
+
+      attachInteractions(elCircle, false);
+      attachInteractions(elLineHandle, true);
+      attachInteractions(elPill, false);
+    </script>
+  </body>
+</html>

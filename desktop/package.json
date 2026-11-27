@@ -23,6 +23,9 @@
       "main.js",
       "preload.js",
       "setup.html",
+      "bubble.html",
+      "bubble-preload.js",
+      "logo.png",
       "icon.ico"
     ],
     "win": {
