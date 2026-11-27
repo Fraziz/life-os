@@ -28,6 +28,7 @@ import {
   RotateCcw,
   TrendingUp,
   Zap,
+  Monitor,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -35,6 +36,7 @@ import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTour } from '@/context/TourContext';
+import { usePwaInstall } from '@/utils/usePwaInstall';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
 
@@ -84,6 +86,7 @@ export default function Sidebar({
   const { settings, toggleSimpleMode } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
   const { startTour } = useTour();
+  const { canPromptInstall, isStandalone, promptInstall } = usePwaInstall();
 
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
   const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
@@ -353,6 +356,30 @@ export default function Sidebar({
                 <Compass size={14} />
                 <span>Interactive Tour</span>
               </button>
+              {!isStandalone && (
+                canPromptInstall ? (
+                  <button
+                    type="button"
+                    className={styles.dropdownItem}
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      void promptInstall();
+                    }}
+                  >
+                    <Monitor size={14} />
+                    <span>Install Desktop App</span>
+                  </button>
+                ) : (
+                  <Link
+                    href="/settings#desktop-app"
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <Monitor size={14} />
+                    <span>Desktop App (Windows)</span>
+                  </Link>
+                )
+              )}
               <button
                 type="button"
                 className={styles.dropdownItem}

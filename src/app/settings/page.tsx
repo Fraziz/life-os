@@ -39,11 +39,13 @@ import {
   Check,
   Compass,
   ChevronDown,
+  Monitor,
 } from 'lucide-react';
 
 import ActiveDevices from '@/components/settings/ActiveDevices';
 import { useTour } from '@/context/TourContext';
 import { testAIConnection } from '@/utils/aiEngine';
+import { usePwaInstall } from '@/utils/usePwaInstall';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
 import Logo from '@/components/ui/Logo';
@@ -78,6 +80,8 @@ export default function SettingsPage() {
   const { user, isGuest, logout, logoutAllDevices, changePassword } = useAuth();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
   const { startTour, resetAllTours } = useTour();
+  const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
+  const [showDesktopGuide, setShowDesktopGuide] = useState(false);
 
   const [formData, setFormData] = useState(settings);
   const [showSavedToast, setShowSavedToast] = useState(false);
@@ -1375,6 +1379,88 @@ export default function SettingsPage() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* ── Windows Desktop App & Cloud Sync ── */}
+                <div id="desktop-app" className={styles.logoCustomizerCard}>
+                  <div className={styles.logoCustomizerHeader}>
+                    <div>
+                      <h3 className={styles.subCardTitle}>Windows Desktop App</h3>
+                      <p className={styles.subCardDesc}>
+                        Run Sariling Mundo in its own Windows window with a Desktop/Taskbar shortcut, auto-synced in real time with your cloud account.
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        padding: '3px 9px',
+                        borderRadius: '999px',
+                        border: '1px solid var(--color-border-subtle)',
+                        background: 'var(--color-surface-2)',
+                        color: isStandalone ? '#22d3a5' : 'var(--color-text-muted)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isStandalone ? 'Desktop Window Active' : isInstalled ? 'Installed on Device' : 'Browser Mode'}
+                    </span>
+                  </div>
+
+                  <div className={styles.logoActionsRow}>
+                    {canPromptInstall ? (
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        onClick={async () => {
+                          const outcome = await promptInstall();
+                          if (outcome === 'accepted') {
+                            setToastText('Installing Sariling Mundo onto your Desktop…');
+                            setShowSavedToast(true);
+                            setTimeout(() => setShowSavedToast(false), 3000);
+                          }
+                        }}
+                      >
+                        <Monitor size={13} style={{ marginRight: 6 }} />
+                        Install on Windows Desktop
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        onClick={() => setShowDesktopGuide((v) => !v)}
+                      >
+                        <Monitor size={13} style={{ marginRight: 6 }} />
+                        {isStandalone ? 'Desktop Options & .exe Guide' : 'Pin / Install to Windows Desktop'}
+                      </button>
+                    )}
+                  </div>
+
+                  {(showDesktopGuide || !canPromptInstall) && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '12px 14px',
+                        borderRadius: 'var(--radius-md, 8px)',
+                        border: '1px solid var(--color-border-subtle)',
+                        background: 'var(--color-surface-2)',
+                        fontSize: '0.8rem',
+                        color: 'var(--color-text-muted)',
+                        lineHeight: 1.55,
+                        display: showDesktopGuide ? 'flex' : 'none',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: 'var(--color-text)' }}>Option 1 — Instant Windows App (Edge / Chrome):</strong>{' '}
+                        Click the <strong>Install icon</strong> in the browser address bar (or open browser menu <strong>Apps → Install this site as an app</strong>) to add a Desktop shortcut &amp; Taskbar pin that stays synced live.
+                      </div>
+                      <div>
+                        <strong style={{ color: 'var(--color-text)' }}>Option 2 — Standalone Windows Installer (.exe):</strong>{' '}
+                        Inside the repo&apos;s <code>desktop/</code> folder, run <code>npm install &amp;&amp; npm run build:win</code> to generate a native Windows <code>.exe</code> with System Tray and Launch-on-Startup support.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

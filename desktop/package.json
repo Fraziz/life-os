@@ -1,0 +1,46 @@
+{
+  "name": "sariling-mundo-desktop",
+  "version": "1.0.0",
+  "description": "Standalone Windows Desktop wrapper for Sariling Mundo (Life OS) synced with your live web workspace.",
+  "main": "main.js",
+  "author": "Sariling Mundo",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.sarilingmundo.lifeos",
+    "productName": "Sariling Mundo",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "setup.html",
+      "icon.ico"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sariling Mundo"
+    },
+    "portable": {
+      "artifactName": "Sariling-Mundo-Portable-${version}.exe"
+    }
+  }
+}

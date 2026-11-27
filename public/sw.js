@@ -1,9 +1,12 @@
 // Sariling Mundo Service Worker for Offline Caching and PWA Installation
-const CACHE_NAME = 'sariling-mundo-v3';
+const CACHE_NAME = 'sariling-mundo-v4';
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.webmanifest',
+  '/logo.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

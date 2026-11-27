@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connect Sariling Mundo Desktop</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #000000;
+        color: #ffffff;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .card {
+        width: 100%;
+        max-width: 440px;
+        background: #0a0a0a;
+        border: 1px solid #181818;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: #a1a1aa;
+        line-height: 1.5;
+      }
+      label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #a1a1aa;
+        display: block;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #121212;
+        border: 1px solid #262626;
+        color: #ffffff;
+        font-size: 13px;
+        outline: none;
+      }
+      input:focus {
+        border-color: #ffffff;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      button {
+        padding: 9px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid #262626;
+        background: #121212;
+        color: #ffffff;
+      }
+      button:hover {
+        background: #1c1c1c;
+      }
+      .primary {
+        flex: 1;
+        background: #ffffff;
+        color: #000000;
+        border-color: #ffffff;
+      }
+      .primary:hover {
+        opacity: 0.92;
+        background: #ffffff;
+      }
+      .error {
+        font-size: 12px;
+        color: #fb7185;
+        min-height: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <form class="card" id="setup-form">
+      <h1>Connect Sariling Mundo</h1>
+      <p>
+        Enter your live deployed web URL (or localhost) so your Windows Desktop app stays synced in real time with your cloud workspace.
+      </p>
+      <div>
+        <label for="url-input">Workspace URL</label>
+        <input
+          id="url-input"
+          type="url"
+          placeholder="https://your-sariling-mundo.netlify.app"
+          required
+          autofocus
+        />
+      </div>
+      <div class="error" id="error-msg"></div>
+      <div class="actions">
+        <button type="submit" class="primary">Connect &amp; Sync</button>
+        <button type="button" id="local-btn">Use Localhost</button>
+      </div>
+    </form>
+
+    <script>
+      const input = document.getElementById('url-input');
+      const errorMsg = document.getElementById('error-msg');
+      const form = document.getElementById('setup-form');
+      const localBtn = document.getElementById('local-btn');
+
+      if (window.sarilingDesktop) {
+        window.sarilingDesktop.getUrl().then((saved) => {
+          if (saved) input.value = saved;
+        });
+      }
+
+      async function connect(url) {
+        errorMsg.textContent = '';
+        try {
+          await window.sarilingDesktop.saveUrl(url);
+        } catch (err) {
+          errorMsg.textContent = err?.message || 'Could not save URL.';
+        }
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        connect(input.value);
+      });
+
+      localBtn.addEventListener('click', () => {
+        connect('http://localhost:3000');
+      });
+    </script>
+  </body>
+</html>
