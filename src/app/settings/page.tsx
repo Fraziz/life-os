@@ -6,10 +6,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
-import { flushCloudNow, wipeCloudKv } from '@/lib/cloudStore';
+import {
+  clearLocalWorkspaceSilently,
+  flushCloudNow,
+  startFreshKeepBooks,
+  stopCloudSync,
+  wipeCloudKv,
+} from '@/lib/cloudStore';
 import { restoreMissingStarterWorkspace } from '@/lib/workspaceRecovery';
-import { wipeCloudBooks } from '@/lib/bookCloudSync';
-import { idbGet, idbSet } from '@/lib/idbStore';
+import { flushPendingBookSaves, wipeCloudBooks } from '@/lib/bookCloudSync';
+import { idbClear, idbGet, idbSet } from '@/lib/idbStore';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
 import {
   User,
@@ -3414,15 +3420,62 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
+                <div className={styles.dangerCard} style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <RotateCcw size={16} style={{ color: 'var(--color-text)' }} />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                      Start Fresh (Keep Books)
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    Erases your Tasks, Goals, Milestones, Projects, Dreams, Idea Parking, Calendar, Habits, and Routine so you can start fresh while keeping all of your Books &amp; study documents safe.
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={async () => {
+                        const phrase = await promptDialog({
+                          title: 'Start Fresh (Keep Books)',
+                          message: 'Type "RESET" to delete Tasks, Goals, Projects, Dreams, Idea Parking, Calendar, Habits, and Routine while keeping all Books:',
+                          placeholder: 'RESET',
+                          confirmLabel: 'Reset & Keep Books',
+                          isDestructive: true,
+                        });
+                        if (phrase === 'RESET') {
+                          const targetUid = user && !isGuest ? user.uid : undefined;
+                          if (targetUid) {
+                            await flushPendingBookSaves(targetUid);
+                          }
+                          await startFreshKeepBooks(targetUid);
+                          await alertDialog({
+                            title: 'Workspace Reset',
+                            message: 'Your workspace is now fresh and empty, and your Books have been preserved.',
+                          });
+                          window.location.href = '/';
+                        } else if (phrase !== null) {
+                          await alertDialog({
+                            title: 'Action Cancelled',
+                            message: 'Confirmation phrase did not match. Nothing was deleted.',
+                          });
+                        }
+                      }}
+                    >
+                      <RotateCcw size={13} />
+                      Start Fresh (Keep Books)
+                    </button>
+                  </div>
+                </div>
+
                 <div className={styles.dangerCard}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <AlertOctagon size={16} style={{ color: 'var(--color-danger, #ef4444)' }} />
                     <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)' }}>
-                      Factory Reset / Erase Local Data
+                      Factory Reset / Erase Everything (Including Books)
                     </span>
                   </div>
                   <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                    Permanently wipes all local browser storage, tasks, projects, notes, and local credentials.
+                    Permanently wipes ALL local and cloud data including Books, tasks, projects, notes, and local credentials.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
                     <button
@@ -3431,13 +3484,14 @@ export default function SettingsPage() {
                       onClick={async () => {
                         const phrase = await promptDialog({
                           title: 'Erase All Data',
-                          message: 'To confirm erasure of all data, type "DELETE ALL MY DATA" below:',
+                          message: 'To confirm permanent erasure of ALL data (including Books), type "DELETE ALL MY DATA" below:',
                           placeholder: 'DELETE ALL MY DATA',
                           confirmLabel: 'Erase Everything',
                           isDestructive: true,
                         });
                         if (phrase === 'DELETE ALL MY DATA') {
-                          if (user) {
+                          await stopCloudSync({ flushWrites: false });
+                          if (user && !isGuest) {
                             try {
                               await Promise.all([
                                 wipeCloudKv(user.uid),
@@ -3445,7 +3499,8 @@ export default function SettingsPage() {
                               ]);
                             } catch { /* keep going */ }
                           }
-                          localStorage.clear();
+                          clearLocalWorkspaceSilently();
+                          await idbClear();
                           await alertDialog({
                             title: 'Data Erased',
                             message: 'Sariling Mundo data has been erased.',

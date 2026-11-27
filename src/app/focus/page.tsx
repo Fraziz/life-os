@@ -52,6 +52,7 @@ import {
   type AmbientSoundType,
 } from '@/utils/soundAndDopamine';
 import type { Task, FocusModeType, KnowledgeDocument } from '@/types';
+import { sanitizeRichHtml } from '@/utils/htmlSanitizer';
 import ContextualTourBanner from '@/components/tour/ContextualTourBanner';
 import styles from './page.module.css';
 
@@ -266,7 +267,7 @@ export default function FocusPage() {
       .replace(/<span[^>]*class=["'][^"']*video-timestamp-chip[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
       .replace(/\[00:00\]/g, '')
       .replace(/(?:--\s*){3,}/g, '');
-    return transformVideoLessonsInHtml(html, false, true, activeDoc?.title);
+    return sanitizeRichHtml(transformVideoLessonsInHtml(html, false, true, activeDoc?.title));
   };
 
   const handleNotesKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {

@@ -10,6 +10,7 @@ import { useAuth } from './AuthContext';
 import {
   saveBookToCloud,
   queueBookSaveToCloud,
+  flushPendingBookSaves,
   deleteBookFromCloud,
   subscribeToCloudBooks,
   migrateLegacyBooksFromKv,
@@ -1079,8 +1080,26 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    const flushBooks = () => {
+      if (uid) void flushPendingBookSaves(uid);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushBooks();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pagehide', flushBooks);
+      window.addEventListener('beforeunload', flushBooks);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+
     return () => {
       isCancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pagehide', flushBooks);
+        window.removeEventListener('beforeunload', flushBooks);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      }
+      if (uid) void flushPendingBookSaves(uid);
       if (unsub) unsub();
     };
   }, [uid, sanitizeDoc, saveDocs]);

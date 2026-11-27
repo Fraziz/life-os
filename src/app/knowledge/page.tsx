@@ -101,6 +101,7 @@ import { useStudySession } from '@/context/StudySessionContext';
 import { formatStudyNotesWithAI } from '@/utils/noteAutoFormatter';
 import { summarizeDocumentWithAI, generateStudyQuizWithAI } from '@/utils/aiEngine';
 import { formatDocumentWithAI, formatDocumentLocally, type FormatResult } from '@/utils/smartDocumentFormatter';
+import { sanitizeRichHtml, isSafeRichUrl } from '@/utils/htmlSanitizer';
 import { parseYouTubeUrl, isStandaloneYouTubeUrl } from '@/utils/youtube';
 import {
   generateVideoBlockHtml,
@@ -241,11 +242,13 @@ export function renderMarkdown(md: string): string {
   // 3. Render Markdown Tables (| Header | Header | ...)
   html = renderMarkdownTables(html);
 
-  // 4. Extract and preserve existing HTML links (<a ...</a>)
+  // 4. Extract and preserve existing HTML links (<a ...</a>) after verifying safe URL scheme
   const htmlLinks: string[] = [];
   html = html.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, linkText) => {
+    if (!isSafeRichUrl(href)) return linkText;
+    const safeHref = href.replace(/"/g, '&quot;');
     const idx = htmlLinks.length;
-    htmlLinks.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${linkText}</a>`);
+    htmlLinks.push(`<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${safeHref}">${linkText}</a>`);
     return `@@HTMLLINK${idx}@@`;
   });
 
@@ -347,7 +350,7 @@ export function renderMarkdown(md: string): string {
     return `<p>${trimmed.replace(/\n/g, '<br/>')}</p>`;
   }).filter(Boolean).join('\n');
 
-  return html;
+  return sanitizeRichHtml(html);
 }
 
 // ── Live Rich Editor Toolbar (Microsoft Word Style) ───────
@@ -2073,7 +2076,7 @@ export default function KnowledgePage() {
 
       sel.removeAllRanges();
       sel.addRange(range);
-    } catch {}
+    } catch { }
   };
 
   // Inserts text or HTML into contentEditable with zero truncation (handles unlimited length books & tables)
@@ -2367,7 +2370,7 @@ export default function KnowledgePage() {
   const getRichHtml = (content: string, isEdit = (editorMode === 'edit')) => {
     if (!content) return '';
     const html = renderMarkdown(content);
-    return transformVideoLessonsInHtml(html, isEdit);
+    return sanitizeRichHtml(transformVideoLessonsInHtml(html, isEdit));
   };
 
   // Load doc into editor

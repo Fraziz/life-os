@@ -29,6 +29,7 @@ export function loadJsonObject<T>(key: string): T | null {
 export function saveJson(key: string, value: unknown) {
   if (typeof localStorage === 'undefined') return;
   localStorage.setItem(key, JSON.stringify(value));
+  touchUpdateMeta(key);
 }
 
 export function readUpdateMeta(): Record<string, number> {

@@ -60,12 +60,83 @@ export function getClientIp(req: Request): string {
   return '127.0.0.1';
 }
 
+function parseNumericIpv4Token(token: string): number | null {
+  if (/^0x[0-9a-f]+$/i.test(token)) {
+    const n = Number.parseInt(token, 16);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  if (/^0[0-7]+$/.test(token)) {
+    const n = Number.parseInt(token, 8);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  if (/^\d+$/.test(token)) {
+    const n = Number.parseInt(token, 10);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  return null;
+}
+
+function tryNormalizeNumericIpv4(host: string): string | null {
+  const parts = host.split('.');
+  if (parts.length === 1) {
+    const n = parseNumericIpv4Token(parts[0]);
+    if (n === null || n > 0xffffffff) return null;
+    return [
+      (n >>> 24) & 0xff,
+      (n >>> 16) & 0xff,
+      (n >>> 8) & 0xff,
+      n & 0xff,
+    ].join('.');
+  }
+  if (parts.length === 4) {
+    const nums = parts.map(parseNumericIpv4Token);
+    if (nums.some((n) => n === null || n > 255)) return null;
+    return nums.join('.');
+  }
+  return null;
+}
+
+function isPrivateNormalizedIpv4(ip: string, allowLocalDev: boolean): boolean {
+  const [a, b] = ip.split('.').map(Number);
+  if (a === 127) return !allowLocalDev;
+  if (a === 0 || a === 10) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
+  if (a === 169 && b === 254) return true; // Link-local / cloud metadata
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 192 && b === 0) return true;
+  if (a >= 224) return true; // Multicast & reserved
+  return false;
+}
+
 /**
  * Validates if an IP / hostname is private, loopback, or cloud metadata.
- * Defends against Server-Side Request Forgery (SSRF).
+ * Defends against Server-Side Request Forgery (SSRF), including IPv4-mapped IPv6
+ * and decimal/hex/octal obfuscated IP literals.
  */
 export function isPrivateOrReservedHost(host: string, allowLocalDev = false): boolean {
-  const h = host.toLowerCase().replace(/^\[|\]$/g, '').trim();
+  let h = host.toLowerCase().replace(/^\[|\]$/g, '').trim();
+  const zoneIdx = h.indexOf('%');
+  if (zoneIdx !== -1) h = h.slice(0, zoneIdx);
+
+  // Unwrap IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1 or ::ffff:7f00:1)
+  if (h.startsWith('::ffff:')) {
+    const mapped = h.slice(7);
+    if (mapped.includes('.')) {
+      const normalized = tryNormalizeNumericIpv4(mapped);
+      return normalized ? isPrivateNormalizedIpv4(normalized, allowLocalDev) : true;
+    }
+    const hexGroups = mapped.split(':');
+    if (hexGroups.length === 2) {
+      const hi = Number.parseInt(hexGroups[0], 16);
+      const lo = Number.parseInt(hexGroups[1], 16);
+      if (Number.isFinite(hi) && Number.isFinite(lo)) {
+        const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+        return isPrivateNormalizedIpv4(ipv4, allowLocalDev);
+      }
+    }
+    return true;
+  }
 
   // Cloud metadata services (AWS, GCP, Azure, OpenStack) — ALWAYS strictly blocked
   if (
@@ -78,30 +149,30 @@ export function isPrivateOrReservedHost(host: string, allowLocalDev = false): bo
     return true;
   }
 
+  // Numeric/obfuscated IPv4 (decimal integer, hex, octal, dotted)
+  const normalizedIpv4 = tryNormalizeNumericIpv4(h);
+  if (normalizedIpv4) {
+    return isPrivateNormalizedIpv4(normalizedIpv4, allowLocalDev);
+  }
+
   // Localhost / Loopback
   const isLoopback =
     h === 'localhost' ||
-    h === '127.0.0.1' ||
-    h === '0.0.0.0' ||
     h === '::1' ||
     h === '::' ||
-    /^127\./.test(h) ||
     h.endsWith('.localhost');
 
   if (isLoopback) {
     return !allowLocalDev;
   }
 
-  // Private RFC 1918 / IPv6 ranges
+  // Internal domain suffixes & private IPv6 ranges (fc00::/7, fe80::/10, ff00::/8)
   if (
     h.endsWith('.local') ||
     h.endsWith('.internal') ||
-    /^10\./.test(h) ||
-    /^192\.168\./.test(h) ||
-    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h) ||
-    /^0\./.test(h) ||
-    /^fc00:/i.test(h) ||
-    /^fe80:/i.test(h)
+    /^f[cd][0-9a-f]{0,2}:/i.test(h) ||
+    /^fe[89ab][0-9a-f]:/i.test(h) ||
+    /^ff[0-9a-f]{2}:/i.test(h)
   ) {
     return true;
   }

@@ -156,7 +156,13 @@ export async function deserializeFirestoreDoc(
   return docItem;
 }
 
-const bookDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+interface PendingBookSave {
+  timer: ReturnType<typeof setTimeout>;
+  uid: string;
+  docData: KnowledgeDocument;
+}
+
+const bookDebounceTimers = new Map<string, PendingBookSave>();
 
 /**
  * Debounced cloud saver for books — prevents spamming Firestore on every keystroke.
@@ -165,13 +171,29 @@ export function queueBookSaveToCloud(uid: string, docData: KnowledgeDocument, de
   if (!uid || !docData?.id) return;
   const existing = bookDebounceTimers.get(docData.id);
   if (existing) {
-    clearTimeout(existing);
+    clearTimeout(existing.timer);
   }
   const timer = setTimeout(() => {
     bookDebounceTimers.delete(docData.id);
     void saveBookToCloud(uid, docData);
   }, delayMs);
-  bookDebounceTimers.set(docData.id, timer);
+  bookDebounceTimers.set(docData.id, { timer, uid, docData });
+}
+
+/**
+ * Immediately flushes all queued debounced book writes to Firestore (used before tab hide/logout).
+ */
+export async function flushPendingBookSaves(uidFilter?: string): Promise<void> {
+  const pendingSaves: PendingBookSave[] = [];
+  for (const [docId, entry] of bookDebounceTimers.entries()) {
+    if (!uidFilter || entry.uid === uidFilter) {
+      clearTimeout(entry.timer);
+      bookDebounceTimers.delete(docId);
+      pendingSaves.push(entry);
+    }
+  }
+  if (pendingSaves.length === 0) return;
+  await Promise.all(pendingSaves.map((entry) => saveBookToCloud(entry.uid, entry.docData)));
 }
 
 /**
@@ -237,9 +259,9 @@ export async function deleteBookFromCloud(uid: string, docId: string): Promise<v
   if (!uid || !docId) return;
 
   // 1. Cancel any pending debounced upload for this book
-  const existingTimer = bookDebounceTimers.get(docId);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
+  const existingEntry = bookDebounceTimers.get(docId);
+  if (existingEntry) {
+    clearTimeout(existingEntry.timer);
     bookDebounceTimers.delete(docId);
   }
 

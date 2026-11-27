@@ -21,6 +21,7 @@ import { explainFirebaseError, getFirebaseAuth, getFirebaseDb } from '@/lib/fire
 import { removeCurrentDeviceSession, revokeAllOtherDeviceSessions } from '@/lib/deviceSessions';
 import { idbClear } from '@/lib/idbStore';
 import { clearLocalWorkspaceSilently, stopCloudSync } from '@/lib/cloudStore';
+import { flushPendingBookSaves } from '@/lib/bookCloudSync';
 import { hashLocalPin, verifyLocalPin } from '@/lib/pinHash';
 
 export interface AppUser {
@@ -95,7 +96,7 @@ async function claimOrVerifyOwner(user: User | AppUser): Promise<OwnerRecord> {
     const owner = { uid: user.uid, email, updatedAt: new Date().toISOString() };
     try {
       void withTimeout(
-        setDoc(doc(getFirebaseDb(), 'app', 'owner'), owner),
+        setDoc(doc(getFirebaseDb(), 'app', 'owner'), owner).catch(() => undefined),
         2500,
         undefined
       );
@@ -315,6 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setError(null);
     try {
+      const currentUid = !isGuest ? getFirebaseAuth().currentUser?.uid : undefined;
+      await flushPendingBookSaves(currentUid);
       await stopCloudSync({ flushWrites: true });
       if (!isGuest) {
         const current = getFirebaseAuth().currentUser;

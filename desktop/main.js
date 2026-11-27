@@ -126,21 +126,38 @@ function isMainWindowTrustedOrigin() {
   }
 }
 
+function matchesHostDomain(hostname, domain) {
+  const h = String(hostname || '').toLowerCase();
+  const d = String(domain || '').toLowerCase();
+  return h === d || h.endsWith(`.${d}`);
+}
+
 function isSameAppOrAuthOrigin(targetUrl, appUrl) {
   try {
     const t = new URL(targetUrl);
+    if (t.protocol !== 'http:' && t.protocol !== 'https:') return false;
     if (appUrl) {
       const a = new URL(appUrl);
       if (t.origin === a.origin) return true;
     }
     return (
-      t.hostname.endsWith('google.com') ||
-      t.hostname.endsWith('firebaseapp.com') ||
-      t.hostname.endsWith('googleapis.com')
+      matchesHostDomain(t.hostname, 'google.com') ||
+      matchesHostDomain(t.hostname, 'firebaseapp.com') ||
+      matchesHostDomain(t.hostname, 'googleapis.com') ||
+      matchesHostDomain(t.hostname, 'gstatic.com')
     );
   } catch {
     return false;
   }
+}
+
+function safeOpenExternal(rawUrl) {
+  try {
+    const parsed = new URL(String(rawUrl || ''));
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      void shell.openExternal(parsed.href);
+    }
+  } catch {}
 }
 
 async function loadWorkspace(win) {
@@ -1195,6 +1212,7 @@ function createWindow(options = {}) {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -1233,8 +1251,16 @@ function createWindow(options = {}) {
     if (isSameAppOrAuthOrigin(url, activeUrl)) {
       return { action: 'allow' };
     }
-    shell.openExternal(url);
+    safeOpenExternal(url);
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, targetUrl) => {
+    if (targetUrl.startsWith('file://') && targetUrl.endsWith('setup.html')) return;
+    const activeUrl = getConfiguredUrl() || mainWindow.webContents.getURL();
+    if (isSameAppOrAuthOrigin(targetUrl, activeUrl)) return;
+    event.preventDefault();
+    safeOpenExternal(targetUrl);
   });
 
   void loadWorkspace(mainWindow);

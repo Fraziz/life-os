@@ -14,6 +14,27 @@ export interface LinkPreviewData {
 // In-memory server cache to ensure instantaneous responses for repeated link previews
 const previewCache = new Map<string, { data: LinkPreviewData; timestamp: number }>();
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
+const MAX_PREVIEW_CACHE_ENTRIES = 500;
+
+function setPreviewCache(key: string, data: LinkPreviewData) {
+  if (previewCache.size >= MAX_PREVIEW_CACHE_ENTRIES) {
+    const oldestKey = previewCache.keys().next().value;
+    if (oldestKey) previewCache.delete(oldestKey);
+  }
+  previewCache.set(key, { data, timestamp: Date.now() });
+}
+
+function safeExternalHttpUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    if (isPrivateOrReservedHost(parsed.hostname)) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Clean and normalize candidate URL
@@ -217,13 +238,13 @@ export async function GET(req: NextRequest) {
     clearTimeout(timeout);
 
     if (!response.ok) {
-      previewCache.set(validUrl, { data: fallback, timestamp: Date.now() });
+      setPreviewCache(validUrl, fallback);
       return NextResponse.json(fallback);
     }
 
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      previewCache.set(validUrl, { data: fallback, timestamp: Date.now() });
+      setPreviewCache(validUrl, fallback);
       return NextResponse.json(fallback);
     }
 
@@ -287,9 +308,10 @@ export async function GET(req: NextRequest) {
     const canonicalHref = canonicalLinkMatch && canonicalLinkMatch[1] ? decodeHtmlEntities(canonicalLinkMatch[1].trim()) : null;
     const ogUrl = getMeta('og:url') || canonicalHref;
 
-    let resolvedUrl = response.url || validUrl;
+    let resolvedUrl = safeExternalHttpUrl(response.url) || validUrl;
     if (ogUrl && /^https?:\/\//i.test(ogUrl)) {
-      resolvedUrl = ogUrl;
+      const safeOg = safeExternalHttpUrl(ogUrl);
+      if (safeOg) resolvedUrl = safeOg;
     }
 
     // Clean tracking parameters from resolved URL
@@ -310,22 +332,25 @@ export async function GET(req: NextRequest) {
         ogImage = `${parsedUrl.origin}/${ogImage}`;
       }
     }
+    const validatedImage = safeExternalHttpUrl(ogImage) || fallback.image;
+    const rawFavicon = getFaviconUrl(validUrl, iconUrl);
+    const validatedFavicon = rawFavicon.startsWith('/') ? rawFavicon : (safeExternalHttpUrl(rawFavicon) || fallback.favicon);
 
     const result: LinkPreviewData = {
       url: resolvedUrl,
       hostname,
       title: ogTitle || fallback.title,
       description: ogDesc || fallback.description,
-      image: ogImage || fallback.image,
-      favicon: getFaviconUrl(validUrl, iconUrl),
+      image: validatedImage,
+      favicon: validatedFavicon,
       siteName: ogSite || fallback.siteName,
     };
 
-    previewCache.set(validUrl, { data: result, timestamp: Date.now() });
+    setPreviewCache(validUrl, result);
     return NextResponse.json(result);
   } catch {
     // If request timed out or network blocked, use high quality fallback
-    previewCache.set(validUrl, { data: fallback, timestamp: Date.now() });
+    setPreviewCache(validUrl, fallback);
     return NextResponse.json(fallback);
   }
 }

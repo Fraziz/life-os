@@ -20,6 +20,20 @@ function kvRef(uid: string, key: string) {
   return doc(getFirebaseDb(), 'users', uid, 'kv', key);
 }
 
+export function isBookStorageKey(key: string): boolean {
+  if (!key) return false;
+  return (
+    key.startsWith('life_os_knowledge_docs') ||
+    key.startsWith('life_os_books') ||
+    key.startsWith('life_os_study_docs') ||
+    key.startsWith('life_os_docs') ||
+    key.startsWith('life_os_imported_books') ||
+    key.startsWith('life_os_book_') ||
+    key.startsWith('life_os_deleted_book_ids') ||
+    key.startsWith('knowledge_docs')
+  );
+}
+
 export function isManagedKvKey(key: string): boolean {
   if (!key) return false;
   const isPrefixMatch = key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_');
@@ -36,16 +50,7 @@ export function isManagedKvKey(key: string): boolean {
 
   // Books and knowledge documents have their own dedicated cloud sync via bookCloudSync.ts with multi-chunk storage.
   // They must NEVER be stored in or pruned by the single-document KV collection.
-  if (
-    key.startsWith('life_os_knowledge_docs') ||
-    key.startsWith('life_os_books') ||
-    key.startsWith('life_os_study_docs') ||
-    key.startsWith('life_os_docs') ||
-    key.startsWith('life_os_imported_books') ||
-    key.startsWith('life_os_book_') ||
-    key.startsWith('life_os_deleted_book_ids') ||
-    key.startsWith('knowledge_docs')
-  ) {
+  if (isBookStorageKey(key)) {
     return false;
   }
 
@@ -91,6 +96,56 @@ export function clearLocalWorkspaceSilently() {
     if (rawRemoveItem) rawRemoveItem.call(localStorage, 'life_os_active_uid');
     else localStorage.removeItem('life_os_active_uid');
   } catch {}
+}
+
+/**
+ * Clears local Tasks, Goals, Projects, Dreams, Inbox, Calendar, Habits, Routine, and Settings
+ * WITHOUT touching Book keys, IndexedDB books, or Firestore users/{uid}/books.
+ */
+export function clearNonBookLocalWorkspace() {
+  if (typeof localStorage === 'undefined') return;
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    const isWorkspaceKey =
+      k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_');
+    if (
+      isWorkspaceKey &&
+      !isBookStorageKey(k) &&
+      k !== 'life_os_sidebar_collapsed' &&
+      k !== 'life_os_active_uid' &&
+      k !== 'life_os_guest_mode' &&
+      k !== 'life_os_guest_vault_pin'
+    ) {
+      toRemove.push(k);
+    }
+  }
+  toRemove.forEach((k) => {
+    try {
+      if (rawRemoveItem) rawRemoveItem.call(localStorage, k);
+      else localStorage.removeItem(k);
+    } catch {}
+  });
+}
+
+/**
+ * Resets KV data (Tasks, Goals, Projects, Dreams, Idea Parking, Calendar, Habits, Routine)
+ * in both localStorage and Firestore users/{uid}/kv while leaving all Books intact.
+ */
+export async function startFreshKeepBooks(uid?: string | null): Promise<void> {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  pending.clear();
+  pendingDeletions.clear();
+
+  clearNonBookLocalWorkspace();
+
+  if (uid) {
+    await wipeCloudKv(uid);
+  }
 }
 
 export async function flushCloudNow(): Promise<void> {
@@ -228,11 +283,13 @@ function patchLocalStorage() {
  */
 export async function hydrateFromCloud(uid: string): Promise<boolean> {
   const myEpoch = ++hydrationEpoch;
+  let sameAccountSession = true;
 
   // Check if last active user was different to isolate user data safely without deleting Firestore docs
   if (typeof localStorage !== 'undefined') {
     const lastUid = localStorage.getItem('life_os_active_uid');
     if (lastUid && lastUid !== uid) {
+      sameAccountSession = false;
       pending.clear();
       pendingDeletions.clear();
       clearLocalWorkspaceSilently();
@@ -259,6 +316,7 @@ export async function hydrateFromCloud(uid: string): Promise<boolean> {
   }
 
   const meta = readUpdateMeta();
+  const cloudTimestamps = new Map<string, number>();
 
   if (!snap.empty) {
     snap.forEach((item) => {
@@ -266,15 +324,27 @@ export async function hydrateFromCloud(uid: string): Promise<boolean> {
       const value = item.data().v;
       if (typeof value !== 'string') return;
       const cloudAt = Number(item.data().updatedAt) || 0;
+      cloudTimestamps.set(item.id, cloudAt);
       const localValue = localStorage.getItem(item.id);
       const localAt = meta[item.id] || 0;
 
-      // Cloud data wins on hydration unless local has a pending uncommitted write that is strictly newer
-      if (localValue === null || cloudAt >= localAt || !pending.has(item.id)) {
+      // Cloud wins when local is absent or older/equal; strictly newer offline edits are preserved and queued up
+      if (localValue === null || cloudAt >= localAt) {
         if (rawSetItem) rawSetItem.call(localStorage, item.id, value);
         touchUpdateMeta(item.id, cloudAt || Date.now());
       }
     });
+  }
+
+  // Push any un-synced or strictly newer local edits from this same account up to Firestore
+  if (sameAccountSession) {
+    for (const [key, localVal] of snapshotLocal()) {
+      const localAt = meta[key] || 0;
+      const cloudAt = cloudTimestamps.get(key);
+      if (cloudAt === undefined || localAt > cloudAt) {
+        pending.set(key, localVal);
+      }
+    }
   }
 
   activeUid = uid;

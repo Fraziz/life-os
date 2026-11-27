@@ -46,8 +46,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { prompt, systemPrompt = '', aiSettings } = body;
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON request body.' }, { status: 400 });
+    }
+    const { prompt, systemPrompt = '', aiSettings } = body || {};
 
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 32000) {
       return NextResponse.json({ error: 'Prompt must be a non-empty string under 32,000 characters.' }, { status: 400 });
@@ -115,11 +120,15 @@ export async function POST(request: Request) {
       let lastError = 'Gemini API call failed';
       for (const currentKey of candidateKeys) {
         for (const m of candidateModels) {
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${currentKey}`;
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
           try {
             const resp = await fetch(endpoint, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': currentKey,
+              },
+              signal: AbortSignal.timeout(20000),
               body: JSON.stringify({
                 systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -429,11 +438,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: lastError }, { status: 502 });
-  } catch (error: any) {
-    const errorDetails = error?.cause ? ` (${error.cause.code || error.cause.message || error.cause})` : '';
+  } catch (error: unknown) {
     console.error('[AI Chat Route Error]:', error);
     return NextResponse.json(
-      { error: (error?.message || 'Internal AI Server Proxy Error') + errorDetails },
+      { error: 'Internal AI Server Proxy Error' },
       { status: 500 }
     );
   }

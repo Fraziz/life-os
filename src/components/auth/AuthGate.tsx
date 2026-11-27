@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStore';
-import { restoreLegacyWorkspaceDefaultsIfNeeded } from '@/lib/workspaceRecovery';
 import { AttachmentProvider } from '@/context/AttachmentContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -68,9 +67,14 @@ export default function AuthGate({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, isGuest]);
 
+  // Ask browser/OS to keep IndexedDB & local storage persistent under storage pressure
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+      void navigator.storage.persist().catch(() => false);
+    }
+  }, []);
+
   const activeAuthUid = user && !isGuest ? user.uid : null;
-  const activeUserCreationTime =
-    user && !isGuest && 'metadata' in user ? user.metadata?.creationTime || null : null;
 
   // Cloud sync in background - NEVER blocks rendering - Firebase users only
   useEffect(() => {
@@ -91,16 +95,10 @@ export default function AuthGate({
     (async () => {
       try {
         // Hydrate from Firestore first so mount-time defaults do not race ahead of existing cloud data
-        const hydratedFromServer = await hydrateFromCloud(activeAuthUid);
+        await hydrateFromCloud(activeAuthUid);
         if (cancelled) return;
         startCloudSync(activeAuthUid);
-        if (hydratedFromServer) {
-          await restoreLegacyWorkspaceDefaultsIfNeeded({
-            isGuest,
-            creationTime: activeUserCreationTime,
-          });
-        }
-        if (!cancelled) setHydrateError(null);
+        setHydrateError(null);
       } catch (err) {
         if (!cancelled) {
           startCloudSync(activeAuthUid);
@@ -114,7 +112,7 @@ export default function AuthGate({
       lastSyncedUid.current = null;
       void stopCloudSync();
     };
-  }, [activeAuthUid, activeUserCreationTime, isGuest]);
+  }, [activeAuthUid, isGuest]);
 
   const [takingLong, setTakingLong] = useState(false);
 
