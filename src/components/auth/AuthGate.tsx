@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStore';
+import { restoreLegacyWorkspaceDefaultsIfNeeded } from '@/lib/workspaceRecovery';
 import { AttachmentProvider } from '@/context/AttachmentContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -68,6 +69,8 @@ export default function AuthGate({
   }, [user?.uid, isGuest]);
 
   const activeAuthUid = user && !isGuest ? user.uid : null;
+  const activeUserCreationTime =
+    user && !isGuest && 'metadata' in user ? user.metadata?.creationTime || null : null;
 
   // Cloud sync in background - NEVER blocks rendering - Firebase users only
   useEffect(() => {
@@ -88,10 +91,16 @@ export default function AuthGate({
     (async () => {
       try {
         // Hydrate from Firestore first so mount-time defaults do not race ahead of existing cloud data
-        await hydrateFromCloud(activeAuthUid);
+        const hydratedFromServer = await hydrateFromCloud(activeAuthUid);
         if (cancelled) return;
         startCloudSync(activeAuthUid);
-        setHydrateError(null);
+        if (hydratedFromServer) {
+          await restoreLegacyWorkspaceDefaultsIfNeeded({
+            isGuest,
+            creationTime: activeUserCreationTime,
+          });
+        }
+        if (!cancelled) setHydrateError(null);
       } catch (err) {
         if (!cancelled) {
           startCloudSync(activeAuthUid);
@@ -105,7 +114,7 @@ export default function AuthGate({
       lastSyncedUid.current = null;
       void stopCloudSync();
     };
-  }, [activeAuthUid, isGuest]);
+  }, [activeAuthUid, activeUserCreationTime, isGuest]);
 
   const [takingLong, setTakingLong] = useState(false);
 

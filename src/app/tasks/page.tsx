@@ -1208,9 +1208,38 @@ export default function TasksPage() {
             (t.subtasks?.length || 0) * 26
           }
           emptyState={
-            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', textAlign: 'center', padding: 'var(--space-8) 0', width: '100%' }}>
-              No tasks match current filter
-            </p>
+            <div style={{ textAlign: 'center', padding: 'var(--space-8) 16px', width: '100%' }}>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0 }}>
+                {tasks.length === 0 ? 'No tasks saved yet.' : 'No tasks match current filter'}
+              </p>
+              {tasks.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetToDefaultTasks();
+                    playSuccessChime();
+                  }}
+                  style={{
+                    marginTop: '12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    minHeight: '38px',
+                    padding: '0 14px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <RotateCcw size={13} />
+                  <span>Restore Starter Tasks</span>
+                </button>
+              )}
+            </div>
           }
           renderItem={(task) => {
             const col = STATUS_COLUMNS.find((c) => c.id === task.status) || STATUS_COLUMNS[0];
@@ -1219,6 +1248,51 @@ export default function TasksPage() {
         />
       ) : (
         /* ── Board Grid: Backlog | To Do | Doing | Done ── */
+        <>
+          {tasks.length === 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+                padding: '12px 16px',
+                marginBottom: '12px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+              }}
+            >
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                No tasks in this workspace yet. Want to load your starter tasks?
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  resetToDefaultTasks();
+                  playSuccessChime();
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minHeight: '34px',
+                  padding: '0 12px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-surface-2)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <RotateCcw size={13} />
+                <span>Restore Starter Tasks</span>
+              </button>
+            </div>
+          )}
         <div className={`${styles.kanbanGrid} ${mobileColFilter !== 'all' ? styles.kanbanGridSingleCol : ''}`}>
         {STATUS_COLUMNS.filter((col) => mobileColFilter === 'all' || mobileColFilter === col.id).map((col) => {
           const colTasks = filteredTasks.filter((t) => t.status === col.id);
@@ -1505,6 +1579,7 @@ export default function TasksPage() {
           );
         })}
       </div>
+        </>
       )}
 
       {/* ── Modal Dialog for Full Edit / Create ── */}

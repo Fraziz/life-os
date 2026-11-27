@@ -768,11 +768,35 @@ const calNavBtn: React.CSSProperties = {
   display: 'flex', alignItems: 'center',
 };
 
-function EmptyState() {
+function EmptyState({ onRestoreStarter }: { onRestoreStarter?: () => void }) {
   return (
     <div style={{ textAlign: 'center', padding: '48px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-subtle)' }}>
-      <Folder size={40} style={{ color: 'var(--color-text-faint)', marginBottom: '12px' }} />
-      <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>No projects match. Click &quot;New Project&quot; to add one.</p>
+      <Folder size={40} style={{ color: 'var(--color-text-muted)', marginBottom: '12px' }} />
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: 0 }}>No projects match. Click &quot;New Project&quot; to add one.</p>
+      {onRestoreStarter && (
+        <button
+          type="button"
+          onClick={onRestoreStarter}
+          style={{
+            marginTop: '14px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            minHeight: '38px',
+            padding: '0 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text)',
+            fontSize: 'var(--text-xs)',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          <RotateCcw size={13} />
+          <span>Restore Starter Projects</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -1142,56 +1166,68 @@ export default function ProjectsPage() {
       </div>
 
       {/* ── View Body ── */}
-      {viewMode === 'notes' && (
-        <NotesView
-          projects={filteredProjects}
-          goals={goalList}
-          onEdit={openEditModal}
-          onDelete={deleteProject}
-          onProgressChange={updateProjectProgress}
-          highlightId={highlightId}
-          onAddBridgeTask={openBridgeTask}
-          selectedIds={selectedProjectIds}
-          isSelectMode={isSelectMode}
-          onToggleSelect={toggleSelectProject}
+      {projects.length === 0 ? (
+        <EmptyState
+          onRestoreStarter={() => {
+            resetToDefaultProjects();
+            showToast('Restored starter projects');
+            playSuccessChime();
+          }}
         />
-      )}
+      ) : (
+        <>
+          {viewMode === 'notes' && (
+            <NotesView
+              projects={filteredProjects}
+              goals={goalList}
+              onEdit={openEditModal}
+              onDelete={deleteProject}
+              onProgressChange={updateProjectProgress}
+              highlightId={highlightId}
+              onAddBridgeTask={openBridgeTask}
+              selectedIds={selectedProjectIds}
+              isSelectMode={isSelectMode}
+              onToggleSelect={toggleSelectProject}
+            />
+          )}
 
-      {viewMode === 'list' && (
-        <ListView
-          projects={filteredProjects}
-          goals={goalList}
-          onEdit={openEditModal}
-          onDelete={deleteProject}
-          onProgressChange={updateProjectProgress}
-          highlightId={highlightId}
-          onAddBridgeTask={openBridgeTask}
-          selectedIds={selectedProjectIds}
-          isSelectMode={isSelectMode}
-          onToggleSelect={toggleSelectProject}
-        />
-      )}
+          {viewMode === 'list' && (
+            <ListView
+              projects={filteredProjects}
+              goals={goalList}
+              onEdit={openEditModal}
+              onDelete={deleteProject}
+              onProgressChange={updateProjectProgress}
+              highlightId={highlightId}
+              onAddBridgeTask={openBridgeTask}
+              selectedIds={selectedProjectIds}
+              isSelectMode={isSelectMode}
+              onToggleSelect={toggleSelectProject}
+            />
+          )}
 
-      {viewMode === 'board' && (
-        <BoardView
-          projects={filteredProjects}
-          goals={goalList}
-          onEdit={openEditModal}
-          onDelete={deleteProject}
-          onProgressChange={updateProjectProgress}
-          highlightId={highlightId}
-          onAddBridgeTask={openBridgeTask}
-          selectedIds={selectedProjectIds}
-          isSelectMode={isSelectMode}
-          onToggleSelect={toggleSelectProject}
-        />
-      )}
+          {viewMode === 'board' && (
+            <BoardView
+              projects={filteredProjects}
+              goals={goalList}
+              onEdit={openEditModal}
+              onDelete={deleteProject}
+              onProgressChange={updateProjectProgress}
+              highlightId={highlightId}
+              onAddBridgeTask={openBridgeTask}
+              selectedIds={selectedProjectIds}
+              isSelectMode={isSelectMode}
+              onToggleSelect={toggleSelectProject}
+            />
+          )}
 
-      {viewMode === 'calendar' && (
-        <CalendarView
-          projects={filteredProjects}
-          onEdit={openEditModal}
-        />
+          {viewMode === 'calendar' && (
+            <CalendarView
+              projects={filteredProjects}
+              onEdit={openEditModal}
+            />
+          )}
+        </>
       )}
 
       {/* ── Modal ── */}

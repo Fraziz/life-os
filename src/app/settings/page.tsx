@@ -5,7 +5,9 @@ import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useKnowledge } from '@/context/KnowledgeContext';
 import { flushCloudNow, wipeCloudKv } from '@/lib/cloudStore';
+import { restoreMissingStarterWorkspace } from '@/lib/workspaceRecovery';
 import { wipeCloudBooks } from '@/lib/bookCloudSync';
 import { idbGet, idbSet } from '@/lib/idbStore';
 import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
@@ -82,6 +84,7 @@ export default function SettingsPage() {
   const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
   const { startTour, resetAllTours } = useTour();
+  const { docs, restoreStarterBooks } = useKnowledge();
   const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
   const [hasDesktopBridge, setHasDesktopBridge] = useState(false);
@@ -3369,6 +3372,45 @@ export default function SettingsPage() {
                   >
                     <Upload size={13} style={{ marginRight: 6 }} />
                     Import Backup
+                  </button>
+                </div>
+
+                <div className={styles.backupCard}>
+                  <div>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>
+                      Restore Starter Workspace Data
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                      Restores missing starter Dreams, Goals, Milestones, Projects, Tasks, Idea Parking, Daily Routine, and Guides without overwriting your custom entries.
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={async () => {
+                      const ok = await confirmDialog({
+                        title: 'Restore Starter Workspace',
+                        message:
+                          'This will merge missing starter Dreams, Goals, Projects, Tasks, Idea Parking items, Habits, and Routine into your workspace without deleting any of your existing custom items. Continue?',
+                        confirmLabel: 'Restore Data',
+                      });
+                      if (!ok) return;
+                      const added = await restoreMissingStarterWorkspace();
+                      if (docs.length === 0) {
+                        restoreStarterBooks();
+                      }
+                      await alertDialog({
+                        title: 'Starter Data Restored',
+                        message:
+                          added > 0
+                            ? `Restored ${added} starter workspace items and synced them to your account.`
+                            : 'Your workspace already has all starter items.',
+                      });
+                    }}
+                  >
+                    <RotateCcw size={13} style={{ marginRight: 6 }} />
+                    Restore Starter Data
                   </button>
                 </div>
 

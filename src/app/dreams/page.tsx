@@ -339,10 +339,37 @@ export default function DreamsPage() {
             border: '1px solid var(--color-border-subtle)',
           }}
         >
-          <CloudSun size={40} style={{ color: 'var(--color-text-faint)', marginBottom: 'var(--space-2)' }} />
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+          <CloudSun size={40} style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)' }} />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: 0 }}>
             No dreams matching this filter. Click &quot;New Dream&quot; to add your ambition!
           </p>
+          {dreams.length === 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                resetToDefaultDreams();
+                playSuccessChime();
+              }}
+              style={{
+                marginTop: '14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                minHeight: '38px',
+                padding: '0 14px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Restore Starter Dreams</span>
+            </button>
+          )}
         </div>
       ) : (
         <MasonryGrid

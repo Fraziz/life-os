@@ -226,7 +226,7 @@ function patchLocalStorage() {
  * Hydrates local storage from Firestore.
  * If Firestore already has user data, syncs the cloud state to localStorage.
  */
-export async function hydrateFromCloud(uid: string): Promise<void> {
+export async function hydrateFromCloud(uid: string): Promise<boolean> {
   const myEpoch = ++hydrationEpoch;
 
   // Check if last active user was different to isolate user data safely without deleting Firestore docs
@@ -237,7 +237,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
       pendingDeletions.clear();
       clearLocalWorkspaceSilently();
       await idbClear();
-      if (myEpoch !== hydrationEpoch) return;
+      if (myEpoch !== hydrationEpoch) return false;
     }
     if (rawSetItem) rawSetItem.call(localStorage, 'life_os_active_uid', uid);
     else localStorage.setItem('life_os_active_uid', uid);
@@ -247,7 +247,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
   
   const snap = await Promise.race([fetchDocsPromise, timeoutPromise]);
-  if (myEpoch !== hydrationEpoch) return;
+  if (myEpoch !== hydrationEpoch) return false;
   if (!snap) {
     activeUid = uid;
     if (typeof window !== 'undefined') {
@@ -255,7 +255,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
         window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
       }, 0);
     }
-    return;
+    return false;
   }
 
   const meta = readUpdateMeta();
@@ -280,7 +280,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
   activeUid = uid;
   if (pending.size > 0 || pendingDeletions.size > 0) {
     await flushCloudNow();
-    if (myEpoch !== hydrationEpoch) return;
+    if (myEpoch !== hydrationEpoch) return false;
   }
 
   // Notify all components and desktop companion that cloud data is loaded
@@ -293,6 +293,8 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
       }).sarilingDesktop?.notifyWorkspaceReady?.();
     }, 0);
   }
+
+  return true;
 }
 
 export function startCloudSync(uid: string) {

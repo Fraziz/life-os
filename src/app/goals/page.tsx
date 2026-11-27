@@ -430,10 +430,38 @@ export default function GoalsPage() {
             border: '1px solid var(--color-border-subtle)',
           }}
         >
-          <Target size={40} style={{ color: 'var(--color-text-faint)', marginBottom: 'var(--space-2)' }} />
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+          <Target size={40} style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)' }} />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: 0 }}>
             No goals found for this filter. Click &quot;New Goal&quot; to define your next milestone!
           </p>
+          {goals.length === 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                resetToDefaultGoals();
+                showToast('Restored starter goals');
+                playSuccessChime();
+              }}
+              style={{
+                marginTop: '14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                minHeight: '38px',
+                padding: '0 14px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Restore Starter Goals</span>
+            </button>
+          )}
         </div>
       ) : (
         <MasonryGrid
