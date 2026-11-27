@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sariling Mundo Quick Action</title>
+    <style>
+      :root,
+      [data-theme='light'] {
+        --bg-card: #ffffff;
+        --bg-well: #f4f5f8;
+        --bg-hover: #eaedf2;
+        --text-main: #0d0f14;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --border-subtle: #e2e5ec;
+        --border-strong: #cbd5e1;
+        --btn-primary-bg: #0d0f14;
+        --btn-primary-fg: #ffffff;
+        --btn-primary-hover: #1e2430;
+        --pill-bg: #eaedf2;
+        --pill-fg: #334155;
+        --pill-urgent-bg: #fef2f2;
+        --pill-urgent-fg: #b91c1c;
+        --pill-urgent-border: #fecaca;
+        --pill-work-bg: #fffbeb;
+        --pill-work-fg: #b45309;
+        --pill-work-border: #fde68a;
+        --hand-bg: #0d0f14;
+        --hand-fg: #ffffff;
+        --hand-ring: rgba(13, 15, 20, 0.12);
+        --shadow-card: 0 18px 42px rgba(13, 15, 20, 0.16), 0 4px 12px rgba(13, 15, 20, 0.08);
+      }
+
+      [data-theme='dark'] {
+        --bg-card: #12151c;
+        --bg-well: #1a1e28;
+        --bg-hover: #232836;
+        --text-main: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border-subtle: rgba(255, 255, 255, 0.1);
+        --border-strong: rgba(255, 255, 255, 0.18);
+        --btn-primary-bg: #f8fafc;
+        --btn-primary-fg: #0d0f14;
+        --btn-primary-hover: #e2e8f0;
+        --pill-bg: #1e2430;
+        --pill-fg: #cbd5e1;
+        --pill-urgent-bg: rgba(239, 68, 68, 0.14);
+        --pill-urgent-fg: #fca5a5;
+        --pill-urgent-border: rgba(239, 68, 68, 0.26);
+        --pill-work-bg: rgba(245, 158, 11, 0.14);
+        --pill-work-fg: #fcd34d;
+        --pill-work-border: rgba(245, 158, 11, 0.28);
+        --hand-bg: #f8fafc;
+        --hand-fg: #0d0f14;
+        --hand-ring: rgba(248, 250, 252, 0.14);
+        --shadow-card: 0 20px 44px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: var(--text-main);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .frame {
+        padding: 8px;
+        width: 100%;
+      }
+
+      .card {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+        animation: popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes popIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* ── Top Header ── */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .brandGroup {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .brandLogo {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      .brandTitle {
+        font-size: 12.5px;
+        font-weight: 650;
+        letter-spacing: -0.015em;
+        color: var(--text-main);
+        white-space: nowrap;
+      }
+
+      .statusChip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        background: var(--pill-bg);
+        color: var(--pill-fg);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .statusChip.work {
+        background: var(--pill-work-bg);
+        color: var(--pill-work-fg);
+        border-color: var(--pill-work-border);
+      }
+
+      .statusChip.urgent {
+        background: var(--pill-urgent-bg);
+        color: var(--pill-urgent-fg);
+        border-color: var(--pill-urgent-border);
+      }
+
+      .headerActions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .iconBtn {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+      }
+
+      .iconBtn:hover {
+        background: var(--bg-well);
+        border-color: var(--border-subtle);
+        color: var(--text-main);
+      }
+
+      /* ── Primary Animated Hand Cue Card ── */
+      .body {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .focusBox {
+        background: var(--bg-well);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .cueRow {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .handBadge {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--hand-bg);
+        color: var(--hand-fg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 4px var(--hand-ring);
+      }
+
+      .handIcon {
+        width: 18px;
+        height: 18px;
+        will-change: transform;
+      }
+
+      .handBadge.animated .handIcon {
+        animation: handNudge 1.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+      }
+
+      .handBadge.animated {
+        animation: ringPulse 2.2s ease-out infinite;
+      }
+
+      @keyframes handNudge {
+        0%,
+        100% {
+          transform: translateX(0) rotate(0deg);
+        }
+        35% {
+          transform: translateX(3.5px) rotate(-6deg);
+        }
+        60% {
+          transform: translateX(1px) rotate(0deg);
+        }
+      }
+
+      @keyframes ringPulse {
+        0% {
+          box-shadow: 0 0 0 0 var(--hand-ring);
+        }
+        70% {
+          box-shadow: 0 0 0 6px transparent;
+        }
+        100% {
+          box-shadow: 0 0 0 0 transparent;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .handBadge.animated,
+        .handBadge.animated .handIcon {
+          animation: none;
+        }
+      }
+
+      .cueContent {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .cuePrompt {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.01em;
+      }
+
+      .cueTitle {
+        font-size: 13.5px;
+        font-weight: 650;
+        line-height: 1.35;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+        word-break: break-word;
+      }
+
+      .cueMeta {
+        font-size: 11.5px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+
+      .actionRow {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btnPrimary {
+        flex: 1;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 9px;
+        border: 1px solid transparent;
+        background: var(--btn-primary-bg);
+        color: var(--btn-primary-fg);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 0.14s ease, transform 0.12s ease;
+      }
+
+      .btnPrimary:hover {
+        background: var(--btn-primary-hover);
+      }
+
+      .btnPrimary:active {
+        transform: scale(0.98);
+      }
+
+      .btnGhost {
+        height: 32px;
+        padding: 0 11px;
+        border-radius: 9px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-main);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: background 0.14s ease, border-color 0.14s ease;
+      }
+
+      .btnGhost:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-strong);
+      }
+
+      /* ── Secondary Important Queue ── */
+      .sectionHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        padding: 2px 2px 0;
+      }
+
+      .queueList {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .queueItem {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        transition: background 0.14s ease, border-color 0.14s ease;
+      }
+
+      .queueItem:hover {
+        background: var(--bg-well);
+        border-color: var(--border-strong);
+      }
+
+      .checkCircle {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 1.5px solid var(--border-strong);
+        background: transparent;
+        color: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+      }
+
+      .checkCircle:hover {
+        border-color: var(--text-main);
+        background: var(--bg-hover);
+        color: var(--text-main);
+      }
+
+      .queueMain {
+        flex: 1;
+        min-width: 0;
+        cursor: pointer;
+      }
+
+      .queueTitle {
+        font-size: 12.2px;
+        font-weight: 550;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .queueMeta {
+        font-size: 10.8px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ── Footer ── */
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--bg-well);
+      }
+
+      .footerStat {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .footerLink {
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 4px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .footerLink:hover {
+        background: var(--bg-hover);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div id="card" class="card" role="dialog" aria-label="Sariling Mundo Quick Action">
+        <header class="header">
+          <div class="brandGroup">
+            <img src="logo.png" alt="Sariling Mundo" class="brandLogo" />
+            <span class="brandTitle">Sariling Mundo</span>
+            <span id="status-chip" class="statusChip">Ready</span>
+          </div>
+          <div class="headerActions">
+            <button
+              id="btn-expand"
+              type="button"
+              class="iconBtn"
+              title="Open full workspace"
+              aria-label="Open full workspace"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+            </button>
+            <button
+              id="btn-close"
+              type="button"
+              class="iconBtn"
+              title="Close popup"
+              aria-label="Close popup"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <main class="body">
+          <!-- Primary Action Nudge Card with Animated Pointing Hand -->
+          <section class="focusBox" aria-live="polite">
+            <div class="cueRow">
+              <div id="hand-badge" class="handBadge animated" aria-hidden="true">
+                <!-- Hand Pointing SVG -->
+                <svg id="icon-hand" class="handIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 14a8 8 0 0 1-8 8" />
+                  <path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
+                  <path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1" />
+                  <path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10" />
+                  <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                </svg>
+                <!-- Calm Check SVG when all clear -->
+                <svg id="icon-check" class="handIcon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </div>
+
+              <div class="cueContent">
+                <div id="cue-prompt" class="cuePrompt">Hey — do this now</div>
+                <div id="cue-title" class="cueTitle">Loading workspace...</div>
+                <div id="cue-meta" class="cueMeta"></div>
+              </div>
+            </div>
+
+            <div class="actionRow">
+              <button id="btn-primary" type="button" class="btnPrimary">
+                <span>Do It Now</span>
+              </button>
+              <button id="btn-secondary" type="button" class="btnGhost hidden">
+                <span>Open Focus</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Up Next Essential Queue -->
+          <div id="queue-wrap" class="hidden">
+            <div class="sectionHeader">
+              <span>Important Next</span>
+              <span id="queue-count"></span>
+            </div>
+            <div id="queue-list" class="queueList" style="margin-top: 6px;"></div>
+          </div>
+        </main>
+
+        <footer class="footer">
+          <span id="footer-stat" class="footerStat">Synced with workspace</span>
+          <button id="btn-open-app" type="button" class="footerLink">
+            <span>Open Workspace</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      const cardEl = document.getElementById('card');
+      const statusChipEl = document.getElementById('status-chip');
+      const handBadgeEl = document.getElementById('hand-badge');
+      const iconHandEl = document.getElementById('icon-hand');
+      const iconCheckEl = document.getElementById('icon-check');
+      const cuePromptEl = document.getElementById('cue-prompt');
+      const cueTitleEl = document.getElementById('cue-title');
+      const cueMetaEl = document.getElementById('cue-meta');
+      const btnPrimaryEl = document.getElementById('btn-primary');
+      const btnSecondaryEl = document.getElementById('btn-secondary');
+      const queueWrapEl = document.getElementById('queue-wrap');
+      const queueCountEl = document.getElementById('queue-count');
+      const queueListEl = document.getElementById('queue-list');
+      const footerStatEl = document.getElementById('footer-stat');
+
+      let currentSnapshot = null;
+
+      function syncHeight() {
+        requestAnimationFrame(() => {
+          const totalH = Math.ceil(cardEl.getBoundingClientRect().height + 16);
+          window.sarilingPopover?.resizeHeight(Math.max(190, Math.min(totalH, 520)));
+        });
+      }
+
+      function renderSnapshot(data) {
+        if (!data) return;
+        currentSnapshot = data;
+
+        const theme = data.theme === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+
+        const primary = data.primary || null;
+        statusChipEl.className = 'statusChip';
+
+        if (!data.ready) {
+          handBadgeEl.classList.remove('animated');
+          iconHandEl.classList.remove('hidden');
+          iconCheckEl.classList.add('hidden');
+          statusChipEl.textContent = 'Syncing';
+          cuePromptEl.textContent = 'Connecting to workspace';
+          cueTitleEl.textContent = data.needsAuth ? 'Sign in to view your tasks' : 'Opening your tasks...';
+          cueMetaEl.textContent = data.needsAuth
+            ? 'Sign in inside the main window so your tasks appear here.'
+            : 'Reading live priorities and daily schedule.';
+          btnPrimaryEl.innerHTML = '<span>Open Workspace</span>';
+          btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
+          btnSecondaryEl.classList.add('hidden');
+          queueWrapEl.classList.add('hidden');
+          footerStatEl.textContent = 'Sariling Mundo Desktop';
+          syncHeight();
+          return;
+        }
+
+        if (primary) {
+          handBadgeEl.classList.add('animated');
+          iconHandEl.classList.remove('hidden');
+          iconCheckEl.classList.add('hidden');
+
+          statusChipEl.textContent = primary.badge || 'DO THIS';
+          if (primary.tone === 'urgent') statusChipEl.classList.add('urgent');
+          else if (primary.tone === 'work') statusChipEl.classList.add('work');
+
+          cuePromptEl.textContent = primary.prompt || 'Hey — do the work now';
+          cueTitleEl.textContent = primary.title;
+          cueMetaEl.textContent = primary.meta || '';
+          cueMetaEl.classList.toggle('hidden', !primary.meta);
+
+          btnPrimaryEl.innerHTML =
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
+            '<span>' + (primary.kind === 'routine' ? 'Mark Block Done' : 'Mark Done') + '</span>';
+
+          btnPrimaryEl.onclick = async () => {
+            btnPrimaryEl.disabled = true;
+            try {
+              if (primary.kind === 'routine') {
+                await window.sarilingPopover?.completeRoutineBlock(primary.id);
+              } else {
+                await window.sarilingPopover?.completeTask(primary.id);
+              }
+            } finally {
+              btnPrimaryEl.disabled = false;
+            }
+          };
+
+          btnSecondaryEl.classList.remove('hidden');
+          btnSecondaryEl.textContent = primary.kind === 'routine' ? 'Routine' : 'Focus';
+          btnSecondaryEl.onclick = () => {
+            window.sarilingPopover?.openWorkspace(primary.kind === 'routine' ? '/routine' : '/focus');
+          };
+        } else {
+          handBadgeEl.classList.remove('animated');
+          iconHandEl.classList.add('hidden');
+          iconCheckEl.classList.remove('hidden');
+
+          statusChipEl.textContent = 'Clear';
+          cuePromptEl.textContent = 'All caught up';
+          cueTitleEl.textContent = 'No pending work right now';
+          cueMetaEl.textContent = 'Add a task or routine block whenever you are ready.';
+          cueMetaEl.classList.remove('hidden');
+
+          btnPrimaryEl.innerHTML = '<span>Add Priority in App</span>';
+          btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/tasks');
+          btnSecondaryEl.classList.add('hidden');
+        }
+
+        const secondary = Array.isArray(data.upNext) ? data.upNext : [];
+        if (secondary.length > 0) {
+          queueWrapEl.classList.remove('hidden');
+          queueCountEl.textContent = `${secondary.length} more`;
+          queueListEl.innerHTML = '';
+
+          secondary.forEach((item) => {
+            const row = document.createElement('div');
+            row.className = 'queueItem';
+
+            const checkBtn = document.createElement('button');
+            checkBtn.type = 'button';
+            checkBtn.className = 'checkCircle';
+            checkBtn.title = 'Complete';
+            checkBtn.setAttribute('aria-label', `Complete ${item.title}`);
+            checkBtn.innerHTML =
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+            checkBtn.onclick = async () => {
+              checkBtn.disabled = true;
+              if (item.kind === 'routine') {
+                await window.sarilingPopover?.completeRoutineBlock(item.id);
+              } else {
+                await window.sarilingPopover?.completeTask(item.id);
+              }
+            };
+
+            const main = document.createElement('div');
+            main.className = 'queueMain';
+            main.onclick = () => window.sarilingPopover?.openWorkspace(item.kind === 'routine' ? '/routine' : '/tasks');
+
+            const title = document.createElement('div');
+            title.className = 'queueTitle';
+            title.textContent = item.title;
+
+            const meta = document.createElement('div');
+            meta.className = 'queueMeta';
+            meta.textContent = item.meta || (item.kind === 'routine' ? 'Daily Routine' : 'Task');
+
+            main.appendChild(title);
+            main.appendChild(meta);
+            row.appendChild(checkBtn);
+            row.appendChild(main);
+            queueListEl.appendChild(row);
+          });
+        } else {
+          queueWrapEl.classList.add('hidden');
+          queueListEl.innerHTML = '';
+        }
+
+        footerStatEl.textContent = data.summary || 'Synced with workspace';
+        syncHeight();
+      }
+
+      document.getElementById('btn-close').addEventListener('click', () => {
+        window.sarilingPopover?.closePopover();
+      });
+
+      document.getElementById('btn-expand').addEventListener('click', () => {
+        window.sarilingPopover?.openWorkspace('/');
+      });
+
+      document.getElementById('btn-open-app').addEventListener('click', () => {
+        window.sarilingPopover?.openWorkspace('/');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          window.sarilingPopover?.closePopover();
+        }
+      });
+
+      if (window.sarilingPopover) {
+        window.sarilingPopover.getSnapshot().then(renderSnapshot);
+        window.sarilingPopover.onSnapshot(renderSnapshot);
+      }
+    </script>
+  </body>
+</html>

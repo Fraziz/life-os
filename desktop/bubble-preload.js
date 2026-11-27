@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('sarilingBubble', {
     return () => ipcRenderer.removeListener('bubble:state', listener);
   },
   getState: () => ipcRenderer.invoke('bubble:get-state'),
+  togglePopover: () => ipcRenderer.invoke('bubble:toggle-popover'),
   toggleApp: () => ipcRenderer.invoke('bubble:toggle-app'),
   setMode: (mode) => ipcRenderer.invoke('bubble:set-mode', mode),
   dragStart: (screenX, screenY) => ipcRenderer.send('bubble:drag-start', { screenX, screenY }),

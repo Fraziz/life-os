@@ -9,10 +9,15 @@ const BUBBLE_CONFIG_PATH = () => path.join(app.getPath('userData'), 'bubble-conf
 
 let mainWindow = null;
 let bubbleWindow = null;
+let popoverWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragOrigin = null;
 let lastMainBlurAt = 0;
+let lastPopoverShownAt = 0;
+let lastPopoverBlurAt = 0;
+let popoverPollTimer = null;
+let currentBubbleWorkState = { hasWork: false, pillText: 'Sariling Mundo' };
 
 function readJson(filePath, fallback) {
   try {
@@ -96,9 +101,9 @@ function getDefaultBubbleConfig() {
 }
 
 function getBubbleDimensions(mode) {
-  if (mode === 'line') return { width: 34, height: 90 };
-  if (mode === 'pill') return { width: 162, height: 52 };
-  return { width: 70, height: 70 };
+  if (mode === 'line') return { width: 32, height: 84 };
+  if (mode === 'pill') return { width: 162, height: 50 };
+  return { width: 64, height: 64 };
 }
 
 function getBubbleConfig() {
@@ -115,10 +120,14 @@ function sendBubbleState() {
   if (!bubbleWindow || bubbleWindow.isDestroyed()) return;
   const cfg = getBubbleConfig();
   const appVisible = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());
+  const popoverVisible = Boolean(popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible());
   bubbleWindow.webContents.send('bubble:state', {
     mode: cfg.mode,
     edge: cfg.edge,
     appVisible,
+    popoverVisible,
+    hasWork: currentBubbleWorkState.hasWork,
+    pillText: currentBubbleWorkState.pillText,
   });
 }
 
@@ -139,6 +148,10 @@ function positionAndResizeBubble(cfg) {
   nextY = Math.max(wa.y + 8, Math.min(nextY, wa.y + wa.height - height - 8));
 
   bubbleWindow.setBounds({ x: Math.round(nextX), y: Math.round(nextY), width, height });
+  if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
+    const pb = popoverWindow.getBounds();
+    positionPopoverNextToBubble(pb.width, pb.height);
+  }
   sendBubbleState();
 }
 
@@ -228,6 +241,275 @@ function createBubbleWindow() {
   bubbleWindow.webContents.on('did-finish-load', () => {
     positionAndResizeBubble(getBubbleConfig());
   });
+}
+
+// ── Compact Anchored Action Popover ────────────────────────────
+async function readWorkspaceSnapshot() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+  }
+  try {
+    const snap = await mainWindow.webContents.executeJavaScript(`
+      (() => {
+        try {
+          const urlPath = window.location.pathname || '/';
+          const isAuthPage = urlPath === '/login' || urlPath === '/register';
+          const rawTasks = localStorage.getItem('life_os_tasks_v1');
+          const rawPlan = localStorage.getItem('life_os_today_plan_v1');
+          const rawRoutine = localStorage.getItem('life_os_daily_routine_blocks_v1');
+          const rawProgress = localStorage.getItem('life_os_daily_routine_progress_v1');
+          const rawSettings = localStorage.getItem('life_os_user_settings_v1');
+
+          const settings = rawSettings ? JSON.parse(rawSettings) : null;
+          const theme = settings && settings.theme === 'dark' ? 'dark' : 'light';
+
+          if (isAuthPage && !localStorage.getItem('life_os_active_uid')) {
+            return { ready: false, needsAuth: true, theme, upNext: [], summary: 'Sign in required' };
+          }
+
+          const tasks = Array.isArray(rawTasks ? JSON.parse(rawTasks) : null) ? JSON.parse(rawTasks) : [];
+          const todayPlan = rawPlan ? JSON.parse(rawPlan) : null;
+          const blocks = Array.isArray(rawRoutine ? JSON.parse(rawRoutine) : null) ? JSON.parse(rawRoutine) : [];
+          const d = new Date();
+          const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          const nowMin = d.getHours() * 60 + d.getMinutes();
+
+          let completedBlockIds = [];
+          try {
+            const prog = rawProgress ? JSON.parse(rawProgress) : null;
+            if (prog && prog.date === todayStr && Array.isArray(prog.completedBlockIds)) {
+              completedBlockIds = prog.completedBlockIds;
+            }
+          } catch {}
+
+          const pendingBlocks = blocks.filter((b) => b && b.id && !completedBlockIds.includes(b.id));
+          const activeBlock = pendingBlocks.find((b) => typeof b.startMinute === 'number' && typeof b.endMinute === 'number' && nowMin >= b.startMinute && nowMin < b.endMinute) || null;
+          const nextBlock = pendingBlocks.find((b) => typeof b.startMinute === 'number' && b.startMinute >= nowMin) || pendingBlocks[0] || null;
+
+          const pendingTasks = tasks.filter((t) => t && t.id && t.status !== 'done');
+          const prioRank = { urgent: 0, high: 1, medium: 2, low: 3 };
+          const sortedTasks = pendingTasks.slice().sort((a, b) => {
+            const aMain = todayPlan && todayPlan.mainFocusTaskId === a.id ? 0 : 1;
+            const bMain = todayPlan && todayPlan.mainFocusTaskId === b.id ? 0 : 1;
+            if (aMain !== bMain) return aMain - bMain;
+            const aDoing = a.status === 'doing' ? 0 : 1;
+            const bDoing = b.status === 'doing' ? 0 : 1;
+            if (aDoing !== bDoing) return aDoing - bDoing;
+            const aOver = a.dueDate && a.dueDate < todayStr ? 0 : a.dueDate === todayStr ? 1 : 2;
+            const bOver = b.dueDate && b.dueDate < todayStr ? 0 : b.dueDate === todayStr ? 1 : 2;
+            if (aOver !== bOver) return aOver - bOver;
+            return (prioRank[a.priority] ?? 2) - (prioRank[b.priority] ?? 2);
+          });
+
+          let primary = null;
+          const upNext = [];
+
+          if (activeBlock) {
+            primary = {
+              kind: 'routine',
+              id: activeBlock.id,
+              badge: 'WORK TIME',
+              tone: 'work',
+              prompt: 'Hey — routine block active now',
+              title: activeBlock.title,
+              meta: (activeBlock.timeRange || 'Now') + (Array.isArray(activeBlock.steps) && activeBlock.steps.length ? ' · ' + activeBlock.steps[0] : ''),
+            };
+          } else if (sortedTasks.length > 0) {
+            const top = sortedTasks[0];
+            const isOverdue = Boolean(top.dueDate && top.dueDate < todayStr);
+            const isToday = Boolean(top.dueDate && top.dueDate === todayStr);
+            const isMain = Boolean(todayPlan && todayPlan.mainFocusTaskId === top.id);
+            primary = {
+              kind: 'task',
+              id: top.id,
+              badge: isOverdue ? 'OVERDUE' : isMain ? 'MAIN FOCUS' : isToday ? 'TASK TIME' : 'DO IT NOW',
+              tone: isOverdue || top.priority === 'urgent' ? 'urgent' : isMain || isToday ? 'work' : 'neutral',
+              prompt: isOverdue ? 'Priority overdue — finish this first' : isMain ? 'Hey — do the work now' : isToday ? 'Task time — start this now' : 'Hey — do this task now',
+              title: top.title,
+              meta: [
+                top.estimatedDuration ? top.estimatedDuration + 'm' : null,
+                isOverdue ? 'Due ' + top.dueDate : isToday ? 'Due today' : top.priority ? String(top.priority).toUpperCase() : null,
+              ].filter(Boolean).join(' · '),
+            };
+          } else if (nextBlock) {
+            primary = {
+              kind: 'routine',
+              id: nextBlock.id,
+              badge: 'ROUTINE',
+              tone: 'work',
+              prompt: 'Up next in your daily routine',
+              title: nextBlock.title,
+              meta: nextBlock.timeRange || 'Today',
+            };
+          }
+
+          for (const t of sortedTasks) {
+            if (primary && primary.kind === 'task' && primary.id === t.id) continue;
+            if (upNext.length >= 3) break;
+            upNext.push({
+              kind: 'task',
+              id: t.id,
+              title: t.title,
+              meta: [t.estimatedDuration ? t.estimatedDuration + 'm' : null, t.dueDate === todayStr ? 'Due today' : t.dueDate && t.dueDate < todayStr ? 'Overdue' : t.priority || null].filter(Boolean).join(' · ') || 'Task',
+            });
+          }
+
+          if (upNext.length < 3 && nextBlock && !(primary && primary.kind === 'routine' && primary.id === nextBlock.id)) {
+            upNext.push({
+              kind: 'routine',
+              id: nextBlock.id,
+              title: nextBlock.title,
+              meta: 'Routine · ' + (nextBlock.timeRange || 'Today'),
+            });
+          }
+
+          const routineTotal = blocks.length;
+          const routineDone = blocks.filter((b) => completedBlockIds.includes(b.id)).length;
+          const parts = [];
+          parts.push(pendingTasks.length + ' task' + (pendingTasks.length === 1 ? '' : 's') + ' left');
+          if (routineTotal > 0) parts.push(routineDone + '/' + routineTotal + ' routine');
+
+          return {
+            ready: true,
+            theme,
+            primary,
+            upNext,
+            hasWork: Boolean(primary),
+            summary: parts.join(' · '),
+          };
+        } catch {
+          return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+        }
+      })()
+    `);
+
+    const hasWork = Boolean(snap && snap.hasWork);
+    const pillText = snap && snap.primary
+      ? (snap.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
+      : 'Sariling Mundo';
+    if (currentBubbleWorkState.hasWork !== hasWork || currentBubbleWorkState.pillText !== pillText) {
+      currentBubbleWorkState = { hasWork, pillText };
+      sendBubbleState();
+    }
+    return snap;
+  } catch {
+    return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+  }
+}
+
+function positionPopoverNextToBubble(width = 344, height = 320) {
+  if (!popoverWindow || popoverWindow.isDestroyed()) return;
+  const bubbleBounds = bubbleWindow && !bubbleWindow.isDestroyed()
+    ? bubbleWindow.getBounds()
+    : { x: 0, y: 200, width: 64, height: 64 };
+  const display = screen.getDisplayNearestPoint({ x: bubbleBounds.x, y: bubbleBounds.y });
+  const wa = display.workArea;
+  const gap = 10;
+  const bubbleCenterX = bubbleBounds.x + bubbleBounds.width / 2;
+  const screenCenterX = wa.x + wa.width / 2;
+
+  let targetX = bubbleCenterX < screenCenterX
+    ? bubbleBounds.x + bubbleBounds.width + gap
+    : bubbleBounds.x - width - gap;
+  targetX = Math.max(wa.x + 8, Math.min(targetX, wa.x + wa.width - width - 8));
+
+  let targetY = bubbleBounds.y - Math.round((height - bubbleBounds.height) / 2);
+  targetY = Math.max(wa.y + 8, Math.min(targetY, wa.y + wa.height - height - 8));
+
+  popoverWindow.setBounds({ x: Math.round(targetX), y: Math.round(targetY), width, height });
+}
+
+function createPopoverWindow() {
+  popoverWindow = new BrowserWindow({
+    width: 344,
+    height: 300,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    hasShadow: false,
+    focusable: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'popup-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  popoverWindow.setAlwaysOnTop(true, 'screen-saver');
+  popoverWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  popoverWindow.loadFile(path.join(__dirname, 'popup.html'));
+
+  popoverWindow.on('blur', () => {
+    if (Date.now() - lastPopoverShownAt < 180) return;
+    lastPopoverBlurAt = Date.now();
+    hidePopover();
+  });
+
+  popoverWindow.on('closed', () => {
+    popoverWindow = null;
+    if (popoverPollTimer) {
+      clearInterval(popoverPollTimer);
+      popoverPollTimer = null;
+    }
+    sendBubbleState();
+  });
+}
+
+async function refreshPopover() {
+  if (!popoverWindow || popoverWindow.isDestroyed()) return;
+  const snap = await readWorkspaceSnapshot();
+  if (!popoverWindow || popoverWindow.isDestroyed()) return;
+  popoverWindow.webContents.send('popover:snapshot', snap);
+}
+
+function hidePopover() {
+  if (popoverPollTimer) {
+    clearInterval(popoverPollTimer);
+    popoverPollTimer = null;
+  }
+  if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
+    popoverWindow.hide();
+  }
+  sendBubbleState();
+}
+
+async function showPopover() {
+  if (!popoverWindow || popoverWindow.isDestroyed()) {
+    createPopoverWindow();
+  }
+  const snap = await readWorkspaceSnapshot();
+  const bounds = popoverWindow.getBounds();
+  positionPopoverNextToBubble(bounds.width || 344, bounds.height || 300);
+  lastPopoverShownAt = Date.now();
+  popoverWindow.show();
+  popoverWindow.focus();
+  popoverWindow.webContents.send('popover:snapshot', snap);
+  sendBubbleState();
+
+  if (popoverPollTimer) clearInterval(popoverPollTimer);
+  popoverPollTimer = setInterval(() => {
+    if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
+      void refreshPopover();
+    }
+  }, 4000);
+}
+
+async function togglePopover() {
+  if (Date.now() - lastPopoverBlurAt < 220) {
+    return;
+  }
+  if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
+    hidePopover();
+  } else {
+    await showPopover();
+  }
 }
 
 function showBubbleContextMenu() {
@@ -371,6 +653,13 @@ function createWindow() {
   });
 
   void loadWorkspace(mainWindow);
+  mainWindow.webContents.on('did-finish-load', () => {
+    void readWorkspaceSnapshot().then(() => {
+      if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible()) {
+        void refreshPopover();
+      }
+    });
+  });
 }
 
 function buildTrayMenu() {
@@ -511,11 +800,126 @@ if (!gotSingleLock) {
     ipcMain.handle('bubble:get-state', () => {
       const cfg = getBubbleConfig();
       const appVisible = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());
-      return { mode: cfg.mode, edge: cfg.edge, appVisible };
+      const popoverVisible = Boolean(popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isVisible());
+      return {
+        mode: cfg.mode,
+        edge: cfg.edge,
+        appVisible,
+        popoverVisible,
+        hasWork: currentBubbleWorkState.hasWork,
+        pillText: currentBubbleWorkState.pillText,
+      };
+    });
+
+    ipcMain.handle('bubble:toggle-popover', async () => {
+      await togglePopover();
     });
 
     ipcMain.handle('bubble:toggle-app', () => {
+      hidePopover();
       toggleMainApp();
+    });
+
+    ipcMain.handle('popover:get-snapshot', async () => {
+      return await readWorkspaceSnapshot();
+    });
+
+    ipcMain.handle('popover:complete-task', async (_event, taskId) => {
+      if (mainWindow && !mainWindow.isDestroyed() && taskId) {
+        const safeId = JSON.stringify(String(taskId));
+        await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const raw = localStorage.getItem('life_os_tasks_v1');
+              const list = raw ? JSON.parse(raw) : [];
+              if (!Array.isArray(list)) return false;
+              const now = new Date().toISOString();
+              const next = list.map((t) => (t && t.id === ${safeId} ? { ...t, status: 'done', completedAt: now, updatedAt: now } : t));
+              localStorage.setItem('life_os_tasks_v1', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return true;
+            } catch {
+              return false;
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
+    });
+
+    ipcMain.handle('popover:complete-routine-block', async (_event, blockId) => {
+      if (mainWindow && !mainWindow.isDestroyed() && blockId) {
+        const safeId = JSON.stringify(String(blockId));
+        await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const d = new Date();
+              const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+              const rawBlocks = localStorage.getItem('life_os_daily_routine_blocks_v1');
+              const blocks = rawBlocks ? JSON.parse(rawBlocks) : [];
+              const block = Array.isArray(blocks) ? blocks.find((b) => b && b.id === ${safeId}) : null;
+              const rawProg = localStorage.getItem('life_os_daily_routine_progress_v1');
+              const parsed = rawProg ? JSON.parse(rawProg) : null;
+              const prog = parsed && parsed.date === todayStr
+                ? parsed
+                : { date: todayStr, completedStepKeys: [], completedBlockIds: [] };
+              const nextIds = Array.from(new Set([...(prog.completedBlockIds || []), ${safeId}]));
+              const stepKeys = Array.isArray(prog.completedStepKeys) ? [...prog.completedStepKeys] : [];
+              if (block && Array.isArray(block.steps)) {
+                block.steps.forEach((_, idx) => {
+                  const k = ${safeId} + ':' + idx;
+                  if (!stepKeys.includes(k)) stepKeys.push(k);
+                });
+              }
+              localStorage.setItem('life_os_daily_routine_progress_v1', JSON.stringify({
+                date: todayStr,
+                completedBlockIds: nextIds,
+                completedStepKeys: stepKeys,
+              }));
+              window.dispatchEvent(new Event('life_os_daily_routine_reminder_updated'));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return true;
+            } catch {
+              return false;
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
+    });
+
+    ipcMain.handle('popover:open-workspace', (_event, route) => {
+      hidePopover();
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+        return;
+      }
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+      const target = typeof route === 'string' && route.startsWith('/') ? route : '/';
+      if (target !== '/') {
+        try {
+          const curUrl = mainWindow.webContents.getURL();
+          if (curUrl && !curUrl.startsWith('file://')) {
+            const nextUrl = new URL(target, curUrl).toString();
+            if (curUrl !== nextUrl) {
+              void mainWindow.loadURL(nextUrl);
+            }
+          }
+        } catch {}
+      }
+      sendBubbleState();
+    });
+
+    ipcMain.on('popover:close', () => {
+      hidePopover();
+    });
+
+    ipcMain.on('popover:resize', (_event, height) => {
+      if (!popoverWindow || popoverWindow.isDestroyed()) return;
+      const clampedH = Math.max(190, Math.min(Number(height) || 300, 520));
+      positionPopoverNextToBubble(344, clampedH);
     });
 
     ipcMain.handle('bubble:set-mode', (_event, mode) => {
@@ -603,8 +1007,10 @@ if (!gotSingleLock) {
     });
 
     createWindow();
+    createPopoverWindow();
     createBubbleWindow();
     createTray();
+    setTimeout(() => { void readWorkspaceSnapshot(); }, 1800);
   });
 
   app.on('before-quit', () => {

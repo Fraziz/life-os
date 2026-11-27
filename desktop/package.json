@@ -25,6 +25,8 @@
       "setup.html",
       "bubble.html",
       "bubble-preload.js",
+      "popup.html",
+      "popup-preload.js",
       "logo.png",
       "icon.ico"
     ],
