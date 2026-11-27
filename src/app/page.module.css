@@ -2023,25 +2023,54 @@ a.summaryPill:hover {
 .notesList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .noteItemRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color 0.15s ease;
+}
+
+.noteItemRow:hover {
+  background: var(--color-surface-2);
 }
 
 .noteBullet {
-  color: var(--color-text);
+  color: var(--color-text-faint);
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .noteText {
   font-size: 0.82rem;
   color: var(--color-text);
-  line-height: 1.4;
+  line-height: 1.45;
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.noteTextExpanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+}
+
+.noteTimeMeta,
+.noteReminderMeta {
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 

@@ -486,6 +486,7 @@ export default function TodayDashboardContent() {
   // ── Brain Dump (Single Unified Source of Truth) ───────────────
   const [dumpText, setDumpText] = useState('');
   const [dumpIsReminder, setDumpIsReminder] = useState(false);
+  const [expandedThoughtIds, setExpandedThoughtIds] = useState<Record<string, boolean>>({});
   const [addingDump, setAddingDump] = useState(false);
   const dumpInputRef = useRef<HTMLInputElement>(null);
 
@@ -1212,57 +1213,54 @@ export default function TodayDashboardContent() {
           </div>
         </section>
 
-        {/* Brain Dump — Unified Quick Capture */}
+        {/* Idea Parking — Minimalist Quick Capture Preview */}
         <section className={styles.contentSectionCard}>
           <div className={styles.sectionHeaderRow}>
             <div className={styles.sectionHeaderLeft}>
-              <Brain size={17} style={{ color: '#8b5cf6' }} />
               <h2 className={styles.sectionHeading}>Idea Parking</h2>
               <span className={styles.sectionHeaderDate}>
-                {brainDumpItems.length} thoughts
+                {brainDumpItems.length}
               </span>
             </div>
             <Link href="/inbox" className={styles.viewAllNotesLink}>Open inbox →</Link>
           </div>
 
           <div className={styles.notesList}>
-            {brainDumpItems.slice(0, 5).map((item) => (
-              <div key={item.id} className={styles.noteItemRow}>
-                <span className={styles.noteBullet}>•</span>
-                <span className={styles.noteText} style={{ flex: 1 }}>
-                  {item.content}
-                  {item.reminderTime && (
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginLeft: '6px' }}>
-                      ({item.reminderTime})
-                    </span>
-                  )}
-                </span>
-                {item.isReminder && (
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      background: 'rgba(99, 102, 241, 0.12)',
-                      color: 'var(--color-accent-light, #818cf8)',
-                      padding: '1px 6px',
-                      borderRadius: '4px',
-                      marginRight: '6px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Reminder
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className={styles.noteDeleteBtn}
-                  onClick={() => deleteInboxItem(item.id)}
-                  aria-label="Delete thought"
+            {brainDumpItems.slice(0, 5).map((item) => {
+              const isExpanded = Boolean(expandedThoughtIds[item.id]);
+              return (
+                <div
+                  key={item.id}
+                  className={styles.noteItemRow}
+                  onClick={() =>
+                    setExpandedThoughtIds((prev) => ({ ...prev, [item.id]: !prev[item.id] }))
+                  }
+                  title={isExpanded ? 'Click to collapse' : item.content}
                 >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
+                  <span className={styles.noteBullet}>•</span>
+                  <span className={`${styles.noteText} ${isExpanded ? styles.noteTextExpanded : ''}`}>
+                    {item.content}
+                  </span>
+                  {item.reminderTime && (
+                    <span className={styles.noteTimeMeta}>{item.reminderTime}</span>
+                  )}
+                  {item.isReminder && (
+                    <span className={styles.noteReminderMeta}>Reminder</span>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.noteDeleteBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteInboxItem(item.id);
+                    }}
+                    aria-label="Delete thought"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              );
+            })}
 
             {addingDump ? (
               <form onSubmit={handleDump} className={styles.addTaskForm} style={{ marginTop: 8 }}>
