@@ -7,10 +7,6 @@ import styles from './page.module.css';
 export default function RoutinePage() {
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Daily Routine</h1>
-      </header>
-
       <DailyRoutineChecklist />
     </div>
   );

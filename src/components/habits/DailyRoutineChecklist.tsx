@@ -253,18 +253,8 @@ export default function DailyRoutineChecklist() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.summaryBar}>
-        <div className={styles.summaryLeft}>
-          <div className={styles.summaryTextRow}>
-            <span className={styles.summaryLabel}>
-              {completedCount} of {blocks.length} blocks completed today
-            </span>
-            <span className={styles.summaryPct}>{completionPct}%</span>
-          </div>
-          <div className={styles.progressTrack}>
-            <div className={styles.progressFill} style={{ width: `${completionPct}%` }} />
-          </div>
-        </div>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>Daily Routine</h1>
 
         <div className={styles.summaryActions}>
           <button type="button" className={styles.btnGhost} onClick={handleResetToday}>
@@ -278,6 +268,18 @@ export default function DailyRoutineChecklist() {
             <Plus size={14} />
             <span>Add Block</span>
           </button>
+        </div>
+      </header>
+
+      <div className={styles.progressSection}>
+        <div className={styles.summaryTextRow}>
+          <span className={styles.summaryLabel}>
+            {completedCount} of {blocks.length} completed today
+          </span>
+          <span className={styles.summaryPct}>{completionPct}%</span>
+        </div>
+        <div className={styles.progressTrack}>
+          <div className={styles.progressFill} style={{ width: `${completionPct}%` }} />
         </div>
       </div>
 
