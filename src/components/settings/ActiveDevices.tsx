@@ -11,6 +11,7 @@ import {
   type DeviceSession,
 } from '@/lib/deviceSessions';
 import styles from './ActiveDevices.module.css';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface ActiveDevicesProps {
   uid: string;
@@ -34,6 +35,7 @@ function formatSignedIn(ts: number): string {
 }
 
 export default function ActiveDevices({ uid }: ActiveDevicesProps) {
+  const { confirm: confirmDialog } = useConfirm();
   const [sessions, setSessions] = useState<DeviceSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export default function ActiveDevices({ uid }: ActiveDevicesProps) {
 
   const handleRevoke = async (s: DeviceSession) => {
     const label = `${s.browser} on ${s.model || s.os}`;
-    if (!window.confirm(`Sign out ${label}?\n\nThat device will be logged out immediately.`)) return;
+    if (!(await confirmDialog({ title: 'Sign Out Device', message: `Sign out ${label}? That device will be logged out immediately.`, confirmLabel: 'Sign Out' }))) return;
     setRevoking(s.deviceId);
     try {
       await revokeDeviceSession(uid, s.deviceId);

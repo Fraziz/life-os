@@ -36,6 +36,7 @@ import type { NavItem } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTour } from '@/context/TourContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { usePwaInstall } from '@/utils/usePwaInstall';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
@@ -86,6 +87,7 @@ export default function Sidebar({
   const { settings, toggleSimpleMode } = useSettings();
   const { user, logout, logoutAllDevices } = useAuth();
   const { startTour } = useTour();
+  const { confirm: confirmDialog } = useConfirm();
   const { canPromptInstall, isStandalone, promptInstall } = usePwaInstall();
 
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
@@ -395,9 +397,9 @@ export default function Sidebar({
                 type="button"
                 className={styles.dropdownItem}
                 style={{ color: 'var(--color-danger, #ef4444)' }}
-                onClick={() => {
+                onClick={async () => {
                   setProfileMenuOpen(false);
-                  if (window.confirm('Log out of all devices? This will invalidate all your sessions across all phones and computers.')) {
+                  if (await confirmDialog({ title: 'Log Out All Devices', message: 'Log out of all devices? This will invalidate all your sessions across all phones and computers.', confirmLabel: 'Log Out All' })) {
                     void logoutAllDevices();
                   }
                 }}

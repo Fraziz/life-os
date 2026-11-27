@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import styles from './ConfirmDialog.module.css';
 
@@ -11,7 +11,10 @@ export interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isDestructive?: boolean;
-  onConfirm: () => void;
+  hideCancel?: boolean;
+  inputPlaceholder?: string;
+  defaultValue?: string;
+  onConfirm: (inputValue?: string) => void;
   onCancel: () => void;
 }
 
@@ -22,9 +25,20 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   isDestructive = true,
+  hideCancel = false,
+  inputPlaceholder,
+  defaultValue = '',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const [inputValue, setInputValue] = useState(defaultValue);
+
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue(defaultValue);
+    }
+  }, [isOpen, defaultValue]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,6 +49,8 @@ export default function ConfirmDialog({
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
+
+  const hasInput = inputPlaceholder !== undefined;
 
   return (
     <div
@@ -66,27 +82,45 @@ export default function ConfirmDialog({
           </button>
         </div>
 
-        <div className={styles.body}>
-          <p className={styles.message}>{message}</p>
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onConfirm(hasInput ? inputValue : undefined);
+          }}
+        >
+          <div className={styles.body}>
+            <p className={styles.message}>{message}</p>
+            {hasInput && (
+              <input
+                type="text"
+                className={styles.input}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={inputPlaceholder}
+                autoFocus
+              />
+            )}
+          </div>
 
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={isDestructive ? styles.destructiveBtn : styles.confirmBtn}
-            onClick={onConfirm}
-            autoFocus
-          >
-            {confirmLabel}
-          </button>
-        </div>
+          <div className={styles.actions}>
+            {!hideCancel && (
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={onCancel}
+              >
+                {cancelLabel}
+              </button>
+            )}
+            <button
+              type="submit"
+              className={isDestructive ? styles.destructiveBtn : styles.confirmBtn}
+              autoFocus={!hasInput}
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

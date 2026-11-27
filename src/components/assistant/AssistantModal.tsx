@@ -5,6 +5,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useTasks } from '@/context/TaskContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { AISuggestion } from '@/types';
 import {
   generateAIBreakdown,
@@ -27,6 +28,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
   const { goals } = useGoals();
   const { projects } = useProjects();
   const { tasks, addTask } = useTasks();
+  const { alert: alertDialog } = useConfirm();
 
   const [activeTab, setActiveTab] = useState<'day_plan' | 'breakdown' | 'blockers'>('day_plan');
   const [selectedGoalId, setSelectedGoalId] = useState<string>(goals[0]?.id || '');
@@ -55,7 +57,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
       } else if (type === 'breakdown') {
         const targetGoal = goals.find((g) => g.id === selectedGoalId) || goals[0];
         if (!targetGoal) {
-          alert('Please create a goal first to use the breakdown assistant.');
+          await alertDialog({ title: 'Goal Required', message: 'Please create a goal first to use the breakdown assistant.' });
           setIsGenerating(false);
           return;
         }
@@ -75,7 +77,7 @@ export default function AssistantModal({ isOpen, onClose }: AssistantModalProps)
       });
       setSelectedActions(initialSelected);
     } catch (err: any) {
-      alert(err.message || 'Failed to generate suggestions');
+      await alertDialog({ title: 'Error', message: err.message || 'Failed to generate suggestions' });
     } finally {
       setIsGenerating(false);
     }

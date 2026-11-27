@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { wipeCloudKv } from '@/lib/cloudStore';
 import { wipeCloudBooks } from '@/lib/bookCloudSync';
 import { idbGet, idbSet } from '@/lib/idbStore';
@@ -78,6 +79,7 @@ const WEEKDAYS = [
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
   const { user, isGuest, logout, logoutAllDevices, changePassword } = useAuth();
+  const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
   const { startTour, resetAllTours } = useTour();
   const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
@@ -109,7 +111,10 @@ export default function SettingsPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Logo file too large. Please select an image under 5MB.');
+      void alertDialog({
+        title: 'File Too Large',
+        message: 'Logo file too large. Please select an image under 5MB.',
+      });
       return;
     }
 
@@ -205,7 +210,10 @@ export default function SettingsPage() {
       const data = JSON.parse(text);
 
       if (!data || typeof data !== 'object') {
-        alert('Invalid backup file: Not a JSON object.');
+        await alertDialog({
+          title: 'Invalid Backup File',
+          message: 'Invalid backup file: Not a JSON object.',
+        });
         setRestoreStatus(null);
         return;
       }
@@ -215,14 +223,19 @@ export default function SettingsPage() {
       );
 
       if (keys.length === 0) {
-        alert('No recognized Life OS data found in this file.');
+        await alertDialog({
+          title: 'No Data Found',
+          message: 'No recognized Life OS data found in this file.',
+        });
         setRestoreStatus(null);
         return;
       }
 
-      const confirmRestore = confirm(
-        `Found ${keys.length} data categories to restore from "${file.name}". This will merge/update your workspace data. Continue?`
-      );
+      const confirmRestore = await confirmDialog({
+        title: 'Restore Backup',
+        message: `Found ${keys.length} data categories to restore from "${file.name}". This will merge/update your workspace data. Continue?`,
+        confirmLabel: 'Restore',
+      });
       if (!confirmRestore) {
         setRestoreStatus(null);
         if (restoreFileInputRef.current) restoreFileInputRef.current.value = '';
@@ -252,11 +265,17 @@ export default function SettingsPage() {
       }
 
       setRestoreStatus(`Successfully restored ${keys.length} categories!`);
-      alert(`Success! Restored ${keys.length} data categories. The page will now reload.`);
+      await alertDialog({
+        title: 'Backup Restored',
+        message: `Success! Restored ${keys.length} data categories. The page will now reload.`,
+      });
       window.location.reload();
     } catch (err) {
       console.error('Failed to import backup:', err);
-      alert('Could not read or parse this backup file. Please ensure it is a valid JSON file.');
+      await alertDialog({
+        title: 'Import Failed',
+        message: 'Could not read or parse this backup file. Please ensure it is a valid JSON file.',
+      });
       setRestoreStatus(null);
     } finally {
       if (restoreFileInputRef.current) restoreFileInputRef.current.value = '';
@@ -309,9 +328,12 @@ export default function SettingsPage() {
   };
 
   const handleLogoutAllDevices = async () => {
-    const confirmed = window.confirm(
-      'Log out of all devices?\n\nThis will invalidate your sessions on all phones, tablets, and computers. You will need to sign back in on each device.'
-    );
+    const confirmed = await confirmDialog({
+      title: 'Log Out All Devices',
+      message: 'This will invalidate your sessions on all phones, tablets, and computers. You will need to sign back in on each device.',
+      confirmLabel: 'Log Out All',
+      isDestructive: true,
+    });
     if (!confirmed) return;
     setLoggingOutAll(true);
     try {
@@ -3183,7 +3205,13 @@ export default function SettingsPage() {
                       type="button"
                       className={styles.btnDangerSolid}
                       onClick={async () => {
-                        const phrase = prompt('To confirm erasure of all data, type "DELETE ALL MY DATA" below:');
+                        const phrase = await promptDialog({
+                          title: 'Erase All Data',
+                          message: 'To confirm erasure of all data, type "DELETE ALL MY DATA" below:',
+                          placeholder: 'DELETE ALL MY DATA',
+                          confirmLabel: 'Erase Everything',
+                          isDestructive: true,
+                        });
                         if (phrase === 'DELETE ALL MY DATA') {
                           if (user) {
                             try {
@@ -3194,10 +3222,16 @@ export default function SettingsPage() {
                             } catch { /* keep going */ }
                           }
                           localStorage.clear();
-                          alert('Sariling Mundo data has been erased.');
+                          await alertDialog({
+                            title: 'Data Erased',
+                            message: 'Sariling Mundo data has been erased.',
+                          });
                           window.location.href = '/';
                         } else if (phrase !== null) {
-                          alert('Confirmation phrase did not match. Action cancelled.');
+                          await alertDialog({
+                            title: 'Action Cancelled',
+                            message: 'Confirmation phrase did not match. Action cancelled.',
+                          });
                         }
                       }}
                     >
@@ -3231,8 +3265,14 @@ export default function SettingsPage() {
           <button
             type="button"
             className={styles.btnDanger}
-            onClick={() => {
-              if (confirm('Reset all settings to default values?')) {
+            onClick={async () => {
+              const ok = await confirmDialog({
+                title: 'Reset Settings',
+                message: 'Reset all settings to default values?',
+                confirmLabel: 'Reset Defaults',
+                isDestructive: true,
+              });
+              if (ok) {
                 resetSettings();
               }
             }}

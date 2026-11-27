@@ -22,6 +22,7 @@ import {
 import { useTasks } from '@/context/TaskContext';
 import { useTodayPlan } from '@/context/TodayPlanContext';
 import { useProjects } from '@/context/ProjectContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { Task, TaskPriority } from '@/types';
 import styles from './page.module.css';
 
@@ -43,6 +44,7 @@ export default function ResetPage() {
   } = useTodayPlan();
 
   const { projects } = useProjects();
+  const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
 
   // Modals
   const [breakdownModalTask, setBreakdownModalTask] = useState<Task | null>(null);
@@ -84,18 +86,18 @@ export default function ResetPage() {
   );
 
   // ── Bulk Actions ──
-  const handlePushAllToTomorrow = () => {
+  const handlePushAllToTomorrow = async () => {
     const targets = [...todayUnfinishedTasks, ...overdueTasks];
     if (targets.length === 0) return;
 
     targets.forEach((t) => {
       updateTask(t.id, { dueDate: tomorrowStr });
     });
-    alert(`Moved ${targets.length} tasks to Tomorrow.`);
+    await alertDialog({ title: 'Tasks Rescheduled', message: `Moved ${targets.length} tasks to Tomorrow.` });
   };
 
-  const handleCleanSlateBacklog = () => {
-    if (confirm('Move all of today\'s unfinished tasks to Backlog for a fresh start?')) {
+  const handleCleanSlateBacklog = async () => {
+    if (await confirmDialog({ title: 'Move to Backlog', message: "Move all of today's unfinished tasks to Backlog for a fresh start?", confirmLabel: 'Move to Backlog', isDestructive: false })) {
       todayUnfinishedTasks.forEach((t) => {
         removeFromToday(t.id);
         updateTask(t.id, { status: 'backlog' });
@@ -103,9 +105,9 @@ export default function ResetPage() {
     }
   };
 
-  const handleKeepOnlyMainFocus = () => {
+  const handleKeepOnlyMainFocus = async () => {
     if (!todayPlan.mainFocusTaskId) {
-      alert('No Main Focus is currently set. Pick one first on Today screen.');
+      await alertDialog({ title: 'No Main Focus Set', message: 'No Main Focus is currently set. Pick one first on Today screen.' });
       return;
     }
     todayUnfinishedTasks
@@ -264,8 +266,8 @@ export default function ResetPage() {
 
                       <button
                         className={`${styles.btnAction} ${styles.deleteBtn}`}
-                        onClick={() => {
-                          if (confirm(`Delete task "${task.title}"?`)) {
+                        onClick={async () => {
+                          if (await confirmDialog({ title: 'Delete Task', message: `Are you sure you want to delete "${task.title}"? This cannot be undone.`, confirmLabel: 'Delete Task' })) {
                             deleteTask(task.id);
                             removeFromToday(task.id);
                           }
@@ -346,8 +348,8 @@ export default function ResetPage() {
 
                       <button
                         className={`${styles.btnAction} ${styles.deleteBtn}`}
-                        onClick={() => {
-                          if (confirm(`Delete task "${task.title}"?`)) {
+                        onClick={async () => {
+                          if (await confirmDialog({ title: 'Delete Task', message: `Are you sure you want to delete "${task.title}"? This cannot be undone.`, confirmLabel: 'Delete Task' })) {
                             deleteTask(task.id);
                           }
                         }}

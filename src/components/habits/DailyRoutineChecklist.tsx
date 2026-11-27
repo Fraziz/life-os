@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { playSuccessChime } from '@/utils/soundAndDopamine';
+import { useConfirm } from '@/context/ConfirmContext';
 import {
   DEFAULT_DAILY_ROUTINE,
   ROUTINE_STORAGE_KEY,
@@ -37,6 +38,7 @@ function parseMinutesRange(timeRange: string): { startMinute?: number; endMinute
 }
 
 export default function DailyRoutineChecklist() {
+  const { confirm: confirmDialog } = useConfirm();
   const [blocks, setBlocks] = useState<RoutineBlock[]>(DEFAULT_DAILY_ROUTINE);
   const [progress, setProgress] = useState<DailyProgressState>({
     date: getTodayDateKey(),
@@ -174,8 +176,8 @@ export default function DailyRoutineChecklist() {
     clearDailyRoutineReminderDoneToday();
   };
 
-  const handleRestoreDefault = () => {
-    if (!confirm('Restore the default Daily Routine schedule?')) return;
+  const handleRestoreDefault = async () => {
+    if (!(await confirmDialog({ title: 'Restore Default Routine', message: 'Restore the default Daily Routine schedule?', confirmLabel: 'Restore', isDestructive: false }))) return;
     persistBlocks(DEFAULT_DAILY_ROUTINE);
     handleResetToday();
   };
@@ -239,8 +241,8 @@ export default function DailyRoutineChecklist() {
     playSuccessChime();
   };
 
-  const handleDeleteBlock = (block: RoutineBlock) => {
-    if (!confirm(`Remove "${block.title}" from your daily routine?`)) return;
+  const handleDeleteBlock = async (block: RoutineBlock) => {
+    if (!(await confirmDialog({ title: 'Remove Routine Block', message: `Remove "${block.title}" from your daily routine?`, confirmLabel: 'Remove' }))) return;
     persistBlocks(blocks.filter((b) => b.id !== block.id));
   };
 

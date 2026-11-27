@@ -8,6 +8,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useTasks } from '@/context/TaskContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { Project, ProjectStatus, ProjectPriority } from '@/types';
 import {
   Folder,
@@ -87,6 +88,7 @@ function ProjectRow({
   onToggleSelect?: () => void;
 }) {
   const { toggleProjectReminder } = useProjects();
+  const { confirm: confirmDialog } = useConfirm();
   const { tasks } = useTasks();
   const linkedTasks = tasks.filter(
     (t) =>
@@ -261,7 +263,7 @@ function ProjectRow({
         <button onClick={() => onEdit(project)} title="Edit" style={btnStyle}>
           <Edit2 size={13} />
         </button>
-        <button onClick={() => { if (confirm(`Delete "${project.title}"?`)) onDelete(project.id); }} title="Delete" style={{ ...btnStyle, color: 'var(--color-danger)' }}>
+        <button onClick={async () => { if (await confirmDialog({ title: 'Delete Project', message: `Are you sure you want to delete "${project.title}"? This cannot be undone.`, confirmLabel: 'Delete' })) onDelete(project.id); }} title="Delete" style={{ ...btnStyle, color: 'var(--color-danger)' }}>
           <Trash2 size={13} />
         </button>
       </div>
@@ -289,6 +291,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
   onToggleSelect?: (id: string) => void;
 }) {
   const { toggleProjectReminder } = useProjects();
+  const { confirm: confirmDialog } = useConfirm();
   const { tasks } = useTasks();
   if (projects.length === 0) return <EmptyState />;
   const isSelectionActive = Boolean(isSelectMode || (selectedIds && selectedIds.size > 0));
@@ -384,7 +387,7 @@ function NotesView({ projects, goals, onEdit, onDelete, onProgressChange, highli
                 </button>
                 <button
                   className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                  onClick={() => { if (confirm(`Delete "${p.title}"?`)) onDelete(p.id); }}
+                  onClick={async () => { if (await confirmDialog({ title: 'Delete Project', message: `Are you sure you want to delete "${p.title}"? This cannot be undone.`, confirmLabel: 'Delete' })) onDelete(p.id); }}
                   title="Delete"
                   aria-label="Delete project"
                 >

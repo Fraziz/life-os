@@ -1,9 +1,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.70);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: var(--z-modal, 400);
   display: flex;
   align-items: center;
@@ -14,12 +14,12 @@
 
 .dialog {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl, 14px);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
   width: 100%;
   max-width: 420px;
   overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
   animation: scaleInFast 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -38,7 +38,7 @@
 }
 
 .warningIconWrap {
-  color: var(--color-danger, #ef4444);
+  color: var(--color-danger, #dc2626);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,11 +66,14 @@
 
 .closeBtn:hover {
   color: var(--color-text);
-  background: var(--color-surface-hover, var(--color-surface-2));
+  background: var(--color-surface-2);
 }
 
 .body {
   padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .message {
@@ -79,6 +82,22 @@
   line-height: 1.5;
   margin: 0;
   word-break: break-word;
+}
+
+.input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-border-focus);
+  background: var(--color-surface);
 }
 
 .actions {
@@ -105,7 +124,7 @@
 }
 
 .cancelBtn:hover {
-  background: var(--color-surface-hover, var(--color-surface-2));
+  background: var(--color-surface-hover);
   border-color: var(--color-border-focus);
 }
 
@@ -113,7 +132,7 @@
   padding: 8px 18px;
   border-radius: 8px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-3);
   color: var(--color-text);
   font-size: 0.84rem;
   font-weight: 600;
@@ -123,7 +142,7 @@
 }
 
 .destructiveBtn:hover {
-  opacity: 0.9;
+  background: var(--color-surface-hover);
 }
 
 .confirmBtn {
@@ -131,7 +150,7 @@
   border-radius: 8px;
   border: 1px solid var(--color-accent);
   background: var(--color-accent);
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-text-inverse);
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
@@ -149,12 +168,6 @@
 }
 
 @keyframes scaleInFast {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }

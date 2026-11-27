@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { LifeArea } from '@/types';
 import {
   User,
@@ -79,6 +80,7 @@ export default function LifeAreasPage() {
     resetToDefaultAreas,
     isLoaded,
   } = useLifeAreas();
+  const { confirm: confirmDialog } = useConfirm();
 
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [modalOpen, setModalOpen] = useState(false);
@@ -257,8 +259,8 @@ export default function LifeAreasPage() {
 
                   <button
                     className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                    onClick={() => {
-                      if (confirm(`Delete Life Area "${area.name}"?`)) {
+                    onClick={async () => {
+                      if (await confirmDialog({ title: 'Delete Life Area', message: `Are you sure you want to delete "${area.name}"? This cannot be undone.`, confirmLabel: 'Delete' })) {
                         deleteArea(area.id);
                       }
                     }}

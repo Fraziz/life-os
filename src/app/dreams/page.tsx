@@ -5,6 +5,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useGoals } from '@/context/GoalContext';
 import { useTasks } from '@/context/TaskContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { Dream, DreamStatus } from '@/types';
 import {
   Plus,
@@ -44,6 +45,7 @@ export default function DreamsPage() {
   const { goals, addGoal } = useGoals();
   const { addTask } = useTasks();
   const { activeAreas } = useLifeAreas();
+  const { confirm: confirmDialog } = useConfirm();
 
   const [activeFilter, setActiveFilter] = useState<'all' | DreamStatus>('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -415,8 +417,8 @@ export default function DreamsPage() {
 
                       <button
                         className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                        onClick={() => {
-                          if (confirm(`Delete Dream "${d.title}"?`)) {
+                        onClick={async () => {
+                          if (await confirmDialog({ title: 'Delete Dream', message: `Are you sure you want to delete "${d.title}"? This cannot be undone.`, confirmLabel: 'Delete' })) {
                             deleteDream(d.id);
                           }
                         }}

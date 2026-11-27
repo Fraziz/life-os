@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Sariling Mundo',
   },
   icons: {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#12141a',
+  themeColor: '#f4f5f8',
 };
 
 interface RootLayoutProps {
@@ -45,7 +45,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
       </head>

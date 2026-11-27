@@ -49,6 +49,7 @@ import { useDreams } from '@/context/DreamContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/AuthContext';
 import { getFirebaseAuth, explainFirebaseError } from '@/lib/firebase';
 import {
@@ -127,6 +128,7 @@ export default function InboxPage() {
 
   const { settings, updateSettings } = useSettings();
   const { addTask } = useTasks();
+  const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
 
   // AI Breakdown State
   const [aiBreakdownModal, setAiBreakdownModal] = useState<{
@@ -279,7 +281,7 @@ export default function InboxPage() {
       playSuccessChime();
     } catch {
       setAiBreakdownModal(null);
-      alert('Could not break down thought with AI. Please check your Groq API key.');
+      await alertDialog({ title: 'AI Breakdown Failed', message: 'Could not break down thought with AI. Please check your Groq API key.' });
     }
   };
 
@@ -969,7 +971,7 @@ export default function InboxPage() {
             )}
             <button
               className={styles.btnClearInbox}
-              onClick={() => { if (confirm('Clear all items from Inbox?')) clearInbox(); }}
+              onClick={async () => { if (await confirmDialog({ title: 'Clear Inbox', message: 'Clear all items from Inbox? This cannot be undone.', confirmLabel: 'Clear Inbox' })) clearInbox(); }}
             >
               Clear Inbox
             </button>

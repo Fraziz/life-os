@@ -8,6 +8,7 @@ import { useProjects } from '@/context/ProjectContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useTasks } from '@/context/TaskContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { Goal, GoalHorizon, GoalPriority, GoalStatus } from '@/types';
 import { AreaIcon } from '@/app/areas/page';
 import {
@@ -67,6 +68,7 @@ export default function GoalsPage() {
   const { activeAreas, focusedAreaId, setFocusedAreaId } = useLifeAreas();
   const { tasks, addTask } = useTasks();
   const { settings } = useSettings();
+  const { confirm: confirmDialog } = useConfirm();
 
   // ADHD Guidance & 1-Click Bridges
   const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
@@ -520,8 +522,8 @@ export default function GoalsPage() {
 
                     <button
                       className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                      onClick={() => {
-                        if (confirm(`Delete Goal "${goal.title}"?`)) {
+                      onClick={async () => {
+                        if (await confirmDialog({ title: 'Delete Goal', message: `Are you sure you want to delete "${goal.title}"? This cannot be undone.`, confirmLabel: 'Delete' })) {
                           deleteGoal(goal.id);
                         }
                       }}

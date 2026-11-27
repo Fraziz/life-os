@@ -77,7 +77,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   },
   simpleMode: false,
   starterPreset: 'default',
-  theme: 'dark',
+  theme: 'light',
   updatedAt: new Date().toISOString(),
 };
 
@@ -125,12 +125,20 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             autoFailover: true,
           };
         }
-        // Normalize legacy 4-theme settings down to the 2 Black & White themes ('dark' | 'light')
+        // Normalize legacy themes and migrate default theme once to clean Light Mode
         if (parsed.theme === 'nature' || parsed.theme === 'cyber') {
-          parsed.theme = 'dark';
+          parsed.theme = 'light';
         }
+        try {
+          if (!localStorage.getItem('life_os_light_default_migrated_v1')) {
+            parsed.theme = 'light';
+            localStorage.setItem('life_os_light_default_migrated_v1', 'true');
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
+          }
+        } catch {}
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       } else {
+        try { localStorage.setItem('life_os_light_default_migrated_v1', 'true'); } catch {}
         setSettings(DEFAULT_SETTINGS);
       }
     } catch (err) {
@@ -154,10 +162,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (theme === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else if (theme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-    } else {
+    } else if (theme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
     }
   }, [settings.theme, isLoaded]);
 
@@ -202,8 +210,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       avatarInitials: profilePartial.displayName
         ? profilePartial.displayName.slice(0, 2).toUpperCase()
         : profilePartial.name
-        ? profilePartial.name.slice(0, 2).toUpperCase()
-        : settings.profile.avatarInitials,
+          ? profilePartial.name.slice(0, 2).toUpperCase()
+          : settings.profile.avatarInitials,
     };
     updateSettings({ profile: updatedProfile });
   };

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useKnowledge, isTrueBookOrVideo } from '@/context/KnowledgeContext';
 import { useFocus } from '@/context/FocusContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -753,6 +754,7 @@ function MarkdownToolbar({
 export default function KnowledgePage() {
   const router = useRouter();
   const { selectFocusDoc } = useFocus();
+  const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
   const { docs, isLoaded, addDoc, updateDoc, deleteDoc, deleteDocs, restoreDoc, togglePinDoc, toggleLikeDoc, toggleDocReminder, resetToDefaultDocs, restoreStarterBooks } = useKnowledge();
   const { settings } = useSettings();
   const { goals } = useGoals();
@@ -1098,17 +1100,29 @@ export default function KnowledgePage() {
     setVideoModalOpen(true);
   };
 
-  const handleDeleteVideoPart = (partIndex: number) => {
+  const handleDeleteVideoPart = async (partIndex: number) => {
     if (!selectedDoc) return;
     if (currentVideoLessons.length <= 1) {
-      if (confirm('Delete this video lesson?')) {
+      const ok = await confirmDialog({
+        title: 'Delete Video Lesson',
+        message: 'Delete this video lesson?',
+        confirmLabel: 'Delete',
+        isDestructive: true,
+      });
+      if (ok) {
         deleteDoc(selectedDoc.id);
         setSelectedId(null);
       }
       return;
     }
     const partToDelete = currentVideoLessons[partIndex];
-    if (!confirm(`Remove "${partToDelete.title || `Lesson ${partIndex + 1}`}" from this lesson playlist?`)) {
+    const ok = await confirmDialog({
+      title: 'Remove Video Part',
+      message: `Remove "${partToDelete.title || `Lesson ${partIndex + 1}`}" from this lesson playlist?`,
+      confirmLabel: 'Remove',
+      isDestructive: true,
+    });
+    if (!ok) {
       return;
     }
     const updated = currentVideoLessons.filter((_, i) => i !== partIndex);
@@ -1809,7 +1823,10 @@ export default function KnowledgePage() {
     });
 
     if (validFiles.length === 0) {
-      alert('Please select valid book files (PDF, EPUB, Word, Markdown, or Text).');
+      await alertDialog({
+        title: 'Unsupported Files',
+        message: 'Please select valid book files (PDF, EPUB, Word, Markdown, or Text).',
+      });
       return;
     }
 
@@ -1909,7 +1926,10 @@ export default function KnowledgePage() {
       }
       setTimeout(() => setPasteToast(null), 4000);
     } else {
-      alert('Could not extract readable text from the selected files.');
+      await alertDialog({
+        title: 'Import Failed',
+        message: 'Could not extract readable text from the selected files.',
+      });
     }
   };
 
@@ -2540,7 +2560,10 @@ export default function KnowledgePage() {
     if (!fTitle) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Please allow popups to export as PDF.');
+      void alertDialog({
+        title: 'Popups Blocked',
+        message: 'Please allow popups to export as PDF.',
+      });
       return;
     }
     const renderedHtml = getRichHtml(fContent || '');
@@ -3367,18 +3390,44 @@ export default function KnowledgePage() {
           initialUrl = initialText;
         }
       }
-      const url = prompt('Enter link URL (e.g. https://example.com or www.google.com):', initialUrl || 'https://');
-      if (url && url.trim() && url !== 'https://') {
-        const cleanUrl = url.trim();
-        const href = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
-        if (existingAnchor) {
-          existingAnchor.href = href;
-          existingAnchor.setAttribute('data-preview-url', href);
-        } else {
-          const displayText = initialText || cleanUrl;
-          document.execCommand('insertHTML', false, `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${displayText}</a>&nbsp;`);
+      const savedRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+      void (async () => {
+        const url = await promptDialog({
+          title: existingAnchor ? 'Edit Link' : 'Insert Link',
+          message: 'Enter link URL (e.g. https://example.com or www.google.com):',
+          placeholder: 'https://example.com',
+          defaultValue: initialUrl || 'https://',
+          confirmLabel: existingAnchor ? 'Save Link' : 'Insert Link',
+        });
+        if (url && url.trim() && url !== 'https://') {
+          const cleanUrl = url.trim();
+          const href = /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
+          if (existingAnchor) {
+            existingAnchor.href = href;
+            existingAnchor.setAttribute('data-preview-url', href);
+          } else {
+            if (editor) editor.focus();
+            if (savedRange) {
+              const s = window.getSelection();
+              if (s) {
+                s.removeAllRanges();
+                s.addRange(savedRange);
+              }
+            }
+            const displayText = initialText || cleanUrl;
+            document.execCommand('insertHTML', false, `<a href="${href}" target="_blank" rel="noopener noreferrer" class="doc-link" data-preview-url="${href}">${displayText}</a>&nbsp;`);
+          }
+          updateActiveFormats();
+          if (editor) {
+            setFContent(editor.innerHTML);
+            pushHistorySnapshot(editor.innerHTML);
+            if (selectedDoc) {
+              updateDoc(selectedDoc.id, { content: editor.innerHTML });
+            }
+          }
         }
-      }
+      })();
+      return;
     } else if (cmd === 'important') {
       toggleCallout('important');
       return;
@@ -3954,7 +4003,10 @@ export default function KnowledgePage() {
   const handleTriggerAutoFormat = async () => {
     const raw = (editorRef.current ? editorRef.current.innerText : fContent) || fContent || '';
     if (!raw.trim() || raw.trim().length < 5) {
-      alert('Please write or paste some text first before clicking Auto Format.');
+      await alertDialog({
+        title: 'Not Enough Content',
+        message: 'Please write or paste some text first before clicking Auto Format.',
+      });
       return;
     }
 
@@ -4038,7 +4090,10 @@ export default function KnowledgePage() {
   const handleGenerateSummary = async () => {
     const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || selectedDoc?.content || '';
     if (!raw.trim() || raw.trim().length < 5) {
-      alert('Please add some content to this document before generating an executive summary.');
+      await alertDialog({
+        title: 'Not Enough Content',
+        message: 'Please add some content to this document before generating an executive summary.',
+      });
       return;
     }
     setIsGeneratingSummary(true);
@@ -4093,7 +4148,10 @@ export default function KnowledgePage() {
     if (!targetDoc) return;
     const raw = (editorMode === 'book' ? bookEditorRef.current?.innerHTML : editorRef.current?.innerHTML) || fContent || targetDoc.content || '';
     if (!raw.trim() || raw.trim().length < 5) {
-      alert('Please add some content to this document before generating study questions.');
+      await alertDialog({
+        title: 'Not Enough Content',
+        message: 'Please add some content to this document before generating study questions.',
+      });
       return;
     }
     setIsGeneratingQuiz(true);
@@ -5894,8 +5952,14 @@ export default function KnowledgePage() {
             onClose={() => setLinkPopover(null)}
             onEdit={
               editorMode === 'edit'
-                ? () => {
-                  const newUrl = prompt('Edit link destination:', linkPopover.url);
+                ? async () => {
+                  const newUrl = await promptDialog({
+                    title: 'Edit Link',
+                    message: 'Edit link destination:',
+                    placeholder: 'https://example.com',
+                    defaultValue: linkPopover.url,
+                    confirmLabel: 'Save Link',
+                  });
                   if (newUrl && newUrl.trim()) {
                     const clean = newUrl.trim();
                     const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;

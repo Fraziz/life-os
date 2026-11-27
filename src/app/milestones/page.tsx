@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { Milestone, MilestoneStatus } from '@/types';
 import {
   Flag,
@@ -46,6 +47,7 @@ export default function MilestonesPage() {
   } = useMilestones();
   const { goals } = useGoals();
   const { dreams } = useDreams();
+  const { confirm: confirmDialog } = useConfirm();
 
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
@@ -362,8 +364,8 @@ export default function MilestonesPage() {
                     </button>
                     <button
                       className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                      onClick={() => {
-                        if (confirm(`Delete Milestone "${milestone.title}"?`)) {
+                      onClick={async () => {
+                        if (await confirmDialog({ title: 'Delete Milestone', message: `Are you sure you want to delete "${milestone.title}"? This cannot be undone.`, confirmLabel: 'Delete' })) {
                           deleteMilestone(milestone.id);
                         }
                       }}

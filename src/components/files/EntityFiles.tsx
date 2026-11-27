@@ -17,6 +17,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { useAttachments } from '@/context/AttachmentContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { FileEntityType, LifeFile } from '@/types';
 import styles from './EntityFiles.module.css';
 
@@ -137,6 +138,7 @@ export function FilesDrawer({
   onClose: () => void;
 }) {
   const { filesFor, uploadFiles, addLinkAttachment, deleteFile, uploads, error } = useAttachments();
+  const { confirm: confirmDialog } = useConfirm();
   const files = filesFor(entityType, entityId);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -388,8 +390,14 @@ export function FilesDrawer({
                     <button
                       type="button"
                       className={`${styles.smallBtn} ${styles.deleteBtn}`}
-                      onClick={() => {
-                        if (confirm(`Delete "${file.name}" from all your devices?`)) {
+                      onClick={async () => {
+                        const ok = await confirmDialog({
+                          title: 'Delete File',
+                          message: `Delete "${file.name}" from all your devices?`,
+                          confirmLabel: 'Delete',
+                          isDestructive: true,
+                        });
+                        if (ok) {
                           void deleteFile(file);
                         }
                       }}

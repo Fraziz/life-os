@@ -26,6 +26,7 @@ import { ReminderProvider, useReminders } from '@/context/ReminderContext';
 import { SearchProvider, useSearch } from '@/context/SearchContext';
 import { UndoProvider } from '@/context/UndoContext';
 import { TourProvider } from '@/context/TourContext';
+import { ConfirmProvider } from '@/context/ConfirmContext';
 import TourOverlay from '@/components/tour/TourOverlay';
 import TourWelcomeModal from '@/components/tour/TourWelcomeModal';
 import TourCompletionModal from '@/components/tour/TourCompletionModal';
@@ -499,11 +500,13 @@ function withAppProviders(content: React.ReactNode) {
                                     <ReminderProvider>
                                       <SearchProvider>
                                         <UndoProvider>
-                                          <TourProvider>
-                                            <ShellContent>
-                                              {content}
-                                            </ShellContent>
-                                          </TourProvider>
+                                          <ConfirmProvider>
+                                            <TourProvider>
+                                              <ShellContent>
+                                                {content}
+                                              </ShellContent>
+                                            </TourProvider>
+                                          </ConfirmProvider>
                                         </UndoProvider>
                                       </SearchProvider>
                                     </ReminderProvider>

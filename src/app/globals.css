@@ -187,8 +187,85 @@
    crisp metallic sheen, and synchronized dark and light palettes.
    ============================================================ */
 
-/* ── Theme 1: Charcoal & Titanium Slate (Dark Mode - Default) ── */
+/* ── Theme 1: Silver Paper & Pearl Slate (Light Mode - Default) ── */
 :root,
+[data-theme='light'] {
+  --color-bg:             #f4f5f8;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #eaedf2;
+  --color-surface-3:      #dde1e9;
+  --color-surface-hover:  #d2d6e0;
+
+  --color-border:         #d0d4df;
+  --color-border-subtle:  #e2e5ec;
+  --color-border-focus:   #0d0f14;
+
+  --color-text:           #0d0f14;
+  --color-text-muted:     #545869;
+  --color-text-faint:     #8a8f9f;
+  --color-text-inverse:   #ffffff;
+
+  --color-accent:         #0d0f14;
+  --color-accent-light:   #1e212b;
+  --color-accent-dim:     rgba(13, 15, 20, 0.06);
+  --color-accent-glow:    rgba(13, 15, 20, 0.08);
+  --color-accent-hover:   #272a36;
+
+  --color-card-sheen:     rgba(255, 255, 255, 0.9);
+  --ambient-glow-color:   rgba(255, 255, 255, 0.8);
+
+  --color-badge-blue-bg:  #eaedf2;
+  --color-badge-blue-txt: #334155;
+  --color-badge-purple-bg:#eaedf2;
+  --color-badge-purple-txt:#334155;
+  --color-badge-green-bg: #eaedf2;
+  --color-badge-green-txt:#0d0f14;
+  --color-badge-amber-bg: #eaedf2;
+  --color-badge-amber-txt:#334155;
+
+  --color-success:        #059669;
+  --color-success-dim:    rgba(5, 150, 105, 0.08);
+  --color-warning:        #b45309;
+  --color-warning-dim:    rgba(180, 83, 9, 0.08);
+  --color-danger:         #dc2626;
+  --color-danger-dim:     rgba(220, 38, 38, 0.08);
+  --color-info:           #334155;
+  --color-info-dim:       rgba(51, 65, 85, 0.08);
+
+  --color-lavender-card:  #ffffff;
+  --color-lavender-border:#e2e5ec;
+  --color-mint-card:      #ffffff;
+  --color-mint-border:    #e2e5ec;
+  --color-amber-card:     #ffffff;
+  --color-amber-border:   #e2e5ec;
+  --color-rose-card:      #ffffff;
+  --color-rose-border:    #e2e5ec;
+  --color-cyan-card:      #ffffff;
+  --color-cyan-border:    #e2e5ec;
+
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--color-card-sheen);
+  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 var(--color-card-sheen);
+  --shadow-lg:            0 10px 25px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--color-card-sheen);
+  --shadow-xl:            0 20px 40px rgba(0, 0, 0, 0.10), inset 0 1px 0 var(--color-card-sheen);
+  --shadow-glow:          0 0 16px rgba(0, 0, 0, 0.06);
+  --shadow-glow-sm:       0 0 8px rgba(0, 0, 0, 0.04);
+
+  --color-pill-action-bg:     rgba(13, 15, 20, 0.05);
+  --color-pill-action-text:   #0d0f14;
+  --color-pill-action-border: rgba(13, 15, 20, 0.14);
+  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  --color-doitnow-accent:        #0d0f14;
+  --color-doitnow-accent-hover:  #272a36;
+  --color-doitnow-bg:            rgba(13, 15, 20, 0.04);
+  --color-doitnow-border:        rgba(13, 15, 20, 0.14);
+  --color-doitnow-border-hover:  rgba(13, 15, 20, 0.28);
+  --color-doitnow-text:          #0d0f14;
+  --color-doitnow-badge-bg:      rgba(13, 15, 20, 0.08);
+  --color-doitnow-glow:          transparent;
+}
+
+/* ── Theme 2: Charcoal & Titanium Slate (Optional Dark Mode) ── */
 [data-theme='dark'] {
   /* Rich charcoal-slate background (not flat pitch black) */
   --color-bg:             #0b0c10;
@@ -219,15 +296,15 @@
   --color-card-sheen:     rgba(255, 255, 255, 0.07);
   --ambient-glow-color:   rgba(255, 255, 255, 0.08);
 
-  /* Semantic Feedback with Refined Slate Depth */
-  --color-badge-blue-bg:  rgba(77, 184, 255, 0.12);
-  --color-badge-blue-txt: #80c8ff;
-  --color-badge-purple-bg:rgba(124, 111, 255, 0.12);
-  --color-badge-purple-txt:#a89fff;
-  --color-badge-green-bg: rgba(34, 211, 165, 0.12);
-  --color-badge-green-txt:#4eedc3;
-  --color-badge-amber-bg: rgba(245, 166, 35, 0.12);
-  --color-badge-amber-txt:#ffc266;
+  /* Monochrome Badges */
+  --color-badge-blue-bg:  rgba(255, 255, 255, 0.08);
+  --color-badge-blue-txt: #e4e4e7;
+  --color-badge-purple-bg:rgba(255, 255, 255, 0.08);
+  --color-badge-purple-txt:#e4e4e7;
+  --color-badge-green-bg: rgba(255, 255, 255, 0.10);
+  --color-badge-green-txt:#ffffff;
+  --color-badge-amber-bg: rgba(255, 255, 255, 0.08);
+  --color-badge-amber-txt:#e4e4e7;
 
   --color-success:        #22d3a5;
   --color-success-dim:    rgba(34, 211, 165, 0.12);
@@ -269,83 +346,6 @@
   --color-doitnow-border-hover:  rgba(255, 255, 255, 0.42);
   --color-doitnow-text:          #ffffff;
   --color-doitnow-badge-bg:      rgba(255, 255, 255, 0.12);
-  --color-doitnow-glow:          transparent;
-}
-
-/* ── Theme 2: Silver Paper & Pearl Slate (Light Mode) ── */
-[data-theme='light'] {
-  --color-bg:             #f4f5f8;
-  --color-surface:        #ffffff;
-  --color-surface-2:      #eaedf2;
-  --color-surface-3:      #dde1e9;
-  --color-surface-hover:  #d2d6e0;
-
-  --color-border:         #d0d4df;
-  --color-border-subtle:  #e2e5ec;
-  --color-border-focus:   #0d0f14;
-
-  --color-text:           #0d0f14;
-  --color-text-muted:     #545869;
-  --color-text-faint:     #8a8f9f;
-  --color-text-inverse:   #ffffff;
-
-  --color-accent:         #0d0f14;
-  --color-accent-light:   #1e212b;
-  --color-accent-dim:     rgba(13, 15, 20, 0.06);
-  --color-accent-glow:    rgba(13, 15, 20, 0.08);
-  --color-accent-hover:   #272a36;
-
-  --color-card-sheen:     rgba(255, 255, 255, 0.9);
-  --ambient-glow-color:   rgba(255, 255, 255, 0.8);
-
-  --color-badge-blue-bg:  rgba(77, 184, 255, 0.10);
-  --color-badge-blue-txt: #0277bd;
-  --color-badge-purple-bg:rgba(124, 111, 255, 0.10);
-  --color-badge-purple-txt:#5a4bff;
-  --color-badge-green-bg: rgba(34, 211, 165, 0.10);
-  --color-badge-green-txt:#059669;
-  --color-badge-amber-bg: rgba(245, 166, 35, 0.10);
-  --color-badge-amber-txt:#b45309;
-
-  --color-success:        #059669;
-  --color-success-dim:    rgba(5, 150, 105, 0.08);
-  --color-warning:        #b45309;
-  --color-warning-dim:    rgba(180, 83, 9, 0.08);
-  --color-danger:         #dc2626;
-  --color-danger-dim:     rgba(220, 38, 38, 0.08);
-  --color-info:           #0277bd;
-  --color-info-dim:       rgba(2, 119, 189, 0.08);
-
-  --color-lavender-card:  #fafbff;
-  --color-lavender-border:#d0d4df;
-  --color-mint-card:      #fafbff;
-  --color-mint-border:    #d0d4df;
-  --color-amber-card:     #fafbff;
-  --color-amber-border:   #d0d4df;
-  --color-rose-card:      #fafbff;
-  --color-rose-border:    #d0d4df;
-  --color-cyan-card:      #fafbff;
-  --color-cyan-border:    #d0d4df;
-
-  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-lg:            0 10px 25px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-xl:            0 20px 40px rgba(0, 0, 0, 0.10), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-glow:          0 0 16px rgba(0, 0, 0, 0.06);
-  --shadow-glow-sm:       0 0 8px rgba(0, 0, 0, 0.04);
-
-  --color-pill-action-bg:     rgba(13, 15, 20, 0.05);
-  --color-pill-action-text:   #0d0f14;
-  --color-pill-action-border: rgba(13, 15, 20, 0.14);
-  --color-pill-action-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  --color-doitnow-accent:        #0d0f14;
-  --color-doitnow-accent-hover:  #272a36;
-  --color-doitnow-bg:            rgba(13, 15, 20, 0.04);
-  --color-doitnow-border:        rgba(13, 15, 20, 0.14);
-  --color-doitnow-border-hover:  rgba(13, 15, 20, 0.28);
-  --color-doitnow-text:          #0d0f14;
-  --color-doitnow-badge-bg:      rgba(13, 15, 20, 0.08);
   --color-doitnow-glow:          transparent;
 }
 
