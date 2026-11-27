@@ -60,9 +60,6 @@ export function cleanDocForFirestore(docItem: KnowledgeDocument): Record<string,
   if (typeof docItem.isReminder === 'boolean') raw.isReminder = docItem.isReminder;
   if (typeof docItem.isLiked === 'boolean') raw.isLiked = docItem.isLiked;
   if (docItem.webUrl) raw.webUrl = docItem.webUrl;
-  if (docItem.manhwaUrl) raw.manhwaUrl = docItem.manhwaUrl;
-  if (docItem.currentChapter) raw.currentChapter = docItem.currentChapter;
-  if (docItem.latestChapter) raw.latestChapter = docItem.latestChapter;
   if (docItem.coverImageUrl) raw.coverImageUrl = docItem.coverImageUrl;
 
   if (Array.isArray(docItem.studyQuiz) && docItem.studyQuiz.length > 0) {
@@ -152,9 +149,6 @@ export async function deserializeFirestoreDoc(
   if (typeof data.isReminder === 'boolean') docItem.isReminder = data.isReminder;
   if (typeof data.isLiked === 'boolean') docItem.isLiked = data.isLiked;
   if (data.webUrl) docItem.webUrl = data.webUrl;
-  if (data.manhwaUrl) docItem.manhwaUrl = data.manhwaUrl;
-  if (data.currentChapter) docItem.currentChapter = data.currentChapter;
-  if (data.latestChapter) docItem.latestChapter = data.latestChapter;
   if (data.coverImageUrl) docItem.coverImageUrl = data.coverImageUrl;
   if (Array.isArray(data.studyQuiz)) docItem.studyQuiz = data.studyQuiz;
   if (Array.isArray(data.readingLogs)) docItem.readingLogs = data.readingLogs;

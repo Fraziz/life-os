@@ -537,48 +537,6 @@ Neon color palette, dark backgrounds, glowing outlines.
       ],
       totalReadMinutes: 15,
     },
-    {
-      id: 'doc-manhwa-mount-hua',
-      title: 'Return of the Mount Hua Sect',
-      author: 'Asura Scans',
-      status: 'active',
-      category: 'learning',
-      docType: 'manhwa',
-      manhwaUrl: 'https://asuracomic.net/series/return-of-the-mount-hua-sect-chapter-1',
-      currentChapter: 'Chapter 1',
-      latestChapter: 'Chapter 140',
-      readStatus: 'reading',
-      readProgress: 1,
-      currentPage: 1,
-      totalPages: 140,
-      isLiked: true,
-      tags: ['manhwa', 'webtoon', 'reading', 'martial-arts', 'asura'],
-      createdAt: t,
-      updatedAt: t,
-      content: `# Return of the Mount Hua Sect
-
-**Source Website**: [Asura Scans](https://asuracomic.net/series/return-of-the-mount-hua-sect-chapter-1)
-**Current Progress**: Chapter 1
-**Status**: Currently Reading
-
-## Story Summary & Log
-The Plum Blossom Sword Saint Chung Myung slays the Heavenly Demon at the summit of Mount Hua, only to perish alongside him. A hundred years later, he is reincarnated into the body of a beggar child—shocked to discover that his once-glorious Mount Hua Sect has fallen into ruin.
-
-## Reader Reactions & Notes
-- Chapter 1: Introduction to Chung Myung's past life and rebirth.
-- Fantastic pacing and comic relief with divine martial arts.
-`,
-      readingLogs: [
-        {
-          id: 'log_mhs_1',
-          startedAt: t,
-          durationMinutes: 15,
-          timeOfDay: '11:45 AM',
-          notes: 'Started Chapter 1 in the in-web reader.',
-        },
-      ],
-      totalReadMinutes: 15,
-    },
   ];
 }
 
@@ -735,15 +693,18 @@ export function isTrueBookOrVideo(item: any): boolean {
   const hasContent = typeof item.content === 'string' && item.content.trim().length > 0;
   if (!hasTitle && !hasContent) return false;
 
+  // Exclude legacy Manhwa reader items
+  if (item.docType === 'manhwa' || item.manhwaUrl || id === 'doc-manhwa-mount-hua') {
+    return false;
+  }
+
   // 7. Positive Book / Document Confirmation Check:
-  const isExplicitDocType = item.docType === 'document' || item.docType === 'video-lesson' || item.docType === 'manhwa';
+  const isExplicitDocType = item.docType === 'document' || item.docType === 'video-lesson';
   const hasDocId = id.startsWith('doc') || id.startsWith('book');
   const hasBookProps =
     item.readStatus !== undefined ||
     item.isLiked !== undefined ||
-    item.manhwaUrl !== undefined ||
     item.webUrl !== undefined ||
-    item.currentChapter !== undefined ||
     Array.isArray(item.studyQuiz) ||
     Array.isArray(item.readingLogs) ||
     typeof item.totalPages === 'number' ||
@@ -767,7 +728,7 @@ export function isTrueBookOrVideo(item: any): boolean {
     Array.isArray(item.tags) &&
     item.tags.some((t: any) =>
       typeof t === 'string' &&
-      ['book', 'reading', 'manual', 'guide', 'study', 'notes', 'doc', 'document', 'lesson', 'summary', 'manhwa', 'manga', 'webtoon', 'manhua'].includes(t.toLowerCase())
+      ['book', 'reading', 'manual', 'guide', 'study', 'notes', 'doc', 'document', 'lesson', 'summary'].includes(t.toLowerCase())
     );
 
   if (!isExplicitDocType && !hasDocId && !hasBookProps && !hasDocCategory && !hasBookTags) {
@@ -792,12 +753,11 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
 
   const sanitizeDoc = useCallback((doc: KnowledgeDocument): KnowledgeDocument => {
     const isVideo = isDocVideoLesson(doc);
-    const isManhwa = doc.docType === 'manhwa' || Boolean(doc.manhwaUrl);
     return {
       ...doc,
       content: doc.content || '',
       status: doc.status || 'active',
-      docType: doc.docType || (isManhwa ? 'manhwa' : isVideo ? 'video-lesson' : 'document'),
+      docType: doc.docType || (isVideo ? 'video-lesson' : 'document'),
       tags: Array.isArray(doc.tags) ? doc.tags.filter(Boolean) : [],
     };
   }, []);

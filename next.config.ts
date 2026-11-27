@@ -29,22 +29,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Dedicated headers for in-web manhwa reader proxy: allow embedding in Life OS iframe
-        source: '/api/manhwa/proxy',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'",
-          },
-        ],
-      },
-      {
-        // General security headers for all other routes
-        source: '/((?!api/manhwa/proxy).*)',
+        // General security headers for all routes
+        source: '/(.*)',
         headers: securityHeaders,
       },
     ];
