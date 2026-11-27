@@ -44,10 +44,10 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
-        name: 'Habits & Routine',
+        name: 'Daily Routine',
         short_name: 'Routine',
-        description: 'Open Habits and Daily Routine checklist',
-        url: '/habits?tab=routine',
+        description: 'Open Daily Routine checklist',
+        url: '/routine',
         icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {

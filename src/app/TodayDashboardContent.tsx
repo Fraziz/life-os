@@ -322,7 +322,7 @@ export default function TodayDashboardContent() {
         typeLabel: 'Routine',
         title: 'Daily Routine',
         subtitle: dailyRoutine.subtitle,
-        href: '/habits?tab=routine',
+        href: '/routine',
         onFinish: dailyRoutine.markDoneToday,
         onClearReminder: dailyRoutine.markDoneToday,
       });

@@ -279,10 +279,10 @@ export default function CommandPalette() {
       id: 'nav-routine',
       category: 'Navigation',
       title: 'Daily Routine',
-      subtitle: '/habits?tab=routine',
+      subtitle: '/routine',
       keywords: ['schedule', 'checklist', 'morning', 'habits'],
       onSelect: () => {
-        router.push('/habits?tab=routine');
+        router.push('/routine');
         closePalette();
       },
     },
@@ -369,13 +369,13 @@ export default function CommandPalette() {
   const filteredItems = query.trim() === ''
     ? allItems.slice(0, 14)
     : allItems.filter((item) => {
-        const q = query.toLowerCase();
-        const matchTitle = item.title.toLowerCase().includes(q);
-        const matchSub = item.subtitle?.toLowerCase().includes(q);
-        const matchKey = item.keywords?.some((k) => k.toLowerCase().includes(q));
-        const matchCat = item.category.toLowerCase().includes(q);
-        return matchTitle || matchSub || matchKey || matchCat;
-      });
+      const q = query.toLowerCase();
+      const matchTitle = item.title.toLowerCase().includes(q);
+      const matchSub = item.subtitle?.toLowerCase().includes(q);
+      const matchKey = item.keywords?.some((k) => k.toLowerCase().includes(q));
+      const matchCat = item.category.toLowerCase().includes(q);
+      return matchTitle || matchSub || matchKey || matchCat;
+    });
 
   const handleKeyDownList = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {

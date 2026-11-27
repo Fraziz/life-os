@@ -17,8 +17,15 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
+        id: 'routine',
+        label: 'Daily Routine',
+        href: '/routine',
+        icon: 'routine',
+        isAvailable: true,
+      },
+      {
         id: 'habits',
-        label: 'Habits & Routine',
+        label: 'Habits',
         href: '/habits',
         icon: 'habits',
         isAvailable: true,

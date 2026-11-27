@@ -107,7 +107,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
         title: 'Daily Routine',
         message: dailyRoutine.subtitle,
         entityId: 'daily-routine',
-        href: '/habits?tab=routine',
+        href: '/routine',
         timeStr: 'Daily',
         priority: 'normal',
         isRead: readSet.has(routineNotifId),

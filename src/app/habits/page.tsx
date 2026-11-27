@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Repeat,
   Plus,
@@ -21,8 +21,6 @@ import {
 import { useHabits } from '@/context/HabitContext';
 import { useGoals } from '@/context/GoalContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
-import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
-import DailyRoutineChecklist from '@/components/habits/DailyRoutineChecklist';
 import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
@@ -49,24 +47,8 @@ export default function HabitsPage() {
 
   const { goals } = useGoals();
   const { activeAreas, focusedAreaId } = useLifeAreas();
-  const dailyRoutine = useDailyRoutineReminder();
 
-  const [sectionTab, setSectionTab] = useState<'habits' | 'routine'>('habits');
   const [addModalOpen, setAddModalOpen] = useState(false);
-
-  useEffect(() => {
-    const syncFromUrl = () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('tab') === 'routine') {
-          setSectionTab('routine');
-        }
-      } catch {}
-    };
-    syncFromUrl();
-    window.addEventListener('popstate', syncFromUrl);
-    return () => window.removeEventListener('popstate', syncFromUrl);
-  }, []);
 
   // Form states for creating a new habit
   const [title, setTitle] = useState('');
@@ -179,44 +161,17 @@ export default function HabitsPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Habits &amp; Daily Routine</h1>
+          <h1 className={styles.title}>Habits</h1>
         </div>
 
         <div className={styles.headerActions}>
-          <div className={styles.viewTabs} role="tablist" aria-label="Section switcher">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sectionTab === 'habits'}
-              className={`${styles.viewTab} ${sectionTab === 'habits' ? styles.viewTabActive : ''}`}
-              onClick={() => setSectionTab('habits')}
-            >
-              Habits ({habits.length})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sectionTab === 'routine'}
-              className={`${styles.viewTab} ${sectionTab === 'routine' ? styles.viewTabActive : ''}`}
-              onClick={() => setSectionTab('routine')}
-            >
-              Daily Routine ({dailyRoutine.completedCount}/{dailyRoutine.totalCount})
-            </button>
-          </div>
-
-          {sectionTab === 'habits' && (
-            <button className={styles.btnAdd} onClick={() => setAddModalOpen(true)}>
-              <Plus size={14} /> New Habit
-            </button>
-          )}
+          <button className={styles.btnAdd} onClick={() => setAddModalOpen(true)}>
+            <Plus size={14} /> New Habit
+          </button>
         </div>
       </header>
 
-      {sectionTab === 'routine' ? (
-        <DailyRoutineChecklist />
-      ) : (
-        <>
-          {/* ── Quick Add Bar ── */}
+      {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Plus size={16} className={styles.quickAddIcon} />
@@ -709,8 +664,6 @@ export default function HabitsPage() {
         }}
         onDelete={handleBatchDeleteHabits}
       />
-        </>
-      )}
     </div>
   );
 }
