@@ -900,19 +900,6 @@
               </svg>
             </button>
             <button
-              id="btn-expand"
-              type="button"
-              class="iconBtn"
-              title="Open Full Desktop App"
-              aria-label="Open Full Desktop App"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 3h6v6" />
-                <path d="M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              </svg>
-            </button>
-            <button
               id="btn-close"
               type="button"
               class="iconBtn"
@@ -1404,12 +1391,14 @@
           btnPrimaryEl.innerHTML = '<span>Open Full App</span>';
           btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
           btnSecondaryEl.classList.add('hidden');
+          document.getElementById('btn-open-app').classList.add('hidden');
           quickAddFormEl.classList.add('hidden');
           applyTabVisibility();
           footerStatEl.textContent = 'Sariling Mundo Desktop';
           return;
         }
 
+        document.getElementById('btn-open-app').classList.remove('hidden');
         quickAddFormEl.classList.remove('hidden');
 
         if (primary) {
@@ -1553,10 +1542,6 @@
 
       document.getElementById('btn-close').addEventListener('click', () => {
         window.sarilingPopover?.closePopover();
-      });
-
-      document.getElementById('btn-expand').addEventListener('click', () => {
-        window.sarilingPopover?.openWorkspace('/');
       });
 
       document.getElementById('btn-open-app').addEventListener('click', () => {
