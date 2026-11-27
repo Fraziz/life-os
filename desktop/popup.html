@@ -9,6 +9,7 @@
       [data-theme='light'] {
         --bg-card: #ffffff;
         --bg-well: #f4f5f8;
+        --bg-subwell: #f8f9fb;
         --bg-hover: #eaedf2;
         --text-main: #0d0f14;
         --text-secondary: #475569;
@@ -28,19 +29,20 @@
         --pill-work-border: #fde68a;
         --hand-bg: #0d0f14;
         --hand-fg: #ffffff;
-        --hand-ring: rgba(13, 15, 20, 0.12);
-        --shadow-card: 0 20px 50px rgba(13, 15, 20, 0.18), 0 4px 14px rgba(13, 15, 20, 0.08);
+        --hand-ring: rgba(13, 15, 20, 0.08);
+        --shadow-card: 0 20px 50px rgba(13, 15, 20, 0.16), 0 4px 14px rgba(13, 15, 20, 0.07);
       }
 
       [data-theme='dark'] {
         --bg-card: #12151c;
         --bg-well: #1a1e28;
+        --bg-subwell: #161a23;
         --bg-hover: #232836;
         --text-main: #f8fafc;
         --text-secondary: #cbd5e1;
         --text-muted: #94a3b8;
         --border-subtle: rgba(255, 255, 255, 0.1);
-        --border-strong: rgba(255, 255, 255, 0.18);
+        --border-strong: rgba(255, 255, 255, 0.2);
         --btn-primary-bg: #f8fafc;
         --btn-primary-fg: #0d0f14;
         --btn-primary-hover: #e2e8f0;
@@ -54,7 +56,7 @@
         --pill-work-border: rgba(245, 158, 11, 0.28);
         --hand-bg: #f8fafc;
         --hand-fg: #0d0f14;
-        --hand-ring: rgba(248, 250, 252, 0.14);
+        --hand-ring: rgba(248, 250, 252, 0.12);
         --shadow-card: 0 22px 52px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35);
       }
 
@@ -86,7 +88,7 @@
         height: 100%;
         background: var(--bg-card);
         border: 1px solid var(--border-subtle);
-        border-radius: 18px;
+        border-radius: 16px;
         box-shadow: var(--shadow-card);
         display: flex;
         flex-direction: column;
@@ -97,7 +99,7 @@
       @keyframes panelIn {
         from {
           opacity: 0;
-          transform: translateX(10px) scale(0.985);
+          transform: translateX(8px) scale(0.99);
         }
         to {
           opacity: 1;
@@ -111,7 +113,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 12px 15px;
+        padding: 11px 14px;
         border-bottom: 1px solid var(--border-subtle);
         flex-shrink: 0;
       }
@@ -119,23 +121,26 @@
       .brandGroup {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 7px;
+        flex: 1;
         min-width: 0;
+        overflow: hidden;
       }
 
       .brandLogo {
-        width: 20px;
-        height: 20px;
+        width: 19px;
+        height: 19px;
         object-fit: contain;
         flex-shrink: 0;
       }
 
       .brandTitle {
-        font-size: 13px;
+        font-size: 12.8px;
         font-weight: 700;
         letter-spacing: -0.015em;
         color: var(--text-main);
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .statusChip {
@@ -143,10 +148,13 @@
         align-items: center;
         padding: 2px 7px;
         border-radius: 999px;
-        font-size: 10px;
-        font-weight: 650;
-        letter-spacing: 0.04em;
+        font-size: 9.2px;
+        font-weight: 700;
+        letter-spacing: 0.045em;
         text-transform: uppercase;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
         background: var(--pill-bg);
         color: var(--pill-fg);
         border: 1px solid var(--border-subtle);
@@ -167,14 +175,14 @@
       .headerActions {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
         flex-shrink: 0;
       }
 
       .iconBtn {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
         border: 1px solid transparent;
         background: transparent;
         color: var(--text-muted);
@@ -182,22 +190,22 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+        transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
       .iconBtn:hover {
-        transform: scale(1.06);
+        transform: scale(1.05);
         background: var(--bg-well);
         border-color: var(--border-subtle);
         color: var(--text-main);
       }
 
-      /* ── Compact Filter Tabs ── */
+      /* ── Formal Segmented Filter Tabs ── */
       .filterTabs {
         display: flex;
         align-items: center;
         gap: 4px;
-        padding: 8px 15px;
+        padding: 7px 14px;
         border-bottom: 1px solid var(--border-subtle);
         background: var(--bg-well);
         flex-shrink: 0;
@@ -205,7 +213,7 @@
 
       .filterTab {
         flex: 1;
-        height: 28px;
+        height: 27px;
         padding: 0 6px;
         border-radius: 7px;
         border: 1px solid transparent;
@@ -237,10 +245,11 @@
       .tabBadge {
         font-size: 9.5px;
         font-weight: 700;
-        padding: 0 4px;
+        font-variant-numeric: tabular-nums;
+        padding: 0 5px;
         border-radius: 999px;
         background: var(--pill-bg);
-        color: var(--text-muted);
+        color: var(--text-secondary);
       }
 
       /* ── Scrollable Body ── */
@@ -248,7 +257,7 @@
         flex: 1;
         min-height: 0;
         overflow-y: auto;
-        padding: 13px 15px;
+        padding: 13px 14px;
         display: flex;
         flex-direction: column;
         gap: 13px;
@@ -263,11 +272,11 @@
         border-radius: 999px;
       }
 
-      /* ── Primary Focus Cue Card ── */
+      /* ── Formal Primary Focus Card ── */
       .focusBox {
         background: var(--bg-well);
         border: 1px solid var(--border-subtle);
-        border-radius: 13px;
+        border-radius: 12px;
         padding: 12px;
         display: flex;
         flex-direction: column;
@@ -282,62 +291,36 @@
 
       .handBadge {
         position: relative;
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
         background: var(--hand-bg);
         color: var(--hand-fg);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        box-shadow: 0 0 0 4px var(--hand-ring);
+        box-shadow: 0 0 0 3px var(--hand-ring);
       }
 
       .handIcon {
-        width: 18px;
-        height: 18px;
+        width: 17px;
+        height: 17px;
         will-change: transform;
       }
 
-      .handBadge.animated .handIcon {
-        animation: handNudge 1.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
-      }
-
-      .handBadge.animated {
-        animation: ringPulse 2.2s ease-out infinite;
-      }
-
-      @keyframes handNudge {
+      @keyframes gentleCue {
         0%,
         100% {
-          transform: translateX(-1px);
+          transform: translateX(0);
         }
-        45% {
-          transform: translateX(4px);
-        }
-        70% {
-          transform: translateX(1px);
+        50% {
+          transform: translateX(2px);
         }
       }
 
-      @keyframes ringPulse {
-        0% {
-          box-shadow: 0 0 0 0 var(--hand-ring);
-        }
-        70% {
-          box-shadow: 0 0 0 6px transparent;
-        }
-        100% {
-          box-shadow: 0 0 0 0 transparent;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .handBadge.animated,
-        .handBadge.animated .handIcon {
-          animation: none;
-        }
+      .handBadge.animated .handIcon {
+        animation: gentleCue 2s ease-in-out infinite;
       }
 
       .cueContent {
@@ -349,24 +332,25 @@
       }
 
       .cuePrompt {
-        font-size: 10.8px;
-        font-weight: 600;
-        color: var(--text-muted);
+        font-size: 10.6px;
+        font-weight: 650;
+        letter-spacing: 0.015em;
+        color: var(--text-secondary);
       }
 
       .cueTitle {
-        font-size: 13.5px;
-        font-weight: 650;
-        line-height: 1.35;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.3;
+        letter-spacing: -0.02em;
         color: var(--text-main);
-        letter-spacing: -0.01em;
         word-break: break-word;
       }
 
       .cueMeta {
         font-size: 11px;
-        color: var(--text-secondary);
-        margin-top: 2px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
       }
 
       .actionRow {
@@ -383,13 +367,14 @@
         border: 1px solid transparent;
         background: var(--btn-primary-bg);
         color: var(--btn-primary-fg);
-        font-size: 11.8px;
+        font-size: 11.6px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 5px;
+        white-space: nowrap;
         transition: background 0.14s ease, transform 0.14s ease;
       }
 
@@ -409,13 +394,14 @@
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
         color: var(--text-main);
-        font-size: 11.8px;
-        font-weight: 500;
+        font-size: 11.6px;
+        font-weight: 550;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 5px;
+        white-space: nowrap;
         transition: background 0.14s ease, border-color 0.14s ease;
       }
 
@@ -434,14 +420,14 @@
       .quickInput {
         flex: 1;
         min-width: 0;
-        height: 34px;
+        height: 33px;
         padding: 0 11px;
-        border-radius: 9px;
+        border-radius: 8px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-well);
         color: var(--text-main);
         font-family: inherit;
-        font-size: 12px;
+        font-size: 11.8px;
         outline: none;
         transition: border-color 0.15s ease, background 0.15s ease;
       }
@@ -456,13 +442,13 @@
       }
 
       .quickSubmitBtn {
-        height: 34px;
+        height: 33px;
         padding: 0 12px;
-        border-radius: 9px;
+        border-radius: 8px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
         color: var(--text-main);
-        font-size: 12px;
+        font-size: 11.6px;
         font-weight: 600;
         cursor: pointer;
         flex-shrink: 0;
@@ -474,7 +460,7 @@
         border-color: var(--border-strong);
       }
 
-      /* ── Sidebar Sections & Rows ── */
+      /* ── Formal Section Headers & Collapsible Cards ── */
       .sectionBlock {
         display: flex;
         flex-direction: column;
@@ -485,11 +471,11 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 10.8px;
+        font-size: 10.2px;
         font-weight: 700;
         color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.045em;
+        letter-spacing: 0.06em;
         padding: 0 2px;
       }
 
@@ -497,11 +483,12 @@
         border: none;
         background: transparent;
         color: var(--text-secondary);
-        font-size: 10.8px;
+        font-size: 10.6px;
         font-weight: 600;
         cursor: pointer;
-        padding: 1px 4px;
+        padding: 2px 5px;
         border-radius: 5px;
+        transition: background 0.12s ease, color 0.12s ease;
       }
 
       .sectionAction:hover {
@@ -515,35 +502,42 @@
         gap: 6px;
       }
 
+      .queueGroup {
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        overflow: hidden;
+        transition: border-color 0.14s ease, box-shadow 0.14s ease;
+      }
+
+      .queueGroup:hover {
+        border-color: var(--border-strong);
+      }
+
+      .queueGroup.doneRow {
+        opacity: 0.64;
+      }
+
       .queueItem {
         display: flex;
         align-items: center;
         gap: 9px;
         padding: 8px 10px;
-        border-radius: 10px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-subtle);
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.14s ease, border-color 0.14s ease;
+        transition: background 0.14s ease;
       }
 
-      .queueItem:hover {
-        transform: translateX(3px);
+      .queueGroup:hover > .queueItem {
         background: var(--bg-well);
-        border-color: var(--border-strong);
       }
 
-      .queueItem.doneRow {
-        opacity: 0.6;
-      }
-
-      .queueItem.doneRow .queueTitle {
+      .queueGroup.doneRow .queueTitle {
         text-decoration: line-through;
         color: var(--text-muted);
       }
 
       .checkCircle {
-        width: 19px;
-        height: 19px;
+        width: 18px;
+        height: 18px;
         border-radius: 999px;
         border: 1.5px solid var(--border-strong);
         background: transparent;
@@ -553,11 +547,11 @@
         justify-content: center;
         cursor: pointer;
         flex-shrink: 0;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+        transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
       }
 
       .checkCircle:hover {
-        transform: scale(1.14);
+        transform: scale(1.12);
         border-color: var(--text-main);
         background: var(--bg-hover);
         color: var(--text-main);
@@ -583,16 +577,17 @@
       }
 
       .queueTitle {
-        font-size: 12.2px;
-        font-weight: 550;
+        font-size: 12px;
+        font-weight: 600;
         color: var(--text-main);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        letter-spacing: -0.01em;
       }
 
       .miniTag {
-        font-size: 9.5px;
+        font-size: 9px;
         font-weight: 700;
         padding: 1px 5px;
         border-radius: 4px;
@@ -600,7 +595,8 @@
         color: var(--pill-fg);
         border: 1px solid var(--border-subtle);
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
         flex-shrink: 0;
       }
 
@@ -617,11 +613,134 @@
       }
 
       .queueMeta {
-        font-size: 10.8px;
+        font-size: 10.6px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-variant-numeric: tabular-nums;
+        margin-top: 1px;
+      }
+
+      .expandBtn {
+        height: 24px;
+        padding: 0 7px;
+        border-radius: 6px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-well);
+        color: var(--text-secondary);
+        font-size: 10px;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+        white-space: nowrap;
+        transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+      }
+
+      .expandBtn:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-strong);
+        color: var(--text-main);
+      }
+
+      .expandBtn.open {
+        background: var(--bg-hover);
+        color: var(--text-main);
+      }
+
+      .expandChevron {
+        width: 11px;
+        height: 11px;
+        transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .expandBtn.open .expandChevron {
+        transform: rotate(180deg);
+      }
+
+      /* ── Collapsible Subtasks / Steps Drawer ── */
+      .subListWrap {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .subListWrap.open {
+        grid-template-rows: 1fr;
+      }
+
+      .subListInner {
+        overflow: hidden;
+      }
+
+      .subList {
+        border-top: 1px solid var(--border-subtle);
+        background: var(--bg-subwell);
+        padding: 5px 8px 6px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .subItemBtn {
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 5px 6px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.12s ease;
+      }
+
+      .subItemBtn:hover {
+        background: var(--bg-hover);
+      }
+
+      .subCheck {
+        width: 14px;
+        height: 14px;
+        margin-top: 1px;
+        border-radius: 4px;
+        border: 1.4px solid var(--border-strong);
+        background: var(--bg-card);
+        color: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .subItemBtn:hover .subCheck {
+        border-color: var(--text-main);
+      }
+
+      .subCheck.done {
+        background: var(--btn-primary-bg);
+        border-color: var(--btn-primary-bg);
+        color: var(--btn-primary-fg);
+      }
+
+      .subLabel {
+        flex: 1;
+        font-size: 11.2px;
+        font-weight: 500;
+        line-height: 1.35;
+        color: var(--text-secondary);
+        word-break: break-word;
+      }
+
+      .subItemBtn.done .subLabel {
+        text-decoration: line-through;
+        color: var(--text-muted);
       }
 
       .dismissBtn {
@@ -635,12 +754,12 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        opacity: 0.55;
+        opacity: 0.6;
         flex-shrink: 0;
         transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
       }
 
-      .queueItem:hover .dismissBtn {
+      .queueGroup:hover .dismissBtn {
         opacity: 1;
       }
 
@@ -650,11 +769,11 @@
       }
 
       .emptyMini {
-        padding: 10px 12px;
-        border-radius: 10px;
+        padding: 9px 11px;
+        border-radius: 9px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-well);
-        font-size: 11.8px;
+        font-size: 11.4px;
         color: var(--text-muted);
         display: flex;
         align-items: center;
@@ -666,7 +785,7 @@
         border: none;
         background: transparent;
         color: var(--text-main);
-        font-size: 11.5px;
+        font-size: 11.2px;
         font-weight: 600;
         cursor: pointer;
         flex-shrink: 0;
@@ -682,15 +801,16 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 10px 15px;
+        padding: 9px 14px;
         border-top: 1px solid var(--border-subtle);
         background: var(--bg-well);
         flex-shrink: 0;
       }
 
       .footerStat {
-        font-size: 11.2px;
+        font-size: 10.8px;
         color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -700,14 +820,14 @@
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
         color: var(--text-main);
-        font-size: 11.2px;
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 5px;
         padding: 5px 10px;
-        border-radius: 8px;
+        border-radius: 7px;
         flex-shrink: 0;
         transition: background 0.14s ease, border-color 0.14s ease;
       }
@@ -724,7 +844,7 @@
   </head>
   <body>
     <div class="frame">
-      <div id="card" class="panel" role="dialog" aria-label="Sariling Mundo Edge Sidebar">
+      <div id="card" class="panel" role="dialog" aria-label="Sariling Mundo Desktop Sidebar">
         <header class="header">
           <div class="brandGroup">
             <img src="logo.png" alt="Sariling Mundo" class="brandLogo" />
@@ -793,7 +913,7 @@
               </div>
 
               <div class="cueContent">
-                <div id="cue-prompt" class="cuePrompt">Hey — do the work now</div>
+                <div id="cue-prompt" class="cuePrompt">Priority focus item</div>
                 <div id="cue-title" class="cueTitle">Loading workspace...</div>
                 <div id="cue-meta" class="cueMeta"></div>
               </div>
@@ -801,7 +921,7 @@
 
             <div id="action-row" class="actionRow">
               <button id="btn-primary" type="button" class="btnPrimary">
-                <span>Mark Done</span>
+                <span>Complete Task</span>
               </button>
               <button id="btn-secondary" type="button" class="btnGhost hidden">
                 <span>Focus Space</span>
@@ -830,7 +950,7 @@
             <div id="tasks-list" class="queueList"></div>
           </section>
 
-          <!-- Daily Routine Section (Always available) -->
+          <!-- Daily Routine Section -->
           <section id="routine-section" class="sectionBlock">
             <div class="sectionHeader">
               <span>Daily Routine (<span id="routine-count">0/0</span>)</span>
@@ -893,6 +1013,71 @@
 
       let activeTab = 'all';
       let lastSnapshot = null;
+      const expandedKeys = new Set();
+
+      // ── Website-Matched Web Audio Feedback (src/utils/soundAndDopamine.ts) ──
+      let audioCtx = null;
+
+      function getSidebarAudioContext() {
+        try {
+          if (!audioCtx) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) audioCtx = new Ctx();
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        } catch {
+          return null;
+        }
+      }
+
+      function playSuccessChime() {
+        const ctx = getSidebarAudioContext();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const notes = [
+            { freq: 523.25, start: now, dur: 0.35, gain: 0.15 },
+            { freq: 659.25, start: now + 0.08, dur: 0.4, gain: 0.18 },
+            { freq: 783.99, start: now + 0.16, dur: 0.45, gain: 0.2 },
+            { freq: 1046.5, start: now + 0.24, dur: 0.7, gain: 0.25 },
+          ];
+          notes.forEach(({ freq, start, dur, gain }) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, start);
+            g.gain.setValueAtTime(0.001, start);
+            g.gain.linearRampToValueAtTime(gain, start + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(start + dur + 0.05);
+          });
+        } catch {}
+      }
+
+      function playSubtaskTick() {
+        const ctx = getSidebarAudioContext();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(1400, now + 0.05);
+          g.gain.setValueAtTime(0.12, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } catch {}
+      }
 
       function applyTabVisibility() {
         const ready = Boolean(lastSnapshot && lastSnapshot.ready);
@@ -917,8 +1102,22 @@
       });
 
       function renderQueueRow(item) {
+        const expandKey = item.kind + ':' + item.id;
+        const children =
+          item.kind === 'task' && Array.isArray(item.subtasks)
+            ? item.subtasks
+            : item.kind === 'routine' && Array.isArray(item.steps)
+            ? item.steps
+            : [];
+        const hasChildren = children.length > 0;
+        const doneChildrenCount = children.filter((c) => Boolean(c.completed)).length;
+        const isExpanded = hasChildren && expandedKeys.has(expandKey);
+
+        const group = document.createElement('div');
+        group.className = 'queueGroup' + (item.isDone ? ' doneRow' : '');
+
         const row = document.createElement('div');
-        row.className = 'queueItem' + (item.isDone ? ' doneRow' : '');
+        row.className = 'queueItem';
 
         if (item.kind !== 'reminder') {
           const checkBtn = document.createElement('button');
@@ -931,8 +1130,11 @@
           checkBtn.onclick = async () => {
             checkBtn.disabled = true;
             if (item.kind === 'routine') {
+              if (!item.isDone) playSuccessChime();
+              else playSubtaskTick();
               await window.sarilingPopover?.toggleRoutineBlock(item.id);
             } else {
+              playSuccessChime();
               await window.sarilingPopover?.completeTask(item.id);
             }
           };
@@ -957,7 +1159,6 @@
         title.className = 'queueTitle';
         title.textContent = item.title;
         titleRow.appendChild(title);
-
         main.appendChild(titleRow);
 
         if (item.meta) {
@@ -968,6 +1169,76 @@
         }
 
         row.appendChild(main);
+
+        let subWrap = null;
+        if (hasChildren) {
+          const expandBtn = document.createElement('button');
+          expandBtn.type = 'button';
+          expandBtn.className = 'expandBtn' + (isExpanded ? ' open' : '');
+          expandBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+          expandBtn.title = isExpanded ? 'Collapse details' : 'Expand steps';
+          expandBtn.innerHTML =
+            `<span>${doneChildrenCount}/${children.length}</span>` +
+            '<svg class="expandChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+          subWrap = document.createElement('div');
+          subWrap.className = 'subListWrap' + (isExpanded ? ' open' : '');
+          const subInner = document.createElement('div');
+          subInner.className = 'subListInner';
+          const subList = document.createElement('div');
+          subList.className = 'subList';
+
+          children.forEach((child, cIdx) => {
+            const subBtn = document.createElement('button');
+            subBtn.type = 'button';
+            subBtn.className = 'subItemBtn' + (child.completed ? ' done' : '');
+
+            const subCheck = document.createElement('span');
+            subCheck.className = 'subCheck' + (child.completed ? ' done' : '');
+            subCheck.innerHTML =
+              '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+            const subLabel = document.createElement('span');
+            subLabel.className = 'subLabel';
+            subLabel.textContent = child.title;
+
+            subBtn.appendChild(subCheck);
+            subBtn.appendChild(subLabel);
+
+            subBtn.onclick = async (e) => {
+              e.stopPropagation();
+              subBtn.disabled = true;
+              const willComplete = !child.completed;
+              if (item.kind === 'task') {
+                const res = await window.sarilingPopover?.toggleSubtask(item.id, child.id);
+                if (res && res.allDone) playSuccessChime();
+                else if (willComplete) playSubtaskTick();
+              } else {
+                const stepIdx = typeof child.idx === 'number' ? child.idx : cIdx;
+                const res = await window.sarilingPopover?.toggleRoutineStep(item.id, stepIdx);
+                if (res && res.blockCompleted) playSuccessChime();
+                else if (willComplete) playSubtaskTick();
+              }
+            };
+
+            subList.appendChild(subBtn);
+          });
+
+          subInner.appendChild(subList);
+          subWrap.appendChild(subInner);
+
+          expandBtn.onclick = (e) => {
+            e.stopPropagation();
+            const nowOpen = !subWrap.classList.contains('open');
+            subWrap.classList.toggle('open', nowOpen);
+            expandBtn.classList.toggle('open', nowOpen);
+            expandBtn.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+            if (nowOpen) expandedKeys.add(expandKey);
+            else expandedKeys.delete(expandKey);
+          };
+
+          row.appendChild(expandBtn);
+        }
 
         if (item.kind === 'reminder') {
           const dismissBtn = document.createElement('button');
@@ -980,12 +1251,15 @@
           dismissBtn.onclick = async (e) => {
             e.stopPropagation();
             dismissBtn.disabled = true;
+            playSubtaskTick();
             await window.sarilingPopover?.dismissReminder(item.id);
           };
           row.appendChild(dismissBtn);
         }
 
-        return row;
+        group.appendChild(row);
+        if (subWrap) group.appendChild(subWrap);
+        return group;
       }
 
       function renderSnapshot(data) {
@@ -1024,11 +1298,11 @@
           iconHandEl.classList.remove('hidden');
           iconCheckEl.classList.add('hidden');
 
-          statusChipEl.textContent = primary.badge || 'DO THIS';
+          statusChipEl.textContent = primary.badge || 'FOCUS';
           if (primary.tone === 'urgent') statusChipEl.classList.add('urgent');
           else if (primary.tone === 'work') statusChipEl.classList.add('work');
 
-          cuePromptEl.textContent = primary.prompt || 'Hey — do the work now';
+          cuePromptEl.textContent = primary.prompt || 'Priority focus item';
           cueTitleEl.textContent = primary.title;
           cueMetaEl.textContent = primary.meta || '';
           cueMetaEl.classList.toggle('hidden', !primary.meta);
@@ -1041,6 +1315,7 @@
           btnPrimaryEl.onclick = async () => {
             btnPrimaryEl.disabled = true;
             try {
+              playSuccessChime();
               if (primary.kind === 'routine') {
                 await window.sarilingPopover?.toggleRoutineBlock(primary.id);
               } else {
@@ -1060,22 +1335,16 @@
           handBadgeEl.classList.remove('animated');
           iconHandEl.classList.add('hidden');
           iconCheckEl.classList.remove('hidden');
-
           statusChipEl.textContent = 'Clear';
           cuePromptEl.textContent = 'All caught up';
           cueTitleEl.textContent = 'No pending tasks or active work blocks';
-          cueMetaEl.textContent = 'Capture a quick task below or check your routine.';
+          cueMetaEl.textContent = 'Add a quick task below or review your Daily Routine.';
           cueMetaEl.classList.remove('hidden');
-
-          actionRowEl.classList.remove('hidden');
-          btnPrimaryEl.innerHTML = '<span>+ Quick Task</span>';
-          btnPrimaryEl.onclick = () => quickInputEl.focus();
-          btnSecondaryEl.classList.remove('hidden');
-          btnSecondaryEl.textContent = 'Open Routine';
-          btnSecondaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/routine');
+          actionRowEl.classList.add('hidden');
+          btnSecondaryEl.classList.add('hidden');
         }
 
-        // Tasks section
+        // Tasks & Deadlines section
         const taskItems = Array.isArray(data.taskItems) ? data.taskItems : [];
         tabTasksCountEl.textContent = String(taskItems.length);
         tasksListEl.innerHTML = '';
@@ -1094,7 +1363,7 @@
           taskItems.forEach((item) => tasksListEl.appendChild(renderQueueRow(item)));
         }
 
-        // Daily Routine section (always visible)
+        // Daily Routine section
         const routineItems = Array.isArray(data.routineItems) ? data.routineItems : [];
         const rDone = data.routineSummary ? data.routineSummary.done : 0;
         const rTotal = data.routineSummary ? data.routineSummary.total : 0;
@@ -1116,7 +1385,7 @@
           routineItems.forEach((item) => routineListEl.appendChild(renderQueueRow(item)));
         }
 
-        // Reminders & Alerts section (always visible)
+        // Reminders & Alerts section
         const reminderItems = Array.isArray(data.reminderItems) ? data.reminderItems : [];
         remindersCountEl.textContent = String(reminderItems.length);
         tabRemindersCountEl.textContent = String(reminderItems.length);
@@ -1146,6 +1415,7 @@
         if (!title) return;
         quickInputEl.disabled = true;
         try {
+          playSubtaskTick();
           await window.sarilingPopover?.addTask(title);
           quickInputEl.value = '';
         } finally {

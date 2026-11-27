@@ -28,16 +28,26 @@ export default function TourOverlay() {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const targetElRef = useRef<HTMLElement | null>(null);
 
+  const findVisibleTarget = useCallback((primary: string, fallback?: string): HTMLElement | null => {
+    const isVisible = (el: HTMLElement | null): el is HTMLElement => {
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+    const primaryEl = document.querySelector(primary) as HTMLElement | null;
+    if (isVisible(primaryEl)) return primaryEl;
+    if (fallback) {
+      const fallbackEl = document.querySelector(fallback) as HTMLElement | null;
+      if (isVisible(fallbackEl)) return fallbackEl;
+    }
+    return isVisible(primaryEl) ? primaryEl : null;
+  }, []);
+
   // Measure and position spotlight over target element
   const updateTargetPosition = useCallback(() => {
     if (!currentStep) return;
 
-    let el = document.querySelector(currentStep.target) as HTMLElement | null;
-
-    // Try fallback target if primary isn't found
-    if (!el && currentStep.fallbackTarget) {
-      el = document.querySelector(currentStep.fallbackTarget) as HTMLElement | null;
-    }
+    const el = findVisibleTarget(currentStep.target, currentStep.fallbackTarget);
 
     if (!el) {
       setTargetRect(null);
@@ -122,10 +132,7 @@ export default function TourOverlay() {
     const maxAttempts = 15;
 
     const findAndScroll = () => {
-      let el = document.querySelector(currentStep.target) as HTMLElement | null;
-      if (!el && currentStep.fallbackTarget) {
-        el = document.querySelector(currentStep.fallbackTarget) as HTMLElement | null;
-      }
+      const el = findVisibleTarget(currentStep.target, currentStep.fallbackTarget);
 
       if (el) {
         // If element is not already well in viewport, scroll gently

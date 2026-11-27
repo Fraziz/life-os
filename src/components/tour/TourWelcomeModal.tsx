@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useTour } from '@/context/TourContext';
+import { MAIN_SYSTEM_TOUR } from '@/config/tours';
 import styles from './TourModals.module.css';
 
 export default function TourWelcomeModal() {
@@ -30,7 +31,7 @@ export default function TourWelcomeModal() {
         <div className={styles.featuresPills} aria-hidden="true">
           <span className={styles.pill}>ADHD-Optimized</span>
           <span className={styles.pill}>2 Minutes</span>
-          <span className={styles.pill}>8 Steps</span>
+          <span className={styles.pill}>{MAIN_SYSTEM_TOUR.steps.length} Steps</span>
         </div>
 
         <div className={styles.actionsColumn}>

@@ -255,7 +255,7 @@ export default function RightSidebar() {
   return (
     <aside className={styles.rightSidebar} aria-label="Secondary widgets">
       {/* ── Top Utility Search & Actions ───────────────────────── */}
-      <div className={styles.topUtilityRow}>
+      <div className={styles.topUtilityRow} data-tour="right-utility">
         <div className={styles.searchBox} onClick={openSearch} role="button" tabIndex={0}>
           <Search size={15} className={styles.searchIcon} />
           <span className={styles.searchPlaceholder}>Search...</span>

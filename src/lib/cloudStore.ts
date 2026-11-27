@@ -232,6 +232,7 @@ export async function hydrateFromCloud(uid: string): Promise<void> {
 
   // Notify all components that cloud data is loaded
   if (typeof window !== 'undefined') {
+    (window as Window & { __lifeOsCloudHydratedUid?: string }).__lifeOsCloudHydratedUid = uid;
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
     }, 0);

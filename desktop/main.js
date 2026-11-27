@@ -283,10 +283,12 @@ async function readWorkspaceSnapshot() {
           const nowMin = d.getHours() * 60 + d.getMinutes();
 
           let completedBlockIds = [];
+          let completedStepKeys = [];
           try {
             const prog = rawProgress ? JSON.parse(rawProgress) : null;
-            if (prog && prog.date === todayStr && Array.isArray(prog.completedBlockIds)) {
-              completedBlockIds = prog.completedBlockIds;
+            if (prog && prog.date === todayStr) {
+              if (Array.isArray(prog.completedBlockIds)) completedBlockIds = prog.completedBlockIds;
+              if (Array.isArray(prog.completedStepKeys)) completedStepKeys = prog.completedStepKeys;
             }
           } catch {}
 
@@ -358,20 +360,25 @@ async function readWorkspaceSnapshot() {
 
           if (activeBlock) {
             const minsLeft = typeof activeBlock.endMinute === 'number' ? Math.max(1, activeBlock.endMinute - nowMin) : null;
+            const rawSteps = Array.isArray(activeBlock.steps) ? activeBlock.steps : [];
+            const stepsDone = rawSteps.filter((_, i) => completedStepKeys.includes(activeBlock.id + ':' + i)).length;
             primary = {
               kind: 'routine',
               id: activeBlock.id,
-              badge: minsLeft ? 'WORK TIME · ' + minsLeft + 'M LEFT' : 'WORK TIME',
+              badge: minsLeft ? 'WORK · ' + minsLeft + 'M LEFT' : 'ACTIVE BLOCK',
               tone: 'work',
-              prompt: minsLeft ? 'Hey — work time is running (' + minsLeft + 'm left)' : 'Hey — work time is running',
+              prompt: minsLeft ? 'Active block · ' + minsLeft + 'm remaining' : 'Active routine block in progress',
               title: activeBlock.title,
-              meta: (activeBlock.timeRange || 'Now') + (Array.isArray(activeBlock.steps) && activeBlock.steps.length ? ' · ' + activeBlock.steps[0] : ''),
+              meta: [
+                activeBlock.timeRange || 'Now',
+                rawSteps.length ? stepsDone + '/' + rawSteps.length + ' steps' : null,
+              ].filter(Boolean).join(' · '),
             };
             alertCandidate = {
               alertKey: 'routine:' + activeBlock.id + ':' + todayStr,
-              badge: minsLeft ? 'WORK TIME · ' + minsLeft + 'M LEFT' : 'WORK TIME RUNNING',
+              badge: minsLeft ? 'WORK · ' + minsLeft + 'M LEFT' : 'WORK TIME',
               tone: 'work',
-              headline: 'Hey — work time is running',
+              headline: 'Work time is in progress',
               sub: activeBlock.title + (activeBlock.timeRange ? ' (' + activeBlock.timeRange + ')' : ''),
             };
           } else if (activeSchedBlock) {
@@ -379,9 +386,9 @@ async function readWorkspaceSnapshot() {
             const minsLeft = Math.max(1, activeSchedBlock.endMin - nowMin);
             alertCandidate = {
               alertKey: 'sched:' + activeSchedBlock.id + ':' + todayStr,
-              badge: startsIn > 0 ? 'STARTS IN ' + startsIn + 'M' : 'TIME RUNNING · ' + minsLeft + 'M LEFT',
+              badge: startsIn > 0 ? 'IN ' + startsIn + 'M' : 'WORK · ' + minsLeft + 'M LEFT',
               tone: 'work',
-              headline: startsIn > 0 ? 'Scheduled focus starting soon' : 'Hey — scheduled work time is running',
+              headline: startsIn > 0 ? 'Scheduled focus starting soon' : 'Scheduled focus block in progress',
               sub: activeSchedBlock.title + ' (' + activeSchedBlock.startTime + ' – ' + activeSchedBlock.endTime + ')',
             };
           } else if (sortedTasks.length > 0) {
@@ -389,25 +396,34 @@ async function readWorkspaceSnapshot() {
             const isOverdue = Boolean(top.dueDate && top.dueDate < todayStr);
             const isToday = Boolean(top.dueDate && top.dueDate === todayStr);
             const isMain = Boolean(todayPlan && todayPlan.mainFocusTaskId === top.id);
+            const topSubs = Array.isArray(top.subtasks) ? top.subtasks.filter((s) => s && s.title) : [];
+            const topSubsDone = topSubs.filter((s) => s.completed).length;
             primary = {
               kind: 'task',
               id: top.id,
-              badge: isOverdue ? 'OVERDUE' : isMain ? 'MAIN FOCUS' : isToday ? 'TASK TIME' : 'DO IT NOW',
+              badge: isOverdue ? 'OVERDUE' : isMain ? 'MAIN FOCUS' : isToday ? 'DUE TODAY' : 'QUEUED',
               tone: isOverdue || top.priority === 'urgent' ? 'urgent' : isMain || isToday ? 'work' : 'neutral',
-              prompt: isOverdue ? 'Priority overdue — finish this first' : isMain ? 'Hey — do the work now' : isToday ? 'Task time — start this now' : 'Hey — do this task now',
+              prompt: isOverdue
+                ? 'Past due — immediate attention'
+                : isMain
+                ? 'Primary daily focus'
+                : isToday
+                ? 'Scheduled deadline today'
+                : 'Next priority task',
               title: top.title,
               meta: [
                 top.estimatedDuration ? top.estimatedDuration + 'm' : null,
                 isOverdue ? 'Due ' + top.dueDate : isToday ? 'Due today' : top.priority ? String(top.priority).toUpperCase() : null,
+                topSubs.length > 0 ? topSubsDone + '/' + topSubs.length + ' subtasks' : null,
               ].filter(Boolean).join(' · '),
             };
           } else if (nextBlock) {
             primary = {
               kind: 'routine',
               id: nextBlock.id,
-              badge: 'ROUTINE',
+              badge: 'UP NEXT',
               tone: 'work',
-              prompt: 'Up next in your daily routine',
+              prompt: 'Upcoming daily routine block',
               title: nextBlock.title,
               meta: nextBlock.timeRange || 'Today',
             };
@@ -452,19 +468,42 @@ async function readWorkspaceSnapshot() {
             alertCandidate = null;
           }
 
-          const taskItems = sortedTasks.slice(0, 8).map((t) => ({
-            kind: 'task',
-            id: t.id,
-            title: t.title,
-            meta: [
-              t.estimatedDuration ? t.estimatedDuration + 'm' : null,
-              t.dueDate === todayStr ? 'Due today' : t.dueDate && t.dueDate < todayStr ? 'Overdue (' + t.dueDate + ')' : t.priority ? String(t.priority).toUpperCase() : null,
-            ].filter(Boolean).join(' · ') || 'Task',
-          }));
+          const taskItems = sortedTasks.slice(0, 12).map((t) => {
+            const subs = Array.isArray(t.subtasks)
+              ? t.subtasks
+                  .filter((s) => s && s.id && s.title)
+                  .map((s) => ({
+                    id: String(s.id),
+                    title: String(s.title),
+                    completed: Boolean(s.completed),
+                  }))
+              : [];
+            const subsDone = subs.filter((s) => s.completed).length;
+            return {
+              kind: 'task',
+              id: t.id,
+              title: t.title,
+              subtasks: subs,
+              meta: [
+                t.estimatedDuration ? t.estimatedDuration + 'm' : null,
+                t.dueDate === todayStr ? 'Due today' : t.dueDate && t.dueDate < todayStr ? 'Overdue (' + t.dueDate + ')' : t.priority ? String(t.priority).toUpperCase() : null,
+                subs.length > 0 ? subsDone + '/' + subs.length + ' subtasks' : null,
+              ].filter(Boolean).join(' · ') || 'Task',
+            };
+          });
 
           const routineItems = blocks.map((b) => {
             const isDone = completedBlockIds.includes(b.id);
             const isNow = !isDone && typeof b.startMinute === 'number' && typeof b.endMinute === 'number' && nowMin >= b.startMinute && nowMin < b.endMinute;
+            const rawSteps = Array.isArray(b.steps) ? b.steps : [];
+            const steps = rawSteps
+              .map((label, idx) => ({
+                idx,
+                title: String(label || '').trim(),
+                completed: isDone || completedStepKeys.includes(b.id + ':' + idx),
+              }))
+              .filter((st) => st.title.length > 0);
+            const stepDoneCount = steps.filter((st) => st.completed).length;
             return {
               kind: 'routine',
               id: b.id,
@@ -472,7 +511,8 @@ async function readWorkspaceSnapshot() {
               badge: isNow ? 'NOW' : null,
               tone: isNow ? 'work' : 'neutral',
               title: b.title,
-              meta: (b.timeRange || 'Today') + (Array.isArray(b.steps) && b.steps.length ? ' · ' + b.steps.length + ' steps' : ''),
+              steps,
+              meta: (b.timeRange || 'Today') + (steps.length > 0 ? ' · ' + stepDoneCount + '/' + steps.length + ' steps' : ''),
               href: '/routine',
             };
           });
@@ -1269,9 +1309,10 @@ if (!gotSingleLock) {
     });
 
     ipcMain.handle('popover:complete-task', async (_event, taskId) => {
+      let ok = false;
       if (mainWindow && !mainWindow.isDestroyed() && taskId) {
         const safeId = JSON.stringify(String(taskId));
-        await mainWindow.webContents.executeJavaScript(`
+        ok = await mainWindow.webContents.executeJavaScript(`
           (() => {
             try {
               const raw = localStorage.getItem('life_os_tasks_v1');
@@ -1289,12 +1330,59 @@ if (!gotSingleLock) {
         `);
       }
       await refreshPopover();
+      return { ok: Boolean(ok), completed: Boolean(ok) };
+    });
+
+    ipcMain.handle('popover:toggle-subtask', async (_event, taskId, subtaskId) => {
+      let result = { ok: false, completed: false, allDone: false };
+      if (mainWindow && !mainWindow.isDestroyed() && taskId && subtaskId) {
+        const safeTaskId = JSON.stringify(String(taskId));
+        const safeSubId = JSON.stringify(String(subtaskId));
+        result = await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const raw = localStorage.getItem('life_os_tasks_v1');
+              const list = raw ? JSON.parse(raw) : [];
+              if (!Array.isArray(list)) return { ok: false, completed: false, allDone: false };
+              const now = new Date().toISOString();
+              let subDone = false;
+              let parentDone = false;
+              const next = list.map((t) => {
+                if (!t || t.id !== ${safeTaskId} || !Array.isArray(t.subtasks)) return t;
+                const subs = t.subtasks.map((s) => {
+                  if (!s || s.id !== ${safeSubId}) return s;
+                  subDone = !Boolean(s.completed);
+                  return { ...s, completed: subDone };
+                });
+                const allDone = subs.length > 0 && subs.every((s) => Boolean(s && s.completed));
+                parentDone = allDone;
+                const nextStatus = allDone ? 'done' : t.status === 'done' ? 'doing' : t.status;
+                return {
+                  ...t,
+                  subtasks: subs,
+                  status: nextStatus,
+                  completedAt: allDone ? now : undefined,
+                  updatedAt: now,
+                };
+              });
+              localStorage.setItem('life_os_tasks_v1', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return { ok: true, completed: subDone, allDone: parentDone };
+            } catch {
+              return { ok: false, completed: false, allDone: false };
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
+      return result;
     });
 
     ipcMain.handle('popover:toggle-routine-block', async (_event, blockId) => {
+      let result = { ok: false, isDone: false };
       if (mainWindow && !mainWindow.isDestroyed() && blockId) {
         const safeId = JSON.stringify(String(blockId));
-        await mainWindow.webContents.executeJavaScript(`
+        result = await mainWindow.webContents.executeJavaScript(`
           (() => {
             try {
               const d = new Date();
@@ -1326,14 +1414,69 @@ if (!gotSingleLock) {
               }));
               window.dispatchEvent(new Event('life_os_daily_routine_reminder_updated'));
               window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
-              return true;
+              return { ok: true, isDone: !wasDone };
             } catch {
-              return false;
+              return { ok: false, isDone: false };
             }
           })()
         `);
       }
       await refreshPopover();
+      return result;
+    });
+
+    ipcMain.handle('popover:toggle-routine-step', async (_event, blockId, stepIdx) => {
+      let result = { ok: false, stepDone: false, blockCompleted: false };
+      if (mainWindow && !mainWindow.isDestroyed() && blockId && Number.isInteger(Number(stepIdx))) {
+        const safeId = JSON.stringify(String(blockId));
+        const safeIdx = Number(stepIdx);
+        result = await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const d = new Date();
+              const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+              const rawBlocks = localStorage.getItem('life_os_daily_routine_blocks_v1');
+              const blocks = rawBlocks ? JSON.parse(rawBlocks) : [];
+              const block = Array.isArray(blocks) ? blocks.find((b) => b && b.id === ${safeId}) : null;
+              const rawProg = localStorage.getItem('life_os_daily_routine_progress_v1');
+              const parsed = rawProg ? JSON.parse(rawProg) : null;
+              const prog = parsed && parsed.date === todayStr
+                ? parsed
+                : { date: todayStr, completedStepKeys: [], completedBlockIds: [] };
+              const curIds = Array.isArray(prog.completedBlockIds) ? prog.completedBlockIds : [];
+              const curKeys = Array.isArray(prog.completedStepKeys) ? prog.completedStepKeys : [];
+              const stepKey = ${safeId} + ':' + ${safeIdx};
+              const wasStepDone = curKeys.includes(stepKey);
+              const nextStepKeys = wasStepDone
+                ? curKeys.filter((k) => k !== stepKey)
+                : [...curKeys, stepKey];
+              const stepDone = !wasStepDone;
+              const blockSteps = block && Array.isArray(block.steps) ? block.steps : [];
+              const allStepsDone = blockSteps.length > 0 && blockSteps.every((_, i) => nextStepKeys.includes(${safeId} + ':' + i));
+              let nextBlockIds = curIds;
+              let blockCompleted = false;
+              if (allStepsDone && !nextBlockIds.includes(${safeId})) {
+                nextBlockIds = [...nextBlockIds, ${safeId}];
+                blockCompleted = true;
+              } else if (!allStepsDone && nextBlockIds.includes(${safeId})) {
+                nextBlockIds = nextBlockIds.filter((id) => id !== ${safeId});
+              }
+              localStorage.setItem('life_os_daily_routine_progress_v1', JSON.stringify({
+                date: todayStr,
+                completedBlockIds: nextBlockIds,
+                completedStepKeys: nextStepKeys,
+              }));
+              window.dispatchEvent(new Event('life_os_daily_routine_reminder_updated'));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return { ok: true, stepDone, blockCompleted };
+            } catch {
+              return { ok: false, stepDone: false, blockCompleted: false };
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
+      return result;
     });
 
     ipcMain.handle('popover:dismiss-reminder', async (_event, reminderId) => {
