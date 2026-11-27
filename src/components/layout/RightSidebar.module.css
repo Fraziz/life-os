@@ -27,10 +27,11 @@
   border-radius: 10px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--transition-spring), border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .searchBox:hover {
+  transform: translateY(-1px);
   background-color: var(--color-surface-hover);
   border-color: var(--color-border-focus);
   box-shadow: var(--shadow-sm);
@@ -63,11 +64,13 @@
   justify-content: center;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition: transform var(--transition-spring), background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .iconBtn:hover {
+  transform: translateY(-1px) scale(1.06);
   background-color: var(--color-surface-2);
+  border-color: var(--color-border-focus);
   color: var(--color-text);
 }
 
@@ -285,6 +288,7 @@
 .calDayCell:hover {
   background-color: var(--color-surface-2);
   border-color: var(--color-border-subtle);
+  transform: scale(1.08);
 }
 
 .calDayNumber {
@@ -926,8 +930,10 @@
 }
 
 .sidebarReminderItem:hover {
-  border-color: var(--color-border);
+  border-color: var(--color-border-focus);
   background: var(--color-surface-hover, var(--color-surface-2));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebarReminderBody {

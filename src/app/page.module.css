@@ -53,7 +53,7 @@
   margin: 0;
   outline: none;
   cursor: default;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-spring), border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 button.summaryPill {
@@ -75,7 +75,14 @@ button.summaryPill {
 
 button.summaryPill:hover,
 a.summaryPill:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  background: var(--color-surface-2);
+  box-shadow: var(--shadow-sm);
+}
+
+button.summaryPill:active,
+a.summaryPill:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .summaryPillFocus {
@@ -839,12 +846,22 @@ a.summaryPill:hover {
   min-width: 0;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-spring),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .actionCard:hover {
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
-  border-color: var(--color-accent);
+  border-color: var(--color-border-focus);
+  background-color: var(--color-surface);
+}
+
+.actionCard:active {
+  transform: translateY(0) scale(0.985);
 }
 
 .actionIconWrap {
@@ -856,6 +873,11 @@ a.summaryPill:hover {
   justify-content: center;
   margin-bottom: 6px;
   flex-shrink: 0;
+  transition: transform var(--transition-spring), background-color var(--transition-fast);
+}
+
+.actionCard:hover .actionIconWrap {
+  transform: scale(1.07);
 }
 
 .iconWrapSun,
@@ -1223,11 +1245,12 @@ a.summaryPill:hover {
   justify-content: space-between;
   padding: 8px 10px;
   border-radius: 10px;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .priorityRow:hover {
   background-color: var(--color-surface-2);
+  transform: translateX(2px);
 }
 
 .priorityLeft {
@@ -1904,6 +1927,13 @@ a.summaryPill:hover {
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
+  transition: transform var(--transition-spring), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.projectCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-sm);
 }
 
 .projectCardHeader {

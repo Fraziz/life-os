@@ -454,10 +454,11 @@
         border-radius: 10px;
         background: var(--bg-card);
         border: 1px solid var(--border-subtle);
-        transition: background 0.14s ease, border-color 0.14s ease;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.14s ease, border-color 0.14s ease;
       }
 
       .queueItem:hover {
+        transform: translateX(3px);
         background: var(--bg-well);
         border-color: var(--border-strong);
       }
@@ -474,10 +475,11 @@
         justify-content: center;
         cursor: pointer;
         flex-shrink: 0;
-        transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
       }
 
       .checkCircle:hover {
+        transform: scale(1.14);
         border-color: var(--text-main);
         background: var(--bg-hover);
         color: var(--text-main);

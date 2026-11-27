@@ -358,8 +358,10 @@
   white-space: nowrap;
   box-sizing: border-box;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform var(--transition-spring),
+    border-color 0.16s ease;
 }
 
 .sidebar:not(.isExpanded) .navItem {
@@ -381,6 +383,22 @@
 .navItem:hover {
   background-color: var(--color-surface-2);
   color: var(--color-text);
+}
+
+.sidebar.isExpanded .navItem:hover {
+  transform: translateX(3px);
+}
+
+.sidebar:not(.isExpanded) .navItem:hover {
+  transform: scale(1.06);
+}
+
+.navIcon {
+  transition: transform var(--transition-spring);
+}
+
+.navItem:hover .navIcon {
+  transform: scale(1.08);
 }
 
 .navItem:active {

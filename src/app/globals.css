@@ -165,8 +165,8 @@
 :root {
 
   /* Snappy, non-distracting transitions */
-  --transition-fast:    140ms ease;
-  --transition-base:    220ms ease;
+  --transition-fast:    150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-base:    220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --transition-slow:    350ms ease;
   --transition-spring:  280ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -427,6 +427,19 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+  transition: transform var(--transition-fast), opacity var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 input, textarea, select {
