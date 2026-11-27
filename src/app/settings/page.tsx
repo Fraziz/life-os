@@ -91,17 +91,25 @@ export default function SettingsPage() {
     edge: 'left' | 'right';
     popoverVisible?: boolean;
   } | null>(null);
+  const [desktopCompanion, setDesktopCompanion] = useState<{
+    openAtLogin: boolean;
+    soundEnabled: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const desktopApi = (window as Window & {
       sarilingDesktop?: {
         getBubbleConfig?: () => Promise<{ visible: boolean; mode: 'circle' | 'line' | 'pill'; edge: 'left' | 'right'; popoverVisible?: boolean }>;
+        getCompanionConfig?: () => Promise<{ openAtLogin: boolean; soundEnabled: boolean }>;
       };
     }).sarilingDesktop;
     if (desktopApi?.getBubbleConfig) {
       setHasDesktopBridge(true);
       void desktopApi.getBubbleConfig().then((cfg) => {
         if (cfg) setDesktopBubble(cfg);
+      }).catch(() => {});
+      void desktopApi.getCompanionConfig?.().then((cfg) => {
+        if (cfg) setDesktopCompanion(cfg);
       }).catch(() => {});
     }
   }, []);
@@ -1598,6 +1606,52 @@ export default function SettingsPage() {
                               {modeKey === 'circle' ? 'Circle' : modeKey === 'line' ? 'Edge Line' : 'Pill'}
                             </button>
                           ))}
+                          <button
+                            type="button"
+                            className={desktopCompanion?.openAtLogin ? styles.btnPrimary : styles.btnSecondary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  setStartupEnabled?: (e: boolean) => Promise<{ openAtLogin: boolean; soundEnabled: boolean }>;
+                                };
+                              }).sarilingDesktop;
+                              if (!api?.setStartupEnabled) return;
+                              const next = await api.setStartupEnabled(!desktopCompanion?.openAtLogin);
+                              if (next) setDesktopCompanion(next);
+                            }}
+                          >
+                            {desktopCompanion?.openAtLogin ? 'Windows Startup: On' : 'Windows Startup: Off'}
+                          </button>
+                          <button
+                            type="button"
+                            className={desktopCompanion?.soundEnabled !== false ? styles.btnPrimary : styles.btnSecondary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  setAlertSoundEnabled?: (e: boolean) => Promise<{ openAtLogin: boolean; soundEnabled: boolean }>;
+                                };
+                              }).sarilingDesktop;
+                              if (!api?.setAlertSoundEnabled) return;
+                              const next = await api.setAlertSoundEnabled(!(desktopCompanion?.soundEnabled !== false));
+                              if (next) setDesktopCompanion(next);
+                            }}
+                          >
+                            {desktopCompanion?.soundEnabled !== false ? 'Alert Ring Sound: On' : 'Alert Ring Sound: Off'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnSecondary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  testAlertRing?: () => Promise<{ ok: boolean }>;
+                                };
+                              }).sarilingDesktop;
+                              await api?.testAlertRing?.();
+                            }}
+                          >
+                            Test Alert Ring
+                          </button>
                         </>
                       ) : (
                         <button

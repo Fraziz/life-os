@@ -180,6 +180,7 @@
       }
 
       .iconBtn {
+        position: relative;
         width: 28px;
         height: 28px;
         border-radius: 7px;
@@ -198,6 +199,21 @@
         background: var(--bg-well);
         border-color: var(--border-subtle);
         color: var(--text-main);
+      }
+
+      .bellDot {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #d97706;
+        border: 1.5px solid var(--bg-card);
+      }
+
+      .bellDot.urgent {
+        background: #dc2626;
       }
 
       /* ── Formal Segmented Filter Tabs ── */
@@ -853,6 +869,37 @@
           </div>
           <div class="headerActions">
             <button
+              id="btn-ring"
+              type="button"
+              class="iconBtn"
+              title="Ring & Check Alerts"
+              aria-label="Ring & Check Alerts"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              <span id="bell-dot" class="bellDot hidden" aria-hidden="true"></span>
+            </button>
+            <button
+              id="btn-sound"
+              type="button"
+              class="iconBtn"
+              title="Toggle Alert & Chime Sounds"
+              aria-label="Toggle Alert & Chime Sounds"
+            >
+              <svg id="icon-sound-on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </svg>
+              <svg id="icon-sound-off" class="hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="22" y1="9" x2="16" y2="15" />
+                <line x1="16" y1="9" x2="22" y2="15" />
+              </svg>
+            </button>
+            <button
               id="btn-expand"
               type="button"
               class="iconBtn"
@@ -1010,13 +1057,25 @@
       const remindersCountEl = document.getElementById('reminders-count');
       const remindersListEl = document.getElementById('reminders-list');
       const footerStatEl = document.getElementById('footer-stat');
+      const btnRingEl = document.getElementById('btn-ring');
+      const bellDotEl = document.getElementById('bell-dot');
+      const btnSoundEl = document.getElementById('btn-sound');
+      const iconSoundOnEl = document.getElementById('icon-sound-on');
+      const iconSoundOffEl = document.getElementById('icon-sound-off');
 
       let activeTab = 'all';
       let lastSnapshot = null;
+      let soundEnabled = true;
       const expandedKeys = new Set();
 
       // ── Website-Matched Web Audio Feedback (src/utils/soundAndDopamine.ts) ──
       let audioCtx = null;
+
+      function updateSoundButtonUI() {
+        iconSoundOnEl.classList.toggle('hidden', !soundEnabled);
+        iconSoundOffEl.classList.toggle('hidden', soundEnabled);
+        btnSoundEl.title = soundEnabled ? 'Alert Sounds On (Click to mute)' : 'Alert Sounds Muted (Click to unmute)';
+      }
 
       function getSidebarAudioContext() {
         try {
@@ -1034,6 +1093,7 @@
       }
 
       function playSuccessChime() {
+        if (!soundEnabled) return;
         const ctx = getSidebarAudioContext();
         if (!ctx) return;
         try {
@@ -1060,7 +1120,58 @@
         } catch {}
       }
 
-      function playSubtaskTick() {
+      function playNotificationRing(tone = 'work', gentle = false, forcePlay = false) {
+        if (!forcePlay && !soundEnabled) return;
+        const ctx = getSidebarAudioContext();
+        if (!ctx) return;
+        try {
+          const base = ctx.currentTime + 0.01;
+          const pattern = gentle
+            ? tone === 'urgent'
+              ? [
+                  { freq: 783.99, offset: 0, dur: 0.22, gain: 0.12 },
+                  { freq: 1046.5, offset: 0.1, dur: 0.32, gain: 0.14 },
+                ]
+              : [
+                  { freq: 587.33, offset: 0, dur: 0.24, gain: 0.11 },
+                  { freq: 880, offset: 0.1, dur: 0.34, gain: 0.13 },
+                ]
+            : tone === 'urgent'
+            ? [
+                { freq: 880, offset: 0, dur: 0.22, gain: 0.19 },
+                { freq: 1174.66, offset: 0.11, dur: 0.28, gain: 0.22 },
+                { freq: 1318.51, offset: 0.22, dur: 0.36, gain: 0.2 },
+                { freq: 880, offset: 0.58, dur: 0.22, gain: 0.17 },
+                { freq: 1174.66, offset: 0.69, dur: 0.28, gain: 0.2 },
+                { freq: 1318.51, offset: 0.8, dur: 0.42, gain: 0.18 },
+              ]
+            : [
+                { freq: 587.33, offset: 0, dur: 0.26, gain: 0.16 },
+                { freq: 783.99, offset: 0.1, dur: 0.3, gain: 0.18 },
+                { freq: 987.77, offset: 0.2, dur: 0.35, gain: 0.2 },
+                { freq: 1174.66, offset: 0.3, dur: 0.52, gain: 0.16 },
+                { freq: 783.99, offset: 0.68, dur: 0.25, gain: 0.13 },
+                { freq: 1174.66, offset: 0.79, dur: 0.54, gain: 0.15 },
+              ];
+
+          pattern.forEach(({ freq, offset, dur, gain }) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, base + offset);
+            g.gain.setValueAtTime(0.001, base + offset);
+            g.gain.linearRampToValueAtTime(gain, base + offset + 0.018);
+            g.gain.exponentialRampToValueAtTime(0.001, base + offset + dur);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(base + offset);
+            osc.stop(base + offset + dur + 0.05);
+          });
+        } catch {}
+      }
+
+      function playSubtaskTick(forcePlay = false) {
+        if (!forcePlay && !soundEnabled) return;
         const ctx = getSidebarAudioContext();
         if (!ctx) return;
         try {
@@ -1265,8 +1376,16 @@
       function renderSnapshot(data) {
         if (!data) return;
         lastSnapshot = data;
+        soundEnabled = data.soundEnabled !== false;
+        updateSoundButtonUI();
 
         document.documentElement.setAttribute('data-theme', data.theme === 'dark' ? 'dark' : 'light');
+
+        const reminderCountForBell = Array.isArray(data.reminderItems) ? data.reminderItems.length : 0;
+        const primaryForBell = data.primary || null;
+        const hasAlertDot = Boolean(reminderCountForBell > 0 || (primaryForBell && (primaryForBell.tone === 'work' || primaryForBell.tone === 'urgent')));
+        bellDotEl.classList.toggle('hidden', !hasAlertDot);
+        bellDotEl.classList.toggle('urgent', Boolean(primaryForBell && primaryForBell.tone === 'urgent'));
 
         const primary = data.primary || null;
         statusChipEl.className = 'statusChip';
@@ -1450,9 +1569,46 @@
         }
       });
 
+      btnRingEl.addEventListener('click', async () => {
+        const res = await window.sarilingPopover?.ringNow();
+        const tone = (res && res.tone) || (lastSnapshot && lastSnapshot.primary && lastSnapshot.primary.tone) || 'work';
+        playNotificationRing(tone, false, true);
+        if (lastSnapshot && Array.isArray(lastSnapshot.reminderItems) && lastSnapshot.reminderItems.length > 0) {
+          const alertsBtn = document.querySelector('.filterTab[data-tab="reminders"]');
+          if (alertsBtn) {
+            activeTab = 'reminders';
+            document.querySelectorAll('.filterTab').forEach((b) => b.classList.toggle('active', b === alertsBtn));
+            applyTabVisibility();
+          }
+        }
+      });
+
+      btnSoundEl.addEventListener('click', async () => {
+        const nextVal = !soundEnabled;
+        soundEnabled = nextVal;
+        updateSoundButtonUI();
+        if (nextVal) playSubtaskTick(true);
+        const res = await window.sarilingPopover?.setSoundEnabled(nextVal);
+        if (res && typeof res.soundEnabled === 'boolean') {
+          soundEnabled = res.soundEnabled;
+          updateSoundButtonUI();
+        }
+      });
+
       if (window.sarilingPopover) {
         window.sarilingPopover.getSnapshot().then(renderSnapshot);
         window.sarilingPopover.onSnapshot(renderSnapshot);
+        window.sarilingPopover.onOpened?.((data) => {
+          if (!data || !data.ready) return;
+          soundEnabled = data.soundEnabled !== false;
+          updateSoundButtonUI();
+          if (!soundEnabled) return;
+          const alertsCount = Array.isArray(data.reminderItems) ? data.reminderItems.length : 0;
+          const primaryTone = data.primary && data.primary.tone;
+          if (primaryTone === 'urgent' || primaryTone === 'work' || alertsCount > 0) {
+            playNotificationRing(primaryTone || 'work', true);
+          }
+        });
       }
     </script>
   </body>

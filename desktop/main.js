@@ -3,9 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 
+// Allow Web Audio alert chimes and ringtones in background/desktop toast and sidebar windows
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 const CONFIG_PATH = () => path.join(app.getPath('userData'), 'desktop-config.json');
 const BOUNDS_PATH = () => path.join(app.getPath('userData'), 'window-bounds.json');
 const BUBBLE_CONFIG_PATH = () => path.join(app.getPath('userData'), 'bubble-config.json');
+const startedAtLogin = process.argv.includes('--autostart');
 
 let mainWindow = null;
 let bubbleWindow = null;
@@ -21,8 +25,44 @@ let popoverPollTimer = null;
 let toastAutoHideTimer = null;
 let toastHovered = false;
 let currentAlertKey = null;
+let startupBriefingDone = false;
 const alertCooldowns = new Map();
 let currentBubbleWorkState = { hasWork: false, pillText: 'Sariling Mundo' };
+
+function getAlertSoundEnabled() {
+  const cfg = readJson(CONFIG_PATH(), {});
+  return cfg.alertSoundEnabled !== false;
+}
+
+function setAlertSoundEnabled(enabled) {
+  const cfg = readJson(CONFIG_PATH(), {});
+  const next = { ...cfg, alertSoundEnabled: Boolean(enabled) };
+  writeJson(CONFIG_PATH(), next);
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  void refreshPopover();
+  return Boolean(enabled);
+}
+
+function setStartupLaunchEnabled(enabled) {
+  const flag = Boolean(enabled);
+  app.setLoginItemSettings({
+    openAtLogin: flag,
+    args: flag ? ['--autostart'] : [],
+  });
+  const cfg = readJson(CONFIG_PATH(), {});
+  writeJson(CONFIG_PATH(), { ...cfg, autoStartConfigured: true, openAtLogin: flag });
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  return flag;
+}
+
+function ensureDefaultAutoStart() {
+  const cfg = readJson(CONFIG_PATH(), {});
+  if (cfg.autoStartConfigured !== true) {
+    setStartupLaunchEnabled(true);
+  } else if (cfg.openAtLogin === true) {
+    app.setLoginItemSettings({ openAtLogin: true, args: ['--autostart'] });
+  }
+}
 
 function readJson(filePath, fallback) {
   try {
@@ -663,6 +703,23 @@ async function readWorkspaceSnapshot() {
           parts.push(routineDone + '/' + routineTotal + ' routine');
           if (reminderItems.length > 0) parts.push(reminderItems.length + ' alert' + (reminderItems.length === 1 ? '' : 's'));
 
+          let startupCandidate = alertCandidate;
+          if (!startupCandidate && (sortedTasks.length > 0 || reminderItems.length > 0 || nextBlock)) {
+            startupCandidate = {
+              alertKey: 'startup:' + todayStr,
+              badge: reminderItems.length > 0 ? reminderItems.length + ' ALERTS' : nextBlock ? 'UP NEXT' : 'TODAY',
+              tone: sortedTasks.some((t) => (t.dueDate && t.dueDate < todayStr) || t.priority === 'urgent') ? 'urgent' : 'work',
+              headline: nextBlock
+                ? 'Up next: ' + nextBlock.title
+                : sortedTasks[0]
+                ? sortedTasks[0].title
+                : reminderItems[0]
+                ? reminderItems[0].title
+                : 'Daily plan ready',
+              sub: parts.join(' · '),
+            };
+          }
+
           return {
             ready: true,
             theme,
@@ -673,6 +730,7 @@ async function readWorkspaceSnapshot() {
             reminderItems,
             routineSummary: { done: routineDone, total: routineTotal },
             alertCandidate,
+            startupCandidate,
             hasWork: Boolean(primary || reminderItems.length > 0),
             summary: parts.join(' · '),
           };
@@ -682,15 +740,17 @@ async function readWorkspaceSnapshot() {
       })()
     `);
 
-    const hasWork = Boolean(snap && snap.hasWork);
-    const pillText = snap && snap.primary
-      ? (snap.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
+    const soundEnabled = getAlertSoundEnabled();
+    const enriched = snap && typeof snap === 'object' ? { ...snap, soundEnabled } : snap;
+    const hasWork = Boolean(enriched && enriched.hasWork);
+    const pillText = enriched && enriched.primary
+      ? (enriched.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
       : 'Sariling Mundo';
     if (currentBubbleWorkState.hasWork !== hasWork || currentBubbleWorkState.pillText !== pillText) {
       currentBubbleWorkState = { hasWork, pillText };
       sendBubbleState();
     }
-    return snap;
+    return enriched;
   } catch {
     return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
   }
@@ -810,15 +870,39 @@ function showOutsideToast(payload) {
   currentAlertKey = payload.alertKey || null;
   positionWindowNextToBubble(toastWindow, 318, 124);
   toastWindow.showInactive();
-  toastWindow.webContents.send('toast:show', payload);
+  const deliver = () => {
+    if (toastWindow && !toastWindow.isDestroyed()) {
+      toastWindow.webContents.send('toast:show', {
+        ...payload,
+        soundEnabled: payload.soundEnabled !== false && getAlertSoundEnabled(),
+      });
+    }
+  };
+  if (toastWindow.webContents.isLoading()) {
+    toastWindow.webContents.once('did-finish-load', deliver);
+  } else {
+    deliver();
+  }
   scheduleToastAutoHide();
 }
 
-async function evaluateAndNotifyAlerts(force = false) {
+async function evaluateAndNotifyAlerts(force = false, options = {}) {
   const snap = await readWorkspaceSnapshot();
   if (!snap || !snap.ready) return;
 
-  const candidate = snap.alertCandidate;
+  const allowStartupBriefing = Boolean(options.allowStartupBriefing || force);
+  let candidate = snap.alertCandidate;
+  if (!candidate && allowStartupBriefing && !startupBriefingDone && snap.startupCandidate) {
+    candidate = snap.startupCandidate;
+  }
+  if (!candidate && force && snap.startupCandidate) {
+    candidate = snap.startupCandidate;
+  }
+
+  if (snap.ready && !startupBriefingDone && options.allowStartupBriefing) {
+    startupBriefingDone = true;
+  }
+
   if (!candidate) {
     if (force) {
       showOutsideToast({
@@ -828,6 +912,8 @@ async function evaluateAndNotifyAlerts(force = false) {
         headline: 'You are caught up right now',
         sub: snap.summary || 'No urgent deadlines or active blocks.',
         theme: snap.theme,
+        soundEnabled: snap.soundEnabled,
+        ring: true,
       });
     }
     return;
@@ -842,7 +928,7 @@ async function evaluateAndNotifyAlerts(force = false) {
     alertCooldowns.set(candidate.alertKey, now + 12 * 60 * 60 * 1000);
   }
 
-  showOutsideToast({ ...candidate, theme: snap.theme });
+  showOutsideToast({ ...candidate, theme: snap.theme, soundEnabled: snap.soundEnabled, ring: true });
 }
 
 function createPopoverWindow() {
@@ -916,7 +1002,17 @@ async function showPopover() {
   lastPopoverShownAt = Date.now();
   popoverWindow.show();
   popoverWindow.focus();
-  popoverWindow.webContents.send('popover:snapshot', snap);
+  const sendOpened = () => {
+    if (popoverWindow && !popoverWindow.isDestroyed()) {
+      popoverWindow.webContents.send('popover:snapshot', snap);
+      popoverWindow.webContents.send('popover:opened', snap);
+    }
+  };
+  if (popoverWindow.webContents.isLoading()) {
+    popoverWindow.webContents.once('did-finish-load', sendOpened);
+  } else {
+    sendOpened();
+  }
   sendBubbleState();
 
   if (popoverPollTimer) clearInterval(popoverPollTimer);
@@ -1022,7 +1118,7 @@ function showBubbleContextMenu() {
 }
 
 // ── Main App Window ───────────────────────────────────────────
-function createWindow() {
+function createWindow(options = {}) {
   const savedBounds = readJson(BOUNDS_PATH(), { width: 1360, height: 860 });
 
   mainWindow = new BrowserWindow({
@@ -1032,6 +1128,7 @@ function createWindow() {
     y: typeof savedBounds.y === 'number' ? savedBounds.y : undefined,
     minWidth: 420,
     minHeight: 560,
+    show: !options.hidden,
     title: 'Sariling Mundo',
     icon: path.join(__dirname, 'icon.ico'),
     backgroundColor: '#000000',
@@ -1043,7 +1140,7 @@ function createWindow() {
     },
   });
 
-  if (savedBounds.isMaximized) {
+  if (savedBounds.isMaximized && !options.hidden) {
     mainWindow.maximize();
   }
 
@@ -1175,16 +1272,23 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: 'Check Reminders Now',
-      click: () => { void evaluateAndNotifyAlerts(true); },
+      label: 'Check & Ring Reminders Now',
+      click: () => { void evaluateAndNotifyAlerts(true, { allowStartupBriefing: true }); },
+    },
+    {
+      label: 'Ring Alert Sounds',
+      type: 'checkbox',
+      checked: getAlertSoundEnabled(),
+      click: (item) => {
+        setAlertSoundEnabled(item.checked);
+      },
     },
     {
       label: 'Launch at Windows Startup',
       type: 'checkbox',
       checked: openAtLogin,
       click: (item) => {
-        app.setLoginItemSettings({ openAtLogin: item.checked });
-        if (tray) tray.setContextMenu(buildTrayMenu());
+        setStartupLaunchEnabled(item.checked);
       },
     },
     { type: 'separator' },
@@ -1219,6 +1323,7 @@ if (!gotSingleLock) {
 
   app.whenReady().then(() => {
     app.setAppUserModelId('com.sarilingmundo.lifeos');
+    ensureDefaultAutoStart();
 
     ipcMain.handle('desktop:get-url', () => getConfiguredUrl() || '');
     ipcMain.handle('desktop:save-url', (_event, rawUrl) => {
@@ -1226,9 +1331,30 @@ if (!gotSingleLock) {
       if (!/^https?:\/\//i.test(cleaned)) {
         throw new Error('URL must start with http:// or https://');
       }
-      writeJson(CONFIG_PATH(), { url: cleaned });
+      writeJson(CONFIG_PATH(), { ...readJson(CONFIG_PATH(), {}), url: cleaned });
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(cleaned);
       return cleaned;
+    });
+
+    ipcMain.handle('desktop:get-companion-config', () => ({
+      openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
+      soundEnabled: getAlertSoundEnabled(),
+    }));
+
+    ipcMain.handle('desktop:set-startup', (_event, enabled) => ({
+      openAtLogin: setStartupLaunchEnabled(enabled),
+      soundEnabled: getAlertSoundEnabled(),
+    }));
+
+    ipcMain.handle('desktop:set-sound', (_event, enabled) => ({
+      openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
+      soundEnabled: setAlertSoundEnabled(enabled),
+    }));
+
+    ipcMain.handle('desktop:test-ring', async () => {
+      hidePopover();
+      await evaluateAndNotifyAlerts(true, { allowStartupBriefing: true });
+      return { ok: true };
     });
 
     ipcMain.handle('desktop:get-bubble-config', () => {
@@ -1566,6 +1692,21 @@ if (!gotSingleLock) {
       hidePopover();
     });
 
+    ipcMain.handle('popover:set-sound', (_event, enabled) => {
+      const soundEnabled = setAlertSoundEnabled(enabled);
+      return { soundEnabled };
+    });
+
+    ipcMain.handle('popover:ring-now', async () => {
+      const snap = await readWorkspaceSnapshot();
+      return {
+        ok: true,
+        soundEnabled: Boolean(snap && snap.soundEnabled !== false),
+        tone: (snap && snap.primary && snap.primary.tone) || (snap && snap.alertCandidate && snap.alertCandidate.tone) || 'work',
+        alertsCount: snap && Array.isArray(snap.reminderItems) ? snap.reminderItems.length : 0,
+      };
+    });
+
     ipcMain.handle('toast:open-popover', async () => {
       hideToast();
       await showPopover();
@@ -1681,12 +1822,13 @@ if (!gotSingleLock) {
       positionAndResizeBubble(nextCfg);
     });
 
-    createWindow();
+    createWindow({ hidden: startedAtLogin });
     createPopoverWindow();
     createToastWindow();
     createBubbleWindow();
     createTray();
-    setTimeout(() => { void evaluateAndNotifyAlerts(false); }, 4000);
+    setTimeout(() => { void evaluateAndNotifyAlerts(false, { allowStartupBriefing: true }); }, 4500);
+    setTimeout(() => { void evaluateAndNotifyAlerts(false, { allowStartupBriefing: true }); }, 11000);
     setInterval(() => { void evaluateAndNotifyAlerts(false); }, 30000);
   });
 

@@ -7,6 +7,13 @@ contextBridge.exposeInMainWorld('sarilingPopover', {
     ipcRenderer.on('popover:snapshot', listener);
     return () => ipcRenderer.removeListener('popover:snapshot', listener);
   },
+  onOpened: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('popover:opened', listener);
+    return () => ipcRenderer.removeListener('popover:opened', listener);
+  },
+  setSoundEnabled: (enabled) => ipcRenderer.invoke('popover:set-sound', enabled),
+  ringNow: () => ipcRenderer.invoke('popover:ring-now'),
   addTask: (title) => ipcRenderer.invoke('popover:add-task', title),
   completeTask: (taskId) => ipcRenderer.invoke('popover:complete-task', taskId),
   toggleSubtask: (taskId, subtaskId) => ipcRenderer.invoke('popover:toggle-subtask', taskId, subtaskId),
