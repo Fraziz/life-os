@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sariling Mundo Quick Action</title>
+    <title>Sariling Mundo Desktop Sidebar</title>
     <style>
       :root,
       [data-theme='light'] {
@@ -29,7 +29,7 @@
         --hand-bg: #0d0f14;
         --hand-fg: #ffffff;
         --hand-ring: rgba(13, 15, 20, 0.12);
-        --shadow-card: 0 18px 42px rgba(13, 15, 20, 0.16), 0 4px 12px rgba(13, 15, 20, 0.08);
+        --shadow-card: 0 20px 50px rgba(13, 15, 20, 0.18), 0 4px 14px rgba(13, 15, 20, 0.08);
       }
 
       [data-theme='dark'] {
@@ -55,7 +55,7 @@
         --hand-bg: #f8fafc;
         --hand-fg: #0d0f14;
         --hand-ring: rgba(248, 250, 252, 0.14);
-        --shadow-card: 0 20px 44px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+        --shadow-card: 0 22px 52px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35);
       }
 
       * {
@@ -67,6 +67,7 @@
       html,
       body {
         width: 100%;
+        height: 100%;
         background: transparent;
         overflow: hidden;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -77,37 +78,42 @@
       .frame {
         padding: 8px;
         width: 100%;
+        height: 100%;
       }
 
-      .card {
+      .panel {
         width: 100%;
+        height: 100%;
         background: var(--bg-card);
         border: 1px solid var(--border-subtle);
-        border-radius: 16px;
+        border-radius: 18px;
         box-shadow: var(--shadow-card);
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
-        animation: popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: panelIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
-      @keyframes popIn {
+      @keyframes panelIn {
         from {
           opacity: 0;
-          transform: translateY(4px) scale(0.98);
+          transform: translateX(10px) scale(0.985);
         }
         to {
           opacity: 1;
-          transform: translateY(0) scale(1);
+          transform: translateX(0) scale(1);
         }
       }
 
-      /* ── Top Header ── */
+      /* ── Desktop Sidebar Header ── */
       .header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 12px 14px;
+        padding: 13px 16px;
         border-bottom: 1px solid var(--border-subtle);
+        flex-shrink: 0;
       }
 
       .brandGroup {
@@ -118,15 +124,15 @@
       }
 
       .brandLogo {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         object-fit: contain;
         flex-shrink: 0;
       }
 
       .brandTitle {
-        font-size: 12.5px;
-        font-weight: 650;
+        font-size: 13px;
+        font-weight: 700;
         letter-spacing: -0.015em;
         color: var(--text-main);
         white-space: nowrap;
@@ -135,11 +141,10 @@
       .statusChip {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
         padding: 2px 7px;
         border-radius: 999px;
         font-size: 10px;
-        font-weight: 600;
+        font-weight: 650;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         background: var(--pill-bg);
@@ -167,8 +172,8 @@
       }
 
       .iconBtn {
-        width: 28px;
-        height: 28px;
+        width: 30px;
+        height: 30px;
         border-radius: 8px;
         border: 1px solid transparent;
         background: transparent;
@@ -186,34 +191,47 @@
         color: var(--text-main);
       }
 
-      /* ── Primary Animated Hand Cue Card ── */
-      .body {
-        padding: 12px 14px;
+      /* ── Scrollable Body ── */
+      .scrollBody {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 14px;
       }
 
+      .scrollBody::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .scrollBody::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 999px;
+      }
+
+      /* ── Primary Focus Cue Card ── */
       .focusBox {
         background: var(--bg-well);
         border: 1px solid var(--border-subtle);
-        border-radius: 12px;
-        padding: 12px;
+        border-radius: 13px;
+        padding: 13px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 11px;
       }
 
       .cueRow {
         display: flex;
         align-items: flex-start;
-        gap: 10px;
+        gap: 11px;
       }
 
       .handBadge {
         position: relative;
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         background: var(--hand-bg);
         color: var(--hand-fg);
@@ -225,13 +243,13 @@
       }
 
       .handIcon {
-        width: 18px;
-        height: 18px;
+        width: 19px;
+        height: 19px;
         will-change: transform;
       }
 
       .handBadge.animated .handIcon {
-        animation: handNudge 1.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+        animation: handNudge 1.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
       }
 
       .handBadge.animated {
@@ -282,11 +300,10 @@
         font-size: 11px;
         font-weight: 600;
         color: var(--text-muted);
-        letter-spacing: 0.01em;
       }
 
       .cueTitle {
-        font-size: 13.5px;
+        font-size: 14px;
         font-weight: 650;
         line-height: 1.35;
         color: var(--text-main);
@@ -303,12 +320,12 @@
       .actionRow {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 7px;
       }
 
       .btnPrimary {
         flex: 1;
-        height: 32px;
+        height: 33px;
         padding: 0 12px;
         border-radius: 9px;
         border: 1px solid transparent;
@@ -333,8 +350,8 @@
       }
 
       .btnGhost {
-        height: 32px;
-        padding: 0 11px;
+        height: 33px;
+        padding: 0 12px;
         border-radius: 9px;
         border: 1px solid var(--border-subtle);
         background: var(--bg-card);
@@ -354,15 +371,73 @@
         border-color: var(--border-strong);
       }
 
-      /* ── Secondary Important Queue ── */
+      /* ── Desktop Quick-Add Form ── */
+      .quickAddForm {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quickInput {
+        flex: 1;
+        min-width: 0;
+        height: 34px;
+        padding: 0 11px;
+        border-radius: 9px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-well);
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 12.2px;
+        outline: none;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+
+      .quickInput::placeholder {
+        color: var(--text-muted);
+      }
+
+      .quickInput:focus {
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+
+      .quickSubmitBtn {
+        height: 34px;
+        padding: 0 12px;
+        border-radius: 9px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-main);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.14s ease, border-color 0.14s ease;
+      }
+
+      .quickSubmitBtn:hover {
+        background: var(--bg-well);
+        border-color: var(--border-strong);
+      }
+
+      /* ── Sidebar Sections & Rows ── */
+      .sectionBlock {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
       .sectionHeader {
         display: flex;
         align-items: center;
         justify-content: space-between;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 650;
         color: var(--text-muted);
-        padding: 2px 2px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0 2px;
       }
 
       .queueList {
@@ -374,8 +449,8 @@
       .queueItem {
         display: flex;
         align-items: center;
-        gap: 9px;
-        padding: 8px 10px;
+        gap: 10px;
+        padding: 9px 11px;
         border-radius: 10px;
         background: var(--bg-card);
         border: 1px solid var(--border-subtle);
@@ -388,8 +463,8 @@
       }
 
       .checkCircle {
-        width: 18px;
-        height: 18px;
+        width: 19px;
+        height: 19px;
         border-radius: 999px;
         border: 1.5px solid var(--border-strong);
         background: transparent;
@@ -415,7 +490,7 @@
       }
 
       .queueTitle {
-        font-size: 12.2px;
+        font-size: 12.5px;
         font-weight: 550;
         color: var(--text-main);
         white-space: nowrap;
@@ -424,11 +499,21 @@
       }
 
       .queueMeta {
-        font-size: 10.8px;
+        font-size: 11px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .emptyMini {
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-well);
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
       }
 
       /* ── Footer ── */
@@ -437,13 +522,14 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 10px 14px;
+        padding: 11px 16px;
         border-top: 1px solid var(--border-subtle);
         background: var(--bg-well);
+        flex-shrink: 0;
       }
 
       .footerStat {
-        font-size: 11px;
+        font-size: 11.5px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
@@ -451,22 +537,24 @@
       }
 
       .footerLink {
-        border: none;
-        background: transparent;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
         color: var(--text-main);
         font-size: 11.5px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 3px 4px;
-        border-radius: 6px;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 8px;
         flex-shrink: 0;
+        transition: background 0.14s ease, border-color 0.14s ease;
       }
 
       .footerLink:hover {
         background: var(--bg-hover);
+        border-color: var(--border-strong);
       }
 
       .hidden {
@@ -476,7 +564,7 @@
   </head>
   <body>
     <div class="frame">
-      <div id="card" class="card" role="dialog" aria-label="Sariling Mundo Quick Action">
+      <div id="card" class="panel" role="dialog" aria-label="Sariling Mundo Edge Sidebar">
         <header class="header">
           <div class="brandGroup">
             <img src="logo.png" alt="Sariling Mundo" class="brandLogo" />
@@ -488,8 +576,8 @@
               id="btn-expand"
               type="button"
               class="iconBtn"
-              title="Open full workspace"
-              aria-label="Open full workspace"
+              title="Open Full Desktop App"
+              aria-label="Open Full Desktop App"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15 3h6v6" />
@@ -501,8 +589,8 @@
               id="btn-close"
               type="button"
               class="iconBtn"
-              title="Close popup"
-              aria-label="Close popup"
+              title="Collapse Edge Sidebar"
+              aria-label="Collapse Edge Sidebar"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 6 6 18" />
@@ -512,25 +600,23 @@
           </div>
         </header>
 
-        <main class="body">
-          <!-- Primary Action Nudge Card with Animated Pointing Hand -->
+        <main class="scrollBody">
+          <!-- Primary Action Cue with Animated Horizontal Pointing Hand -->
           <section class="focusBox" aria-live="polite">
             <div class="cueRow">
               <div id="hand-badge" class="handBadge animated" aria-hidden="true">
-                <!-- Horizontal Pointing Hand Cue SVG -->
                 <svg id="icon-hand" class="handIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M13 10h7.5a1.5 1.5 0 0 1 0 3H14" />
                   <path d="M14 13h2.2a1.4 1.4 0 0 1 0 2.8H13.5" />
                   <path d="M13.5 15.8h1.5a1.35 1.35 0 0 1 0 2.7H10.5c-2.6 0-4.6-1.2-5.5-2.8L3.5 13V9.5c0-1 .7-1.8 1.6-2l4.4-1a2 2 0 0 1 2.2 1.2L13 10Z" />
                 </svg>
-                <!-- Calm Check SVG when all clear -->
                 <svg id="icon-check" class="handIcon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
               </div>
 
               <div class="cueContent">
-                <div id="cue-prompt" class="cuePrompt">Hey — do this now</div>
+                <div id="cue-prompt" class="cuePrompt">Hey — do the work now</div>
                 <div id="cue-title" class="cueTitle">Loading workspace...</div>
                 <div id="cue-meta" class="cueMeta"></div>
               </div>
@@ -538,28 +624,49 @@
 
             <div class="actionRow">
               <button id="btn-primary" type="button" class="btnPrimary">
-                <span>Do It Now</span>
+                <span>Mark Done</span>
               </button>
               <button id="btn-secondary" type="button" class="btnGhost hidden">
-                <span>Open Focus</span>
+                <span>Focus Space</span>
               </button>
             </div>
           </section>
 
-          <!-- Up Next Essential Queue -->
-          <div id="queue-wrap" class="hidden">
+          <!-- Instant Task Capture inside the Edge Sidebar -->
+          <form id="quick-add-form" class="quickAddForm">
+            <input
+              id="quick-input"
+              type="text"
+              class="quickInput"
+              placeholder="+ Add task for today..."
+              autocomplete="off"
+            />
+            <button type="submit" class="quickSubmitBtn">Add</button>
+          </form>
+
+          <!-- Tasks & Deadlines Section -->
+          <section id="tasks-section" class="sectionBlock">
             <div class="sectionHeader">
-              <span>Important Next</span>
-              <span id="queue-count"></span>
+              <span>Tasks &amp; Deadlines</span>
+              <span id="tasks-count">0</span>
             </div>
-            <div id="queue-list" class="queueList" style="margin-top: 6px;"></div>
-          </div>
+            <div id="tasks-list" class="queueList"></div>
+          </section>
+
+          <!-- Daily Routine Section (shown if blocks exist) -->
+          <section id="routine-section" class="sectionBlock hidden">
+            <div class="sectionHeader">
+              <span>Daily Routine</span>
+              <span id="routine-count">0/0</span>
+            </div>
+            <div id="routine-list" class="queueList"></div>
+          </section>
         </main>
 
         <footer class="footer">
           <span id="footer-stat" class="footerStat">Synced with workspace</span>
           <button id="btn-open-app" type="button" class="footerLink">
-            <span>Open Workspace</span>
+            <span>Open Full App</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />
@@ -570,7 +677,6 @@
     </div>
 
     <script>
-      const cardEl = document.getElementById('card');
       const statusChipEl = document.getElementById('status-chip');
       const handBadgeEl = document.getElementById('hand-badge');
       const iconHandEl = document.getElementById('icon-hand');
@@ -580,26 +686,59 @@
       const cueMetaEl = document.getElementById('cue-meta');
       const btnPrimaryEl = document.getElementById('btn-primary');
       const btnSecondaryEl = document.getElementById('btn-secondary');
-      const queueWrapEl = document.getElementById('queue-wrap');
-      const queueCountEl = document.getElementById('queue-count');
-      const queueListEl = document.getElementById('queue-list');
+      const quickAddFormEl = document.getElementById('quick-add-form');
+      const quickInputEl = document.getElementById('quick-input');
+      const tasksSectionEl = document.getElementById('tasks-section');
+      const tasksCountEl = document.getElementById('tasks-count');
+      const tasksListEl = document.getElementById('tasks-list');
+      const routineSectionEl = document.getElementById('routine-section');
+      const routineCountEl = document.getElementById('routine-count');
+      const routineListEl = document.getElementById('routine-list');
       const footerStatEl = document.getElementById('footer-stat');
 
-      let currentSnapshot = null;
+      function renderQueueRow(item) {
+        const row = document.createElement('div');
+        row.className = 'queueItem';
 
-      function syncHeight() {
-        requestAnimationFrame(() => {
-          const totalH = Math.ceil(cardEl.getBoundingClientRect().height + 16);
-          window.sarilingPopover?.resizeHeight(Math.max(190, Math.min(totalH, 520)));
-        });
+        const checkBtn = document.createElement('button');
+        checkBtn.type = 'button';
+        checkBtn.className = 'checkCircle';
+        checkBtn.title = 'Mark complete';
+        checkBtn.setAttribute('aria-label', `Complete ${item.title}`);
+        checkBtn.innerHTML =
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+        checkBtn.onclick = async () => {
+          checkBtn.disabled = true;
+          if (item.kind === 'routine') {
+            await window.sarilingPopover?.completeRoutineBlock(item.id);
+          } else {
+            await window.sarilingPopover?.completeTask(item.id);
+          }
+        };
+
+        const main = document.createElement('div');
+        main.className = 'queueMain';
+        main.onclick = () => window.sarilingPopover?.openWorkspace(item.kind === 'routine' ? '/routine' : '/tasks');
+
+        const title = document.createElement('div');
+        title.className = 'queueTitle';
+        title.textContent = item.title;
+
+        const meta = document.createElement('div');
+        meta.className = 'queueMeta';
+        meta.textContent = item.meta || '';
+
+        main.appendChild(title);
+        if (item.meta) main.appendChild(meta);
+        row.appendChild(checkBtn);
+        row.appendChild(main);
+        return row;
       }
 
       function renderSnapshot(data) {
         if (!data) return;
-        currentSnapshot = data;
 
-        const theme = data.theme === 'dark' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', data.theme === 'dark' ? 'dark' : 'light');
 
         const primary = data.primary || null;
         statusChipEl.className = 'statusChip';
@@ -610,18 +749,22 @@
           iconCheckEl.classList.add('hidden');
           statusChipEl.textContent = 'Syncing';
           cuePromptEl.textContent = 'Connecting to workspace';
-          cueTitleEl.textContent = data.needsAuth ? 'Sign in to view your tasks' : 'Opening your tasks...';
+          cueTitleEl.textContent = data.needsAuth ? 'Sign in to sync your edge sidebar' : 'Loading tasks & schedule...';
           cueMetaEl.textContent = data.needsAuth
-            ? 'Sign in inside the main window so your tasks appear here.'
-            : 'Reading live priorities and daily schedule.';
-          btnPrimaryEl.innerHTML = '<span>Open Workspace</span>';
+            ? 'Open the full app once to sign in.'
+            : 'Reading live workspace data.';
+          btnPrimaryEl.innerHTML = '<span>Open Full App</span>';
           btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
           btnSecondaryEl.classList.add('hidden');
-          queueWrapEl.classList.add('hidden');
+          quickAddFormEl.classList.add('hidden');
+          tasksSectionEl.classList.add('hidden');
+          routineSectionEl.classList.add('hidden');
           footerStatEl.textContent = 'Sariling Mundo Desktop';
-          syncHeight();
           return;
         }
+
+        quickAddFormEl.classList.remove('hidden');
+        tasksSectionEl.classList.remove('hidden');
 
         if (primary) {
           handBadgeEl.classList.add('animated');
@@ -639,7 +782,7 @@
 
           btnPrimaryEl.innerHTML =
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
-            '<span>' + (primary.kind === 'routine' ? 'Mark Block Done' : 'Mark Done') + '</span>';
+            '<span>' + (primary.kind === 'routine' ? 'Complete Block' : 'Complete Task') + '</span>';
 
           btnPrimaryEl.onclick = async () => {
             btnPrimaryEl.disabled = true;
@@ -655,7 +798,7 @@
           };
 
           btnSecondaryEl.classList.remove('hidden');
-          btnSecondaryEl.textContent = primary.kind === 'routine' ? 'Routine' : 'Focus';
+          btnSecondaryEl.textContent = primary.kind === 'routine' ? 'Open Routine' : 'Focus Space';
           btnSecondaryEl.onclick = () => {
             window.sarilingPopover?.openWorkspace(primary.kind === 'routine' ? '/routine' : '/focus');
           };
@@ -666,67 +809,61 @@
 
           statusChipEl.textContent = 'Clear';
           cuePromptEl.textContent = 'All caught up';
-          cueTitleEl.textContent = 'No pending work right now';
-          cueMetaEl.textContent = 'Add a task or routine block whenever you are ready.';
+          cueTitleEl.textContent = 'No pending tasks or active work blocks';
+          cueMetaEl.textContent = 'Capture a quick task below or open the full workspace.';
           cueMetaEl.classList.remove('hidden');
 
-          btnPrimaryEl.innerHTML = '<span>Add Priority in App</span>';
-          btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/tasks');
+          btnPrimaryEl.innerHTML = '<span>Open Full App</span>';
+          btnPrimaryEl.onclick = () => window.sarilingPopover?.openWorkspace('/');
           btnSecondaryEl.classList.add('hidden');
         }
 
-        const secondary = Array.isArray(data.upNext) ? data.upNext : [];
-        if (secondary.length > 0) {
-          queueWrapEl.classList.remove('hidden');
-          queueCountEl.textContent = `${secondary.length} more`;
-          queueListEl.innerHTML = '';
-
-          secondary.forEach((item) => {
-            const row = document.createElement('div');
-            row.className = 'queueItem';
-
-            const checkBtn = document.createElement('button');
-            checkBtn.type = 'button';
-            checkBtn.className = 'checkCircle';
-            checkBtn.title = 'Complete';
-            checkBtn.setAttribute('aria-label', `Complete ${item.title}`);
-            checkBtn.innerHTML =
-              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-            checkBtn.onclick = async () => {
-              checkBtn.disabled = true;
-              if (item.kind === 'routine') {
-                await window.sarilingPopover?.completeRoutineBlock(item.id);
-              } else {
-                await window.sarilingPopover?.completeTask(item.id);
-              }
-            };
-
-            const main = document.createElement('div');
-            main.className = 'queueMain';
-            main.onclick = () => window.sarilingPopover?.openWorkspace(item.kind === 'routine' ? '/routine' : '/tasks');
-
-            const title = document.createElement('div');
-            title.className = 'queueTitle';
-            title.textContent = item.title;
-
-            const meta = document.createElement('div');
-            meta.className = 'queueMeta';
-            meta.textContent = item.meta || (item.kind === 'routine' ? 'Daily Routine' : 'Task');
-
-            main.appendChild(title);
-            main.appendChild(meta);
-            row.appendChild(checkBtn);
-            row.appendChild(main);
-            queueListEl.appendChild(row);
-          });
+        const taskItems = Array.isArray(data.taskItems) ? data.taskItems : [];
+        tasksCountEl.textContent = String(taskItems.length);
+        tasksListEl.innerHTML = '';
+        if (taskItems.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'emptyMini';
+          empty.textContent = 'No pending tasks right now.';
+          tasksListEl.appendChild(empty);
         } else {
-          queueWrapEl.classList.add('hidden');
-          queueListEl.innerHTML = '';
+          taskItems.forEach((item) => tasksListEl.appendChild(renderQueueRow(item)));
+        }
+
+        const routineItems = Array.isArray(data.routineItems) ? data.routineItems : [];
+        if (data.routineSummary && data.routineSummary.total > 0) {
+          routineSectionEl.classList.remove('hidden');
+          routineCountEl.textContent = `${data.routineSummary.done}/${data.routineSummary.total}`;
+          routineListEl.innerHTML = '';
+          if (routineItems.length === 0) {
+            const doneBox = document.createElement('div');
+            doneBox.className = 'emptyMini';
+            doneBox.textContent = 'All routine blocks completed today.';
+            routineListEl.appendChild(doneBox);
+          } else {
+            routineItems.forEach((item) => routineListEl.appendChild(renderQueueRow(item)));
+          }
+        } else {
+          routineSectionEl.classList.add('hidden');
+          routineListEl.innerHTML = '';
         }
 
         footerStatEl.textContent = data.summary || 'Synced with workspace';
-        syncHeight();
       }
+
+      quickAddFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = quickInputEl.value.trim();
+        if (!title) return;
+        quickInputEl.disabled = true;
+        try {
+          await window.sarilingPopover?.addTask(title);
+          quickInputEl.value = '';
+        } finally {
+          quickInputEl.disabled = false;
+          quickInputEl.focus();
+        }
+      });
 
       document.getElementById('btn-close').addEventListener('click', () => {
         window.sarilingPopover?.closePopover();

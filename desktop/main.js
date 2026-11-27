@@ -428,6 +428,23 @@ async function readWorkspaceSnapshot() {
             alertCandidate = null;
           }
 
+          const taskItems = sortedTasks.slice(0, 8).map((t) => ({
+            kind: 'task',
+            id: t.id,
+            title: t.title,
+            meta: [
+              t.estimatedDuration ? t.estimatedDuration + 'm' : null,
+              t.dueDate === todayStr ? 'Due today' : t.dueDate && t.dueDate < todayStr ? 'Overdue (' + t.dueDate + ')' : t.priority ? String(t.priority).toUpperCase() : null,
+            ].filter(Boolean).join(' · ') || 'Task',
+          }));
+
+          const routineItems = pendingBlocks.slice(0, 6).map((b) => ({
+            kind: 'routine',
+            id: b.id,
+            title: b.title,
+            meta: b.timeRange || 'Today',
+          }));
+
           const routineTotal = blocks.length;
           const routineDone = blocks.filter((b) => completedBlockIds.includes(b.id)).length;
           const parts = [];
@@ -439,6 +456,9 @@ async function readWorkspaceSnapshot() {
             theme,
             primary,
             upNext,
+            taskItems,
+            routineItems,
+            routineSummary: { done: routineDone, total: routineTotal },
             alertCandidate,
             hasWork: Boolean(primary),
             summary: parts.join(' · '),
@@ -485,8 +505,33 @@ function positionWindowNextToBubble(targetWin, width = 356, height = 320) {
   targetWin.setBounds({ x: Math.round(targetX), y: Math.round(targetY), width, height });
 }
 
-function positionPopoverNextToBubble(width = 356, height = 320) {
-  positionWindowNextToBubble(popoverWindow, width, height);
+function positionPopoverNextToBubble() {
+  if (!popoverWindow || popoverWindow.isDestroyed()) return;
+  const bubbleBounds = bubbleWindow && !bubbleWindow.isDestroyed()
+    ? bubbleWindow.getBounds()
+    : { x: 0, y: 200, width: 32, height: 84 };
+  const display = screen.getDisplayNearestPoint({ x: bubbleBounds.x, y: bubbleBounds.y });
+  const wa = display.workArea;
+  const width = 364;
+  const height = Math.max(420, Math.min(680, wa.height - 24));
+  const gap = 8;
+  const bubbleCenterX = bubbleBounds.x + bubbleBounds.width / 2;
+  const screenCenterX = wa.x + wa.width / 2;
+
+  let targetX = bubbleCenterX < screenCenterX
+    ? bubbleBounds.x + bubbleBounds.width + gap
+    : bubbleBounds.x - width - gap;
+  targetX = Math.max(wa.x + 8, Math.min(targetX, wa.x + wa.width - width - 8));
+
+  const targetY = Math.max(
+    wa.y + 12,
+    Math.min(
+      Math.round(wa.y + (wa.height - height) / 2),
+      wa.y + wa.height - height - 12
+    )
+  );
+
+  popoverWindow.setBounds({ x: Math.round(targetX), y: Math.round(targetY), width, height });
 }
 
 function createToastWindow() {
@@ -589,8 +634,8 @@ async function evaluateAndNotifyAlerts(force = false) {
 
 function createPopoverWindow() {
   popoverWindow = new BrowserWindow({
-    width: 356,
-    height: 300,
+    width: 364,
+    height: 620,
     frame: false,
     transparent: true,
     resizable: false,
@@ -654,8 +699,7 @@ async function showPopover() {
     createPopoverWindow();
   }
   const snap = await readWorkspaceSnapshot();
-  const bounds = popoverWindow.getBounds();
-  positionPopoverNextToBubble(bounds.width || 356, bounds.height || 300);
+  positionPopoverNextToBubble();
   lastPopoverShownAt = Date.now();
   popoverWindow.show();
   popoverWindow.focus();
@@ -1139,14 +1183,45 @@ if (!gotSingleLock) {
       sendBubbleState();
     });
 
-    ipcMain.on('popover:close', () => {
-      hidePopover();
+    ipcMain.handle('popover:add-task', async (_event, rawTitle) => {
+      const cleanTitle = String(rawTitle || '').trim();
+      if (mainWindow && !mainWindow.isDestroyed() && cleanTitle) {
+        const safeTitle = JSON.stringify(cleanTitle);
+        await mainWindow.webContents.executeJavaScript(`
+          (() => {
+            try {
+              const raw = localStorage.getItem('life_os_tasks_v1');
+              const list = raw ? JSON.parse(raw) : [];
+              const arr = Array.isArray(list) ? list : [];
+              const d = new Date();
+              const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+              const now = d.toISOString();
+              const newTask = {
+                id: 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                title: ${safeTitle},
+                status: 'todo',
+                priority: 'high',
+                dueDate: todayStr,
+                estimatedDuration: 25,
+                tags: [],
+                subtasks: [],
+                createdAt: now,
+                updatedAt: now,
+              };
+              localStorage.setItem('life_os_tasks_v1', JSON.stringify([newTask, ...arr]));
+              window.dispatchEvent(new CustomEvent('life_os_cloud_synced'));
+              return true;
+            } catch {
+              return false;
+            }
+          })()
+        `);
+      }
+      await refreshPopover();
     });
 
-    ipcMain.on('popover:resize', (_event, height) => {
-      if (!popoverWindow || popoverWindow.isDestroyed()) return;
-      const clampedH = Math.max(190, Math.min(Number(height) || 300, 520));
-      positionPopoverNextToBubble(356, clampedH);
+    ipcMain.on('popover:close', () => {
+      hidePopover();
     });
 
     ipcMain.handle('toast:open-popover', async () => {
