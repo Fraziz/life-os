@@ -44,10 +44,10 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
-        name: 'Daily Routine',
+        name: 'Habits & Routine',
         short_name: 'Routine',
-        description: 'Open Daily Routine flow',
-        url: '/routine',
+        description: 'Open Habits and Daily Routine checklist',
+        url: '/habits?tab=routine',
         icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
@@ -62,13 +62,6 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: 'Inbox',
         description: 'Capture quick thoughts and reminders',
         url: '/inbox',
-        icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
-      },
-      {
-        name: 'Roadmap',
-        short_name: 'Roadmap',
-        description: 'Open Roadmap and Life Path',
-        url: '/roadmap',
         icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
     ],

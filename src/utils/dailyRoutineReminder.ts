@@ -170,7 +170,7 @@ export function getDailyRoutineSnapshot(): DailyRoutineSnapshot {
       const savedBlocks = localStorage.getItem(ROUTINE_STORAGE_KEY);
       if (savedBlocks) {
         const parsed = JSON.parse(savedBlocks);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           blocks = parsed;
         }
       }

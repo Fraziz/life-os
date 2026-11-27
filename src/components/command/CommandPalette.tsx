@@ -276,24 +276,13 @@ export default function CommandPalette() {
       },
     },
     {
-      id: 'nav-roadmap',
-      category: 'Navigation',
-      title: 'Life Roadmap',
-      subtitle: '/roadmap',
-      keywords: ['timeline', 'future'],
-      onSelect: () => {
-        router.push('/roadmap');
-        closePalette();
-      },
-    },
-    {
       id: 'nav-routine',
       category: 'Navigation',
       title: 'Daily Routine',
-      subtitle: '/routine',
-      keywords: ['schedule', 'graph', 'morning', 'habits'],
+      subtitle: '/habits?tab=routine',
+      keywords: ['schedule', 'checklist', 'morning', 'habits'],
       onSelect: () => {
-        router.push('/routine');
+        router.push('/habits?tab=routine');
         closePalette();
       },
     },

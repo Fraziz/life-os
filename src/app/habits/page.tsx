@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Repeat,
   Plus,
@@ -21,6 +21,8 @@ import {
 import { useHabits } from '@/context/HabitContext';
 import { useGoals } from '@/context/GoalContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
+import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
+import DailyRoutineChecklist from '@/components/habits/DailyRoutineChecklist';
 import type { Habit, HabitFrequency } from '@/types';
 import styles from './page.module.css';
 import BulkActionBar from '@/components/ui/BulkActionBar';
@@ -47,8 +49,24 @@ export default function HabitsPage() {
 
   const { goals } = useGoals();
   const { activeAreas, focusedAreaId } = useLifeAreas();
+  const dailyRoutine = useDailyRoutineReminder();
 
+  const [sectionTab, setSectionTab] = useState<'habits' | 'routine'>('habits');
   const [addModalOpen, setAddModalOpen] = useState(false);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'routine') {
+          setSectionTab('routine');
+        }
+      } catch {}
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
 
   // Form states for creating a new habit
   const [title, setTitle] = useState('');
@@ -161,17 +179,44 @@ export default function HabitsPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Optional Habits &amp; Practice</h1>
+          <h1 className={styles.title}>Habits &amp; Daily Routine</h1>
         </div>
 
         <div className={styles.headerActions}>
-          <button className={styles.btnAdd} onClick={() => setAddModalOpen(true)}>
-            <Plus size={14} /> New Habit
-          </button>
+          <div className={styles.viewTabs} role="tablist" aria-label="Section switcher">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sectionTab === 'habits'}
+              className={`${styles.viewTab} ${sectionTab === 'habits' ? styles.viewTabActive : ''}`}
+              onClick={() => setSectionTab('habits')}
+            >
+              Habits ({habits.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sectionTab === 'routine'}
+              className={`${styles.viewTab} ${sectionTab === 'routine' ? styles.viewTabActive : ''}`}
+              onClick={() => setSectionTab('routine')}
+            >
+              Daily Routine ({dailyRoutine.completedCount}/{dailyRoutine.totalCount})
+            </button>
+          </div>
+
+          {sectionTab === 'habits' && (
+            <button className={styles.btnAdd} onClick={() => setAddModalOpen(true)}>
+              <Plus size={14} /> New Habit
+            </button>
+          )}
         </div>
       </header>
 
-      {/* ── Quick Add Bar ── */}
+      {sectionTab === 'routine' ? (
+        <DailyRoutineChecklist />
+      ) : (
+        <>
+          {/* ── Quick Add Bar ── */}
       <form className={styles.quickAddCard} onSubmit={handleQuickAddSubmit}>
         <div className={styles.quickAddRow}>
           <Plus size={16} className={styles.quickAddIcon} />
@@ -354,12 +399,8 @@ export default function HabitsPage() {
                 }
               }}
               style={{
-                background: isSelected
+                background: isSelected || completedToday
                   ? 'var(--color-surface-2)'
-                  : completedToday
-                  ? `linear-gradient(135deg, var(--color-surface) 0%, rgba(34,211,165,0.06) 100%)`
-                  : habit.color
-                  ? `linear-gradient(135deg, var(--color-surface) 0%, ${habit.color}10 100%)`
                   : undefined,
                 boxShadow: isSelected ? '0 0 0 1.5px var(--color-accent)' : undefined,
                 borderColor: isSelected ? 'var(--color-accent)' : undefined,
@@ -468,7 +509,7 @@ export default function HabitsPage() {
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-                Create Optional Habit
+                New Habit
               </h3>
               <button style={{ background: 'transparent', border: 'none', color: 'var(--color-text-faint)', cursor: 'pointer' }} onClick={() => setAddModalOpen(false)}>
                 <X size={18} />
@@ -644,37 +685,6 @@ export default function HabitsPage() {
                 </div>
               </div>
 
-              {/* Color Accent Swatch Picker */}
-              <div>
-                <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-text-faint)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                  Accent Color
-                </label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    '#7c6fff', '#38bdf8', '#22d3a5', '#f59e0b',
-                    '#ef4444', '#ec4899', '#a855f7', '#84cc16', '#fb923c',
-                  ].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      title={c}
-                      onClick={() => setHabitColor(c)}
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        background: c,
-                        border: habitColor === c ? '3px solid white' : '2px solid transparent',
-                        outline: habitColor === c ? `2px solid ${c}` : 'none',
-                        outlineOffset: '2px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-2)' }}>
                 <button type="button" className={styles.btnSecondary} onClick={() => setAddModalOpen(false)}>
                   Cancel
@@ -699,6 +709,8 @@ export default function HabitsPage() {
         }}
         onDelete={handleBatchDeleteHabits}
       />
+        </>
+      )}
     </div>
   );
 }

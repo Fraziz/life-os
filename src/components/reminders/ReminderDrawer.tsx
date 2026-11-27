@@ -181,7 +181,7 @@ export default function ReminderDrawer({ isOpen, onClose }: ReminderDrawerProps)
         typeLabel: 'Daily Routine',
         title: 'Daily Routine',
         subtitle: dailyRoutine.subtitle,
-        href: '/routine',
+        href: '/habits?tab=routine',
         icon: <Clock size={16} strokeWidth={2} />,
         color: '#f59e0b',
         bg: 'rgba(245, 158, 11, 0.12)',

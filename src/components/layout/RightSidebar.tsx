@@ -69,7 +69,7 @@ export default function RightSidebar() {
         typeLabel: 'ROUTINE',
         title: 'Daily Routine',
         subtitle: dailyRoutine.subtitle,
-        href: '/routine',
+        href: '/habits?tab=routine',
         onDone: () => {
           dailyRoutine.markDoneToday();
           playSuccessChime();

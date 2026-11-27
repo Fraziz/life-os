@@ -17,10 +17,10 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'routine',
-        label: 'Daily Routine',
-        href: '/routine',
-        icon: 'routine',
+        id: 'habits',
+        label: 'Habits & Routine',
+        href: '/habits',
+        icon: 'habits',
         isAvailable: true,
       },
       {
@@ -58,13 +58,6 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Planning',
     items: [
       {
-        id: 'roadmap',
-        label: 'Roadmap',
-        href: '/roadmap',
-        icon: 'roadmap',
-        isAvailable: true,
-      },
-      {
         id: 'dreams',
         label: 'Dreams & Vision',
         href: '/dreams',
@@ -96,13 +89,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Books & Lessons',
         href: '/knowledge',
         icon: 'knowledge',
-        isAvailable: true,
-      },
-      {
-        id: 'habits',
-        label: 'Habits',
-        href: '/habits',
-        icon: 'habits',
         isAvailable: true,
       },
       {
