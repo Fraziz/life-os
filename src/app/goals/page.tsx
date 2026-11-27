@@ -960,9 +960,6 @@ export default function GoalsPage() {
                 <button
                   type="submit"
                   className={styles.btnCreate}
-                  style={{
-                    background: quickBridge.type === 'project' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  }}
                 >
                   {quickBridge.type === 'project' ? 'Create Project' : 'Add Task'}
                 </button>

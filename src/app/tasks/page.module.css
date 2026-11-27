@@ -1198,9 +1198,8 @@
 .subtasksBox {
   background: transparent;
   border: none;
-  border-left: 2px solid var(--color-border-subtle);
   border-radius: 0;
-  padding: 2px 0 2px var(--space-3);
+  padding: 2px 0 2px var(--space-4);
   margin-left: 4px;
   margin-top: 4px;
   display: flex;

@@ -213,8 +213,8 @@
 
 /*  Time Reality Check Box  */
 .timeRealityCard {
-  background: linear-gradient(135deg, rgba(124, 106, 255, 0.08) 0%, rgba(56, 189, 248, 0.05) 100%);
-  border: 1px solid rgba(124, 106, 255, 0.25);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-2xl);
   padding: var(--space-5);
   display: flex;

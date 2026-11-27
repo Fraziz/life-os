@@ -953,16 +953,10 @@ export default function InboxPage() {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {activeItems.length >= 1 && (
               <button
-                className={styles.btnSecondary}
+                className={styles.btnAiProcessAll}
                 onClick={handleAIProcess}
                 disabled={isAiProcessing}
                 id="ai-process-inbox-btn"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  background: 'linear-gradient(135deg, var(--color-accent), #8b5cf6)',
-                  color: 'white', border: 'none', fontWeight: 600, fontSize: '12px',
-                  padding: '6px 14px', borderRadius: '10px',
-                }}
               >
                 {isAiProcessing ? (
                   <>
@@ -974,9 +968,8 @@ export default function InboxPage() {
               </button>
             )}
             <button
-              className={styles.btnSecondary}
+              className={styles.btnClearInbox}
               onClick={() => { if (confirm('Clear all items from Inbox?')) clearInbox(); }}
-              style={{ fontSize: '11px', color: 'var(--color-danger)' }}
             >
               Clear Inbox
             </button>

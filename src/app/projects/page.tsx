@@ -1383,9 +1383,6 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   className={styles.btnCreate}
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                  }}
                 >
                   Add Task
                 </button>

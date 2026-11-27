@@ -243,11 +243,11 @@ export default function TodayDashboardContent() {
       const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
       const matchesTag = Boolean(
         areaNameLower &&
-          t.tags &&
-          t.tags.some((tag) => {
-            const tl = tag.toLowerCase();
-            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
-          })
+        t.tags &&
+        t.tags.some((tag) => {
+          const tl = tag.toLowerCase();
+          return tl.includes(areaNameLower) || areaNameLower.includes(tl);
+        })
       );
       return matchesDirect || matchesProject || matchesGoal || matchesTag;
     });
@@ -556,9 +556,9 @@ export default function TodayDashboardContent() {
     const shortContext = isDoItNow
       ? 'Do It Now'
       : hier.parentProject?.title ||
-        (task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '') ||
-        hier.parentGoal?.title ||
-        '';
+      (task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '') ||
+      hier.parentGoal?.title ||
+      '';
     return { isDoItNow, shortContext, tooltip: contextParts.join(' • ') || undefined };
   };
 
@@ -976,27 +976,27 @@ export default function TodayDashboardContent() {
                       )}
                     </div>
 
-                  {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
-                  {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
-                    <div style={{ marginLeft: '32px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '4px' }}>
-                      {task.subtasks.map((sub) => (
-                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleSubtask(task.id, sub.id, e)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
-                            title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
-                          >
-                            {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
-                          </button>
-                          <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
+                    {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
+                      <div style={{ marginLeft: '32px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '4px' }}>
+                        {task.subtasks.map((sub) => (
+                          <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleSubtask(task.id, sub.id, e)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
+                              title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
+                            >
+                              {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                            </button>
+                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {addingTask ? (
                 <form onSubmit={handleCreateTask} className={styles.addTaskForm}>
                   <input
@@ -1121,8 +1121,8 @@ export default function TodayDashboardContent() {
                   {isWorkoutDone
                     ? 'Completed for today ✓'
                     : todaySched?.isRestDay
-                    ? `${DAYS_OF_WEEK[todayDow]} • Scheduled recovery day`
-                    : `${DAYS_OF_WEEK[todayDow]} routine • 45 min`}
+                      ? `${DAYS_OF_WEEK[todayDow]} • Scheduled recovery day`
+                      : `${DAYS_OF_WEEK[todayDow]} routine • 45 min`}
                 </span>
               </div>
             </div>
@@ -1385,7 +1385,7 @@ export default function TodayDashboardContent() {
               <button
                 type="button"
                 className={styles.modalPrimaryBtn}
-                style={{ flex: 1, background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                style={{ flex: 1, background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
                 onClick={() => {
                   setWrapUpOpen(false);
                   handleOpenBriefing('evening');

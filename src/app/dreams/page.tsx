@@ -723,9 +723,6 @@ export default function DreamsPage() {
                 <button
                   type="submit"
                   className={styles.btnCreate}
-                  style={{
-                    background: quickBridge.type === 'goal' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  }}
                 >
                   {quickBridge.type === 'goal' ? 'Create Goal' : 'Add Task'}
                 </button>
