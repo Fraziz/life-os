@@ -8,10 +8,7 @@ export default function RoutinePage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Daily Routine</h1>
-          <p className={styles.subtitle}>Time-anchored daily checklist synced with Today.</p>
-        </div>
+        <h1 className={styles.title}>Daily Routine</h1>
       </header>
 
       <DailyRoutineChecklist />
