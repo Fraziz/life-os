@@ -91,12 +91,12 @@ function getDefaultBubbleConfig() {
   const display = screen.getPrimaryDisplay();
   const wa = display.workArea;
   return {
-    mode: 'circle', // 'circle' | 'line' | 'pill'
+    mode: 'line', // 'circle' | 'line' | 'pill'
     edge: 'right',
     visible: true,
     autoMorphToLine: true,
-    x: wa.x + wa.width - 86,
-    y: Math.round(wa.y + wa.height * 0.48),
+    x: wa.x + wa.width - 32,
+    y: Math.round(wa.y + wa.height * 0.42),
   };
 }
 

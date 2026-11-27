@@ -1,394 +1,417 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sariling Mundo Quick Bubble</title>
-    <style>
-      * {
-        box-sizing: border-box;
-        user-select: none;
-        -webkit-user-select: none;
-      }
 
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: transparent;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sariling Mundo Quick Bubble</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
-      .stage {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
 
-      /* ── Design 1: Minimalist Obsidian Circle Bubble ── */
-      .circleBubble {
-        position: relative;
-        width: 48px;
-        height: 48px;
-        border-radius: 999px;
-        background: #0d0f14;
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow:
-          0 6px 18px rgba(0, 0, 0, 0.34),
-          0 1px 3px rgba(0, 0, 0, 0.24);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: grab;
-        transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s ease, background 0.16s ease;
-      }
+    .stage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-      .circleBubble:hover {
-        transform: scale(1.06);
-        background: #151923;
-        border-color: rgba(255, 255, 255, 0.45);
-      }
+    /* ── Design 1: Minimalist Obsidian Circle Bubble ── */
+    .circleBubble {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      background: #0d0f14;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.34),
+        0 1px 3px rgba(0, 0, 0, 0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s ease, background 0.16s ease;
+    }
 
-      .circleBubble.active {
-        border-color: rgba(255, 255, 255, 0.65);
-      }
+    .circleBubble:hover {
+      transform: scale(1.06);
+      background: #151923;
+      border-color: rgba(255, 255, 255, 0.45);
+    }
 
-      .circleBubble:active {
-        cursor: grabbing;
-        transform: scale(0.95);
-      }
+    .circleBubble.active {
+      border-color: rgba(255, 255, 255, 0.65);
+    }
 
-      .circleLogo {
-        width: 26px;
-        height: 26px;
-        object-fit: contain;
-        pointer-events: none;
-      }
+    .circleBubble:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
 
-      .statusPip {
-        position: absolute;
-        bottom: 2px;
-        right: 2px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #64748b;
-        border: 2px solid #0d0f14;
-        transition: background 0.2s ease, transform 0.2s ease;
-      }
+    .circleLogo {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+      pointer-events: none;
+    }
 
-      .circleBubble.hasWork .statusPip {
-        background: #f59e0b;
-      }
+    .statusPip {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #64748b;
+      border: 2px solid #0d0f14;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
 
-      .circleBubble.active .statusPip {
-        background: #ffffff;
-      }
+    .circleBubble.hasWork .statusPip {
+      background: #f59e0b;
+    }
 
-      /* ── Design 2: Minimalist Screen-Edge Line Handle ── */
-      .edgeStage {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-      }
+    .circleBubble.active .statusPip {
+      background: #ffffff;
+    }
 
-      .edgeStage.left {
-        justify-content: flex-start;
-      }
+    /* ── Design 2: Minimalist Screen-Edge Panel Handle ── */
+    .edgeStage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
 
-      .edgeStage.right {
-        justify-content: flex-end;
-      }
+    .edgeStage.left {
+      justify-content: flex-start;
+    }
 
-      .edgeLineHandle {
-        position: relative;
-        width: 8px;
-        height: 68px;
-        background: rgba(13, 15, 20, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        transition:
-          width 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-          background 0.16s ease,
-          border-color 0.16s ease;
-      }
+    .edgeStage.right {
+      justify-content: flex-end;
+    }
 
-      .edgeStage.left .edgeLineHandle {
-        border-radius: 0 999px 999px 0;
-        border-left: none;
-      }
+    .edgeLineHandle {
+      position: relative;
+      width: 12px;
+      height: 76px;
+      background: linear-gradient(
+        180deg,
+        rgba(165, 224, 255, 0.92) 0%,
+        rgba(147, 197, 253, 0.88) 52%,
+        rgba(196, 181, 253, 0.9) 100%
+      );
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 4px 16px rgba(15, 23, 42, 0.28),
+        0 0 12px rgba(147, 197, 253, 0.38);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition:
+        width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        height 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    }
 
-      .edgeStage.right .edgeLineHandle {
-        border-radius: 999px 0 0 999px;
-        border-right: none;
-      }
+    .edgeStage.left .edgeLineHandle {
+      border-radius: 0 14px 14px 0;
+      border-left: none;
+    }
 
-      .edgeLineHandle:hover,
-      .edgeLineHandle.active {
-        width: 26px;
-        background: #0d0f14;
-        border-color: rgba(255, 255, 255, 0.45);
-      }
+    .edgeStage.right .edgeLineHandle {
+      border-radius: 14px 0 0 14px;
+      border-right: none;
+    }
 
-      .edgeLineHandle.hasWork::after {
-        content: '';
-        position: absolute;
-        top: 8px;
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: #f59e0b;
-        transition: opacity 0.12s ease;
-      }
+    .edgeLineHandle:hover,
+    .edgeLineHandle.active {
+      width: 28px;
+      height: 80px;
+      background: rgba(13, 15, 20, 0.94);
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
 
-      .edgeLineHandle:hover.hasWork::after {
-        opacity: 0;
+    @keyframes edgePulse {
+      0%,
+      100% {
+        opacity: 0.88;
       }
-
-      .edgeMiniLogo {
-        width: 16px;
-        height: 16px;
-        object-fit: contain;
-        opacity: 0;
-        transform: scale(0.75);
-        transition: opacity 0.14s ease, transform 0.16s ease;
-        pointer-events: none;
-      }
-
-      .edgeLineHandle:hover .edgeMiniLogo,
-      .edgeLineHandle.active .edgeMiniLogo {
+      50% {
         opacity: 1;
-        transform: scale(1);
       }
+    }
 
-      /* ── Design 3: Minimalist Pill Badge ── */
-      .pillHandle {
-        height: 38px;
-        padding: 0 12px 0 9px;
-        border-radius: 999px;
-        background: rgba(13, 15, 20, 0.94);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #ffffff;
-        cursor: grab;
-        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      }
+    .edgeLineHandle.hasWork {
+      animation: edgePulse 2.4s ease-in-out infinite;
+    }
 
-      .pillHandle:hover {
-        transform: scale(1.02);
-        border-color: rgba(255, 255, 255, 0.48);
-        background: #151923;
-      }
+    .edgeLineHandle.hasWork::after {
+      content: '';
+      position: absolute;
+      top: 9px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #0d0f14;
+      opacity: 0.7;
+      transition: opacity 0.12s ease;
+    }
 
-      .pillHandle:active {
-        cursor: grabbing;
-        transform: scale(0.97);
-      }
+    .edgeLineHandle:hover.hasWork::after,
+    .edgeLineHandle.active.hasWork::after {
+      opacity: 0;
+    }
 
-      .pillLogo {
-        width: 20px;
-        height: 20px;
-        object-fit: contain;
-        pointer-events: none;
-      }
+    .edgeMiniLogo {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      opacity: 0;
+      transform: scale(0.75);
+      transition: opacity 0.14s ease, transform 0.16s ease;
+      pointer-events: none;
+    }
 
-      .pillLabel {
-        font-size: 11.5px;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-        white-space: nowrap;
-      }
+    .edgeLineHandle:hover .edgeMiniLogo,
+    .edgeLineHandle.active .edgeMiniLogo {
+      opacity: 1;
+      transform: scale(1);
+    }
 
-      .pillDot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #64748b;
-        flex-shrink: 0;
-      }
+    /* ── Design 3: Minimalist Pill Badge ── */
+    .pillHandle {
+      height: 38px;
+      padding: 0 12px 0 9px;
+      border-radius: 999px;
+      background: rgba(13, 15, 20, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+      cursor: grab;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
 
-      .pillHandle.hasWork .pillDot {
-        background: #f59e0b;
-      }
+    .pillHandle:hover {
+      transform: scale(1.02);
+      border-color: rgba(255, 255, 255, 0.48);
+      background: #151923;
+    }
 
-      .pillHandle.active .pillDot {
-        background: #ffffff;
-      }
+    .pillHandle:active {
+      cursor: grabbing;
+      transform: scale(0.97);
+    }
 
-      .hidden {
-        display: none !important;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root" class="stage">
-      <!-- Mode: Circle Bubble -->
-      <div
-        id="mode-circle"
-        class="circleBubble"
-        title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles"
-      >
-        <img src="logo.png" alt="Sariling Mundo" class="circleLogo" />
-        <span class="statusPip"></span>
-      </div>
+    .pillLogo {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      pointer-events: none;
+    }
 
-      <!-- Mode: Edge Line (Swipe / Click) -->
-      <div id="mode-line" class="edgeStage right hidden">
-        <div
-          id="edge-handle"
-          class="edgeLineHandle"
-          title="Click or swipe inward for quick focus · Drag up/down to move · Right-click for styles"
-        >
-          <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
-        </div>
-      </div>
+    .pillLabel {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
 
-      <!-- Mode: Compact Pill -->
-      <div
-        id="mode-pill"
-        class="pillHandle hidden"
-        title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles"
-      >
-        <img src="logo.png" alt="Sariling Mundo" class="pillLogo" />
-        <span id="pill-label" class="pillLabel">Sariling Mundo</span>
-        <span class="pillDot"></span>
+    .pillDot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #64748b;
+      flex-shrink: 0;
+    }
+
+    .pillHandle.hasWork .pillDot {
+      background: #f59e0b;
+    }
+
+    .pillHandle.active .pillDot {
+      background: #ffffff;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root" class="stage">
+    <!-- Mode: Circle Bubble -->
+    <div id="mode-circle" class="circleBubble"
+      title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles">
+      <img src="logo.png" alt="Sariling Mundo" class="circleLogo" />
+      <span class="statusPip"></span>
+    </div>
+
+    <!-- Mode: Edge Line (Swipe / Click) -->
+    <div id="mode-line" class="edgeStage right hidden">
+      <div id="edge-handle" class="edgeLineHandle"
+        title="Click or swipe inward for quick focus · Drag up/down to move · Right-click for styles">
+        <img src="logo.png" alt="Sariling Mundo" class="edgeMiniLogo" />
       </div>
     </div>
 
-    <script>
-      const elCircle = document.getElementById('mode-circle');
-      const elLineWrap = document.getElementById('mode-line');
-      const elLineHandle = document.getElementById('edge-handle');
-      const elPill = document.getElementById('mode-pill');
-      const elPillLabel = document.getElementById('pill-label');
+    <!-- Mode: Compact Pill -->
+    <div id="mode-pill" class="pillHandle hidden"
+      title="Click for quick focus · Double-click for full app · Drag to move · Right-click for styles">
+      <img src="logo.png" alt="Sariling Mundo" class="pillLogo" />
+      <span id="pill-label" class="pillLabel">Sariling Mundo</span>
+      <span class="pillDot"></span>
+    </div>
+  </div>
 
-      let currentState = { mode: 'circle', edge: 'right', popoverVisible: false, hasWork: false, pillText: 'Sariling Mundo' };
+  <script>
+    const elCircle = document.getElementById('mode-circle');
+    const elLineWrap = document.getElementById('mode-line');
+    const elLineHandle = document.getElementById('edge-handle');
+    const elPill = document.getElementById('mode-pill');
+    const elPillLabel = document.getElementById('pill-label');
 
-      function applyState(state) {
-        if (!state) return;
-        currentState = state;
+    let currentState = { mode: 'circle', edge: 'right', popoverVisible: false, hasWork: false, pillText: 'Sariling Mundo' };
 
-        elCircle.classList.toggle('hidden', state.mode !== 'circle');
-        elLineWrap.classList.toggle('hidden', state.mode !== 'line');
-        elPill.classList.toggle('hidden', state.mode !== 'pill');
+    function applyState(state) {
+      if (!state) return;
+      currentState = state;
 
-        elLineWrap.classList.toggle('left', state.edge === 'left');
-        elLineWrap.classList.toggle('right', state.edge !== 'left');
+      elCircle.classList.toggle('hidden', state.mode !== 'circle');
+      elLineWrap.classList.toggle('hidden', state.mode !== 'line');
+      elPill.classList.toggle('hidden', state.mode !== 'pill');
 
-        const isActive = Boolean(state.popoverVisible);
-        const hasWork = Boolean(state.hasWork);
+      elLineWrap.classList.toggle('left', state.edge === 'left');
+      elLineWrap.classList.toggle('right', state.edge !== 'left');
 
-        elCircle.classList.toggle('active', isActive);
-        elCircle.classList.toggle('hasWork', hasWork);
+      const isActive = Boolean(state.popoverVisible);
+      const hasWork = Boolean(state.hasWork);
 
-        elLineHandle.classList.toggle('active', isActive);
-        elLineHandle.classList.toggle('hasWork', hasWork);
+      elCircle.classList.toggle('active', isActive);
+      elCircle.classList.toggle('hasWork', hasWork);
 
-        elPill.classList.toggle('active', isActive);
-        elPill.classList.toggle('hasWork', hasWork);
+      elLineHandle.classList.toggle('active', isActive);
+      elLineHandle.classList.toggle('hasWork', hasWork);
 
-        if (state.pillText && elPillLabel) {
-          elPillLabel.textContent = state.pillText;
+      elPill.classList.toggle('active', isActive);
+      elPill.classList.toggle('hasWork', hasWork);
+
+      if (state.pillText && elPillLabel) {
+        elPillLabel.textContent = state.pillText;
+      }
+    }
+
+    if (window.sarilingBubble) {
+      window.sarilingBubble.getState().then(applyState);
+      window.sarilingBubble.onState(applyState);
+    }
+
+    let pointerDown = null;
+    let clickTimer = null;
+
+    function handleActivate() {
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        window.sarilingBubble?.toggleApp();
+        return;
+      }
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        window.sarilingBubble?.togglePopover();
+      }, 170);
+    }
+
+    function attachInteractions(targetEl, isEdgeLine = false) {
+      targetEl.addEventListener('pointerdown', (e) => {
+        if (e.button === 2) return;
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        pointerDown = {
+          startScreenX: e.screenX,
+          startScreenY: e.screenY,
+          moved: false,
+          isEdgeLine,
+        };
+        try {
+          targetEl.setPointerCapture(e.pointerId);
+        } catch { }
+        window.sarilingBubble?.dragStart(e.screenX, e.screenY);
+      });
+
+      targetEl.addEventListener('pointermove', (e) => {
+        if (!pointerDown) return;
+        const dx = e.screenX - pointerDown.startScreenX;
+        const dy = e.screenY - pointerDown.startScreenY;
+
+        // Swipe inward on edge line immediately opens the compact popover
+        if (pointerDown.isEdgeLine && Math.abs(dx) > 16) {
+          const swipedInward =
+            (currentState.edge === 'right' && dx < -16) ||
+            (currentState.edge === 'left' && dx > 16);
+          if (swipedInward) {
+            pointerDown = null;
+            window.sarilingBubble?.togglePopover();
+            return;
+          }
         }
-      }
 
-      if (window.sarilingBubble) {
-        window.sarilingBubble.getState().then(applyState);
-        window.sarilingBubble.onState(applyState);
-      }
-
-      let pointerDown = null;
-      let clickTimer = null;
-
-      function handleActivate() {
-        if (clickTimer) {
-          clearTimeout(clickTimer);
-          clickTimer = null;
-          window.sarilingBubble?.toggleApp();
-          return;
+        if (Math.hypot(dx, dy) > 6) {
+          pointerDown.moved = true;
+          window.sarilingBubble?.dragMove(e.screenX, e.screenY);
         }
-        clickTimer = setTimeout(() => {
-          clickTimer = null;
-          window.sarilingBubble?.togglePopover();
-        }, 170);
-      }
+      });
 
-      function attachInteractions(targetEl, isEdgeLine = false) {
-        targetEl.addEventListener('pointerdown', (e) => {
-          if (e.button === 2) return;
-          if (e.button !== 0 && e.pointerType === 'mouse') return;
-          pointerDown = {
-            startScreenX: e.screenX,
-            startScreenY: e.screenY,
-            moved: false,
-            isEdgeLine,
-          };
-          try {
-            targetEl.setPointerCapture(e.pointerId);
-          } catch {}
-          window.sarilingBubble?.dragStart(e.screenX, e.screenY);
-        });
+      targetEl.addEventListener('pointerup', (e) => {
+        if (!pointerDown) return;
+        const wasMoved = pointerDown.moved;
+        pointerDown = null;
+        try {
+          targetEl.releasePointerCapture(e.pointerId);
+        } catch { }
+        if (wasMoved) {
+          window.sarilingBubble?.dragEnd(e.screenX, e.screenY);
+        } else {
+          handleActivate();
+        }
+      });
 
-        targetEl.addEventListener('pointermove', (e) => {
-          if (!pointerDown) return;
-          const dx = e.screenX - pointerDown.startScreenX;
-          const dy = e.screenY - pointerDown.startScreenY;
+      targetEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        window.sarilingBubble?.openContextMenu();
+      });
+    }
 
-          // Swipe inward on edge line immediately opens the compact popover
-          if (pointerDown.isEdgeLine && Math.abs(dx) > 16) {
-            const swipedInward =
-              (currentState.edge === 'right' && dx < -16) ||
-              (currentState.edge === 'left' && dx > 16);
-            if (swipedInward) {
-              pointerDown = null;
-              window.sarilingBubble?.togglePopover();
-              return;
-            }
-          }
+    attachInteractions(elCircle, false);
+    attachInteractions(elLineHandle, true);
+    attachInteractions(elPill, false);
+  </script>
+</body>
 
-          if (Math.hypot(dx, dy) > 6) {
-            pointerDown.moved = true;
-            window.sarilingBubble?.dragMove(e.screenX, e.screenY);
-          }
-        });
-
-        targetEl.addEventListener('pointerup', (e) => {
-          if (!pointerDown) return;
-          const wasMoved = pointerDown.moved;
-          pointerDown = null;
-          try {
-            targetEl.releasePointerCapture(e.pointerId);
-          } catch {}
-          if (wasMoved) {
-            window.sarilingBubble?.dragEnd(e.screenX, e.screenY);
-          } else {
-            handleActivate();
-          }
-        });
-
-        targetEl.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          window.sarilingBubble?.openContextMenu();
-        });
-      }
-
-      attachInteractions(elCircle, false);
-      attachInteractions(elLineHandle, true);
-      attachInteractions(elPill, false);
-    </script>
-  </body>
 </html>
