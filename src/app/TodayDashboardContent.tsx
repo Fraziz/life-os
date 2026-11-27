@@ -45,7 +45,6 @@ import { formatTagLabel } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
 import LifeDomainPill from '@/components/layout/LifeDomainPill';
 
-import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
 import DailyAccomplishReminder from '@/components/reminders/DailyAccomplishReminder';
@@ -1158,9 +1157,6 @@ export default function TodayDashboardContent() {
             })}
           </div>
         </section>
-
-        {/* Consistency & Execution Heatmap */}
-        <ActivityHeatmap weeksToShow={24} />
 
         {/* Projects & Goals */}
         <section className={styles.contentSectionCard}>
