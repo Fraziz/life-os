@@ -4,11 +4,8 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
-  Calendar,
   Check,
   CheckCircle2,
-  Clock,
-  Layers,
   Sparkles,
   Trash2,
 } from 'lucide-react';
@@ -53,8 +50,6 @@ export default function WeeklyReviewPage() {
 
   const [activeTab, setActiveTab] = useState<'guided' | 'archive'>('guided');
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [step1VisitedDone, setStep1VisitedDone] = useState(false);
-  const [step2VisitedDone, setStep2VisitedDone] = useState(false);
   const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
 
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
@@ -67,7 +62,6 @@ export default function WeeklyReviewPage() {
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // ── Week Window (Monday → Sunday in local calendar time) ─────────────────
   const { weekStartStr, weekEndStr, todayStr } = useMemo(() => {
     const now = new Date();
     const start = new Date(now);
@@ -84,12 +78,6 @@ export default function WeeklyReviewPage() {
     };
   }, []);
 
-  const isCurrentWeekReviewed = useMemo(
-    () => reviews.some((r) => r.weekStartDate === weekStartStr),
-    [reviews, weekStartStr]
-  );
-
-  // ── Weekly Aggregations ──────────────────────────────────────────────────
   const completedTasksThisWeek = useMemo(() => {
     return tasks
       .filter((t) => {
@@ -130,18 +118,6 @@ export default function WeeklyReviewPage() {
 
   const displayedOpenTasks = showAllOpenTasks ? openTasks : openTasks.slice(0, 8);
 
-  const avgProjectProgress = useMemo(() => {
-    if (activeProjects.length === 0) return 0;
-    const sum = activeProjects.reduce((acc, p) => acc + (p.progress || 0), 0);
-    return Math.round(sum / activeProjects.length);
-  }, [activeProjects]);
-
-  const totalWeeklyTasks = completedTasksThisWeek.length + openTasks.length;
-  const completionPct =
-    totalWeeklyTasks > 0
-      ? Math.round((completedTasksThisWeek.length / totalWeeklyTasks) * 100)
-      : 0;
-
   const formatFocusTime = (minutes: number) => {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
@@ -156,16 +132,13 @@ export default function WeeklyReviewPage() {
     }, 3500);
   };
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleStep1Celebrate = (e: React.MouseEvent) => {
     playSuccessChime();
     triggerDopamineBurst(e.clientX, e.clientY);
-    setStep1VisitedDone(true);
     setCurrentStep(2);
   };
 
   const handleStep2Continue = () => {
-    setStep2VisitedDone(true);
     setCurrentStep(3);
   };
 
@@ -259,10 +232,8 @@ export default function WeeklyReviewPage() {
 
     playSuccessChime();
     triggerDopamineBurst();
-    setStatusNotice('Weekly review archived cleanly.');
+    setStatusNotice('Weekly review archived.');
     setCurrentStep(1);
-    setStep1VisitedDone(false);
-    setStep2VisitedDone(false);
     setSelectedProjectIds([]);
     setNextWeekFocusNote('');
     setReflectionWentWell('');
@@ -286,125 +257,90 @@ export default function WeeklyReviewPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Executive Header ── */}
+      {/* ── Clean Page Header (Consistent with Tasks / Goals / Routine) ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <div className={styles.kicker}>
-            <span
-              className={`${styles.statusDot} ${
-                isCurrentWeekReviewed ? styles.statusDotOk : styles.statusDotActive
-              }`}
-              aria-hidden="true"
-            />
-            <span>
-              Weekly Cadence · {formatShortDateLabel(weekStartStr)} – {formatShortDateLabel(weekEndStr)}
-            </span>
-          </div>
-          <h1 className={styles.title}>Weekly Review &amp; Alignment</h1>
-          <p className={styles.subtitle}>
-            Close open loops, acknowledge concrete progress, and lock in up to three priorities for next week.
-          </p>
+          <h1 className={styles.title}>Weekly Review</h1>
         </div>
 
-        <div className={styles.tabSwitch} role="tablist" aria-label="Review sections">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'guided'}
-            className={`${styles.tabBtn} ${activeTab === 'guided' ? styles.tabBtnActive : ''}`}
-            onClick={() => setActiveTab('guided')}
-          >
-            Guided Review
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'archive'}
-            className={`${styles.tabBtn} ${activeTab === 'archive' ? styles.tabBtnActive : ''}`}
-            onClick={() => setActiveTab('archive')}
-          >
-            Review Archive ({reviews.length})
-          </button>
+        <div className={styles.headerActions}>
+          <span className={styles.dateBadge}>
+            {formatShortDateLabel(weekStartStr)} – {formatShortDateLabel(weekEndStr)}
+          </span>
+          <div className={styles.tabSwitch} role="tablist" aria-label="Review mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'guided'}
+              className={`${styles.tabBtn} ${activeTab === 'guided' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('guided')}
+            >
+              Guided Review
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'archive'}
+              className={`${styles.tabBtn} ${activeTab === 'archive' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('archive')}
+            >
+              Archive ({reviews.length})
+            </button>
+          </div>
         </div>
       </header>
 
       {statusNotice && (
         <div className={styles.confirmationBanner} role="status">
-          <CheckCircle2 size={15} />
+          <CheckCircle2 size={14} />
           <span>{statusNotice}</span>
         </div>
       )}
 
-      {/* ── Weekly KPI Strip with Micro-Meters ── */}
-      <section className={styles.summaryGrid} aria-label="Current week telemetry">
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>Completed Tasks</span>
-          <span className={styles.summaryValue}>{completedTasksThisWeek.length}</span>
-          <div className={styles.miniMeterTrack} aria-hidden="true">
-            <div className={styles.miniMeterFill} style={{ width: `${completionPct}%` }} />
-          </div>
-          <span className={styles.summaryDetail}>
-            {totalWeeklyTasks > 0
-              ? `${completedTasksThisWeek.length} of ${totalWeeklyTasks} active resolved`
-              : 'No tasks logged this week yet'}
+      {/* ── Quiet Minimal Metrics Strip ── */}
+      <section className={styles.statsRow} aria-label="Weekly summary metrics">
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Completed Tasks</span>
+          <span className={styles.statValue}>{completedTasksThisWeek.length}</span>
+          <span className={styles.statMeta}>{openTasks.length} open remaining</span>
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Focus Time</span>
+          <span className={styles.statValue}>{formatFocusTime(focusMinutesThisWeek)}</span>
+          <span className={styles.statMeta}>
+            {focusSessionsThisWeek.length} session{focusSessionsThisWeek.length === 1 ? '' : 's'} this week
           </span>
         </div>
 
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>Deep Focus Logged</span>
-          <span className={styles.summaryValue}>{formatFocusTime(focusMinutesThisWeek)}</span>
-          <div className={styles.miniMeterTrack} aria-hidden="true">
-            <div
-              className={styles.miniMeterFill}
-              style={{ width: `${Math.min(100, Math.round((focusMinutesThisWeek / 300) * 100))}%` }}
-            />
-          </div>
-          <span className={styles.summaryDetail}>
-            {focusSessionsThisWeek.length} focus session{focusSessionsThisWeek.length === 1 ? '' : 's'} this week
-          </span>
-        </div>
-
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>Habit Consistency</span>
-          <span className={styles.summaryValue}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Habit Consistency</span>
+          <span className={styles.statValue}>
             {habitStats.hasHabits ? `${habitStats.pct}%` : '—'}
           </span>
-          <div className={styles.miniMeterTrack} aria-hidden="true">
-            <div
-              className={styles.miniMeterFill}
-              style={{ width: `${habitStats.hasHabits ? habitStats.pct : 0}%` }}
-            />
-          </div>
-          <span className={styles.summaryDetail}>
+          <span className={styles.statMeta}>
             {habitStats.hasHabits
-              ? `${habitStats.actual} / ${habitStats.expected} routine check-ins`
-              : 'Configure routines in Daily Routine'}
+              ? `${habitStats.actual} / ${habitStats.expected} check-ins`
+              : 'No habits tracked'}
           </span>
         </div>
 
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>Active Initiatives</span>
-          <span className={styles.summaryValue}>{activeProjects.length}</span>
-          <div className={styles.miniMeterTrack} aria-hidden="true">
-            <div className={styles.miniMeterFill} style={{ width: `${avgProjectProgress}%` }} />
-          </div>
-          <span className={styles.summaryDetail}>
-            {activeProjects.length > 0
-              ? `${avgProjectProgress}% average project completion`
-              : 'No active projects yet'}
-          </span>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Active Projects</span>
+          <span className={styles.statValue}>{activeProjects.length}</span>
+          <span className={styles.statMeta}>Ongoing initiatives</span>
         </div>
       </section>
 
       {activeTab === 'guided' ? (
         <>
-          {/* ── Unified Segmented Step Rail ── */}
-          <nav className={styles.stepperTrack} aria-label="Weekly review steps">
+          {/* ── Clean Underline Step Navigation ── */}
+          <nav className={styles.stepTabs} aria-label="Review steps">
             {(
               [
-                { id: 1, num: '01', title: 'Celebrate Wins', done: step1VisitedDone },
-                { id: 2, num: '02', title: 'Clear & Realign', done: step2VisitedDone },
-                { id: 3, num: '03', title: 'Top 3 Priorities', done: isCurrentWeekReviewed },
+                { id: 1, label: '1. Celebrate Wins' },
+                { id: 2, label: `2. Clear & Realign (${openTasks.length + inboxItems.length})` },
+                { id: 3, label: '3. Top 3 Priorities' },
               ] as const
             ).map((step) => {
               const isActive = currentStep === step.id;
@@ -412,484 +348,340 @@ export default function WeeklyReviewPage() {
                 <button
                   key={step.id}
                   type="button"
-                  className={`${styles.stepButton} ${isActive ? styles.stepButtonActive : ''}`}
+                  className={`${styles.stepTab} ${isActive ? styles.stepTabActive : ''}`}
                   onClick={() => setCurrentStep(step.id)}
                 >
-                  <span className={styles.stepNumBadge}>
-                    {step.done && !isActive ? <Check size={12} /> : step.num}
-                  </span>
-                  <span className={styles.stepTitle}>{step.title}</span>
+                  {step.label}
                 </button>
               );
             })}
           </nav>
 
-          {/* ── Two-Column Balanced Workspace ── */}
-          <div className={styles.workspaceGrid}>
-            <div className={styles.mainStage}>
-              {/* ── Step 1: Celebrate Wins ── */}
-              {currentStep === 1 && (
-                <section className={styles.stepContainer}>
-                  <div className={styles.stepHeader}>
-                    <h2 className={styles.stepHeading}>Step 1: Celebrate Completed Actions</h2>
-                    <p className={styles.stepDescription}>
-                      Review everything resolved between {formatShortDateLabel(weekStartStr)} and{' '}
-                      {formatShortDateLabel(weekEndStr)} to lock in progress before planning next week.
-                    </p>
-                  </div>
+          {/* ── Step 1: Celebrate Wins ── */}
+          {currentStep === 1 && (
+            <section className={styles.surfaceCard}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Completed Actions</h2>
+                  <p className={styles.sectionDesc}>
+                    Work resolved between {formatShortDateLabel(weekStartStr)} and{' '}
+                    {formatShortDateLabel(weekEndStr)}.
+                  </p>
+                </div>
+                <span className={styles.metaCount}>
+                  {completedTasksThisWeek.length} completed
+                </span>
+              </div>
 
-                  {completedTasksThisWeek.length === 0 ? (
-                    <div className={styles.calmEmptyCard}>
-                      <div className={styles.emptyIconCircle} aria-hidden="true">
-                        <CheckCircle2 size={20} />
-                      </div>
-                      <h3 className={styles.emptyTitle}>No completed tasks recorded this week</h3>
-                      <p className={styles.emptySubtext}>
-                        Tasks completed from Today or the Task Board automatically surface here as your weekly record. You can jump in to finish one or proceed to clean up open work.
-                      </p>
-                      <div className={styles.emptyActions}>
-                        <Link href="/" className={styles.secondaryLink}>
-                          Open Today
-                        </Link>
-                        <Link href="/tasks" className={styles.secondaryLink}>
-                          View Task Board
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.winsFeed}>
-                      {completedTasksThisWeek.map((t) => (
-                        <div key={t.id} className={styles.winRow}>
-                          <div className={styles.winLeft}>
-                            <span className={styles.winCheckIcon} aria-hidden="true">
-                              <CheckCircle2 size={15} />
+              {completedTasksThisWeek.length === 0 ? (
+                <div className={styles.emptyBlock}>
+                  <p className={styles.emptyText}>
+                    No tasks marked as done this week yet. Completed tasks from Today or Tasks appear here automatically.
+                  </p>
+                  <div className={styles.emptyLinks}>
+                    <Link href="/" className={styles.btnGhost}>
+                      Open Today
+                    </Link>
+                    <Link href="/tasks" className={styles.btnGhost}>
+                      Open Tasks
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.itemList}>
+                  {completedTasksThisWeek.map((t) => (
+                    <div key={t.id} className={styles.itemRow}>
+                      <div className={styles.itemLeft}>
+                        <CheckCircle2 size={15} className={styles.checkIcon} aria-hidden="true" />
+                        <div className={styles.itemText}>
+                          <span className={styles.itemTitle}>{t.title}</span>
+                          {t.completedAt && (
+                            <span className={styles.itemSub}>
+                              {new Date(t.completedAt).toLocaleDateString([], {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </span>
-                            <div className={styles.winMain}>
-                              <span className={styles.winTitle}>{t.title}</span>
-                              {t.completedAt && (
-                                <span className={styles.winSubtitle}>
-                                  Resolved{' '}
-                                  {new Date(t.completedAt).toLocaleDateString([], {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <span className={styles.winStatusPill}>Completed</span>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      <span className={styles.pillDone}>Done</span>
                     </div>
-                  )}
-
-                  <div className={styles.stepFooter}>
-                    <span className={styles.footerMeta}>
-                      {completedTasksThisWeek.length} accomplishment
-                      {completedTasksThisWeek.length === 1 ? '' : 's'} this week
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.primaryBtn}
-                      onClick={handleStep1Celebrate}
-                    >
-                      <span>Celebrate &amp; Continue</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </section>
+                  ))}
+                </div>
               )}
 
-              {/* ── Step 2: Clear & Realign ── */}
-              {currentStep === 2 && (
-                <section className={styles.stepContainer}>
-                  <div className={styles.stepHeader}>
-                    <h2 className={styles.stepHeading}>Step 2: Clear &amp; Realign Without Guilt</h2>
-                    <p className={styles.stepDescription}>
-                      Triage remaining tasks and captured ideas cleanly—push deadlines out, park ideas for later, or drop low-value commitments.
-                    </p>
-                  </div>
+              <div className={styles.cardFooter}>
+                <span className={styles.footerHint}>Step 1 of 3</span>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  onClick={handleStep1Celebrate}
+                >
+                  <span>Continue to Alignment</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </section>
+          )}
 
-                  {openTasks.length === 0 && inboxItems.length === 0 ? (
-                    <div className={styles.calmEmptyCard}>
-                      <div className={styles.emptyIconCircle} aria-hidden="true">
-                        <Layers size={20} />
+          {/* ── Step 2: Clear & Realign ── */}
+          {currentStep === 2 && (
+            <section className={styles.surfaceCard}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Clear &amp; Realign</h2>
+                  <p className={styles.sectionDesc}>
+                    Reschedule what still matters, park thoughts in Idea Parking, or drop stale items without guilt.
+                  </p>
+                </div>
+                <span className={styles.metaCount}>
+                  {openTasks.length} open · {inboxItems.length} parked
+                </span>
+              </div>
+
+              {openTasks.length === 0 && inboxItems.length === 0 ? (
+                <div className={styles.emptyBlock}>
+                  <p className={styles.emptyText}>
+                    Your active queue and Idea Parking are completely clear.
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.itemList}>
+                  {displayedOpenTasks.map((t) => {
+                    const isOverdue = Boolean(t.dueDate && t.dueDate < todayStr);
+                    return (
+                      <div key={t.id} className={styles.realignRow}>
+                        <div className={styles.realignInfo}>
+                          <span className={styles.itemTitle}>{t.title}</span>
+                          <span className={`${styles.pillMeta} ${isOverdue ? styles.pillWarn : ''}`}>
+                            {t.dueDate ? (isOverdue ? `Overdue ${t.dueDate}` : `Due ${t.dueDate}`) : 'No due date'}
+                          </span>
+                        </div>
+                        <div className={styles.realignBtns}>
+                          <button
+                            type="button"
+                            className={styles.btnGhost}
+                            onClick={() => handlePushTaskToNextWeek(t.id)}
+                          >
+                            Push +7d
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnGhost}
+                            onClick={() => handleDemoteTaskToInbox(t)}
+                          >
+                            To Idea Parking
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.btnGhost} ${styles.btnDangerText}`}
+                            onClick={() => handleArchiveTaskWithoutGuilt(t.id)}
+                          >
+                            Archive
+                          </button>
+                        </div>
                       </div>
-                      <h3 className={styles.emptyTitle}>Queue and Idea Parking are clear</h3>
-                      <p className={styles.emptySubtext}>
-                        Zero open tasks or pending captures require realignment right now. Proceed directly to locking in next week’s priorities.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className={styles.realignList}>
-                      {displayedOpenTasks.map((t) => {
-                        const isOverdue = Boolean(t.dueDate && t.dueDate < todayStr);
-                        return (
-                          <div key={t.id} className={styles.realignCard}>
-                            <div className={styles.realignHeader}>
-                              <span className={styles.realignTitle}>{t.title}</span>
-                              <span
-                                className={`${styles.realignBadge} ${
-                                  isOverdue ? styles.realignBadgeWarn : ''
-                                }`}
-                              >
-                                <Calendar size={11} />
-                                <span>{t.dueDate ? (isOverdue ? `Overdue · ${t.dueDate}` : `Due ${t.dueDate}`) : 'Pending'}</span>
-                              </span>
-                            </div>
-                            <div className={styles.realignActions}>
-                              <button
-                                type="button"
-                                className={styles.actionBtn}
-                                onClick={() => handlePushTaskToNextWeek(t.id)}
-                              >
-                                Push +7 Days
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.actionBtn}
-                                onClick={() => handleDemoteTaskToInbox(t)}
-                              >
-                                Move to Idea Parking
-                              </button>
-                              <button
-                                type="button"
-                                className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                                onClick={() => handleArchiveTaskWithoutGuilt(t.id)}
-                              >
-                                Archive Task
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    );
+                  })}
 
-                      {openTasks.length > 8 && (
+                  {openTasks.length > 8 && (
+                    <button
+                      type="button"
+                      className={styles.btnGhost}
+                      style={{ alignSelf: 'flex-start' }}
+                      onClick={() => setShowAllOpenTasks((prev) => !prev)}
+                    >
+                      {showAllOpenTasks ? 'Show top 8' : `Show all ${openTasks.length} open tasks`}
+                    </button>
+                  )}
+
+                  {inboxItems.slice(0, 6).map((item) => (
+                    <div key={item.id} className={styles.realignRow}>
+                      <div className={styles.realignInfo}>
+                        <span className={styles.itemTitle}>{item.content}</span>
+                        <span className={styles.pillMeta}>Idea Parking</span>
+                      </div>
+                      <div className={styles.realignBtns}>
                         <button
                           type="button"
-                          className={styles.expandListBtn}
-                          onClick={() => setShowAllOpenTasks((prev) => !prev)}
+                          className={styles.btnGhost}
+                          onClick={() => handleClearInboxItem(item.id)}
                         >
-                          {showAllOpenTasks
-                            ? 'Show top 8 tasks'
-                            : `Show all ${openTasks.length} open tasks`}
+                          Mark Handled
                         </button>
-                      )}
-
-                      {inboxItems.slice(0, 6).map((item) => (
-                        <div key={item.id} className={styles.realignCard}>
-                          <div className={styles.realignHeader}>
-                            <span className={styles.realignTitle}>{item.content}</span>
-                            <span className={styles.realignBadge}>Idea Parking</span>
-                          </div>
-                          <div className={styles.realignActions}>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleClearInboxItem(item.id)}
-                            >
-                              Mark Handled
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                      </div>
                     </div>
-                  )}
-
-                  <div className={styles.stepFooter}>
-                    <button
-                      type="button"
-                      className={styles.secondaryBtn}
-                      onClick={() => setCurrentStep(1)}
-                    >
-                      Back to Wins
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.primaryBtn}
-                      onClick={handleStep2Continue}
-                    >
-                      <span>Select Top 3 Priorities</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </section>
+                  ))}
+                </div>
               )}
 
-              {/* ── Step 3: Top 3 Priorities & Reflection ── */}
-              {currentStep === 3 && (
-                <form className={styles.stepContainer} onSubmit={handleFinalizeReview}>
-                  <div className={styles.stepHeaderRow}>
-                    <div className={styles.stepHeaderText}>
-                      <h2 className={styles.stepHeading}>Step 3: Lock In Top 3 Priorities</h2>
-                      <p className={styles.stepDescription}>
-                        Choose up to three priority projects and summarize your primary objective before archiving this week.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.secondaryBtn}
-                      onClick={() => void handleAiDraft()}
-                      disabled={aiDrafting}
-                    >
-                      <Sparkles size={14} />
-                      <span>{aiDrafting ? 'Drafting…' : 'Draft Reflection'}</span>
-                    </button>
-                  </div>
+              <div className={styles.cardFooter}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => setCurrentStep(1)}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  onClick={handleStep2Continue}
+                >
+                  <span>Select Top 3 Priorities</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </section>
+          )}
 
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>
-                      Priority Projects ({selectedProjectIds.length} / 3 selected)
-                    </label>
-                    {activeProjects.length === 0 ? (
-                      <div className={styles.calmEmptyCard}>
-                        <p className={styles.emptySubtext}>
-                          No active projects yet. You can add projects anytime on the{' '}
-                          <Link href="/projects" className={styles.inlineLink}>
-                            Projects page
-                          </Link>
-                          .
-                        </p>
-                      </div>
-                    ) : (
-                      <div className={styles.projectSelectionGrid}>
-                        {activeProjects.map((p) => {
-                          const isSelected = selectedProjectIds.includes(p.id);
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              aria-pressed={isSelected}
-                              className={`${styles.projectChip} ${
-                                isSelected ? styles.projectChipSelected : ''
-                              }`}
-                              onClick={() => toggleProjectSelection(p.id)}
-                            >
-                              <div className={styles.projectChipTop}>
-                                <span className={styles.projectChipTitle}>{p.title}</span>
-                                <span className={styles.projectChipTag}>
-                                  {isSelected ? 'Selected' : `${p.progress}%`}
-                                </span>
-                              </div>
-                              <div className={styles.miniMeterTrack} aria-hidden="true">
-                                <div
-                                  className={styles.miniMeterFill}
-                                  style={{ width: `${p.progress || 0}%` }}
-                                />
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="focus-note-input">
-                      Next Week Primary Objective
-                    </label>
-                    <textarea
-                      id="focus-note-input"
-                      className={styles.formTextarea}
-                      value={nextWeekFocusNote}
-                      onChange={(e) => setNextWeekFocusNote(e.target.value)}
-                      placeholder="Define the single most critical milestone or deliverable for next week…"
-                    />
-                  </div>
-
-                  <div className={styles.twoColFields}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.formLabel} htmlFor="went-well-input">
-                        What Worked Well
-                      </label>
-                      <textarea
-                        id="went-well-input"
-                        className={styles.formTextarea}
-                        value={reflectionWentWell}
-                        onChange={(e) => setReflectionWentWell(e.target.value)}
-                        placeholder="Routines, wins, or decisions that helped…"
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.formLabel} htmlFor="friction-input">
-                        Friction or Bottlenecks
-                      </label>
-                      <textarea
-                        id="friction-input"
-                        className={styles.formTextarea}
-                        value={reflectionFriction}
-                        onChange={(e) => setReflectionFriction(e.target.value)}
-                        placeholder="Where momentum stalled or scope crept…"
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="should-change-input">
-                      Adjustment for Next Week
-                    </label>
-                    <textarea
-                      id="should-change-input"
-                      className={styles.formTextarea}
-                      value={reflectionShouldChange}
-                      onChange={(e) => setReflectionShouldChange(e.target.value)}
-                      placeholder="One concrete change to improve focus or calm next week…"
-                    />
-                  </div>
-
-                  <div className={styles.stepFooter}>
-                    <button
-                      type="button"
-                      className={styles.secondaryBtn}
-                      onClick={() => setCurrentStep(2)}
-                    >
-                      Back to Alignment
-                    </button>
-                    <button type="submit" className={styles.primaryBtn}>
-                      <span>Complete &amp; Save Weekly Review</span>
-                      <Check size={14} />
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-
-            {/* ── Companion Context Sidebar ── */}
-            <aside className={styles.companionPanel} aria-label="Weekly context">
-              <section className={styles.companionCard}>
-                <h3 className={styles.companionTitle}>Review Checklist</h3>
-                <div className={styles.checklist}>
-                  <button
-                    type="button"
-                    className={styles.checkRowBtn}
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    <span className={styles.checkRowLeft}>
-                      <span
-                        className={`${styles.checkDot} ${
-                          step1VisitedDone ? styles.checkDotDone : ''
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <span>Acknowledge weekly wins</span>
-                    </span>
-                    <span className={styles.mono}>{completedTasksThisWeek.length}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.checkRowBtn}
-                    onClick={() => setCurrentStep(2)}
-                  >
-                    <span className={styles.checkRowLeft}>
-                      <span
-                        className={`${styles.checkDot} ${
-                          step2VisitedDone ? styles.checkDotDone : ''
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <span>Triage pending backlog</span>
-                    </span>
-                    <span className={styles.mono}>{openTasks.length}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.checkRowBtn}
-                    onClick={() => setCurrentStep(3)}
-                  >
-                    <span className={styles.checkRowLeft}>
-                      <span
-                        className={`${styles.checkDot} ${
-                          selectedProjectIds.length > 0 ? styles.checkDotDone : ''
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <span>Select priority projects</span>
-                    </span>
-                    <span className={styles.mono}>{selectedProjectIds.length}/3</span>
-                  </button>
+          {/* ── Step 3: Top 3 Priorities & Reflection ── */}
+          {currentStep === 3 && (
+            <form className={styles.surfaceCard} onSubmit={handleFinalizeReview}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Next Week Priorities &amp; Reflection</h2>
+                  <p className={styles.sectionDesc}>
+                    Pick up to three active projects and capture your main intention before archiving this week.
+                  </p>
                 </div>
-              </section>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => void handleAiDraft()}
+                  disabled={aiDrafting}
+                >
+                  <Sparkles size={14} />
+                  <span>{aiDrafting ? 'Drafting…' : 'Draft Reflection'}</span>
+                </button>
+              </div>
 
-              <section className={styles.companionCard}>
-                <div className={styles.companionHead}>
-                  <h3 className={styles.companionTitle}>Active Projects ({activeProjects.length})</h3>
-                  <Link href="/projects" className={styles.inlineLink}>
-                    Manage
-                  </Link>
-                </div>
-
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>
+                  Priority Projects ({selectedProjectIds.length} / 3)
+                </label>
                 {activeProjects.length === 0 ? (
-                  <p className={styles.companionMuted}>
-                    No active projects tracked right now.
+                  <p className={styles.sectionDesc}>
+                    No active projects right now. Manage projects in{' '}
+                    <Link href="/projects" className={styles.inlineLink}>
+                      Projects
+                    </Link>
+                    .
                   </p>
                 ) : (
-                  <div className={styles.projectSnapshotList}>
-                    {activeProjects.slice(0, 4).map((p) => (
-                      <div key={p.id} className={styles.projectSnapshotRow}>
-                        <div className={styles.projectSnapshotTop}>
-                          <span className={styles.projectSnapshotName}>{p.title}</span>
-                          <span className={styles.mono}>{p.progress}%</span>
-                        </div>
-                        <div className={styles.miniMeterTrack} aria-hidden="true">
-                          <div
-                            className={styles.miniMeterFill}
-                            style={{ width: `${p.progress || 0}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div className={styles.projectsGrid}>
+                    {activeProjects.map((p) => {
+                      const isSelected = selectedProjectIds.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          className={`${styles.projectBtn} ${isSelected ? styles.projectBtnSelected : ''}`}
+                          onClick={() => toggleProjectSelection(p.id)}
+                        >
+                          <div className={styles.projectBtnRow}>
+                            <span className={styles.projectName}>{p.title}</span>
+                            <span className={styles.projectPct}>
+                              {isSelected ? 'Selected' : `${p.progress}%`}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
-              </section>
+              </div>
 
-              <section className={styles.companionCard}>
-                <div className={styles.companionHead}>
-                  <h3 className={styles.companionTitle}>Quick Links</h3>
-                  <Clock size={14} className={styles.mutedIcon} aria-hidden="true" />
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel} htmlFor="focus-note-input">
+                  Next Week Primary Focus
+                </label>
+                <textarea
+                  id="focus-note-input"
+                  className={styles.textarea}
+                  value={nextWeekFocusNote}
+                  onChange={(e) => setNextWeekFocusNote(e.target.value)}
+                  placeholder="What single outcome matters most next week?"
+                />
+              </div>
+
+              <div className={styles.fieldsGrid}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel} htmlFor="went-well-input">
+                    What Worked Well
+                  </label>
+                  <textarea
+                    id="went-well-input"
+                    className={styles.textarea}
+                    value={reflectionWentWell}
+                    onChange={(e) => setReflectionWentWell(e.target.value)}
+                    placeholder="Wins, routines, or decisions to repeat…"
+                  />
                 </div>
-                <div className={styles.quickLinksCol}>
-                  <Link href="/" className={styles.quickNavLink}>
-                    <span>Return to Today</span>
-                    <ArrowRight size={13} />
-                  </Link>
-                  <Link href="/tasks" className={styles.quickNavLink}>
-                    <span>Open Tasks ({openTasks.length})</span>
-                    <ArrowRight size={13} />
-                  </Link>
-                  <Link href="/focus" className={styles.quickNavLink}>
-                    <span>Start Focus Session</span>
-                    <ArrowRight size={13} />
-                  </Link>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel} htmlFor="friction-input">
+                    Bottlenecks or Friction
+                  </label>
+                  <textarea
+                    id="friction-input"
+                    className={styles.textarea}
+                    value={reflectionFriction}
+                    onChange={(e) => setReflectionFriction(e.target.value)}
+                    placeholder="Where progress stalled or got sidetracked…"
+                  />
                 </div>
-              </section>
-            </aside>
-          </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel} htmlFor="should-change-input">
+                    Adjustment for Next Week
+                  </label>
+                  <textarea
+                    id="should-change-input"
+                    className={styles.textarea}
+                    value={reflectionShouldChange}
+                    onChange={(e) => setReflectionShouldChange(e.target.value)}
+                    placeholder="One concrete change for next week…"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.cardFooter}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => setCurrentStep(2)}
+                >
+                  Back
+                </button>
+                <button type="submit" className={styles.btnPrimary}>
+                  <span>Save Weekly Review</span>
+                  <Check size={14} />
+                </button>
+              </div>
+            </form>
+          )}
         </>
       ) : (
-        /* ── Historical Review Archive ── */
-        <section className={styles.archiveSection} aria-label="Historical weekly reviews">
+        /* ── Archive View ── */
+        <section className={styles.archiveSection} aria-label="Review archive">
           {reviews.length === 0 ? (
-            <div className={styles.stepContainer}>
-              <div className={styles.calmEmptyCard}>
-                <div className={styles.emptyIconCircle} aria-hidden="true">
-                  <Calendar size={20} />
-                </div>
-                <h3 className={styles.emptyTitle}>No archived weekly reviews yet</h3>
-                <p className={styles.emptySubtext}>
-                  Once you complete Step 3 in the Guided Review tab, each week’s snapshot and commitments are preserved here.
+            <div className={styles.surfaceCard}>
+              <div className={styles.emptyBlock}>
+                <p className={styles.emptyText}>
+                  No archived reviews yet. Complete a guided review to store it here.
                 </p>
-                <div className={styles.emptyActions}>
+                <div className={styles.emptyLinks}>
                   <button
                     type="button"
-                    className={styles.primaryBtn}
+                    className={styles.btnPrimary}
                     onClick={() => setActiveTab('guided')}
                   >
-                    Start This Week’s Review
+                    Start Weekly Review
                   </button>
                 </div>
               </div>
@@ -898,25 +690,25 @@ export default function WeeklyReviewPage() {
             <div className={styles.archiveGrid}>
               {reviews.map((rev) => (
                 <article key={rev.id} className={styles.archiveCard}>
-                  <div className={styles.archiveCardHeader}>
-                    <span className={styles.archiveDateRange}>
+                  <div className={styles.archiveHead}>
+                    <span className={styles.archiveRange}>
                       {formatShortDateLabel(rev.weekStartDate)} – {formatShortDateLabel(rev.weekEndDate)}
                     </span>
                     {confirmDeleteId === rev.id ? (
-                      <div className={styles.confirmRow}>
+                      <div className={styles.realignBtns}>
                         <button
                           type="button"
-                          className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                          className={`${styles.btnGhost} ${styles.btnDangerText}`}
                           onClick={() => {
                             deleteWeeklyReview(rev.id);
                             setConfirmDeleteId(null);
                           }}
                         >
-                          Confirm Delete
+                          Confirm
                         </button>
                         <button
                           type="button"
-                          className={styles.actionBtn}
+                          className={styles.btnGhost}
                           onClick={() => setConfirmDeleteId(null)}
                         >
                           Cancel
@@ -925,42 +717,38 @@ export default function WeeklyReviewPage() {
                     ) : (
                       <button
                         type="button"
-                        className={styles.deleteIconBtn}
+                        className={styles.iconBtn}
                         onClick={() => setConfirmDeleteId(rev.id)}
                         aria-label="Delete archived review"
-                        title="Delete record"
                       >
                         <Trash2 size={14} />
                       </button>
                     )}
                   </div>
 
-                  <div className={styles.archiveMetricsRow}>
-                    <span className={styles.metricPill}>{rev.completedTaskCount} Tasks</span>
-                    <span className={styles.metricPill}>
+                  <div className={styles.archiveStats}>
+                    <span className={styles.pillMeta}>{rev.completedTaskCount} Tasks</span>
+                    <span className={styles.pillMeta}>
                       {Math.floor(rev.focusMinutesLogged / 60)}h {rev.focusMinutesLogged % 60}m Focus
                     </span>
-                    <span className={styles.metricPill}>{rev.habitsConsistencyRate}% Habits</span>
+                    <span className={styles.pillMeta}>{rev.habitsConsistencyRate}% Habits</span>
                   </div>
 
                   {rev.nextWeekFocus && (
-                    <div className={styles.archiveNoteBlock}>
-                      <span className={styles.archiveNoteLabel}>Priority Focus</span>
-                      <p className={styles.archiveNoteBody}>{rev.nextWeekFocus}</p>
+                    <div className={styles.archiveNote}>
+                      <strong>Focus:</strong> {rev.nextWeekFocus}
                     </div>
                   )}
 
                   {rev.wentWell && (
-                    <div className={styles.archiveNoteBlock}>
-                      <span className={styles.archiveNoteLabel}>What Worked</span>
-                      <p className={styles.archiveNoteBody}>{rev.wentWell}</p>
+                    <div className={styles.archiveNote}>
+                      <strong>Wins:</strong> {rev.wentWell}
                     </div>
                   )}
 
                   {rev.shouldChange && (
-                    <div className={styles.archiveNoteBlock}>
-                      <span className={styles.archiveNoteLabel}>Adjustment</span>
-                      <p className={styles.archiveNoteBody}>{rev.shouldChange}</p>
+                    <div className={styles.archiveNote}>
+                      <strong>Adjustment:</strong> {rev.shouldChange}
                     </div>
                   )}
                 </article>
