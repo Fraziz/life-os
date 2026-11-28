@@ -1,216 +1,407 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6, 24px);
+  gap: clamp(18px, 2.2vw, 24px);
   width: 100%;
-  max-width: 100%;
-  animation: fadeIn 0.3s ease forwards;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--space-2) 0 var(--space-12);
+  animation: fadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* ── Formal Header ── */
+/* ── Executive Header ────────────────────────────────────────────── */
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-4, 16px);
-  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  padding-bottom: var(--space-4, 16px);
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
 .titleArea {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-text-faint);
+}
+
+.statusDotActive {
+  background: var(--color-accent);
+}
+
+.statusDotOk {
+  background: var(--color-success);
 }
 
 .title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-text, #f8fafc);
-  letter-spacing: -0.02em;
   margin: 0;
+  font-size: clamp(1.4rem, 2.3vw, 1.85rem);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: var(--color-text-muted, #94a3b8);
-  max-width: 650px;
-  line-height: 1.5;
   margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  max-width: 58ch;
+  line-height: 1.5;
 }
 
 .tabSwitch {
   display: inline-flex;
-  background: var(--color-surface, #13141c);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 3px;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: 4px;
   gap: 4px;
 }
 
 .tabBtn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.82rem;
   font-weight: 600;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
 .tabBtn:hover {
-  color: var(--color-text, #f8fafc);
+  color: var(--color-text);
+  background: var(--color-surface-2);
 }
 
 .tabBtnActive {
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
   color: var(--color-text);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-/* ── Auto-Aggregated Dopamine Summary (Clean Formal Cards, No Icons) ── */
+/* ── Confirmation Banner ─────────────────────────────────────────── */
+.confirmationBanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+/* ── Weekly KPI Cards ────────────────────────────────────────────── */
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   gap: 12px;
 }
 
 .summaryCard {
-  background: var(--color-surface, #13141c);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 10px;
-  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.15s ease;
+  gap: 8px;
+  transition: border-color 150ms ease, transform 150ms ease;
 }
 
 .summaryCard:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--color-border-focus);
+  transform: translateY(-1px);
 }
 
 .summaryLabel {
-  font-size: 11px;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted);
 }
 
 .summaryValue {
-  font-size: 22px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: var(--color-text, #f8fafc);
-  letter-spacing: -0.02em;
+  color: var(--color-text);
+  letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
 .summaryDetail {
-  font-size: 11.5px;
-  color: var(--color-text-faint, #64748b);
-  line-height: 1.4;
+  font-size: 0.77rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
 }
 
-/* ── 3-Step Stepper Navigation (Clean & Formal, No Icons) ── */
+.miniMeterTrack {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+.miniMeterFill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Segmented Workflow Stepper ──────────────────────────────────── */
 .stepperTrack {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  padding-bottom: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-sm);
 }
 
 .stepButton {
-  background: var(--color-surface, #13141c);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.07));
-  border-radius: 8px;
-  padding: 10px 14px;
-  text-align: left;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
 .stepButton:hover {
-  background: var(--color-surface-2, #1e202e);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .stepButtonActive {
-  background: var(--color-surface-2, #1e202e);
-  border-color: var(--color-accent, #818cf8);
-  box-shadow: 0 0 0 1px var(--color-accent, #818cf8);
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
-.stepBadge {
-  font-size: 10px;
+.stepNumBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-faint, #64748b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
-.stepButtonActive .stepBadge {
-  color: var(--color-accent, #818cf8);
+.stepButtonActive .stepNumBadge {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-inverse);
 }
 
 .stepTitle {
-  font-size: 12.5px;
+  font-size: 0.84rem;
   font-weight: 600;
-  color: var(--color-text, #f8fafc);
 }
 
-/* ── Step Container ── */
+/* ── Two-Column Workspace ────────────────────────────────────────── */
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspaceGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mainStage {
+  min-width: 0;
+}
+
 .stepContainer {
-  background: var(--color-surface, #13141c);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: clamp(18px, 2.4vw, 24px);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .stepHeader {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
   padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.stepHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.stepHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 520px;
 }
 
 .stepHeading {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--color-text, #f8fafc);
-  letter-spacing: -0.01em;
   margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.015em;
 }
 
 .stepDescription {
-  font-size: 12.5px;
-  color: var(--color-text-muted, #94a3b8);
-  line-height: 1.5;
   margin: 0;
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }
 
-/* ── Step 1: Wins List ── */
+/* ── Calm Intentional Empty States ───────────────────────────────── */
+.calmEmptyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: clamp(22px, 3vw, 32px) 20px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+}
+
+.emptyIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyTitle {
+  margin: 2px 0 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.emptySubtext {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.secondaryLink {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.secondaryLink:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-border-focus);
+}
+
+/* ── Wins Feed ───────────────────────────────────────────────────── */
 .winsFeed {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 380px;
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -220,15 +411,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
-  border-radius: 8px;
-  transition: border-color 0.15s ease;
+  padding: 11px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 8px);
+  transition: border-color 150ms ease;
 }
 
 .winRow:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border);
+}
+
+.winLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.winCheckIcon {
+  color: var(--color-success);
+  flex-shrink: 0;
+  display: inline-flex;
 }
 
 .winMain {
@@ -239,54 +443,42 @@
 }
 
 .winTitle {
-  font-size: 13px;
+  font-size: 0.86rem;
   font-weight: 600;
-  color: var(--color-text, #f8fafc);
-  text-decoration: line-through;
-  opacity: 0.9;
+  color: var(--color-text);
 }
 
 .winSubtitle {
-  font-size: 11px;
-  color: var(--color-text-faint, #64748b);
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
 }
 
 .winStatusPill {
-  font-size: 10.5px;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #34d399;
-  background: rgba(52, 211, 153, 0.1);
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: var(--color-success);
+  background: var(--color-success-dim);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
   white-space: nowrap;
 }
 
-.emptyStateMessage {
-  padding: 28px;
-  text-align: center;
-  color: var(--color-text-muted, #94a3b8);
-  font-size: 12.5px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-}
-
-/* ── Step 2: Clear & Realign Protocol ── */
+/* ── Step 2 Realignment List ─────────────────────────────────────── */
 .realignList {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 420px;
+  max-height: 440px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .realignCard {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.07));
-  border-radius: 8px;
-  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 8px);
+  padding: 13px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -296,19 +488,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .realignTitle {
-  font-size: 13px;
+  font-size: 0.86rem;
   font-weight: 600;
-  color: var(--color-text, #f8fafc);
+  color: var(--color-text);
 }
 
-.realignMeta {
-  font-size: 11px;
-  color: #f59e0b;
-  font-weight: 500;
+.realignBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.realignBadgeWarn {
+  color: var(--color-warning);
+  background: var(--color-warning-dim);
 }
 
 .realignActions {
@@ -319,74 +524,96 @@
 }
 
 .actionBtn {
-  font-size: 11px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.77rem;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
   cursor: pointer;
-  background: var(--color-surface-2, #1e202e);
-  color: var(--color-text-muted, #94a3b8);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  transition: all 0.15s ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .actionBtn:hover {
-  color: var(--color-text);
+  background: var(--color-surface-3);
   border-color: var(--color-border-focus);
 }
 
 .actionBtnDanger {
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.2);
+  color: var(--color-danger);
 }
 
 .actionBtnDanger:hover {
-  background: rgba(248, 113, 113, 0.16);
-  color: #fca5a5;
-  border-color: rgba(248, 113, 113, 0.35);
+  background: var(--color-danger-dim);
+  border-color: var(--color-danger);
 }
 
-/* ── Step 3: Top 3 Selection ── */
+.expandListBtn {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.expandListBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+/* ── Step 3 Project Selection & Forms ────────────────────────────── */
 .projectSelectionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 10px;
 }
 
 .projectChip {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 14px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .projectChip:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--color-border);
 }
 
 .projectChipSelected {
-  background: rgba(129, 140, 248, 0.08);
-  border-color: var(--color-accent, #818cf8);
-  box-shadow: 0 0 0 1px var(--color-accent, #818cf8);
+  background: var(--color-surface);
+  border-color: var(--color-border-focus);
+}
+
+.projectChipTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .projectChipTitle {
-  font-size: 13px;
+  font-size: 0.84rem;
   font-weight: 600;
-  color: var(--color-text, #f8fafc);
+  color: var(--color-text);
 }
 
-.projectChipProgress {
-  font-size: 11px;
-  color: var(--color-text-faint, #64748b);
+.projectChipTag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .formGroup {
@@ -395,156 +622,372 @@
   gap: 6px;
 }
 
+.twoColFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+
 .formLabel {
-  font-size: 12px;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-text, #f8fafc);
+  color: var(--color-text-muted);
 }
 
 .formTextarea {
   width: 100%;
-  background: var(--color-surface-2, #1e202e);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
   padding: 10px 12px;
-  color: var(--color-text, #f8fafc);
-  font-size: 12.5px;
+  color: var(--color-text);
+  font-size: 0.85rem;
   line-height: 1.5;
-  min-height: 70px;
-  outline: none;
+  min-height: 76px;
   resize: vertical;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
-.formTextarea:focus {
-  border-color: var(--color-accent, #818cf8);
+.formTextarea:focus-visible,
+.primaryBtn:focus-visible,
+.secondaryBtn:focus-visible,
+.stepButton:focus-visible,
+.tabBtn:focus-visible,
+.actionBtn:focus-visible,
+.checkRowBtn:focus-visible,
+.projectChip:focus-visible,
+.secondaryLink:focus-visible,
+.quickNavLink:focus-visible,
+.deleteIconBtn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
-/* ── Step Footer Navigation ── */
+/* ── Footer Navigation Buttons ───────────────────────────────────── */
 .stepFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid var(--color-border-subtle);
   padding-top: 16px;
-  margin-top: 8px;
+  margin-top: 4px;
+}
+
+.footerMeta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.primaryBtn,
+.secondaryBtn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
 }
 
 .primaryBtn {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border: 1px solid var(--color-border-focus);
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-accent);
 }
 
-.primaryBtn:hover {
-  background: var(--color-surface-hover);
+.primaryBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .secondaryBtn {
-  background: transparent;
-  color: var(--color-text-muted, #94a3b8);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
-.secondaryBtn:hover {
-  color: var(--color-text, #f8fafc);
+.secondaryBtn:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-focus);
 }
 
-/* ── Archive List ── */
-.archiveList {
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Right Companion Context Panel ───────────────────────────────── */
+.companionPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.companionCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.archiveCard {
-  background: var(--color-surface, #13141c);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 10px;
-  padding: 16px;
+.companionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.companionTitle {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.companionMuted {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.mutedIcon {
+  color: var(--color-text-muted);
+}
+
+.inlineLink {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkRowBtn {
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms ease;
+}
+
+.checkRowBtn:hover {
+  border-color: var(--color-border);
+}
+
+.checkRowLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.checkDotDone {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.projectSnapshotList {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.projectSnapshotRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.projectSnapshotTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.projectSnapshotName {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quickLinksCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quickNavLink {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.quickNavLink:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-border);
+}
+
+/* ── Archive Grid ────────────────────────────────────────────────── */
+.archiveSection {
+  width: 100%;
+}
+
+.archiveGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+}
+
+.archiveCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .archiveCardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
-  padding-bottom: 8px;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .archiveDateRange {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-accent, #818cf8);
+  color: var(--color-text);
+}
+
+.confirmRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deleteIconBtn {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.deleteIconBtn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .archiveMetricsRow {
   display: flex;
-  gap: 16px;
-  font-size: 11.5px;
-  color: var(--color-text-muted, #94a3b8);
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.archiveNotes {
-  font-size: 12px;
-  color: var(--color-text, #f8fafc);
+.metricPill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.archiveNoteBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+}
+
+.archiveNoteLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.archiveNoteBody {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text);
   line-height: 1.5;
-  background: rgba(255, 255, 255, 0.02);
-  padding: 8px 12px;
-  border-radius: 6px;
 }
 
-.deleteBtn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-faint, #64748b);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 2px 6px;
-}
-
-.deleteBtn:hover {
-  color: #f87171;
-}
-
-/* ── Confirmation Banner ── */
-.confirmationBanner {
-  background: rgba(52, 211, 153, 0.08);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 12.5px;
-  color: #34d399;
-  font-weight: 500;
-}
-
-/* ── Responsive Adaptability ── */
 @media (max-width: 768px) {
-  .page {
-    gap: 16px;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
   .tabSwitch {
     width: 100%;
   }
@@ -556,6 +999,5 @@
 
   .stepperTrack {
     grid-template-columns: 1fr;
-    gap: 6px;
   }
 }
