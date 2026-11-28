@@ -230,51 +230,6 @@ export default function InboxPage() {
     }
   };
 
-  const handleActivateGroqKey = (text: string) => {
-    const keyMatch = text.match(/gsk_[A-Za-z0-9_]{20,}/);
-    if (!keyMatch) return;
-    const extractedKey = keyMatch[0];
-
-    const currentSaved = settings.aiSettings?.savedKeys || [];
-    const existingIndex = currentSaved.findIndex((k) => k.apiKey === extractedKey);
-    const updatedSaved = [...currentSaved];
-
-    if (existingIndex < 0) {
-      updatedSaved.push({
-        id: `groq-key-${Date.now()}`,
-        name: `Groq Key (${extractedKey.slice(0, 8)}...)`,
-        apiKey: extractedKey,
-        provider: 'groq',
-        model: 'openai/gpt-oss-120b',
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    updateSettings({
-      aiSettings: {
-        ...(settings.aiSettings || {
-          monthlyBudgetUSD: 20,
-          spentBudgetUSD: 0,
-          totalTokensUsed: 0,
-          temperature: 0.7,
-        }),
-        enabled: true,
-        provider: 'groq',
-        apiKey: extractedKey,
-        model: settings.aiSettings?.model || 'openai/gpt-oss-120b',
-        autoFailover: true,
-        savedKeys: updatedSaved,
-        monthlyBudgetUSD: settings.aiSettings?.monthlyBudgetUSD ?? 20,
-        spentBudgetUSD: settings.aiSettings?.spentBudgetUSD ?? 0,
-        totalTokensUsed: settings.aiSettings?.totalTokensUsed ?? 0,
-        temperature: settings.aiSettings?.temperature ?? 0.7,
-      },
-    });
-
-    playSuccessChime();
-    showToast('Groq API Key Activated');
-  };
-
   const handleAiBreakdown = async (item: InboxItem) => {
     setAiBreakdownModal({ item, result: null, loading: true });
     try {
@@ -1576,20 +1531,6 @@ export default function InboxPage() {
                       <EntityFiles variant="icon" entityType="inbox" entityId={item.id} title={item.content.slice(0, 48)} />
                       {item.status === 'inbox' ? (
                         <>
-                          {/* Groq Key auto-detector */}
-                          {/gsk_[A-Za-z0-9_]{20,}/.test(item.content) && (
-                            <button
-                              type="button"
-                              className={styles.groqKeyBadge}
-                              onClick={() => handleActivateGroqKey(item.content)}
-                              title="Set this Groq API Key as the active key in your Sariling Mundo"
-                            >
-                              {settings.aiSettings?.apiKey && item.content.includes(settings.aiSettings.apiKey)
-                                ? '✓ Active Groq Key'
-                                : '⚡ Set as Groq Key'}
-                            </button>
-                          )}
-
                           <button
                             type="button"
                             className={styles.btnAi}

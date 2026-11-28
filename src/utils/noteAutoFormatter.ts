@@ -160,7 +160,7 @@ export async function formatStudyNotesWithAI(
 ): Promise<{ formattedHtml: string; isAI: boolean }> {
   const aiSettings = userSettings?.aiSettings;
 
-  if (aiSettings?.apiKey && aiSettings?.provider) {
+  if (aiSettings?.enabled !== false) {
     try {
       const systemPrompt = `You are an expert editorial designer and document typographer.
 Your job is to format the given raw notes into a formal, calm, publication-grade document designed for distraction-free reading.

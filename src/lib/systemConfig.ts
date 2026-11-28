@@ -11,6 +11,9 @@ export interface SystemConfig {
   maintenanceMode: boolean;
   maintenanceMessage: string;
   serverAiEnabled: boolean;
+  aiConfigured: boolean;
+  aiProvider: string;
+  aiModel: string;
   linkPreviewsEnabled: boolean;
   aiRateLimitPerMin: number;
   bannerEnabled: boolean;
@@ -31,6 +34,9 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfig = {
   maintenanceMode: false,
   maintenanceMessage: 'Scheduled platform maintenance is in progress. Please check back shortly.',
   serverAiEnabled: true,
+  aiConfigured: false,
+  aiProvider: 'groq',
+  aiModel: 'openai/gpt-oss-120b',
   linkPreviewsEnabled: true,
   aiRateLimitPerMin: 25,
   bannerEnabled: false,
@@ -83,6 +89,9 @@ export function sanitizeSystemConfig(raw: Record<string, unknown> | undefined): 
         ? raw.maintenanceMessage.trim().slice(0, 320)
         : DEFAULT_SYSTEM_CONFIG.maintenanceMessage,
     serverAiEnabled: raw.serverAiEnabled !== false,
+    aiConfigured: Boolean(raw.aiConfigured),
+    aiProvider: typeof raw.aiProvider === 'string' && raw.aiProvider.trim() ? raw.aiProvider.trim().slice(0, 32) : DEFAULT_SYSTEM_CONFIG.aiProvider,
+    aiModel: typeof raw.aiModel === 'string' && raw.aiModel.trim() ? raw.aiModel.trim().slice(0, 80) : DEFAULT_SYSTEM_CONFIG.aiModel,
     linkPreviewsEnabled: raw.linkPreviewsEnabled !== false,
     aiRateLimitPerMin,
     bannerEnabled: Boolean(raw.bannerEnabled),

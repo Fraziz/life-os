@@ -46,7 +46,7 @@ import { initFirebaseAnalytics } from '@/lib/firebase';
 import { DEFAULT_SYSTEM_CONFIG, subscribeSystemConfig, type SystemConfig } from '@/lib/systemConfig';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
-import { PanelLeft, Bot } from 'lucide-react';
+import { PanelLeft, Bot, X } from 'lucide-react';
 import { useArrowKeyScroll } from '@/utils/useArrowKeyScroll';
 import { useGlobalLinkDetector } from '@/utils/useGlobalLinkDetector';
 
@@ -373,6 +373,10 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     pathname === '/knowledge' ? styles.knowledgeMain : '',
   ].filter(Boolean).join(' ');
 
+  if (pathname === '/ai-popout') {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <div className={styles.shell}>
@@ -473,7 +477,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* AI Chat Assistant Panel */}
-      <AIAssistantPanel isOpen={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      <AIAssistantPanel
+        isOpen={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        anchorPos={bubblePos}
+      />
 
       {/* Movable Minimalist Floating AI Chat Button */}
       <button
@@ -493,7 +501,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           setBubblePos(null);
           try { localStorage.removeItem('life_os_ai_bubble_pos'); } catch {}
         }}
-        className={`${styles.aiChatBtn} ${isDraggingBubble ? styles.aiChatBtnDragging : ''}`}
+        className={`${styles.aiChatBtn} ${isDraggingBubble ? styles.aiChatBtnDragging : ''} ${aiChatOpen ? styles.aiChatBtnOpen : ''}`}
         style={
           bubblePos
             ? {
@@ -504,11 +512,12 @@ function ShellContent({ children }: { children: React.ReactNode }) {
               }
             : undefined
         }
-        aria-label="Open AI assistant (Ctrl+L)"
-        title="AI Assistant (Click to open, Drag to dock, Double-click to reset)"
+        aria-expanded={aiChatOpen}
+        aria-label={aiChatOpen ? 'Close AI assistant (Ctrl+L)' : 'Open AI assistant (Ctrl+L)'}
+        title="AI Assistant (Click to pop up, Drag to dock, Double-click to reset)"
         id="ai-chat-float-btn"
       >
-        <Bot size={20} strokeWidth={2} />
+        {aiChatOpen ? <X size={18} strokeWidth={2.2} /> : <Bot size={20} strokeWidth={2} />}
       </button>
 
       <GrammarAssist />

@@ -292,7 +292,7 @@ export async function formatDocumentWithAI(
   }
 
   const aiSettings = settings?.aiSettings;
-  if (!aiSettings?.apiKey) {
+  if (aiSettings?.enabled === false) {
     return localResult;
   }
 

@@ -177,7 +177,7 @@ export async function generateAIBreakdown(
   customConstraint?: string
 ): Promise<AISuggestion> {
   const fallback = generateDeterministicBreakdown(goal, projects);
-  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+  if (aiSettings?.enabled === false) {
     return fallback;
   }
 
@@ -254,7 +254,7 @@ export async function generateAIDayPlan(
   aiSettings?: AISettings
 ): Promise<AISuggestion> {
   const fallback = generateDeterministicDayPlan(tasks, settings);
-  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+  if (aiSettings?.enabled === false) {
     return fallback;
   }
 
@@ -334,7 +334,7 @@ export async function generateAIBlockerAnalysis(
   aiSettings?: AISettings
 ): Promise<AISuggestion> {
   const fallback = generateDeterministicBlockerAnalysis(tasks, projects);
-  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+  if (aiSettings?.enabled === false) {
     return fallback;
   }
 
@@ -412,10 +412,10 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
   modelUsed?: string;
 }> {
   const hasServerAuth = Boolean(await getOptionalFirebaseToken());
-  if (!aiSettings.apiKey && aiSettings.provider !== 'custom' && !hasServerAuth) {
+  if (!hasServerAuth) {
     return {
       success: false,
-      message: 'API key is missing. Sign in or enter your API key in Settings.',
+      message: 'Please sign in to your account to access platform AI.',
       latencyMs: 0,
     };
   }
@@ -430,13 +430,13 @@ export async function testAIConnection(aiSettings: AISettings): Promise<{
       success: true,
       message: result.text.trim() || 'Connected successfully!',
       latencyMs,
-      modelUsed: result.modelUsed || aiSettings.model || (aiSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'default'),
+      modelUsed: result.modelUsed || 'platform-ai',
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     const latencyMs = Date.now() - startTime;
     return {
       success: false,
-      message: err?.message || 'Connection failed. Please verify your API key and network.',
+      message: err instanceof Error ? err.message : 'Unable to connect to platform AI right now.',
       latencyMs,
     };
   }
@@ -468,7 +468,7 @@ export interface AICallOptions {
 export async function executeOptionalAICall(
   prompt: string,
   systemPrompt: string,
-  aiSettings: AISettings,
+  aiSettings?: AISettings,
   options: AICallOptions = {}
 ): Promise<{ text: string; tokensUsed: number; costUSD: number; modelUsed?: string }> {
   if (options.plainLanguage !== false) {
@@ -476,415 +476,44 @@ export async function executeOptionalAICall(
   }
 
   const idToken = await getOptionalFirebaseToken();
-  if (!aiSettings.apiKey && aiSettings.provider !== 'custom' && !idToken) {
-    throw new Error('API key is missing. Sign in or configure your API key in Settings.');
+  if (!idToken) {
+    throw new Error('Please sign in to your account to use AI assistance.');
   }
 
-  // Budget safeguard
-  if (aiSettings.spentBudgetUSD >= aiSettings.monthlyBudgetUSD) {
-    throw new Error(
-      `Monthly AI budget limit ($${aiSettings.monthlyBudgetUSD.toFixed(2)}) reached. Falling back to local rules.`
-    );
-  }
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${idToken}`,
+  };
 
-  // When running in the browser, route through the Next.js server proxy (/api/ai/chat)
-  // to avoid browser CORS preflight blocking (e.g. Groq & OpenAI APIs return "Failed to fetch" in browser)
-  if (typeof window !== 'undefined') {
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (idToken) {
-        headers.Authorization = `Bearer ${idToken}`;
-      }
-      const serverResp = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt, systemPrompt, aiSettings }),
-      });
-
-      if (serverResp.ok) {
-        const data = await serverResp.json();
-        return {
-          text: data.text || '',
-          tokensUsed: data.tokensUsed || 400,
-          costUSD: data.costUSD || 0,
-          modelUsed: data.modelUsed || aiSettings.model,
-        };
-      }
-
-      const errData = await serverResp.json().catch(() => ({}));
-      if (errData?.error) {
-        throw new Error(errData.error);
-      }
-    } catch (proxyErr: any) {
-      // If the proxy gave a specific error (e.g., auth failure, rate limit, model not found), rethrow it
-      if (proxyErr?.message && !proxyErr.message.includes('Failed to fetch') && !proxyErr.message.includes('NetworkError')) {
-        throw proxyErr;
-      }
-      if (!aiSettings.apiKey && aiSettings.provider !== 'custom') {
-        throw new Error('AI proxy is unreachable and no local API key is configured.');
-      }
-      // If proxy was unreachable and user provided a BYOK key, continue to direct client-side fetch below
-    }
-  }
-
-  // 1. Google Gemini API
-  if (aiSettings.provider === 'gemini') {
-    const rawModel = aiSettings.model?.trim() || 'gemini-2.0-flash';
-    let initialCleanModel = rawModel.replace(/^models\//, '');
-    
-    // Automatically migrate retired/deprecated gemini-2.5-pro to Google's recommended gemini-3.1-pro-preview
-    if (initialCleanModel === 'gemini-2.5-pro') {
-      initialCleanModel = 'gemini-3.1-pro-preview';
-    }
-
-    // Candidates to attempt in order if the specified model returns 404, 400 retired, or is temporarily unavailable
-    const candidateModels = Array.from(new Set([
-      initialCleanModel,
-      'gemini-3.1-pro-preview',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-    ])).filter((m) => Boolean(m) && m !== 'gemini-2.5-pro' && m !== 'models/gemini-2.5-pro');
-
-    // Multi-key Pool for Auto-failover & Auto-switching when quota/limit is low
-    const candidateKeys: string[] = [];
-    if (aiSettings.apiKey?.trim()) {
-      candidateKeys.push(aiSettings.apiKey.trim());
-    }
-    if (aiSettings.savedKeys && aiSettings.savedKeys.length > 0) {
-      for (const k of aiSettings.savedKeys) {
-        const clean = k.apiKey?.trim();
-        if (clean && !candidateKeys.includes(clean)) {
-          candidateKeys.push(clean);
-        }
-      }
-    }
-
-    if (candidateKeys.length === 0) {
-      throw new Error('API key is missing. Please configure your API key in Settings.');
-    }
-
-    let lastError: Error | null = null;
-
-    // Iterate through available API keys in pool (Auto-Failover)
-    for (let keyIdx = 0; keyIdx < candidateKeys.length; keyIdx++) {
-      const currentKey = candidateKeys[keyIdx];
-      const hasBackupKeys = keyIdx < candidateKeys.length - 1;
-
-      for (const cleanModel of candidateModels) {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${currentKey}`;
-
-        let response: Response;
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(6000),
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: systemPrompt }],
-              },
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: prompt }],
-                },
-              ],
-              generationConfig: {
-                temperature: aiSettings.temperature ?? 0.7,
-                maxOutputTokens: 2048,
-              },
-            }),
-          });
-        } catch {
-          // If systemInstruction wasn't supported by older endpoint, retry with combined prompt
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(6000),
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: `${systemPrompt}\n\n${prompt}` }],
-                },
-              ],
-              generationConfig: {
-                temperature: aiSettings.temperature ?? 0.7,
-                maxOutputTokens: 2048,
-              },
-            }),
-          });
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          const text =
-            data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ||
-            data.candidates?.[0]?.content?.parts?.[0]?.text ||
-            '';
-          const totalTokens = data.usageMetadata?.totalTokenCount || 400;
-          const costUSD = (totalTokens / 1_000_000) * 0.075;
-
-          return { text, tokensUsed: totalTokens, costUSD, modelUsed: cleanModel };
-        }
-
-        const errJson = await response.json().catch(() => ({}));
-        const rawErrMsg = errJson.error?.message || `Gemini API error (${response.status})`;
-
-        const isKeyInvalid =
-          response.status === 400 &&
-          (rawErrMsg.toLowerCase().includes('api key not valid') ||
-           rawErrMsg.toLowerCase().includes('api_key_invalid') ||
-           rawErrMsg.toLowerCase().includes('invalid api key') ||
-           rawErrMsg.toLowerCase().includes('key not valid') ||
-           rawErrMsg.toLowerCase().includes('api key expired'));
-
-        const isQuotaOrLimit =
-          response.status === 429 ||
-          rawErrMsg.includes('RESOURCE_EXHAUSTED') ||
-          rawErrMsg.toLowerCase().includes('quota') ||
-          rawErrMsg.toLowerCase().includes('rate limit');
-
-        if (isKeyInvalid || isQuotaOrLimit) {
-          if (hasBackupKeys) {
-            console.warn(`[Sariling Mundo AI] Key #${keyIdx + 1} failed (${rawErrMsg}). Auto-switching to backup key in pool...`);
-            lastError = new Error(`Key #${keyIdx + 1} unavailable. Switched to backup key.`);
-            break; // Break inner model loop to try NEXT KEY in candidateKeys
-          }
-          if (isQuotaOrLimit) {
-            throw new Error('Gemini quota limit reached on all saved keys. Please add a backup key in Settings or try later.');
-          }
-          if (isKeyInvalid) {
-            throw new Error('Invalid Gemini API key. Please check your API key in Settings (Google AI Studio).');
-          }
-        }
-
-        const isModelUnavailable =
-          response.status === 404 ||
-          rawErrMsg.toLowerCase().includes('not found') ||
-          rawErrMsg.toLowerCase().includes('no longer available') ||
-          rawErrMsg.toLowerCase().includes('not available') ||
-          rawErrMsg.toLowerCase().includes('deprecated') ||
-          rawErrMsg.toLowerCase().includes('high demand') ||
-          rawErrMsg.toLowerCase().includes('interactions api') ||
-          (response.status === 400 && (
-            rawErrMsg.toLowerCase().includes('model') ||
-            rawErrMsg.toLowerCase().includes('invalid argument') ||
-            rawErrMsg.toLowerCase().includes('no longer available')
-          ));
-
-        if (isModelUnavailable) {
-          // Try next candidate model
-          lastError = new Error(`Gemini model "${cleanModel}" unavailable: ${rawErrMsg}`);
-          continue;
-        }
-
-        throw new Error(rawErrMsg);
-      }
-    }
-
-    throw lastError || new Error(`Gemini models not available for this API key. Please check your API key in Settings.`);
-  }
-
-  // 2. Anthropic Claude API
-  if (aiSettings.provider === 'anthropic') {
-    const endpoint = aiSettings.apiEndpoint || 'https://api.anthropic.com/v1/messages';
-    const modelName = aiSettings.model?.trim() || 'claude-3-5-sonnet-20241022';
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': aiSettings.apiKey?.trim() || '',
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
+  const serverResp = await fetch('/api/ai/chat', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      prompt,
+      systemPrompt,
+      aiSettings: {
+        temperature: aiSettings?.temperature ?? 0.7,
       },
-      body: JSON.stringify({
-        model: modelName,
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: aiSettings.temperature ?? 0.7,
-      }),
-    });
+    }),
+  });
 
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.error?.message || `Anthropic API error (${response.status})`);
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    const totalTokens = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0) || 450;
-    const costUSD = (totalTokens / 1_000_000) * 3.0;
-
-    return { text, tokensUsed: totalTokens, costUSD };
-  }
-
-  // 3. Cohere Chat v2 API
-  if (aiSettings.provider === 'cohere') {
-    const endpoint = aiSettings.apiEndpoint || 'https://api.cohere.com/v2/chat';
-    const modelName = aiSettings.model?.trim() || 'command-r';
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiSettings.apiKey?.trim() || ''}`,
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-        temperature: aiSettings.temperature ?? 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.message || `Cohere API error (${response.status})`);
-    }
-
-    const data = await response.json();
-    const text = data.message?.content?.[0]?.text || data.text || '';
-    const totalTokens = (data.usage?.tokens?.input_tokens || 0) + (data.usage?.tokens?.output_tokens || 0) || 400;
-    const costUSD = (totalTokens / 1_000_000) * 0.15;
-
-    return { text, tokensUsed: totalTokens, costUSD };
-  }
-
-  // 4. OpenAI-Compatible Providers (OpenRouter, Groq, DeepSeek, Mistral, HuggingFace, OpenAI, Custom/Ollama)
-  let endpoint = 'https://api.openai.com/v1/chat/completions';
-  let defaultModel = 'gpt-4o-mini';
-
-  const envGroqKey1 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '') : '';
-  const envGroqKey2 = typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_2 || '') : '';
-
-  if (aiSettings.provider === 'openrouter') {
-    endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-    defaultModel = 'google/gemini-2.0-flash-exp:free';
-  } else if (aiSettings.provider === 'groq') {
-    endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    defaultModel = 'openai/gpt-oss-120b';
-  } else if (aiSettings.provider === 'deepseek') {
-    endpoint = 'https://api.deepseek.com/v1/chat/completions';
-    defaultModel = 'deepseek-chat';
-  } else if (aiSettings.provider === 'mistral') {
-    endpoint = 'https://api.mistral.ai/v1/chat/completions';
-    defaultModel = 'mistral-small-latest';
-  } else if (aiSettings.provider === 'huggingface') {
-    endpoint = 'https://api-inference.huggingface.co/v1/chat/completions';
-    defaultModel = 'meta-llama/Llama-3.2-3B-Instruct';
-  } else if (aiSettings.provider === 'custom') {
-    endpoint = aiSettings.apiEndpoint?.trim() || 'http://localhost:11434/v1/chat/completions';
-    defaultModel = 'llama3';
-  }
-
-  // ONLY custom provider should ever override the API endpoint with apiEndpoint
-  if (aiSettings.provider === 'custom' && aiSettings.apiEndpoint?.trim()) {
-    endpoint = aiSettings.apiEndpoint.trim();
-  }
-
-  const requestedModel = aiSettings.model?.trim() || defaultModel;
-
-  const candidateKeys: string[] = [];
-  if (aiSettings.apiKey?.trim()) candidateKeys.push(aiSettings.apiKey.trim());
-  if (Array.isArray(aiSettings.savedKeys)) {
-    for (const k of aiSettings.savedKeys) {
-      const c = k.apiKey?.trim();
-      if (c && !candidateKeys.includes(c)) candidateKeys.push(c);
-    }
-  }
-  if (aiSettings.provider === 'groq') {
-    if (envGroqKey1 && !candidateKeys.includes(envGroqKey1)) candidateKeys.push(envGroqKey1);
-    if (envGroqKey2 && !candidateKeys.includes(envGroqKey2)) candidateKeys.push(envGroqKey2);
-  }
-  if (candidateKeys.length === 0) {
-    candidateKeys.push(aiSettings.apiKey || '');
-  }
-
-  const candidateModels = aiSettings.provider === 'groq'
-    ? Array.from(new Set([requestedModel, 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'])).filter(Boolean)
-    : [requestedModel];
-
-  let lastError = `Failed to connect to ${aiSettings.provider.toUpperCase()}`;
-
-  for (let keyIdx = 0; keyIdx < candidateKeys.length; keyIdx++) {
-    const currentKey = candidateKeys[keyIdx];
-    const hasBackupKey = keyIdx < candidateKeys.length - 1;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${currentKey}`,
+  if (serverResp.ok) {
+    const data = (await serverResp.json()) as {
+      text?: string;
+      tokensUsed?: number;
+      costUSD?: number;
+      modelUsed?: string;
     };
-
-    if (aiSettings.provider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://lifeos.app';
-      headers['X-Title'] = 'Sariling Mundo';
-    }
-
-    for (const m of candidateModels) {
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          signal: AbortSignal.timeout(20000),
-          body: JSON.stringify({
-            model: m,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: prompt },
-            ],
-            temperature: aiSettings.temperature ?? 0.7,
-            max_tokens: 2048,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || '';
-          const totalTokens = data.usage?.total_tokens || 450;
-          const costUSD = (totalTokens / 1_000_000) * 0.15;
-
-          return { text, tokensUsed: totalTokens, costUSD, modelUsed: m };
-        }
-
-        const errJson = await response.json().catch(() => ({}));
-        const rawErrMsg = errJson.error?.message || errJson.message || `API error (${response.status})`;
-
-        if (response.status === 404 || (rawErrMsg.toLowerCase().includes('model') && rawErrMsg.toLowerCase().includes('not exist'))) {
-          lastError = rawErrMsg;
-          continue; // try next candidate model
-        }
-
-        if ((response.status === 429 || response.status === 401) && hasBackupKey) {
-          console.warn(`[Sariling Mundo AI] Key #${keyIdx + 1} for ${aiSettings.provider} failed (${rawErrMsg}). Switching to next key in pool...`);
-          lastError = rawErrMsg;
-          break; // try next key
-        }
-
-        if (response.status === 401) {
-          throw new Error(`Invalid API key for ${aiSettings.provider.toUpperCase()}. Please verify your key.`);
-        }
-        if (response.status === 429) {
-          throw new Error(`Rate limit or quota reached for ${aiSettings.provider.toUpperCase()}. Please wait or check your balance.`);
-        }
-
-        throw new Error(rawErrMsg);
-      } catch (err: any) {
-        if (err?.message?.includes('Invalid API key') || err?.message?.includes('Rate limit')) {
-          throw err;
-        }
-        lastError = err?.message || lastError;
-      }
-    }
+    return {
+      text: data.text || '',
+      tokensUsed: data.tokensUsed || 400,
+      costUSD: data.costUSD || 0,
+      modelUsed: data.modelUsed,
+    };
   }
 
-  throw new Error(lastError);
+  const errData = (await serverResp.json().catch(() => ({}))) as { error?: string };
+  throw new Error(errData?.error || `Platform AI service returned status ${serverResp.status}.`);
 }
 
 // ── Types for new AI features ─────────────────────────────────────────────
@@ -961,7 +590,7 @@ export async function processBrainDumpWithAI(
     reasoning: 'Classified by keyword analysis.',
   }));
 
-  if (!aiSettings?.enabled || !aiSettings.apiKey || items.length === 0) {
+  if (aiSettings?.enabled === false || items.length === 0) {
     return local;
   }
 
@@ -1010,7 +639,7 @@ export async function breakdownThoughtWithAI(
   const effectiveSettings: AISettings = aiSettings || {
     enabled: true,
     provider: 'groq',
-    apiKey: typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_GROQ_API_KEY_1 || process.env.NEXT_PUBLIC_GROQ_API_KEY || '') : '',
+    apiKey: '',
     model: 'openai/gpt-oss-120b',
     monthlyBudgetUSD: 20,
     spentBudgetUSD: 0,
@@ -1086,7 +715,7 @@ export async function coachGoalWithAI(
       : 'Progress over perfection. Every task done is momentum.',
   };
 
-  if (!aiSettings?.enabled || !aiSettings.apiKey) return local;
+  if (aiSettings?.enabled === false) return local;
 
   try {
     const systemPrompt = `You are an executive life coach. Analyze the user's goal and give a personalized coaching report. Respond ONLY with valid JSON: { "assessment": string, "status": "on-track"|"behind"|"ahead"|"stalled", "nextSteps": string[], "motivation": string }. No markdown fences.`;
@@ -1129,7 +758,7 @@ export async function draftWeeklyReviewWithAI(
       : 'Pick the single most important goal and take 3 concrete actions toward it.',
   };
 
-  if (!aiSettings?.enabled || !aiSettings.apiKey) return local;
+  if (aiSettings?.enabled === false) return local;
 
   try {
     const systemPrompt = `You are a thoughtful productivity coach helping a user write their weekly review. Write in first person as if the user is writing about themselves. Be honest, specific, and motivating. Respond ONLY with valid JSON: { "wentWell": string, "didNotGoWell": string, "shouldChange": string, "nextWeekFocus": string }. Each field should be 1-2 sentences. No markdown fences.`;
@@ -1177,7 +806,7 @@ export async function analyzeProblemWithAI(
     ],
   };
 
-  if (!aiSettings?.enabled || !aiSettings.apiKey || !problemStatement.trim()) return local;
+  if (aiSettings?.enabled === false || !problemStatement.trim()) return local;
 
   try {
     const systemPrompt = `You are a world-class problem-solving consultant. Analyze the problem and produce a structured breakdown. Respond ONLY with valid JSON: { "facts": string[], "assumptions": string[], "rootCauses": string[], "successMetrics": string[], "nextSteps": string[] }. Each array should have 2–4 items. Be specific and actionable. No markdown fences.`;
@@ -1215,7 +844,7 @@ export async function chatWithAssistant(
   // Smart deterministic responses for common questions (no API key needed)
   const q = userMessage.toLowerCase();
 
-  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+  if (aiSettings?.enabled === false) {
     const todayStr = new Date().toISOString().split('T')[0];
     const activeTasks = tasks.filter(t => t.status !== 'done');
     const urgent = activeTasks.filter(t => t.priority === 'urgent');
@@ -1329,9 +958,9 @@ ${JSON.stringify(contextSummary, null, 2)}`;
 
     const { text } = await executeOptionalAICall(prompt, systemPrompt, aiSettings);
     return text.trim() || 'I generated an empty response. Please try asking in a different way.';
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.warn('AI chat error (fallback):', err);
-    return `⚠️ AI Error: ${err?.message || 'Could not connect to AI provider'}.\n\nPlease check your API key in Settings → AI Assistant.`;
+    return `Unable to reach the AI service: ${err instanceof Error ? err.message : 'Service temporarily unavailable'}.`;
   }
 }
 
@@ -1345,7 +974,7 @@ export async function summarizeDocumentWithAI(
 ): Promise<{ summary: string; keyPoints: string[]; actionItems: string[]; isAI: boolean }> {
   const plainText = docContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const aiSettings = userSettings?.aiSettings;
-  const isAI = Boolean(aiSettings?.enabled && aiSettings?.apiKey);
+  const isAI = aiSettings?.enabled !== false;
 
   if (isAI && aiSettings) {
     try {
@@ -1401,7 +1030,7 @@ export async function generateStudyQuizWithAI(
 ): Promise<{ questions: { question: string; answer: string }[]; isAI: boolean }> {
   const plainText = docContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const aiSettings = userSettings?.aiSettings;
-  const isAI = Boolean(aiSettings?.enabled && aiSettings?.apiKey);
+  const isAI = aiSettings?.enabled !== false;
 
   if (isAI && aiSettings) {
     try {
@@ -1515,7 +1144,7 @@ ${pendingCount > 0 ? `• **${pendingCount} pending task(s)** queued for tomorro
     }
   };
 
-  const isAIConfigured = aiSettings?.enabled && (aiSettings.apiKey || aiSettings.provider === 'custom');
+  const isAIConfigured = aiSettings?.enabled !== false;
   if (!isAIConfigured) {
     return getDeterministicBriefing();
   }
@@ -1735,7 +1364,7 @@ export async function optimizeMyDaySchedule(
     };
   };
 
-  const isAIConfigured = aiSettings?.enabled && (aiSettings.apiKey || aiSettings.provider === 'custom');
+  const isAIConfigured = aiSettings?.enabled !== false;
   if (!isAIConfigured) {
     return generateDeterministicSchedule();
   }

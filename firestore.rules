@@ -23,6 +23,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Admin-only AI vault metadata/backup (strictly never readable by non-admin clients)
+    match /app/aiVault {
+      allow read, write, delete: if isAdmin();
+    }
+
     // Operational status incidents (public read for status checks, admin write)
     match /adminIncidents/{incidentId} {
       allow read: if true;

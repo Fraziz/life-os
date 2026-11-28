@@ -152,8 +152,8 @@ export async function getNextActionRecommendation(
   const { settings } = ctx;
   const aiSettings = settings.aiSettings;
 
-  // 1. Fallback if AI disabled or missing API key
-  if (!aiSettings?.enabled || !aiSettings.apiKey) {
+  // 1. Fallback if AI disabled by user preference
+  if (aiSettings?.enabled === false) {
     return getDeterministicNextAction(ctx);
   }
 

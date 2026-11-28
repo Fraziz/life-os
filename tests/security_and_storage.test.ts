@@ -8,6 +8,7 @@ import { isSafeRichUrl, sanitizeRichHtml } from '../src/utils/htmlSanitizer';
 import { verifyAdminRequest } from '../src/lib/adminAuth';
 import { clearPreviewCache, getCachedPreview, getPreviewCacheSampleHosts, getPreviewCacheStats, setPreviewCache } from '../src/lib/linkPreviewCache';
 import { sanitizeBannerHref, sanitizeSystemConfig } from '../src/lib/systemConfig';
+import { maskSecretKey } from '../src/lib/serverAiVault';
 
 test('SSRF protection blocks private networks, localhost, metadata, and obfuscated IPs', () => {
   assert.equal(isPrivateOrReservedHost('127.0.0.1'), true);
@@ -156,4 +157,33 @@ test('RateLimit details surface busiest active buckets cleanly', () => {
   const found = details.find((d) => d.bucket === bucketKey);
   assert.ok(found);
   assert.equal(found.count, 2);
+});
+
+test('Server AI vault maskSecretKey redacts empty, short, and standard secrets', () => {
+  assert.equal(maskSecretKey(''), '');
+  assert.equal(maskSecretKey('   '), '');
+  assert.equal(maskSecretKey('shortkey'), '••••••••');
+  assert.equal(maskSecretKey('gsk_1234567890abcdef'), 'gsk_••••cdef');
+  assert.equal(maskSecretKey('  sk-proj-abcdef1234  '), 'sk-p••••1234');
+});
+
+test('SystemConfig preserves non-secret AI availability fields without leaking secrets', () => {
+  const configured = sanitizeSystemConfig({
+    aiConfigured: true,
+    aiProvider: '  gemini  ',
+    aiModel: 'gemini-2.0-flash',
+    serverAiEnabled: true,
+  });
+  assert.equal(configured.aiConfigured, true);
+  assert.equal(configured.aiProvider, 'gemini');
+  assert.equal(configured.aiModel, 'gemini-2.0-flash');
+
+  const blankDefaults = sanitizeSystemConfig({
+    aiConfigured: false,
+    aiProvider: '   ',
+    aiModel: '',
+  });
+  assert.equal(blankDefaults.aiConfigured, false);
+  assert.equal(blankDefaults.aiProvider, 'groq');
+  assert.equal(blankDefaults.aiModel, 'openai/gpt-oss-120b');
 });

@@ -3,6 +3,7 @@ import type { SystemConfig } from '@/lib/systemConfig';
 export type AdminSection =
   | 'overview'
   | 'users'
+  | 'ai'
   | 'controls'
   | 'operations'
   | 'incidents'

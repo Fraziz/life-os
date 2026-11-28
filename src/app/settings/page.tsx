@@ -17,7 +17,7 @@ import {
 import { restoreMissingStarterWorkspace } from '@/lib/workspaceRecovery';
 import { flushPendingBookSaves, wipeCloudBooks } from '@/lib/bookCloudSync';
 import { idbClear, idbGet, idbSet } from '@/lib/idbStore';
-import type { PlanningStyle, AppTheme, SavedApiKey, AISettings } from '@/types';
+import type { PlanningStyle, AppTheme } from '@/types';
 import {
   User,
   Clock,
@@ -40,13 +40,7 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
-  X,
-  Copy,
-  Plus,
-  Key,
   Layers,
-  Zap,
-  Check,
   Compass,
   ChevronDown,
   Monitor,
@@ -54,7 +48,6 @@ import {
 
 import ActiveDevices from '@/components/settings/ActiveDevices';
 import { useTour } from '@/context/TourContext';
-import { testAIConnection } from '@/utils/aiEngine';
 import { usePwaInstall } from '@/utils/usePwaInstall';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
@@ -323,30 +316,7 @@ export default function SettingsPage() {
 
       setRestoreStatus('Restoring data...');
       for (const key of keys) {
-        let val = data[key];
-        // Preserve existing local AI API credentials when restoring a sanitized export
-        if (key === 'life_os_user_settings_v1' && val && typeof val === 'object') {
-          try {
-            const existingRaw = localStorage.getItem(key);
-            const existingParsed = existingRaw ? JSON.parse(existingRaw) : null;
-            const importedAi = (val as { aiSettings?: Record<string, unknown> }).aiSettings;
-            const existingAi = existingParsed?.aiSettings;
-            const hasImportedKey =
-              Boolean(importedAi?.apiKey) ||
-              (Array.isArray(importedAi?.savedKeys) && importedAi.savedKeys.length > 0);
-            if (!hasImportedKey && existingAi) {
-              val = {
-                ...(val as Record<string, unknown>),
-                aiSettings: {
-                  ...(importedAi || {}),
-                  apiKey: existingAi.apiKey || '',
-                  savedKeys: existingAi.savedKeys || [],
-                  activeKeyId: existingAi.activeKeyId,
-                },
-              };
-            }
-          } catch {}
-        }
+        const val = data[key];
         const valStr = typeof val === 'string' ? val : JSON.stringify(val);
         try {
           localStorage.setItem(key, valStr);
@@ -446,14 +416,12 @@ export default function SettingsPage() {
     }
   };
 
-  // AI Connection Test state
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [isTestingAI, setIsTestingAI] = useState(false);
-  const [aiTestResult, setAiTestResult] = useState<{
-    success: boolean;
-    message: string;
-    latencyMs?: number;
-    modelUsed?: string;
+  // Platform-wide AI availability (non-secret status from server vault)
+  const [platformAiStatus, setPlatformAiStatus] = useState<{
+    enabled: boolean;
+    configured: boolean;
+    provider: string;
+    model: string;
   } | null>(null);
 
   useEffect(() => {
@@ -462,156 +430,25 @@ export default function SettingsPage() {
     }
   }, [settings, isLoaded]);
 
-  // AI Vault & Auto-Save state
-  const [autoSavedAi, setAutoSavedAi] = useState(false);
-  const [newKeyNameInput, setNewKeyNameInput] = useState('');
-  const [isAddingNewKey, setIsAddingNewKey] = useState(false);
-
-  const triggerAutoSaveAI = (updatedAI: AISettings) => {
-    const updated = {
-      ...formData,
-      aiSettings: updatedAI,
-    };
-    setFormData(updated);
-    updateSettings(updated);
-    setAutoSavedAi(true);
-    setTimeout(() => setAutoSavedAi(false), 2500);
-  };
-
-  const handleApiKeyChange = (val: string) => {
-    if (!formData.aiSettings) return;
-    const curActiveId = formData.aiSettings.activeKeyId;
-    let updatedSavedKeys = [...(formData.aiSettings.savedKeys || [])];
-    const cleanVal = val.trim();
-
-    if (curActiveId) {
-      updatedSavedKeys = updatedSavedKeys.map((k) => {
-        if (k.id === curActiveId) {
-          const isAutoNamed = k.name.includes('Key (') || k.name.startsWith('Key Profile ');
-          const newName = isAutoNamed && cleanVal.length > 8
-            ? `${formData.aiSettings?.provider === 'groq' ? 'Groq' : 'AI'} Key (${cleanVal.slice(0, 8)}...)`
-            : k.name;
-          return { ...k, apiKey: cleanVal, name: newName };
+  useEffect(() => {
+    let active = true;
+    fetch('/api/ai/status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data) {
+          setPlatformAiStatus({
+            enabled: Boolean(data.enabled),
+            configured: Boolean(data.configured),
+            provider: String(data.provider || ''),
+            model: String(data.model || ''),
+          });
         }
-        return k;
-      });
-    }
-
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      apiKey: cleanVal,
-      savedKeys: updatedSavedKeys,
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
     };
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleSaveCurrentKeyToVault = () => {
-    if (!formData.aiSettings?.apiKey?.trim()) return;
-    const existing = formData.aiSettings.savedKeys || [];
-    const count = existing.length + 1;
-    const keyPrefix = formData.aiSettings.apiKey.trim().slice(0, 8);
-    const keyName = newKeyNameInput.trim() || `${formData.aiSettings.provider === 'groq' ? 'Groq' : 'AI'} Key (${keyPrefix}...)`;
-    const newSavedKey: SavedApiKey = {
-      id: `key-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: keyName,
-      apiKey: formData.aiSettings.apiKey.trim(),
-      provider: formData.aiSettings.provider,
-      model: formData.aiSettings.model,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      savedKeys: [...existing, newSavedKey],
-      activeKeyId: newSavedKey.id,
-    };
-    setNewKeyNameInput('');
-    setIsAddingNewKey(false);
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleDuplicateKey = (k: SavedApiKey) => {
-    if (!formData.aiSettings) return;
-    const existing = formData.aiSettings.savedKeys || [];
-    const duplicated: SavedApiKey = {
-      id: `key-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: `${k.name} (Copy)`,
-      apiKey: k.apiKey,
-      provider: k.provider,
-      model: k.model,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      savedKeys: [...existing, duplicated],
-    };
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleSwitchActiveKey = (k: SavedApiKey) => {
-    if (!formData.aiSettings) return;
-    const targetProvider = k.provider || formData.aiSettings.provider;
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      apiKey: k.apiKey,
-      model: k.model || formData.aiSettings.model,
-      provider: targetProvider,
-      activeKeyId: k.id,
-      enabled: true,
-      apiEndpoint: targetProvider === 'custom' ? formData.aiSettings.apiEndpoint : undefined,
-    };
-    setAiTestResult(null);
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleDeleteSavedKey = (keyId: string) => {
-    if (!formData.aiSettings) return;
-    const existing = formData.aiSettings.savedKeys || [];
-    const remaining = existing.filter((k) => k.id !== keyId);
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      savedKeys: remaining,
-      activeKeyId: formData.aiSettings.activeKeyId === keyId ? remaining[0]?.id || undefined : formData.aiSettings.activeKeyId,
-      apiKey: formData.aiSettings.activeKeyId === keyId ? remaining[0]?.apiKey || '' : formData.aiSettings.apiKey,
-    };
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleToggleFailover = () => {
-    if (!formData.aiSettings) return;
-    const cur = formData.aiSettings.autoFailover !== false;
-    const updatedAI: AISettings = {
-      ...formData.aiSettings,
-      autoFailover: !cur,
-    };
-    triggerAutoSaveAI(updatedAI);
-  };
-
-  const handleTestAndSaveAI = async () => {
-    if (!formData.aiSettings) return;
-    setIsTestingAI(true);
-    setAiTestResult(null);
-
-    const testSettings = {
-      ...formData.aiSettings,
-      enabled: true,
-    };
-
-    const res = await testAIConnection(testSettings);
-    setIsTestingAI(false);
-    setAiTestResult(res);
-
-    if (res.success) {
-      const updated = {
-        ...formData,
-        aiSettings: {
-          ...testSettings,
-          model: res.modelUsed || testSettings.model,
-        },
-      };
-      setFormData(updated);
-      updateSettings(updated);
-    }
-  };
+  }, []);
 
   type SectionKey =
     | 'account'
@@ -2551,7 +2388,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {/* ── 8. AI Engine & API Key Setup ── */}
+        {/* ── 8. AI Assistant ── */}
         {(activeCategory === 'all' || activeCategory === 'ai') && (
           <section className={styles.sectionCard}>
             <div
@@ -2567,15 +2404,27 @@ export default function SettingsPage() {
                 </div>
                 <div className={styles.sectionHeaderContent}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <h2 className={styles.sectionTitle}>AI Integration &amp; API Key</h2>
-                    <div className={`${styles.aiStatusBadge} ${formData.aiSettings?.enabled && formData.aiSettings?.apiKey ? styles.active : styles.inactive}`}>
+                    <h2 className={styles.sectionTitle}>AI Assistant</h2>
+                    <div
+                      className={`${styles.aiStatusBadge} ${
+                        formData.aiSettings?.enabled !== false && platformAiStatus?.enabled && platformAiStatus?.configured
+                          ? styles.active
+                          : styles.inactive
+                      }`}
+                    >
                       <span className={styles.statusDot} />
-                      {formData.aiSettings?.enabled && formData.aiSettings?.apiKey
-                        ? `Active: ${formData.aiSettings?.model || 'Gemini'}`
-                        : 'Offline Deterministic Mode'}
+                      {formData.aiSettings?.enabled === false
+                        ? 'Disabled in Preferences'
+                        : platformAiStatus === null
+                        ? 'Checking Service...'
+                        : platformAiStatus.enabled && platformAiStatus.configured
+                        ? `Active · ${platformAiStatus.model || platformAiStatus.provider.toUpperCase()}`
+                        : 'Local Deterministic Mode'}
                     </div>
                   </div>
-                  <p className={styles.sectionDesc}>Optional bring-your-own-key intelligence layer for task breakdown and planning.</p>
+                  <p className={styles.sectionDesc}>
+                    Workspace AI intelligence powered centrally without personal API key setup.
+                  </p>
                 </div>
               </div>
               <div className={styles.sectionHeaderRight}>
@@ -2591,804 +2440,61 @@ export default function SettingsPage() {
 
             {openSections.ai && (
               <div className={styles.sectionBody}>
-
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleLabel}>
-              <span className={styles.toggleTitle}>Enable AI Features</span>
-              <span className={styles.toggleDesc}>Connect Gemini, OpenAI, Claude, or local Ollama models</span>
-            </div>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={formData.aiSettings?.enabled || false}
-              onChange={(e) => {
-                const isEnabled = e.target.checked;
-                const updatedAI = {
-                  enabled: isEnabled,
-                  provider: formData.aiSettings?.provider || 'gemini',
-                  model: formData.aiSettings?.model || 'gemini-2.0-flash',
-                  apiKey: formData.aiSettings?.apiKey || '',
-                  monthlyBudgetUSD: formData.aiSettings?.monthlyBudgetUSD || 5,
-                  spentBudgetUSD: formData.aiSettings?.spentBudgetUSD || 0,
-                  totalTokensUsed: formData.aiSettings?.totalTokensUsed || 0,
-                  temperature: formData.aiSettings?.temperature || 0.7,
-                };
-                const updated = {
-                  ...formData,
-                  aiSettings: updatedAI,
-                };
-                setFormData(updated);
-                updateSettings(updated);
-              }}
-            />
-          </div>
-
-          {formData.aiSettings?.enabled && (
-            <>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>AI Provider</label>
-                <div className={styles.providerGrid}>
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'openrouter' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'openrouter' as const,
-                        model: 'google/gemini-2.0-flash-exp:free',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>OpenRouter</span>
-                    <span className={styles.providerSub}>Free &amp; All Models</span>
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleLabel}>
+                    <span className={styles.toggleTitle}>Enable AI Assistant Features</span>
+                    <span className={styles.toggleDesc}>
+                      Allow AI task breakdown, daily briefings, Inbox capture, and floating chat across your workspace.
+                    </span>
                   </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'groq' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'groq' as const,
-                        model: 'openai/gpt-oss-120b',
-                        apiEndpoint: undefined,
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Groq</span>
-                    <span className={styles.providerSub}>100% Free &amp; Fast</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'gemini' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'gemini' as const,
-                        model: 'gemini-2.0-flash',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Google Gemini</span>
-                    <span className={styles.providerSub}>Free Tier Direct</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'deepseek' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'deepseek' as const,
-                        model: 'deepseek-chat',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>DeepSeek</span>
-                    <span className={styles.providerSub}>V3 / R1 Reasoning</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'mistral' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'mistral' as const,
-                        model: 'mistral-small-latest',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Mistral AI</span>
-                    <span className={styles.providerSub}>Free Tier Available</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'huggingface' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'huggingface' as const,
-                        model: 'meta-llama/Llama-3.2-3B-Instruct',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Hugging Face</span>
-                    <span className={styles.providerSub}>Serverless Inference</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'cohere' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'cohere' as const,
-                        model: 'command-r',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Cohere</span>
-                    <span className={styles.providerSub}>Command R / Trial</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'openai' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'openai' as const,
-                        model: 'gpt-4o-mini',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>OpenAI</span>
-                    <span className={styles.providerSub}>GPT-4o Mini / 4o</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'anthropic' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'anthropic' as const,
-                        model: 'claude-3-5-sonnet-20241022',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Anthropic</span>
-                    <span className={styles.providerSub}>Claude 3.5</span>
-                  </div>
-
-                  <div
-                    className={`${styles.providerCard} ${formData.aiSettings?.provider === 'custom' ? styles.activeProvider : ''}`}
-                    onClick={() => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        provider: 'custom' as const,
-                        model: 'llama3',
-                        apiEndpoint: formData.aiSettings?.apiEndpoint || 'http://localhost:11434/v1/chat/completions',
-                      };
-                      const updated = { ...formData, aiSettings: updatedAI };
-                      setFormData(updated);
-                      updateSettings(updated);
-                    }}
-                  >
-                    <span className={styles.providerTitle}>Local / Ollama</span>
-                    <span className={styles.providerSub}>Offline &amp; Private</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Model Identifier</label>
-                <input
-                  type="text"
-                  className={styles.input}
-                  value={formData.aiSettings?.model || ''}
-                  onChange={(e) => {
-                    const updatedAI = {
-                      ...formData.aiSettings!,
-                      model: e.target.value,
-                    };
-                    setFormData({ ...formData, aiSettings: updatedAI });
-                  }}
-                  placeholder={
-                    formData.aiSettings?.provider === 'gemini'
-                      ? 'e.g. gemini-3.1-pro-preview or gemini-2.5-flash'
-                      : 'e.g. google/gemini-2.0-flash-exp:free'
-                  }
-                />
-
-                <div className={styles.modelChipsRow}>
-                  {formData.aiSettings?.provider === 'openrouter' && (
-                    <>
-                      {[
-                        'google/gemini-2.0-flash-exp:free',
-                        'deepseek/deepseek-r1:free',
-                        'meta-llama/llama-3.3-70b-instruct:free',
-                        'qwen/qwen-2.5-coder-32b-instruct:free',
-                        'mistralai/mistral-small-24b-instruct-2501:free',
-                        'anthropic/claude-3.5-sonnet',
-                        'openai/gpt-4o-mini',
-                      ].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'groq' && (
-                    <>
-                      {[
-                        { id: 'openai/gpt-oss-120b', label: 'openai/gpt-oss-120b (Flagship Reasoning)' },
-                        { id: 'openai/gpt-oss-20b', label: 'openai/gpt-oss-20b (Ultra-Fast)' },
-                        { id: 'qwen/qwen3.8-27b', label: 'qwen/qwen3.8-27b (27B Balanced)' },
-                        { id: 'allam-2-7b', label: 'allam-2-7b' },
-                      ].map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m.id ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m.id };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'gemini' && (
-                    <>
-                      {['gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'deepseek' && (
-                    <>
-                      {['deepseek-chat', 'deepseek-reasoner'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'mistral' && (
-                    <>
-                      {['mistral-small-latest', 'codestral-latest', 'open-mistral-7b', 'mistral-large-latest'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'huggingface' && (
-                    <>
-                      {[
-                        'meta-llama/Llama-3.2-3B-Instruct',
-                        'mistralai/Mistral-7B-Instruct-v0.3',
-                        'Qwen/Qwen2.5-72B-Instruct',
-                      ].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'cohere' && (
-                    <>
-                      {['command-r', 'command-r-plus', 'command-light'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'openai' && (
-                    <>
-                      {['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'anthropic' && (
-                    <>
-                      {['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-
-                  {formData.aiSettings?.provider === 'custom' && (
-                    <>
-                      {['llama3', 'mistral', 'deepseek-r1', 'qwen2.5', 'phi3'].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`${styles.modelPresetChip} ${formData.aiSettings?.model === m ? styles.activeModelChip : ''}`}
-                          onClick={() => {
-                            const updatedAI = { ...formData.aiSettings!, model: m };
-                            setFormData({ ...formData, aiSettings: updatedAI });
-                            updateSettings({ aiSettings: updatedAI });
-                          }}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {formData.aiSettings?.provider === 'custom' && (
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Custom Endpoint URL</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={formData.aiSettings?.apiEndpoint || ''}
-                    onChange={(e) => {
-                      const updatedAI = {
-                        ...formData.aiSettings!,
-                        apiEndpoint: e.target.value,
-                      };
-                      setFormData({ ...formData, aiSettings: updatedAI });
-                    }}
-                    placeholder="http://localhost:11434/v1/chat/completions"
-                  />
-                </div>
-              )}
-
-              <div className={styles.formGroup}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                  <label className={styles.label}>API Key (Stored Locally)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {autoSavedAi && (
-                      <span className={styles.autoSaveBadge}>
-                        <Check size={12} /> Auto-saved
-                      </span>
-                    )}
-                    {formData.aiSettings?.provider === 'gemini' && (
-                      <a
-                        href="https://aistudio.google.com/app/apikey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Free Gemini Key (Google AI Studio)
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'groq' && (
-                      <a
-                        href="https://console.groq.com/keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Free Groq API Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'openrouter' && (
-                      <a
-                        href="https://openrouter.ai/keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get OpenRouter Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'deepseek' && (
-                      <a
-                        href="https://platform.deepseek.com/api_keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get DeepSeek Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'mistral' && (
-                      <a
-                        href="https://console.mistral.ai/api-keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Mistral API Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'huggingface' && (
-                      <a
-                        href="https://huggingface.co/settings/tokens"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Free Hugging Face Token
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'cohere' && (
-                      <a
-                        href="https://dashboard.cohere.com/api-keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Cohere Trial Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'openai' && (
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get OpenAI API Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'anthropic' && (
-                      <a
-                        href="https://console.anthropic.com/settings/keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Get Anthropic API Key
-                      </a>
-                    )}
-                    {formData.aiSettings?.provider === 'custom' && (
-                      <a
-                        href="https://ollama.com"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.externalGuideLink}
-                      >
-                        Learn about local Ollama setup
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <div className={styles.apiKeyInputWrapper}>
-                  <input
-                    type={showApiKey ? 'text' : 'password'}
-                    className={styles.input}
-                    value={formData.aiSettings?.apiKey || ''}
-                    onChange={(e) => handleApiKeyChange(e.target.value)}
-                    placeholder={
-                      formData.aiSettings?.provider === 'gemini'
-                        ? 'Paste your Gemini API key (auto-saves instantly)'
-                        : 'Paste your API key (auto-saves instantly)'
-                    }
-                    id="ai-api-key-input"
-                  />
-                  <div className={styles.inputActions}>
-                    <button
-                      type="button"
-                      className={styles.iconBtnSmall}
-                      onClick={() => setShowApiKey(!showApiKey)}
-                      title={showApiKey ? 'Hide key' : 'Show key'}
-                      aria-label="Toggle key visibility"
-                    >
-                      {showApiKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                    {formData.aiSettings?.apiKey && (
-                      <button
-                        type="button"
-                        className={styles.iconBtnSmall}
-                        onClick={() => {
-                          const updatedAI = { ...formData.aiSettings!, apiKey: '', activeKeyId: undefined };
-                          triggerAutoSaveAI(updatedAI);
-                          setAiTestResult(null);
-                        }}
-                        title="Clear key"
-                        aria-label="Clear key"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                  <span className={styles.hint}>
-                    Keys auto-save instantly and remain strictly on your local device.
-                  </span>
-                  {formData.aiSettings?.apiKey?.trim() && (
-                    <button
-                      type="button"
-                      className={styles.btnVaultAction}
-                      onClick={() => setIsAddingNewKey(!isAddingNewKey)}
-                      title="Save this key to your multi-key vault"
-                    >
-                      <Key size={13} /> Save to Key Vault
-                    </button>
-                  )}
-                </div>
-
-                {/* Save Key to Vault Dialog */}
-                {isAddingNewKey && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: 'var(--radius-md)' }}>
+                  <label className={styles.switch} aria-label="Enable AI Assistant Features">
                     <input
-                      type="text"
-                      className={styles.input}
-                      style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      value={newKeyNameInput}
-                      onChange={(e) => setNewKeyNameInput(e.target.value)}
-                      placeholder="Identifier name (e.g. Primary Studio Key, Backup Flash 2)..."
-                      autoFocus
+                      type="checkbox"
+                      checked={formData.aiSettings?.enabled !== false}
+                      onChange={(e) => {
+                        const isEnabled = e.target.checked;
+                        const updatedAI = {
+                          enabled: isEnabled,
+                          provider: formData.aiSettings?.provider || 'gemini',
+                          model: formData.aiSettings?.model || 'gemini-2.0-flash',
+                          apiKey: '',
+                          monthlyBudgetUSD: formData.aiSettings?.monthlyBudgetUSD || 5,
+                          spentBudgetUSD: formData.aiSettings?.spentBudgetUSD || 0,
+                          totalTokensUsed: formData.aiSettings?.totalTokensUsed || 0,
+                          temperature: formData.aiSettings?.temperature || 0.7,
+                        };
+                        const updated = { ...formData, aiSettings: updatedAI };
+                        setFormData(updated);
+                        updateSettings(updated);
+                      }}
                     />
-                    <button
-                      type="button"
-                      className={`${styles.btnVaultAction} ${styles.btnVaultActionPrimary}`}
-                      onClick={handleSaveCurrentKeyToVault}
-                    >
-                      <Plus size={13} /> Save Key
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btnVaultAction}
-                      onClick={() => setIsAddingNewKey(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Key Vault & Multi-Key Switcher / Pool ── */}
-                <div className={styles.vaultContainer}>
-                  <div className={styles.vaultHeader}>
-                    <div className={styles.vaultTitle}>
-                      <Key size={15} style={{ color: 'var(--color-accent)' }} />
-                      Saved API Keys Vault ({formData.aiSettings?.savedKeys?.length || 0})
-                    </div>
-                    <div className={styles.vaultActions}>
-                      <button
-                        type="button"
-                        className={styles.btnVaultAction}
-                        onClick={() => {
-                          if (formData.aiSettings?.apiKey) {
-                            handleSaveCurrentKeyToVault();
-                          } else {
-                            setIsAddingNewKey(true);
-                          }
-                        }}
-                      >
-                        <Plus size={12} /> Add Key Profile
-                      </button>
-                    </div>
-                  </div>
-
-                  {(!formData.aiSettings?.savedKeys || formData.aiSettings.savedKeys.length === 0) ? (
-                    <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                      No key profiles saved yet. Click &quot;Save to Key Vault&quot; above to store multiple Gemini keys for instant 1-click switching and automatic failover when limits are reached.
-                    </p>
-                  ) : (
-                    <div className={styles.vaultList}>
-                      {formData.aiSettings.savedKeys.map((k) => {
-                        const isActive = formData.aiSettings?.apiKey === k.apiKey || formData.aiSettings?.activeKeyId === k.id;
-                        const maskedKey = k.apiKey.length > 10
-                          ? `${k.apiKey.slice(0, 7)}...${k.apiKey.slice(-5)}`
-                          : '••••••••';
-
-                        return (
-                          <div
-                            key={k.id}
-                            className={`${styles.vaultCard} ${isActive ? styles.vaultCardActive : ''}`}
-                          >
-                            <div className={styles.vaultCardInfo}>
-                              <div className={styles.vaultCardNameRow}>
-                                <span className={styles.vaultCardName}>{k.name}</span>
-                                {isActive && <span className={styles.activeTag}>Active</span>}
-                                {k.model && (
-                                  <span style={{ fontSize: '0.68rem', color: 'var(--color-accent)', background: 'var(--color-surface)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
-                                    {k.model}
-                                  </span>
-                                )}
-                              </div>
-                              <span className={styles.vaultCardKey}>{maskedKey}</span>
-                            </div>
-
-                            <div className={styles.vaultCardActions}>
-                              {!isActive && (
-                                <button
-                                  type="button"
-                                  className={`${styles.btnVaultAction} ${styles.btnVaultActionPrimary}`}
-                                  onClick={() => handleSwitchActiveKey(k)}
-                                  title="Switch to this API key instantly"
-                                >
-                                  <Zap size={12} /> Use
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className={styles.btnVaultAction}
-                                onClick={() => handleDuplicateKey(k)}
-                                title="Duplicate profile (switch model or label without retyping key)"
-                              >
-                                <Copy size={12} /> Duplicate
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.iconBtnSmall}
-                                onClick={() => handleDeleteSavedKey(k.id)}
-                                title="Delete key profile"
-                                aria-label="Delete key profile"
-                              >
-                                <Trash2 size={13} style={{ color: 'var(--color-danger, #ef4444)' }} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Auto-Failover setting */}
-                  <div className={styles.failoverRow}>
-                    <div className={styles.failoverLabel}>
-                      <span style={{ fontWeight: 600 }}>Auto-Switch on Rate Limit / Quota Exhaustion</span>
-                      <span style={{ fontSize: '0.70rem', color: 'var(--color-text-muted)' }}>
-                        Automatically failover to the next saved key in your pool if {formData.aiSettings?.provider === 'groq' ? 'Groq' : formData.aiSettings?.provider === 'gemini' ? 'Gemini' : 'the active provider'} returns 429 or quota limit.
-                      </span>
-                    </div>
-                    <label className={styles.switch}>
-                      <input
-                        type="checkbox"
-                        checked={formData.aiSettings?.autoFailover !== false}
-                        onChange={handleToggleFailover}
-                      />
-                      <span className={styles.slider} />
-                    </label>
-                  </div>
+                    <span className={styles.slider} />
+                  </label>
                 </div>
-              </div>
 
-              <div className={styles.testConnectionArea}>
-                <div className={styles.testButtonsRow}>
-                  <button
-                    type="button"
-                    className={styles.btnTestConnection}
-                    onClick={handleTestAndSaveAI}
-                    disabled={isTestingAI || (!formData.aiSettings?.apiKey && formData.aiSettings?.provider !== 'custom')}
-                  >
-                    {isTestingAI ? 'Testing...' : 'Test Connection'}
-                  </button>
-                  <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                    Verifies connection against the {formData.aiSettings?.provider?.toUpperCase()} endpoint.
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border-subtle)',
+                    background: 'var(--color-surface-2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                    {platformAiStatus?.enabled && platformAiStatus?.configured
+                      ? `Platform Gateway Ready (${(platformAiStatus.provider || 'AI').toUpperCase()} · ${platformAiStatus.model || 'Default Model'})`
+                      : 'Local Rules Active'}
+                  </span>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', lineHeight: 1.45 }}>
+                    {platformAiStatus?.enabled && platformAiStatus?.configured
+                      ? 'AI provider credentials and routing are centrally managed by your workspace administrator. Every signed-in account has automatic access.'
+                      : 'The administrator has not configured a central AI provider yet. Built-in local planning rules remain active.'}
                   </span>
                 </div>
-
-                {aiTestResult && (
-                  <>
-                    {aiTestResult.success ? (
-                      <div className={styles.testSuccessBox} role="status">
-                        ✓ Connected successfully to {(formData.aiSettings?.provider || 'AI').toUpperCase()} · Model: {aiTestResult.modelUsed || formData.aiSettings?.model} · Latency: {aiTestResult.latencyMs}ms
-                      </div>
-                    ) : (
-                      <div className={styles.testErrorBox} role="alert">
-                        Connection failed: {aiTestResult.message === 'fetch failed' ? 'Network request failed. Please check internet connection and ensure API key is active.' : aiTestResult.message}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
-          )}
               </div>
             )}
           </section>

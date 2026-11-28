@@ -18,6 +18,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Bot,
   CheckCircle2,
   ChevronRight,
   Download,
@@ -35,6 +36,7 @@ import {
   type BannerTone,
   type SystemConfig,
 } from '@/lib/systemConfig';
+import AdminAiSection from './AdminAiSection';
 import AdminTelemetryCharts from './AdminTelemetryCharts';
 import AdminUserDrawer from './AdminUserDrawer';
 import {
@@ -539,6 +541,7 @@ export default function AdminConsole({
     {
       group: 'Platform',
       items: [
+        { id: 'ai', label: 'AI Engine & Keys', icon: Bot },
         { id: 'controls', label: 'Feature Flags & Config', icon: Sliders },
         { id: 'operations', label: 'Operations & Health', icon: Activity },
         {
@@ -635,6 +638,7 @@ export default function AdminConsole({
             <h1 className={styles.title}>
               {section === 'overview' && 'Executive System Overview'}
               {section === 'users' && 'Accounts, Devices & Access Control'}
+              {section === 'ai' && 'Platform AI Engine & API Keys'}
               {section === 'controls' && 'Feature Flags, Policies & Broadcasts'}
               {section === 'operations' && 'Diagnostics, Memory & Rate Limits'}
               {section === 'incidents' && 'Operational Incidents & Advisories'}
@@ -986,6 +990,19 @@ export default function AdminConsole({
               </div>
             )}
           </section>
+        )}
+
+        {/* ── SECTION 2B: CENTRALIZED AI ENGINE & KEYS ────────────────────── */}
+        {section === 'ai' && (
+          <AdminAiSection
+            systemConfig={systemConfig}
+            setSystemConfig={setSystemConfig}
+            adminEmail={overview.admin.email}
+            getBearerToken={getBearerToken}
+            onAudit={appendAudit}
+            onNotify={notify}
+            onRefreshAll={refreshAllData}
+          />
         )}
 
         {/* ── SECTION 3: FEATURE FLAGS & POLICY GOVERNANCE ────────────────── */}
