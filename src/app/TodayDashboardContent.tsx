@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { MoreHorizontal } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -492,17 +493,19 @@ export default function TodayDashboardContent() {
             <div className={styles.assistMenuWrap} ref={assistMenuRef}>
               <button
                 type="button"
-                className={styles.assistMenuBtn}
+                className={`${styles.assistMenuBtn} ${assistMenuOpen ? styles.assistMenuBtnOpen : ''}`}
                 onClick={() => setAssistMenuOpen((v) => !v)}
                 aria-expanded={assistMenuOpen}
                 aria-haspopup="menu"
+                aria-label="Day actions"
+                title="Day actions & planning tools"
               >
-                <span>Options</span>
-                {overdueCount > 0 && <span className={styles.assistDot} />}
+                <MoreHorizontal size={16} />
               </button>
 
               {assistMenuOpen && (
                 <div className={styles.assistDropdown} role="menu">
+                  <div className={styles.assistDropdownHeader}>Day Actions</div>
                   <button
                     type="button"
                     role="menuitem"

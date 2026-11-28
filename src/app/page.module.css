@@ -2990,23 +2990,28 @@ a.summaryPill:active {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 34px;
   height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 50%;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text);
-  font-size: 0.78rem;
-  font-weight: 500;
-  font-family: inherit;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform var(--transition-spring),
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.assistMenuBtn:hover {
+.assistMenuBtn:hover,
+.assistMenuBtnOpen {
+  transform: translateY(-1px);
   background: var(--color-surface-2);
-  border-color: var(--color-border);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 .assistMenuBtn:focus-visible {
@@ -3014,11 +3019,13 @@ a.summaryPill:active {
   outline-offset: 2px;
 }
 
-.assistDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-accent);
+.assistDropdownHeader {
+  padding: 5px 11px 4px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
 }
 
 .assistDropdown {
