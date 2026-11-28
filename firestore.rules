@@ -8,17 +8,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth != null && (
-        isOwnerUser() ||
-        (request.auth.token.email == 'aaronpaul@gmail.com' && request.auth.token.email_verified == true)
-      );
+      return request.auth != null && isOwnerUser();
     }
 
-    // App owner record — strictly readable/writable only by the owner themselves
+    // App owner record — readable only by the designated owner UID; managed via Firebase Console / Admin SDK only
     match /app/owner {
       allow read: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && !exists(/databases/$(database)/documents/app/owner);
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create, update, delete: if false;
     }
 
     // Public operational flags & broadcast banner (no sensitive user data)

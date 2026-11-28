@@ -95,25 +95,6 @@ async function readOwner(): Promise<OwnerRecord | null> {
   }
 }
 
-async function claimOrVerifyOwner(user: User | AppUser): Promise<OwnerRecord> {
-  const email = user.email || '';
-  const existing = await readOwner();
-  if (!existing || existing.uid !== user.uid) {
-    const owner = { uid: user.uid, email, updatedAt: new Date().toISOString() };
-    try {
-      void withTimeout(
-        setDoc(doc(getFirebaseDb(), 'app', 'owner'), owner).catch(() => undefined),
-        2500,
-        undefined
-      );
-    } catch {
-      // ignore
-    }
-    return { uid: user.uid, email };
-  }
-  return existing;
-}
-
 function clearUserLocalStorageSync() {
   clearLocalWorkspaceSilently();
 }
@@ -214,9 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (next) {
           try {
             void syncUserDirectoryProfile(next);
-            const record = await claimOrVerifyOwner(next);
+            const record = await readOwner();
             setOwner(record);
-            setOwnerExists(true);
+            setOwnerExists(Boolean(record));
             setCloudWarning(null);
           } catch (err) {
             setCloudWarning(explainFirebaseError(err));
@@ -263,9 +244,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(cred.user);
       try {
         void syncUserDirectoryProfile(cred.user);
-        const record = await claimOrVerifyOwner(cred.user);
+        const record = await readOwner();
         setOwner(record);
-        setOwnerExists(true);
+        setOwnerExists(Boolean(record));
       } catch (e) {
         setCloudWarning(explainFirebaseError(e));
       }
@@ -296,9 +277,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(cred.user);
       try {
         void syncUserDirectoryProfile(cred.user);
-        const record = await claimOrVerifyOwner(cred.user);
+        const record = await readOwner();
         setOwner(record);
-        setOwnerExists(true);
+        setOwnerExists(Boolean(record));
       } catch (e) {
         setCloudWarning(explainFirebaseError(e));
       }
@@ -321,9 +302,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(cred.user);
       try {
         void syncUserDirectoryProfile(cred.user);
-        const record = await claimOrVerifyOwner(cred.user);
+        const record = await readOwner();
         setOwner(record);
-        setOwnerExists(true);
+        setOwnerExists(Boolean(record));
       } catch (e) {
         setCloudWarning(explainFirebaseError(e));
       }
@@ -528,13 +509,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         await deleteDoc(doc(db, 'users', uid)).catch(() => undefined);
-      } catch {}
-
-      try {
-        const ownerSnap = await getDoc(doc(db, 'app', 'owner'));
-        if (ownerSnap.exists() && ownerSnap.data()?.uid === uid) {
-          await deleteDoc(doc(db, 'app', 'owner'));
-        }
       } catch {}
 
       await deleteUser(current);

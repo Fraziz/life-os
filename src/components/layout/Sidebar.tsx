@@ -32,7 +32,6 @@ import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTour } from '@/context/TourContext';
 import { usePwaInstall } from '@/utils/usePwaInstall';
-import { getFirebaseAuth } from '@/lib/firebase';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
 
@@ -82,42 +81,6 @@ export default function Sidebar({
   const { user, isGuest, logout } = useAuth();
   const { startTour } = useTour();
   const { canPromptInstall, isStandalone, promptInstall } = usePwaInstall();
-
-  const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    if (!user || isGuest) {
-      setIsVerifiedAdmin(false);
-      return;
-    }
-
-    (async () => {
-      try {
-        const fbUser = getFirebaseAuth().currentUser;
-        if (!fbUser) {
-          if (active) setIsVerifiedAdmin(false);
-          return;
-        }
-        const token = await fbUser.getIdToken();
-        const resp = await fetch('/api/admin/session', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!resp.ok) {
-          if (active) setIsVerifiedAdmin(false);
-          return;
-        }
-        const data = (await resp.json()) as { authorized?: boolean };
-        if (active) setIsVerifiedAdmin(Boolean(data?.authorized));
-      } catch {
-        if (active) setIsVerifiedAdmin(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [user, isGuest]);
 
   const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
   const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
@@ -356,15 +319,6 @@ export default function Sidebar({
 
           {profileMenuOpen && isExpanded && (
             <div className={styles.profileDropdown}>
-              {isVerifiedAdmin && (
-                <Link
-                  href="/admin"
-                  className={styles.dropdownItem}
-                  onClick={() => setProfileMenuOpen(false)}
-                >
-                  <span>Owner Console</span>
-                </Link>
-              )}
               <Link
                 href="/settings"
                 className={styles.dropdownItem}

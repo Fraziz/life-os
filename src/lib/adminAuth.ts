@@ -1,7 +1,6 @@
 import { FIREBASE_CLIENT_CONFIG } from './firebaseConfig';
 import { verifyFirebaseBearerUser, type VerifiedFirebaseUser } from './firebaseServerAuth';
 
-const DEFAULT_OWNER_EMAIL = 'aaronpaul@gmail.com';
 const FIREBASE_PROJECT_ID = FIREBASE_CLIENT_CONFIG.projectId;
 
 function parseCsvList(raw: string | undefined): string[] {
@@ -37,8 +36,10 @@ export interface AdminVerificationResult {
 }
 
 /**
- * Verifies that the incoming HTTP request belongs strictly to the configured owner/admin.
- * Server-only module: allowlists never ship in client bundles.
+ * Verifies that the incoming HTTP request belongs strictly to the configured
+ * dedicated Admin account (`ADMIN_UIDS` / `ADMIN_EMAILS`).
+ * Fails closed when no server allowlist is configured so normal user accounts
+ * can never access /admin or administrative endpoints.
  */
 export async function verifyAdminRequest(
   request: Request
@@ -48,26 +49,30 @@ export async function verifyAdminRequest(
 
   const { user, idToken } = bearer;
   const allowedUids = parseCsvList(process.env.ADMIN_UIDS);
-  const envEmails = parseCsvList(process.env.ADMIN_EMAILS);
-  const allowedEmails = envEmails.length > 0 ? envEmails : [DEFAULT_OWNER_EMAIL];
+  const allowedEmails = parseCsvList(process.env.ADMIN_EMAILS);
+
+  // Fail closed when no explicit admin allowlist is configured
+  if (allowedUids.length === 0 && allowedEmails.length === 0) {
+    return null;
+  }
 
   // 1. Explicit UID allowlist from server env
   if (allowedUids.includes(user.uid.toLowerCase())) {
     return { user, verifiedVia: 'allowlist-uid' };
   }
 
+  // 2. Explicit email allowlist from server env
   const normalizedEmail = user.email.toLowerCase();
   const isEmailMatch = Boolean(normalizedEmail && allowedEmails.includes(normalizedEmail));
   if (!isEmailMatch) {
     return null;
   }
 
-  // 2. Cryptographically verified email (e.g. Google Sign-In or verified Firebase email)
+  // 3. Require verified Firebase email (Google SSO or verified email link) or Firestore owner UID match
   if (user.emailVerified) {
     return { user, verifiedVia: 'verified-email' };
   }
 
-  // 3. Fallback for owner signing in with unverified password account: require Firestore /app/owner match
   const isOwner = await isVerifiedFirestoreOwner(user.uid, idToken);
   if (isOwner) {
     return { user, verifiedVia: 'firestore-owner' };
