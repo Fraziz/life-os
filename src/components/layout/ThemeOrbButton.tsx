@@ -64,8 +64,8 @@ export default function ThemeOrbButton({ size = 17, className }: ThemeOrbButtonP
   const openMenuAtButton = () => {
     if (!btnRef.current || typeof window === 'undefined') return;
     const rect = btnRef.current.getBoundingClientRect();
-    const menuWidth = 276;
-    const menuHeight = 420;
+    const menuWidth = 312;
+    const menuHeight = 360;
     const left = Math.max(
       12,
       Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12)

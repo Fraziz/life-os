@@ -76,7 +76,7 @@
 .popover {
   position: fixed;
   z-index: 1250;
-  width: 276px;
+  width: 312px;
   max-width: calc(100vw - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -159,10 +159,10 @@
 }
 
 .paletteList {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  max-height: 310px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  max-height: calc(100dvh - 150px);
   overflow-y: auto;
 }
 
@@ -170,9 +170,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
-  padding: 7px 9px;
+  padding: 7px 8px;
   border-radius: 9px;
   border: 1px solid transparent;
   background: transparent;
@@ -189,13 +189,13 @@
 
 .paletteItemActive {
   background: var(--color-surface-2);
-  border-color: var(--color-border);
+  border-color: var(--color-accent);
 }
 
 .paletteItemLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -203,7 +203,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -216,16 +216,22 @@
 }
 
 .paletteName {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .paletteMood {
-  font-size: 0.69rem;
+  font-size: 0.65rem;
   color: var(--color-text-muted);
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .activeDot {

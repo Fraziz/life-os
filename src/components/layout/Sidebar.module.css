@@ -31,7 +31,9 @@
   overflow-y: auto;
   transition:
     width var(--sb-duration) var(--sb-ease),
-    box-shadow var(--sb-duration) ease;
+    box-shadow var(--sb-duration) ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
   will-change: width;
 }
 
@@ -631,6 +633,7 @@
 
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
+
   .sidebar,
   .sidebar *,
   .overlay {
