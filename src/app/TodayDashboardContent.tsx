@@ -3,26 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Check,
-  X,
-  Play,
-  Moon,
-  Battery,
-  BatteryMedium,
-  BatteryCharging,
-  Clock,
-  CheckSquare,
-  Square,
-  BookOpen,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  RotateCcw,
-  Plus,
-} from 'lucide-react';
 
+import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -48,6 +30,7 @@ import styles from './page.module.css';
 
 export default function TodayDashboardContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const { settings } = useSettings();
   const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects, projects, toggleProjectReminder } = useProjects();
@@ -184,8 +167,8 @@ export default function TodayDashboardContent() {
   };
 
   // ── Greeting & Date ───────────────────────────────────────────
-  const [greeting, setGreeting] = useState('Good morning');
-  const [todayHeaderDate, setTodayHeaderDate] = useState('');
+  const [greeting, setGreeting] = useState('Hello');
+  const [dateDisplay, setDateDisplay] = useState('');
 
   useEffect(() => {
     const now = new Date();
@@ -193,12 +176,20 @@ export default function TodayDashboardContent() {
     if (hour < 12) setGreeting('Good morning');
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
-    setTodayHeaderDate(
-      now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
+    setDateDisplay(
+      now.toLocaleDateString([], {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
     );
   }, []);
 
-  const userName = settings?.profile?.displayName || 'there';
+  const userName =
+    settings?.profile?.displayName ||
+    user?.displayName ||
+    (user?.email ? user.email.split('@')[0] : 'there');
   const todayStr = new Date().toISOString().split('T')[0];
 
   // ── Functional ADHD Energy Regulator ──────────────────────────
@@ -274,7 +265,6 @@ export default function TodayDashboardContent() {
       if (aDoNow !== bDoNow) return bDoNow - aDoNow;
 
       if (energyLevel === 'low') {
-        // Low energy: surface shorter / lower-friction wins first so initiation feels effortless
         const aDur = a.estimatedDuration || 25;
         const bDur = b.estimatedDuration || 25;
         if (aDur !== bDur) return aDur - bDur;
@@ -384,7 +374,7 @@ export default function TodayDashboardContent() {
     toggleProjectReminder,
   ]);
 
-  // ── Unified Calm Capture (1 Input instead of 5) ───────────────
+  // ── Unified Calm Capture ──────────────────────────────────────
   const [captureMode, setCaptureMode] = useState<'task' | 'idea'>('task');
   const [captureText, setCaptureText] = useState('');
   const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
@@ -409,7 +399,7 @@ export default function TodayDashboardContent() {
       showQuickFeedback('Added to Today');
     } else {
       quickDump(clean, { isReminder: false });
-      showQuickFeedback('Safely parked in Idea Parking — stay on your focus');
+      showQuickFeedback('Parked in Idea Parking');
     }
 
     setCaptureText('');
@@ -467,56 +457,66 @@ export default function TodayDashboardContent() {
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.mainColumn}>
-        {/* ── 1. Calm Executive Top Header ── */}
-        <header className={styles.cockpitHeader}>
-          <div className={styles.cockpitTitleBlock}>
-            <h1 className={styles.cockpitGreeting}>
-              {greeting}, {userName}
-            </h1>
-            {todayHeaderDate && <p className={styles.cockpitDateSub}>{todayHeaderDate}</p>}
+        {/* ── 1. Nature Hero Banner (Restored, Minimalist & Icon-Free) ── */}
+        <div className={styles.heroBanner}>
+          <div className={styles.heroOverlay}>
+            <div className={styles.heroLeft}>
+              <h1 className={styles.heroGreeting}>
+                {greeting}, {userName}!
+              </h1>
+              {dateDisplay && (
+                <div className={styles.heroDateBadge}>
+                  <span>{dateDisplay}</span>
+                </div>
+              )}
+            </div>
+            <div className={styles.heroQuoteCard}>
+              <div className={styles.heroQuoteText}>
+                &ldquo;Discipline today, freedom tomorrow.&rdquo;
+              </div>
+              <div className={styles.heroQuoteAuthor}>Action Principle</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. Minimalist Text-Only Control Bar ── */}
+        <div className={styles.minimalToolbar}>
+          <div className={styles.headerEnergyPills} role="group" aria-label="Energy level">
+            <button
+              type="button"
+              className={`${styles.headerEnergyBtn} ${
+                energyLevel === 'low' ? styles.headerEnergyBtnActive : ''
+              }`}
+              onClick={() => selectEnergy('low')}
+              title="Low Energy: Hides extra lists and shows 1 gentle step"
+            >
+              Low
+            </button>
+            <button
+              type="button"
+              className={`${styles.headerEnergyBtn} ${
+                energyLevel === 'normal' ? styles.headerEnergyBtnActive : ''
+              }`}
+              onClick={() => selectEnergy('normal')}
+              title="Steady Focus: Shows #1 focus + up to 2 next priorities"
+            >
+              Steady
+            </button>
+            <button
+              type="button"
+              className={`${styles.headerEnergyBtn} ${
+                energyLevel === 'high' ? styles.headerEnergyBtnActive : ''
+              }`}
+              onClick={() => selectEnergy('high')}
+              title="High Energy: Tackle your hardest priority first"
+            >
+              High
+            </button>
           </div>
 
           <div className={styles.cockpitControlsRow}>
-            {/* Functional Energy Regulator */}
-            <div className={styles.headerEnergyPills} role="group" aria-label="Energy level">
-              <button
-                type="button"
-                className={`${styles.headerEnergyBtn} ${
-                  energyLevel === 'low' ? styles.headerEnergyBtnActive : ''
-                }`}
-                onClick={() => selectEnergy('low')}
-                title="Low Energy: Hides extra lists and shows only 1 manageable step"
-              >
-                <Battery size={13} />
-                <span>Low</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.headerEnergyBtn} ${
-                  energyLevel === 'normal' ? styles.headerEnergyBtnActive : ''
-                }`}
-                onClick={() => selectEnergy('normal')}
-                title="Steady Focus: Shows #1 focus + up to 2 next priorities"
-              >
-                <BatteryMedium size={13} />
-                <span>Steady</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.headerEnergyBtn} ${
-                  energyLevel === 'high' ? styles.headerEnergyBtnActive : ''
-                }`}
-                onClick={() => selectEnergy('high')}
-                title="High Energy: Tackle your hardest priority first"
-              >
-                <BatteryCharging size={13} />
-                <span>High</span>
-              </button>
-            </div>
-
             <LifeDomainPill />
 
-            {/* Progressive Disclosure Assist Menu (replaces 6 scattered top buttons) */}
             <div className={styles.assistMenuWrap} ref={assistMenuRef}>
               <button
                 type="button"
@@ -525,8 +525,7 @@ export default function TodayDashboardContent() {
                 aria-expanded={assistMenuOpen}
                 aria-haspopup="menu"
               >
-                <SlidersHorizontal size={14} />
-                <span>Tools</span>
+                <span>Options</span>
                 {overdueCount > 0 && <span className={styles.assistDot} />}
               </button>
 
@@ -541,7 +540,7 @@ export default function TodayDashboardContent() {
                       window.dispatchEvent(new CustomEvent('open-next-action'));
                     }}
                   >
-                    <span>Pick Next Action For Me</span>
+                    <span>Pick Next Action</span>
                     <span className={styles.assistHint}>Ctrl+J</span>
                   </button>
                   <button
@@ -553,7 +552,7 @@ export default function TodayDashboardContent() {
                       setOptimizeModalOpen(true);
                     }}
                   >
-                    <span>Auto-Optimize Schedule</span>
+                    <span>Optimize Schedule</span>
                   </button>
                   <button
                     type="button"
@@ -564,7 +563,7 @@ export default function TodayDashboardContent() {
                       handleOpenBriefing();
                     }}
                   >
-                    <span>AI Daily Briefing</span>
+                    <span>Daily Briefing</span>
                   </button>
                   <Link
                     href="/reset"
@@ -572,7 +571,7 @@ export default function TodayDashboardContent() {
                     className={styles.assistDropdownItem}
                     onClick={() => setAssistMenuOpen(false)}
                   >
-                    <span>Compassion Reset (Overdue)</span>
+                    <span>Compassion Reset</span>
                     {overdueCount > 0 && (
                       <span className={styles.assistCountPill}>{overdueCount}</span>
                     )}
@@ -595,28 +594,23 @@ export default function TodayDashboardContent() {
               )}
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* Gentle Low-Energy Reassurance Banner */}
         {energyLevel === 'low' && (
           <div className={styles.gentleModeBanner} role="status">
-            <span>
-              <strong>Gentle Mode active:</strong> Extra lists are hidden so your mind can rest. Just
-              focus on one small step below—momentum beats perfection.
-            </span>
+            <strong>Gentle Mode:</strong> Extra lists are hidden so your mind stays quiet. Focus on
+            this single step below.
           </div>
         )}
 
-        {/* ── 2. Single Focal Anchor: RIGHT NOW Spotlight Card ── */}
+        {/* ── 3. Single Focal Anchor: RIGHT NOW Card (Icon-Free) ── */}
         <section className={styles.focusSpotlightCard} aria-label="Primary Focus">
           {primaryTask ? (
             <>
               <div className={styles.spotlightTopBar}>
                 <div className={styles.spotlightEyebrow}>
                   <span className={styles.spotlightPulseDot} />
-                  <span>
-                    {energyLevel === 'low' ? 'ONE GENTLE STEP' : 'FOCUS RIGHT NOW'}
-                  </span>
+                  <span>{energyLevel === 'low' ? 'ONE GENTLE STEP' : 'RIGHT NOW'}</span>
                   {getTaskRowContext(primaryTask).shortContext && (
                     <span className={styles.spotlightContextPill}>
                       {getTaskRowContext(primaryTask).shortContext}
@@ -628,25 +622,21 @@ export default function TodayDashboardContent() {
                   type="button"
                   className={styles.stuckSwitchBtn}
                   onClick={() => window.dispatchEvent(new CustomEvent('open-next-action'))}
-                  title="Feeling resistance? Let AI suggest an easier starting point"
                 >
-                  <Sparkles size={12} />
-                  <span>Stuck? Pick for me</span>
+                  Pick for me
                 </button>
               </div>
 
               <h2 className={styles.spotlightTitle}>{primaryTask.title}</h2>
 
-              {/* First uncompleted subtask surfaced immediately to lower initiation friction */}
               {nextMicroStep && (
                 <div className={styles.spotlightSubtaskRow}>
                   <button
                     type="button"
                     className={styles.spotlightSubtaskCheck}
                     onClick={(e) => handleToggleSubtask(primaryTask.id, nextMicroStep.id, e)}
-                    title="Complete this micro-step"
                   >
-                    <Square size={14} />
+                    <span className={styles.minimalSquare} />
                     <span>First step: {nextMicroStep.title}</span>
                   </button>
                   {primaryTask.subtasks && primaryTask.subtasks.length > 1 && (
@@ -656,8 +646,7 @@ export default function TodayDashboardContent() {
                       onClick={(e) => toggleSubtasks(primaryTask.id, e)}
                     >
                       {primaryTask.subtasks.filter((s) => s.completed).length}/
-                      {primaryTask.subtasks.length} steps{' '}
-                      {expandedSubtasks[primaryTask.id] ? '▲' : '▼'}
+                      {primaryTask.subtasks.length} steps
                     </button>
                   )}
                 </div>
@@ -674,7 +663,11 @@ export default function TodayDashboardContent() {
                         onClick={(e) => handleToggleSubtask(primaryTask.id, sub.id, e)}
                         className={styles.spotlightSubtaskItem}
                       >
-                        {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
+                        <span
+                          className={`${styles.minimalSquare} ${
+                            sub.completed ? styles.minimalSquareChecked : ''
+                          }`}
+                        />
                         <span
                           style={{
                             textDecoration: sub.completed ? 'line-through' : 'none',
@@ -694,8 +687,7 @@ export default function TodayDashboardContent() {
                   className={styles.startFocusCta}
                   onClick={() => handleStartFocusOnTask(primaryTask)}
                 >
-                  <Play size={15} fill="currentColor" />
-                  <span>Start Focus Session</span>
+                  Start Focus
                 </button>
 
                 <button
@@ -703,8 +695,7 @@ export default function TodayDashboardContent() {
                   className={styles.completeFocusBtn}
                   onClick={(e) => handleToggleTask(primaryTask.id, e)}
                 >
-                  <Check size={15} strokeWidth={2.4} />
-                  <span>Mark Complete</span>
+                  Mark Done
                 </button>
               </div>
             </>
@@ -715,14 +706,14 @@ export default function TodayDashboardContent() {
                 <span>CLEAR SLATE</span>
               </div>
               <h2 className={styles.spotlightTitle}>
-                What is the one thing that would make today feel like a win?
+                What is the one thing you want to accomplish today?
               </h2>
               <form onSubmit={handleSetMainWin} className={styles.emptySpotlightForm}>
                 <input
                   type="text"
                   value={emptyFocusInput}
                   onChange={(e) => setEmptyFocusInput(e.target.value)}
-                  placeholder="Write one clear, doable action..."
+                  placeholder="Write one clear action..."
                   className={styles.captureTextInput}
                 />
                 <button
@@ -730,17 +721,16 @@ export default function TodayDashboardContent() {
                   className={styles.startFocusCta}
                   disabled={!emptyFocusInput.trim()}
                 >
-                  <Plus size={15} />
-                  <span>Set Focus</span>
+                  Set Focus
                 </button>
               </form>
             </div>
           )}
         </section>
 
-        {/* ── 3. Unified Quick Capture (Replaces 5 duplicate inputs) ── */}
+        {/* ── 4. Simple Unified Capture Bar ── */}
         <form onSubmit={handleUnifiedCapture} className={styles.unifiedCaptureCard}>
-          <div className={styles.captureModePills} role="tablist" aria-label="Capture destination">
+          <div className={styles.captureModePills} role="tablist" aria-label="Capture type">
             <button
               type="button"
               role="tab"
@@ -750,7 +740,7 @@ export default function TodayDashboardContent() {
               }`}
               onClick={() => setCaptureMode('task')}
             >
-              Today Task
+              Task
             </button>
             <button
               type="button"
@@ -760,9 +750,8 @@ export default function TodayDashboardContent() {
                 captureMode === 'idea' ? styles.captureModeBtnActive : ''
               }`}
               onClick={() => setCaptureMode('idea')}
-              title="Offload distracting mid-work thoughts into Idea Parking without cluttering Today"
             >
-              Park Thought
+              Thought
             </button>
           </div>
 
@@ -772,8 +761,8 @@ export default function TodayDashboardContent() {
             onChange={(e) => setCaptureText(e.target.value)}
             placeholder={
               captureMode === 'task'
-                ? 'Add a task for today and press Enter...'
-                : 'Offload a random thought or worry into Idea Parking...'
+                ? 'Add a task for today...'
+                : 'Park a random thought out of your head...'
             }
             className={styles.unifiedCaptureInput}
           />
@@ -793,12 +782,12 @@ export default function TodayDashboardContent() {
           )}
         </form>
 
-        {/* ── 4. Pinned Reminders (Only when active) ── */}
+        {/* ── 5. Pinned Reminders (Only when present) ── */}
         {todayReminders.length > 0 && (
           <div className={styles.todayRemindersCard}>
             <div className={styles.todayRemindersHeader}>
               <div className={styles.todayRemindersHeaderLeft}>
-                <h3 className={styles.todayRemindersTitle}>Pinned Reminders</h3>
+                <h3 className={styles.todayRemindersTitle}>Reminders</h3>
                 <span className={styles.todayRemindersCountBadge}>{todayReminders.length}</span>
               </div>
             </div>
@@ -809,7 +798,7 @@ export default function TodayDashboardContent() {
                   {rem.onFinish ? (
                     <button
                       type="button"
-                      className={styles.reminderCheckBtn}
+                      className={styles.checkboxBtn}
                       onClick={(e) => {
                         e.stopPropagation();
                         rem.onFinish?.();
@@ -819,7 +808,7 @@ export default function TodayDashboardContent() {
                       title="Mark done"
                       aria-label="Complete reminder"
                     >
-                      <Check size={12} />
+                      <span className={styles.minimalSquare} />
                     </button>
                   ) : (
                     <span className={styles.reminderDotMarker} />
@@ -836,15 +825,14 @@ export default function TodayDashboardContent() {
 
                   <button
                     type="button"
-                    className={styles.reminderDismissBtn}
+                    className={styles.minimalTextAction}
                     onClick={(e) => {
                       e.stopPropagation();
                       rem.onClearReminder();
                     }}
-                    title="Unpin from Today"
-                    aria-label="Remove reminder"
+                    aria-label="Dismiss reminder"
                   >
-                    <X size={12} />
+                    Clear
                   </button>
                 </div>
               ))}
@@ -852,31 +840,33 @@ export default function TodayDashboardContent() {
           </div>
         )}
 
-        {/* ── 5. Next Up Queue (Rule of 3 + Progressive Disclosure) ── */}
+        {/* ── 6. Up Next Queue (Minimalist, Text-Only) ── */}
         {(nextUpTasks.length > 0 || remainingTasks.length > 0 || completedTodayTasks.length > 0) && (
-          <section className={styles.contentSectionCard} aria-label="Up Next Queue">
-            <div className={styles.sectionHeaderRow} style={{ marginBottom: nextUpTasks.length > 0 ? 12 : 6 }}>
+          <section className={styles.contentSectionCard} aria-label="Up Next">
+            <div
+              className={styles.sectionHeaderRow}
+              style={{ marginBottom: nextUpTasks.length > 0 ? 12 : 6 }}
+            >
               <div className={styles.sectionHeaderLeft}>
                 <h2 className={styles.sectionHeading}>
-                  {energyLevel === 'low' ? 'Parked For Later' : 'Up Next'}
+                  {energyLevel === 'low' ? 'Parked' : 'Up Next'}
                 </h2>
                 <span className={styles.sectionHeaderDate}>
-                  {activeDomainTasks.length > 1 ? `${activeDomainTasks.length - 1} queued` : 'Clear'}
+                  {activeDomainTasks.length > 1 ? `${activeDomainTasks.length - 1}` : 'Clear'}
                 </span>
               </div>
               <Link href="/tasks" className={styles.viewAllNotesLink}>
-                Task board →
+                All tasks
               </Link>
             </div>
 
             {nextUpTasks.length > 0 && (
               <div className={styles.prioritiesList}>
-                {nextUpTasks.map((item, idx) => {
+                {nextUpTasks.map((item) => {
                   const { shortContext } = getTaskRowContext(item);
                   return (
                     <div key={item.id} className={styles.cleanQueueRow}>
                       <div className={styles.priorityLeft}>
-                        <span className={styles.priorityNumBadge}>{idx + 2}</span>
                         <button
                           type="button"
                           className={styles.checkboxBtn}
@@ -899,12 +889,10 @@ export default function TodayDashboardContent() {
                         )}
                         <button
                           type="button"
-                          className={styles.rowFocusMiniBtn}
+                          className={styles.minimalTextAction}
                           onClick={() => handleStartFocusOnTask(item)}
-                          title="Start focus timer on this task"
-                          aria-label={`Focus on ${item.title}`}
                         >
-                          <Play size={12} />
+                          Focus
                         </button>
                       </div>
                     </div>
@@ -913,7 +901,6 @@ export default function TodayDashboardContent() {
               </div>
             )}
 
-            {/* Progressive disclosure for remaining tasks so users never face a wall of 10+ items */}
             {remainingTasks.length > 0 && (
               <div className={styles.disclosureQueueWrap}>
                 <button
@@ -925,11 +912,8 @@ export default function TodayDashboardContent() {
                   <span>
                     {queueExpanded
                       ? 'Hide extra tasks'
-                      : `Show ${remainingTasks.length} more parked task${
-                          remainingTasks.length === 1 ? '' : 's'
-                        }`}
+                      : `Show ${remainingTasks.length} more`}
                   </span>
-                  {queueExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
 
                 {queueExpanded && (
@@ -944,7 +928,7 @@ export default function TodayDashboardContent() {
                             onClick={(e) => handleToggleTask(task.id, e)}
                             aria-label={`Complete ${task.title}`}
                           >
-                            <div className={styles.emptyCircle} />
+                            <div className={styles.emptyBox} />
                           </button>
                           <span className={styles.otherTaskTitle}>{task.title}</span>
                           {shortContext && (
@@ -957,12 +941,10 @@ export default function TodayDashboardContent() {
                           )}
                           <button
                             type="button"
-                            className={styles.rowFocusMiniBtn}
+                            className={styles.minimalTextAction}
                             onClick={() => handleStartFocusOnTask(task)}
-                            title="Start focus timer"
-                            aria-label={`Focus on ${task.title}`}
                           >
-                            <Play size={12} />
+                            Focus
                           </button>
                         </div>
                       );
@@ -972,7 +954,6 @@ export default function TodayDashboardContent() {
               </div>
             )}
 
-            {/* Completed Today Dopamine Wins */}
             {completedTodayTasks.length > 0 && (
               <div className={styles.completedTasksWrap}>
                 <button
@@ -982,10 +963,10 @@ export default function TodayDashboardContent() {
                   aria-expanded={showCompleted}
                 >
                   <span>
-                    Completed today ({completedTodayTasks.length} win
-                    {completedTodayTasks.length === 1 ? '' : 's'})
+                    {showCompleted
+                      ? 'Hide completed'
+                      : `Completed today (${completedTodayTasks.length})`}
                   </span>
-                  {showCompleted ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
 
                 {showCompleted && (
@@ -998,9 +979,7 @@ export default function TodayDashboardContent() {
                           onClick={(e) => handleToggleTask(t.id, e)}
                           title="Undo completion"
                         >
-                          <div className={styles.checkedCircle}>
-                            <Check size={11} strokeWidth={3} />
-                          </div>
+                          <span className={`${styles.minimalSquare} ${styles.minimalSquareChecked}`} />
                         </button>
                         <span className={styles.completedTaskTitle}>{t.title}</span>
                       </div>
@@ -1012,30 +991,24 @@ export default function TodayDashboardContent() {
           </section>
         )}
 
-        {/* ── 6. Calm Daily Anchors (Routine + Current Book) ── */}
+        {/* ── 7. Calm Daily Anchors (Icon-Free Typography) ── */}
         {energyLevel !== 'low' && (
           <div className={styles.calmContextGrid}>
             <Link href="/routine" className={styles.calmContextCard}>
               <div className={styles.calmCardTop}>
-                <span className={styles.calmCardLabel}>
-                  <Clock size={14} />
-                  <span>Daily Routine</span>
-                </span>
+                <span className={styles.calmCardLabel}>Daily Routine</span>
                 <span className={styles.calmCardBadge}>
                   {dailyRoutine.completedCount}/{dailyRoutine.totalCount}
                 </span>
               </div>
               <div className={styles.calmCardTitle}>
-                {dailyRoutine.subtitle || 'Follow your structured time blocks'}
+                {dailyRoutine.subtitle || 'Open daily time blocks'}
               </div>
             </Link>
 
             <div className={styles.calmContextCard}>
               <div className={styles.calmCardTop}>
-                <span className={styles.calmCardLabel}>
-                  <BookOpen size={14} />
-                  <span>Active Reading</span>
-                </span>
+                <span className={styles.calmCardLabel}>Reading</span>
                 <button
                   type="button"
                   className={styles.changeBookBtn}
@@ -1075,19 +1048,16 @@ export default function TodayDashboardContent() {
       {wrapUpOpen && (
         <div className={styles.modalBackdrop} onClick={() => setWrapUpOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <Moon size={18} />
-              <h2 className={styles.modalTitle} style={{ margin: 0 }}>
-                Great Job Today, {userName}
-              </h2>
-            </div>
+            <h2 className={styles.modalTitle}>Good Work Today, {userName}</h2>
             <p className={styles.modalSubtitle}>
-              You showed up and took action today. Take a deep breath and acknowledge your wins.
+              You showed up today. Acknowledge your progress and let your mind rest.
             </p>
 
             <div className={styles.modalStatsGrid}>
               <div className={styles.modalStatCard}>
-                <span className={styles.modalStatNumber}>{completedTodayTasks.length || tasksDoneTotal}</span>
+                <span className={styles.modalStatNumber}>
+                  {completedTodayTasks.length || tasksDoneTotal}
+                </span>
                 <span className={styles.modalStatLabel}>Tasks Completed</span>
               </div>
               <div className={styles.modalStatCard}>
@@ -1098,7 +1068,7 @@ export default function TodayDashboardContent() {
 
             <div className={styles.modalReflection}>
               <strong>Evening Anchor:</strong> You don&apos;t have to finish everything to deserve
-              rest. Give your brain full permission to recharge tonight.
+              rest. Give your brain permission to recharge tonight.
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px', width: '100%' }}>
@@ -1116,7 +1086,7 @@ export default function TodayDashboardContent() {
                   handleOpenBriefing('evening');
                 }}
               >
-                AI Evening Reflection
+                Evening Reflection
               </button>
               <button
                 type="button"
@@ -1124,7 +1094,7 @@ export default function TodayDashboardContent() {
                 style={{ flex: 1 }}
                 onClick={() => setWrapUpOpen(false)}
               >
-                Complete Shutdown
+                Done
               </button>
             </div>
           </div>
@@ -1138,30 +1108,29 @@ export default function TodayDashboardContent() {
         initialMode={briefingInitialMode}
       />
 
-      {/* 1-Click AI Auto Time-Blocker Modal */}
+      {/* Auto Time-Blocker Modal */}
       <OptimizeDayModal
         isOpen={optimizeModalOpen}
         onClose={() => setOptimizeModalOpen(false)}
       />
 
-      {/* Featured Dashboard Book Picker Modal */}
+      {/* Book Picker Modal */}
       {bookPickerOpen && (
         <div className={styles.modalBackdrop} onClick={() => setBookPickerOpen(false)}>
           <div className={styles.bookPickerModalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.bookPickerHeader}>
               <div>
-                <h3 className={styles.bookPickerTitle}>Choose Active Reading Book</h3>
+                <h3 className={styles.bookPickerTitle}>Select Reading Book</h3>
                 <p className={styles.bookPickerDesc}>
-                  Select which book or study note stays pinned on Today.
+                  Choose which book or note stays pinned on Today.
                 </p>
               </div>
               <button
                 type="button"
-                className={styles.modalCloseBtn}
+                className={styles.changeBookBtn}
                 onClick={() => setBookPickerOpen(false)}
-                title="Close"
               >
-                <X size={16} />
+                Close
               </button>
             </div>
 
@@ -1187,30 +1156,13 @@ export default function TodayDashboardContent() {
                       }`}
                       onClick={() => handleSelectFeaturedBook(doc.id)}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          minWidth: 0,
-                          textAlign: 'left',
-                        }}
-                      >
-                        <BookOpen
-                          size={16}
-                          style={{
-                            color: isSelected ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                            flexShrink: 0,
-                          }}
-                        />
-                        <div style={{ minWidth: 0 }}>
-                          <div className={styles.bookItemTitle}>{doc.title}</div>
-                          <div className={styles.bookItemMeta}>
-                            {doc.readProgress != null && doc.readProgress > 0
-                              ? `${doc.readProgress}% read · `
-                              : ''}
-                            {doc.category || 'document'}
-                          </div>
+                      <div style={{ minWidth: 0, textAlign: 'left' }}>
+                        <div className={styles.bookItemTitle}>{doc.title}</div>
+                        <div className={styles.bookItemMeta}>
+                          {doc.readProgress != null && doc.readProgress > 0
+                            ? `${doc.readProgress}% read · `
+                            : ''}
+                          {doc.category || 'document'}
                         </div>
                       </div>
                       <span className={styles.bookSelectBadge}>
@@ -1246,7 +1198,7 @@ export default function TodayDashboardContent() {
                 className={styles.bookCreateInput}
               />
               <button type="submit" className={styles.bookCreateBtn}>
-                + Set &amp; Open
+                Add
               </button>
             </form>
           </div>

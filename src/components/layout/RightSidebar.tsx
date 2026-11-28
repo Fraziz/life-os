@@ -2,21 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Search,
-  Sun,
-  Moon,
-  Bell,
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  Flag,
-  Clock,
-  RotateCcw,
-} from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
@@ -45,9 +30,6 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
     const nextTheme: AppTheme = currentTheme === 'light' ? 'dark' : 'light';
     updateSettings({ theme: nextTheme });
   };
-  const themeIcon = currentTheme === 'light' ? <Moon size={16} /> : <Sun size={16} />;
-  const themeTitle =
-    currentTheme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme';
 
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -95,7 +77,6 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
     );
   };
 
-  // Daily completion rhythm (only today's completed tasks + routine blocks)
   const completedTodayCount = tasks.filter((t) => {
     if (t.status !== 'done') return false;
     if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
@@ -105,14 +86,14 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
   const dueOrActiveToday = tasks.filter(
     (t) => t.status !== 'done' && (t.dueDate === todayStr || t.tags?.includes('do-it-now'))
   ).length;
-  const totalTodayTarget = Math.max(1, completedTodayCount + dueOrActiveToday + dailyRoutine.totalCount);
+  const totalTodayTarget = Math.max(
+    1,
+    completedTodayCount + dueOrActiveToday + dailyRoutine.totalCount
+  );
   const doneTodayTarget = completedTodayCount + dailyRoutine.completedCount;
   const rhythmPercent = Math.min(100, Math.round((doneTodayTarget / totalTodayTarget) * 100));
 
   const hasNotifications = unreadCount > 0;
-  const bellTooltip = hasNotifications
-    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
-    : 'Notifications';
 
   const selectedDeadlines = getDeadlinesForDate(selectedDate);
   const selectedEvents = getEventsForDate(selectedDate);
@@ -122,7 +103,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
 
   return (
     <aside className={styles.rightSidebar} aria-label="Today companion rail">
-      {/* ── Top Utility Search & Actions ── */}
+      {/* ── Minimalist Icon-Free Utility Row ── */}
       <div className={styles.topUtilityRow} data-tour="right-utility">
         <div
           className={styles.searchBox}
@@ -132,35 +113,31 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
           }}
           role="button"
           tabIndex={0}
+          style={{ justifyContent: 'space-between' }}
         >
-          <Search size={15} className={styles.searchIcon} />
-          <span className={styles.searchPlaceholder}>Search (Ctrl+K)</span>
+          <span className={styles.searchPlaceholder}>Search</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>Ctrl+K</span>
         </div>
 
         <div className={styles.utilityIcons}>
           <button
             type="button"
-            className={styles.iconBtn}
+            className={styles.minimalPillBtn}
             onClick={toggleTheme}
-            title={themeTitle}
-            aria-label="Toggle theme"
+            title={currentTheme === 'light' ? 'Switch to Dark mode' : 'Switch to Light mode'}
           >
-            {themeIcon}
+            {currentTheme === 'light' ? 'Dark' : 'Light'}
           </button>
 
           <button
             type="button"
-            className={styles.iconBtn}
+            className={styles.minimalPillBtn}
             onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
-            title={bellTooltip}
-            aria-label={bellTooltip}
+            title="Notifications"
           >
-            <Bell size={16} />
+            <span>Alerts</span>
             {hasNotifications && (
-              <span
-                className={styles.notificationBadge}
-                aria-label={`${unreadCount} unread notifications`}
-              >
+              <span className={styles.inlineCountDot}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -168,22 +145,17 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
         </div>
       </div>
 
-      {/* ── Calm Today Horizon & Collapsible Month Grid ── */}
+      {/* ── Schedule & Collapsible Month Grid ── */}
       <div className={styles.widgetCard}>
         <div className={styles.calendarHeader} style={{ marginBottom: 4 }}>
-          <div className={styles.calendarTitle}>
-            <CalendarIcon size={15} />
-            <span>Schedule &amp; Deadlines</span>
-          </div>
+          <span className={styles.calendarTitle}>Schedule</span>
           <button
             type="button"
             className={styles.jumpTodayBtn}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
             onClick={() => setCalendarExpanded((v) => !v)}
             aria-expanded={calendarExpanded}
           >
-            <span>{calendarExpanded ? 'Hide Grid' : 'Month'}</span>
-            {calendarExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {calendarExpanded ? 'Hide month' : 'Month'}
           </button>
         </div>
 
@@ -198,7 +170,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
                   className={styles.arrowBtn}
                   aria-label="Previous month"
                 >
-                  <ChevronLeft size={16} />
+                  ‹
                 </button>
                 <button
                   type="button"
@@ -206,14 +178,14 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
                   className={styles.arrowBtn}
                   aria-label="Next month"
                 >
-                  <ChevronRight size={16} />
+                  ›
                 </button>
               </div>
             </div>
 
             <div className={styles.calendarGrid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                <div key={d} className={styles.calDayLabel}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                <div key={`${d}-${idx}`} className={styles.calDayLabel}>
                   {d}
                 </div>
               ))}
@@ -298,9 +270,10 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
                   className={styles.agendaItem}
                   style={{ textDecoration: 'none' }}
                 >
-                  <div className={styles.agendaItemIconWrap}>
-                    <Flag size={12} className={styles.deadlineIcon} />
-                  </div>
+                  <span
+                    className={`${styles.calDot} ${styles.calDotDeadline}`}
+                    style={{ marginTop: 6 }}
+                  />
                   <div className={styles.agendaItemContent}>
                     <span className={styles.agendaItemTitle}>{dl.title}</span>
                     <div className={styles.agendaItemMetaRow}>
@@ -318,9 +291,10 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
                 className={styles.agendaItem}
                 style={{ textDecoration: 'none' }}
               >
-                <div className={styles.agendaItemIconWrap}>
-                  <CalendarIcon size={12} className={styles.eventIcon} />
-                </div>
+                <span
+                  className={`${styles.calDot} ${styles.calDotEvent}`}
+                  style={{ marginTop: 6 }}
+                />
                 <div className={styles.agendaItemContent}>
                   <span className={styles.agendaItemTitle}>{evt.title}</span>
                   <div className={styles.agendaItemMetaRow}>
@@ -340,9 +314,10 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
                 className={styles.agendaItem}
                 style={{ textDecoration: 'none' }}
               >
-                <div className={styles.agendaItemIconWrap}>
-                  <Clock size={12} className={styles.blockIcon} />
-                </div>
+                <span
+                  className={`${styles.calDot} ${styles.calDotBlock}`}
+                  style={{ marginTop: 6 }}
+                />
                 <div className={styles.agendaItemContent}>
                   <span className={styles.agendaItemTitle}>{blk.taskTitle}</span>
                   <div className={styles.agendaItemMetaRow}>
@@ -355,26 +330,23 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
             ))}
 
             {totalSelectedMarks === 0 && (
-              <div className={styles.agendaEmptyState}>
-                Open schedule — no hard deadlines today
-              </div>
+              <div className={styles.agendaEmptyState}>No deadlines today</div>
             )}
           </div>
 
           <Link href="/calendar" className={styles.openCalendarLink}>
-            <span>Full Calendar</span>
-            <ArrowRight size={12} />
+            Open Calendar
           </Link>
         </div>
       </div>
 
-      {/* ── Quiet Daily Rhythm & Compassion Reset ── */}
+      {/* ── Quiet Daily Rhythm ── */}
       <div className={styles.momentumCard}>
         <div className={styles.momentumHeader}>
           <span className={styles.momentumTitle}>Daily Rhythm</span>
           <span className={styles.momentumBadge}>
-            {completedTodayCount} task{completedTodayCount === 1 ? '' : 's'} ·{' '}
-            {dailyRoutine.completedCount}/{dailyRoutine.totalCount} routine
+            {completedTodayCount} done · {dailyRoutine.completedCount}/{dailyRoutine.totalCount}{' '}
+            routine
           </span>
         </div>
 
@@ -395,13 +367,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
               padding: '8px 10px',
             }}
           >
-            <div className={styles.shortcutItemLeft}>
-              <RotateCcw size={13} />
-              <span>
-                {overdueCount} overdue · Compassion Reset
-              </span>
-            </div>
-            <ArrowRight size={12} />
+            <span>{overdueCount} overdue · Reset plan</span>
           </Link>
         )}
 
@@ -417,11 +383,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
               fontFamily: 'inherit',
             }}
           >
-            <div className={styles.shortcutItemLeft}>
-              <Moon size={13} />
-              <span>Wrap Up Day</span>
-            </div>
-            <ArrowRight size={12} />
+            <span>Wrap up day</span>
           </button>
         )}
       </div>

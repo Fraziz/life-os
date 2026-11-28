@@ -3556,3 +3556,48 @@ a.calmContextCard:hover {
   font-size: 0.74rem;
   color: var(--color-text-muted);
 }
+
+
+/* ── Minimalist Icon-Free Polish ── */
+.minimalToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.minimalSquare {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.minimalSquareChecked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.minimalTextAction {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.minimalTextAction:hover {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+}
