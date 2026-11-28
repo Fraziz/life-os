@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  CheckCircle2,
   Repeat,
   ArrowRight,
   Flame,
@@ -454,14 +453,6 @@ export default function RightSidebar() {
             <div className={styles.shortcutItemLeft}>
               <Repeat size={14} style={{ color: 'var(--color-text-muted)' }} />
               <span>Weekly Review</span>
-            </div>
-            <ArrowRight size={13} />
-          </Link>
-
-          <Link href="/reset" className={styles.shortcutLinkItem}>
-            <div className={styles.shortcutItemLeft}>
-              <CheckCircle2 size={14} style={{ color: 'var(--color-text-muted)' }} />
-              <span>Reset Plan</span>
             </div>
             <ArrowRight size={13} />
           </Link>

@@ -239,7 +239,7 @@ export default function Sidebar({
         {/* Navigation Sections */}
         <nav className={styles.nav}>
           {displayedSections.map((section, sIndex) => {
-            const isMore = section.id === 'more';
+            const isMore = section.id === 'more' && section.items.length > 1;
 
             return (
               <div key={section.id} className={styles.sectionGroup} data-tour={`nav-section-${section.id}`}>

@@ -118,20 +118,6 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'review',
         isAvailable: true,
       },
-      {
-        id: 'progress',
-        label: 'Progress Analytics',
-        href: '/progress',
-        icon: 'progress',
-        isAvailable: true,
-      },
-      {
-        id: 'reset',
-        label: 'Reset Plan',
-        href: '/reset',
-        icon: 'reset',
-        isAvailable: true,
-      },
     ],
   },
 ];
