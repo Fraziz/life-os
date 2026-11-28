@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Bell, Compass, Search } from 'lucide-react';
+import ThemeOrbButton from './ThemeOrbButton';
 import styles from './TopBar.module.css';
 
 interface TopBarProps {
@@ -119,6 +120,7 @@ export default function TopBar({
 
       <div className={styles.rightGroup} data-tour="topbar-actions">
         <CloudSyncDot />
+        <ThemeOrbButton size={16} className={styles.iconBtn} />
 
         {onOpenSearch && (
           <button

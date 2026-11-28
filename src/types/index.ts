@@ -25,6 +25,17 @@ export type PlanningStyle =
 
 export type AppTheme = 'dark' | 'light' | 'system';
 
+export type ColorThemeId =
+  | 'slate'
+  | 'ocean'
+  | 'sage'
+  | 'sand'
+  | 'indigo'
+  | 'teal'
+  | 'rose'
+  | 'plum'
+  | 'olive';
+
 export interface WorkingHours {
   start: string;       // e.g. "09:00"
   end: string;         // e.g. "17:00"
@@ -113,6 +124,7 @@ export interface UserSettings {
   starterPreset?: string;       // Active or loaded starter preset
   customLogoUrl?: string;       // Custom uploaded workspace logo (synced across app and browser tab)
   theme: AppTheme;
+  colorTheme?: ColorThemeId;    // Executive color palette (auto-adapts to light/dark/system)
   updatedAt: string;
 }
 

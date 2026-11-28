@@ -16,7 +16,8 @@ import {
 import { restoreMissingStarterWorkspace } from '@/lib/workspaceRecovery';
 import { flushPendingBookSaves, wipeCloudBooks } from '@/lib/bookCloudSync';
 import { idbClear, idbGet, idbSet } from '@/lib/idbStore';
-import type { PlanningStyle, AppTheme } from '@/types';
+import type { PlanningStyle, AppTheme, ColorThemeId } from '@/types';
+import { COLOR_THEMES } from '@/config/themes';
 import {
   User,
   Clock,
@@ -1159,9 +1160,9 @@ export default function SettingsPage() {
               <div className={styles.sectionBody}>
                 <div className={styles.themeGrid}>
                   {([
-                    { id: 'dark', label: 'Black (Dark Mode)', desc: 'Pure Obsidian & Crisp White Accent', icon: <Moon size={14} /> },
-                    { id: 'light', label: 'White (Light Mode)', desc: 'Clean High-Contrast Executive White', icon: <Sun size={14} /> },
-                    { id: 'system', label: 'System Auto-Sync', desc: 'Sync with OS Light / Dark Mode', icon: <Sliders size={14} /> },
+                    { id: 'system', label: 'System Auto-Adjust', desc: 'Automatically adapts Light / Dark with OS', icon: <Sliders size={14} /> },
+                    { id: 'light', label: 'Daylight (Light)', desc: 'Soft low-glare daylight surfaces', icon: <Sun size={14} /> },
+                    { id: 'dark', label: 'Night (Dark)', desc: 'Deep executive evening surfaces', icon: <Moon size={14} /> },
                   ] as const).map((item) => (
                     <button
                       key={item.id}
@@ -1181,6 +1182,55 @@ export default function SettingsPage() {
                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 2 }}>{item.desc}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* ── Curated Formal Color Palettes ── */}
+                <div className={styles.formGroup} style={{ marginTop: 16 }}>
+                  <label className={styles.label}>
+                    Color Theme Palette (Tip: Left-click the top-right theme circle to cycle, or right-click it for quick choices)
+                  </label>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
+                      gap: '8px',
+                      marginTop: '6px',
+                    }}
+                  >
+                    {COLOR_THEMES.map((pal) => {
+                      const isActive = (formData.colorTheme || 'slate') === pal.id;
+                      return (
+                        <button
+                          key={pal.id}
+                          type="button"
+                          className={`${styles.themeBtn} ${isActive ? styles.themeBtnActive : ''}`}
+                          onClick={() => {
+                            const updated = { ...formData, colorTheme: pal.id as ColorThemeId };
+                            setFormData(updated);
+                            updateSettings(updated);
+                          }}
+                          style={{ alignItems: 'flex-start', textAlign: 'left' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span
+                              style={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                border: '1px solid var(--color-border)',
+                                background: `linear-gradient(135deg, ${pal.lightSurface} 50%, ${pal.lightAccent} 50%)`,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{pal.label}</span>
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 3 }}>
+                            {pal.mood}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* ── Custom Logo & Tab Icon ── */}

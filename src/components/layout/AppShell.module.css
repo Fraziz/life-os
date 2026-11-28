@@ -229,29 +229,29 @@
 }
 
 :global([data-theme='light']) .aiChatBtn {
-  background: #ffffff;
-  border-color: #e4e4e7;
-  color: #09090b;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme='light']) .aiChatBtn:hover {
-  border-color: #000000;
-  color: #000000;
-  background: #f4f4f5;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface-2);
 }
 
 :global([data-theme='dark']) .aiChatBtn {
-  background: #121212;
-  border-color: #262626;
-  color: #ffffff;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 :global([data-theme='dark']) .aiChatBtn:hover {
-  border-color: #ffffff;
-  color: #ffffff;
-  background: #1c1c1c;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface-2);
 }
 
 .aiChatBtn.aiChatBtnOpen,

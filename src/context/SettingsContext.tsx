@@ -57,7 +57,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   },
   simpleMode: false,
   starterPreset: 'default',
-  theme: 'light',
+  theme: 'system',
+  colorTheme: 'slate',
   updatedAt: new Date().toISOString(),
 };
 
@@ -102,20 +103,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             autoFailover: parsed.aiSettings.autoFailover ?? true,
           };
         }
-        // Normalize legacy themes and migrate default theme once to clean Light Mode
-        if (parsed.theme === 'nature' || parsed.theme === 'cyber') {
-          parsed.theme = 'light';
+        // Normalize legacy themes and migrate once to System Auto-Adjust so themes adapt with OS Day/Night
+        if (parsed.theme === 'nature') {
+          parsed.theme = 'system';
+          parsed.colorTheme = parsed.colorTheme || 'sage';
+        } else if (parsed.theme === 'cyber') {
+          parsed.theme = 'system';
+          parsed.colorTheme = parsed.colorTheme || 'indigo';
         }
         try {
-          if (!localStorage.getItem('life_os_light_default_migrated_v1')) {
-            parsed.theme = 'light';
-            localStorage.setItem('life_os_light_default_migrated_v1', 'true');
+          if (!localStorage.getItem('life_os_auto_theme_migrated_v1')) {
+            parsed.theme = 'system';
+            parsed.colorTheme = parsed.colorTheme || 'ocean';
+            localStorage.setItem('life_os_auto_theme_migrated_v1', 'true');
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...parsed }));
           }
         } catch {}
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       } else {
-        try { localStorage.setItem('life_os_light_default_migrated_v1', 'true'); } catch {}
+        try { localStorage.setItem('life_os_auto_theme_migrated_v1', 'true'); } catch {}
         setSettings(DEFAULT_SETTINGS);
       }
     } catch (err) {
@@ -132,19 +138,27 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('life_os_cloud_synced', handleSync);
   }, []);
 
-  // Apply theme to document (strictly 'dark' or 'light')
+  // Apply luminance mode ('light' | 'dark' with live OS 'system' listener) + colorTheme palette
   useEffect(() => {
-    if (!isLoaded) return;
-    const theme = settings.theme;
-    if (theme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light');
+    if (!isLoaded || typeof window === 'undefined') return;
+
+    const colorPalette = settings.colorTheme || 'slate';
+    document.documentElement.setAttribute('data-color-theme', colorPalette);
+
+    const applyResolvedMode = (isDark: boolean) => {
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    };
+
+    if (settings.theme === 'system') {
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      applyResolvedMode(mql.matches);
+      const onSchemeChange = (e: MediaQueryListEvent) => applyResolvedMode(e.matches);
+      mql.addEventListener('change', onSchemeChange);
+      return () => mql.removeEventListener('change', onSchemeChange);
     }
-  }, [settings.theme, isLoaded]);
+
+    applyResolvedMode(settings.theme === 'dark');
+  }, [settings.theme, settings.colorTheme, isLoaded]);
 
   // Persist settings
   const saveSettings = (updated: UserSettings) => {

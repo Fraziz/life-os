@@ -847,3 +847,353 @@ textarea:focus-visible {
   }
 }
 
+
+/* ============================================================
+   EXECUTIVE ADHD-CALIBRATED COLOR PALETTES (LIGHT + DARK AUTO-ADAPT)
+   Each palette tints canvas, cards, borders, and accents cohesively
+   while automatically adapting to Light, Dark, or System OS mode.
+   ============================================================ */
+
+/* ── 1. Nordic Ocean ── */
+:root[data-theme='light'][data-color-theme='ocean'] {
+  --color-bg:             #eef4fa;
+  --color-surface:        #fbfdff;
+  --color-surface-2:      #e3ecf6;
+  --color-surface-3:      #d5e2f0;
+  --color-surface-hover:  #c8d8ea;
+  --color-border:         #c5d4e6;
+  --color-border-subtle:  #dbe6f2;
+  --color-border-focus:   #1d4ed8;
+  --color-text:           #0c1829;
+  --color-text-muted:     #475b75;
+  --color-text-faint:     #7a8fa8;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #1d4ed8;
+  --color-accent-light:   #2563eb;
+  --color-accent-dim:     rgba(29, 78, 216, 0.09);
+  --color-accent-glow:    rgba(29, 78, 216, 0.14);
+  --color-accent-hover:   #1e40af;
+  --ambient-glow-color:   rgba(59, 130, 246, 0.10);
+}
+
+:root[data-theme='dark'][data-color-theme='ocean'] {
+  --color-bg:             #090f18;
+  --color-surface:        #101826;
+  --color-surface-2:      #162133;
+  --color-surface-3:      #1e2c42;
+  --color-surface-hover:  #263752;
+  --color-border:         #23334c;
+  --color-border-subtle:  #182436;
+  --color-border-focus:   #60a5fa;
+  --color-text:           #f0f6fc;
+  --color-text-muted:     #94a8c4;
+  --color-text-faint:     #586d8a;
+  --color-text-inverse:   #08111e;
+  --color-accent:         #60a5fa;
+  --color-accent-light:   #93c5fd;
+  --color-accent-dim:     rgba(96, 165, 250, 0.14);
+  --color-accent-glow:    rgba(96, 165, 250, 0.20);
+  --color-accent-hover:   #3b82f6;
+  --ambient-glow-color:   rgba(96, 165, 250, 0.10);
+}
+
+/* ── 2. Botanical Sage ── */
+:root[data-theme='light'][data-color-theme='sage'] {
+  --color-bg:             #eff5f1;
+  --color-surface:        #fbfdfc;
+  --color-surface-2:      #e3ede7;
+  --color-surface-3:      #d4e3da;
+  --color-surface-hover:  #c5d8cd;
+  --color-border:         #c2d5ca;
+  --color-border-subtle:  #dae7df;
+  --color-border-focus:   #1f6349;
+  --color-text:           #0f211a;
+  --color-text-muted:     #496358;
+  --color-text-faint:     #7a9488;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #1f6349;
+  --color-accent-light:   #2d7a5c;
+  --color-accent-dim:     rgba(31, 99, 73, 0.09);
+  --color-accent-glow:    rgba(31, 99, 73, 0.14);
+  --color-accent-hover:   #184e39;
+  --ambient-glow-color:   rgba(45, 122, 92, 0.10);
+}
+
+:root[data-theme='dark'][data-color-theme='sage'] {
+  --color-bg:             #09110d;
+  --color-surface:        #101a15;
+  --color-surface-2:      #16241d;
+  --color-surface-3:      #1e3027;
+  --color-surface-hover:  #263c31;
+  --color-border:         #23382d;
+  --color-border-subtle:  #18271f;
+  --color-border-focus:   #52b788;
+  --color-text:           #eef7f2;
+  --color-text-muted:     #95b0a2;
+  --color-text-faint:     #5a7568;
+  --color-text-inverse:   #08130e;
+  --color-accent:         #52b788;
+  --color-accent-light:   #74c69d;
+  --color-accent-dim:     rgba(82, 183, 136, 0.14);
+  --color-accent-glow:    rgba(82, 183, 136, 0.20);
+  --color-accent-hover:   #40916c;
+  --ambient-glow-color:   rgba(82, 183, 136, 0.09);
+}
+
+/* ── 3. Warm Espresso & Sand (Zero Glare) ── */
+:root[data-theme='light'][data-color-theme='sand'] {
+  --color-bg:             #f6f1ea;
+  --color-surface:        #fdfbf7;
+  --color-surface-2:      #ece4d9;
+  --color-surface-3:      #e0d6c8;
+  --color-surface-hover:  #d4c8b7;
+  --color-border:         #d2c5b4;
+  --color-border-subtle:  #e5dcd0;
+  --color-border-focus:   #8c4f1f;
+  --color-text:           #211912;
+  --color-text-muted:     #635548;
+  --color-text-faint:     #948475;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #8c4f1f;
+  --color-accent-light:   #a66028;
+  --color-accent-dim:     rgba(140, 79, 31, 0.09);
+  --color-accent-glow:    rgba(140, 79, 31, 0.14);
+  --color-accent-hover:   #703e17;
+  --ambient-glow-color:   rgba(180, 110, 50, 0.10);
+}
+
+:root[data-theme='dark'][data-color-theme='sand'] {
+  --color-bg:             #110e0c;
+  --color-surface:        #1b1613;
+  --color-surface-2:      #241e1a;
+  --color-surface-3:      #302822;
+  --color-surface-hover:  #3b312a;
+  --color-border:         #362c25;
+  --color-border-subtle:  #251e19;
+  --color-border-focus:   #e09f5a;
+  --color-text:           #f7f2ec;
+  --color-text-muted:     #b5a596;
+  --color-text-faint:     #786a5e;
+  --color-text-inverse:   #140f0b;
+  --color-accent:         #e09f5a;
+  --color-accent-light:   #eab67d;
+  --color-accent-dim:     rgba(224, 159, 90, 0.14);
+  --color-accent-glow:    rgba(224, 159, 90, 0.20);
+  --color-accent-hover:   #cc8b45;
+  --ambient-glow-color:   rgba(224, 159, 90, 0.09);
+}
+
+/* ── 4. Royal Iris (Indigo) ── */
+:root[data-theme='light'][data-color-theme='indigo'] {
+  --color-bg:             #f1f0fa;
+  --color-surface:        #fcfbff;
+  --color-surface-2:      #e6e4f5;
+  --color-surface-3:      #d8d5ee;
+  --color-surface-hover:  #cac6e6;
+  --color-border:         #c8c4e3;
+  --color-border-subtle:  #dfddf0;
+  --color-border-focus:   #4338ca;
+  --color-text:           #151329;
+  --color-text-muted:     #545073;
+  --color-text-faint:     #8783a6;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #4338ca;
+  --color-accent-light:   #4f46e5;
+  --color-accent-dim:     rgba(67, 56, 202, 0.09);
+  --color-accent-glow:    rgba(67, 56, 202, 0.14);
+  --color-accent-hover:   #3730a3;
+  --ambient-glow-color:   rgba(79, 70, 229, 0.10);
+}
+
+:root[data-theme='dark'][data-color-theme='indigo'] {
+  --color-bg:             #0b0a16;
+  --color-surface:        #141326;
+  --color-surface-2:      #1c1a33;
+  --color-surface-3:      #262444;
+  --color-surface-hover:  #302d54;
+  --color-border:         #2c294c;
+  --color-border-subtle:  #1e1c36;
+  --color-border-focus:   #818cf8;
+  --color-text:           #f3f2fc;
+  --color-text-muted:     #a19ec2;
+  --color-text-faint:     #666387;
+  --color-text-inverse:   #0c0b1c;
+  --color-accent:         #818cf8;
+  --color-accent-light:   #a5b4fc;
+  --color-accent-dim:     rgba(129, 140, 248, 0.14);
+  --color-accent-glow:    rgba(129, 140, 248, 0.20);
+  --color-accent-hover:   #6366f1;
+  --ambient-glow-color:   rgba(129, 140, 248, 0.10);
+}
+
+/* ── 5. Harbor Teal ── */
+:root[data-theme='light'][data-color-theme='teal'] {
+  --color-bg:             #edf5f5;
+  --color-surface:        #fafdfd;
+  --color-surface-2:      #e0eeee;
+  --color-surface-3:      #d0e4e4;
+  --color-surface-hover:  #c0dada;
+  --color-border:         #bdd6d6;
+  --color-border-subtle:  #d7e8e8;
+  --color-border-focus:   #0f6b63;
+  --color-text:           #0d2224;
+  --color-text-muted:     #466466;
+  --color-text-faint:     #789698;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #0f6b63;
+  --color-accent-light:   #138279;
+  --color-accent-dim:     rgba(15, 107, 99, 0.09);
+  --color-accent-glow:    rgba(15, 107, 99, 0.14);
+  --color-accent-hover:   #0b544e;
+  --ambient-glow-color:   rgba(20, 140, 130, 0.10);
+}
+
+:root[data-theme='dark'][data-color-theme='teal'] {
+  --color-bg:             #081012;
+  --color-surface:        #0f1b1e;
+  --color-surface-2:      #152529;
+  --color-surface-3:      #1d3237;
+  --color-surface-hover:  #253f45;
+  --color-border:         #21393f;
+  --color-border-subtle:  #16272b;
+  --color-border-focus:   #2dd4bf;
+  --color-text:           #eef8f8;
+  --color-text-muted:     #92b1b4;
+  --color-text-faint:     #577578;
+  --color-text-inverse:   #061314;
+  --color-accent:         #2dd4bf;
+  --color-accent-light:   #5eead4;
+  --color-accent-dim:     rgba(45, 212, 191, 0.14);
+  --color-accent-glow:    rgba(45, 212, 191, 0.20);
+  --color-accent-hover:   #14b8a6;
+  --ambient-glow-color:   rgba(45, 212, 191, 0.09);
+}
+
+/* ── 6. Dusty Rosewood ── */
+:root[data-theme='light'][data-color-theme='rose'] {
+  --color-bg:             #f7f0f2;
+  --color-surface:        #fefbfc;
+  --color-surface-2:      #efe3e7;
+  --color-surface-3:      #e4d3d9;
+  --color-surface-hover:  #d8c3cb;
+  --color-border:         #d5c0c8;
+  --color-border-subtle:  #e8dade;
+  --color-border-focus:   #9d2f52;
+  --color-text:           #261219;
+  --color-text-muted:     #694c56;
+  --color-text-faint:     #9c7e89;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #9d2f52;
+  --color-accent-light:   #b83b62;
+  --color-accent-dim:     rgba(157, 47, 82, 0.09);
+  --color-accent-glow:    rgba(157, 47, 82, 0.14);
+  --color-accent-hover:   #802341;
+  --ambient-glow-color:   rgba(184, 59, 98, 0.09);
+}
+
+:root[data-theme='dark'][data-color-theme='rose'] {
+  --color-bg:             #120b0e;
+  --color-surface:        #1d1317;
+  --color-surface-2:      #271a20;
+  --color-surface-3:      #34232b;
+  --color-surface-hover:  #412c36;
+  --color-border:         #3b2730;
+  --color-border-subtle:  #281a20;
+  --color-border-focus:   #f47296;
+  --color-text:           #faf0f3;
+  --color-text-muted:     #b89ba5;
+  --color-text-faint:     #7a5e68;
+  --color-text-inverse:   #170a0f;
+  --color-accent:         #f47296;
+  --color-accent-light:   #f9a8bf;
+  --color-accent-dim:     rgba(244, 114, 150, 0.14);
+  --color-accent-glow:    rgba(244, 114, 150, 0.20);
+  --color-accent-hover:   #ec4878;
+  --ambient-glow-color:   rgba(244, 114, 150, 0.09);
+}
+
+/* ── 7. Velvet Plum ── */
+:root[data-theme='light'][data-color-theme='plum'] {
+  --color-bg:             #f4eff8;
+  --color-surface:        #fcfafd;
+  --color-surface-2:      #eae2f2;
+  --color-surface-3:      #ddd2e9;
+  --color-surface-hover:  #cfc1df;
+  --color-border:         #cdbfd9;
+  --color-border-subtle:  #e3d9ec;
+  --color-border-focus:   #6429b8;
+  --color-text:           #1e122b;
+  --color-text-muted:     #5f4d73;
+  --color-text-faint:     #917fa6;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #6429b8;
+  --color-accent-light:   #7938d4;
+  --color-accent-dim:     rgba(100, 41, 184, 0.09);
+  --color-accent-glow:    rgba(100, 41, 184, 0.14);
+  --color-accent-hover:   #501f96;
+  --ambient-glow-color:   rgba(121, 56, 212, 0.09);
+}
+
+:root[data-theme='dark'][data-color-theme='plum'] {
+  --color-bg:             #0e0a14;
+  --color-surface:        #181221;
+  --color-surface-2:      #21192e;
+  --color-surface-3:      #2c223d;
+  --color-surface-hover:  #372b4c;
+  --color-border:         #322745;
+  --color-border-subtle:  #221a30;
+  --color-border-focus:   #b388ff;
+  --color-text:           #f6f1fb;
+  --color-text-muted:     #ad9ec2;
+  --color-text-faint:     #6f6085;
+  --color-text-inverse:   #120a1c;
+  --color-accent:         #b388ff;
+  --color-accent-light:   #cbb2ff;
+  --color-accent-dim:     rgba(179, 136, 255, 0.14);
+  --color-accent-glow:    rgba(179, 136, 255, 0.20);
+  --color-accent-hover:   #9c66ff;
+  --ambient-glow-color:   rgba(179, 136, 255, 0.09);
+}
+
+/* ── 8. Matcha & Moss ── */
+:root[data-theme='light'][data-color-theme='olive'] {
+  --color-bg:             #f3f5ec;
+  --color-surface:        #fcfdf9;
+  --color-surface-2:      #e7ebdc;
+  --color-surface-3:      #dadfcb;
+  --color-surface-hover:  #cdd3bb;
+  --color-border:         #cad0b8;
+  --color-border-subtle:  #e0e4d4;
+  --color-border-focus:   #455a20;
+  --color-text:           #19210e;
+  --color-text-muted:     #566146;
+  --color-text-faint:     #869175;
+  --color-text-inverse:   #ffffff;
+  --color-accent:         #455a20;
+  --color-accent-light:   #577029;
+  --color-accent-dim:     rgba(69, 90, 32, 0.09);
+  --color-accent-glow:    rgba(69, 90, 32, 0.14);
+  --color-accent-hover:   #354618;
+  --ambient-glow-color:   rgba(87, 112, 41, 0.09);
+}
+
+:root[data-theme='dark'][data-color-theme='olive'] {
+  --color-bg:             #0c0f09;
+  --color-surface:        #151910;
+  --color-surface-2:      #1d2316;
+  --color-surface-3:      #272f1e;
+  --color-surface-hover:  #313b26;
+  --color-border:         #2c3522;
+  --color-border-subtle:  #1e2417;
+  --color-border-focus:   #a3c962;
+  --color-text:           #f3f6ec;
+  --color-text-muted:     #a3ae93;
+  --color-text-faint:     #687359;
+  --color-text-inverse:   #0e1308;
+  --color-accent:         #a3c962;
+  --color-accent-light:   #bce07e;
+  --color-accent-dim:     rgba(163, 201, 98, 0.14);
+  --color-accent-glow:    rgba(163, 201, 98, 0.20);
+  --color-accent-hover:   #8eb54c;
+  --ambient-glow-color:   rgba(163, 201, 98, 0.09);
+}

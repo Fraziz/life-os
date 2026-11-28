@@ -2,15 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Sun, Moon, Bell } from 'lucide-react';
+import { Search, Bell } from 'lucide-react';
 
-import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useTasks } from '@/context/TaskContext';
 import { useCalendar } from '@/context/CalendarContext';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
-import type { AppTheme } from '@/types';
+import ThemeOrbButton from './ThemeOrbButton';
 import styles from './RightSidebar.module.css';
 
 interface RightSidebarProps {
@@ -19,18 +18,11 @@ interface RightSidebarProps {
 }
 
 export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSidebarProps) {
-  const { settings, updateSettings } = useSettings();
   const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
   const { tasks } = useTasks();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
   const dailyRoutine = useDailyRoutineReminder();
-
-  const currentTheme = settings.theme;
-  const toggleTheme = () => {
-    const nextTheme: AppTheme = currentTheme === 'light' ? 'dark' : 'light';
-    updateSettings({ theme: nextTheme });
-  };
 
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -123,15 +115,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
         </div>
 
         <div className={styles.utilityIcons}>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={toggleTheme}
-            title={currentTheme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
-            aria-label="Toggle theme"
-          >
-            {currentTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-          </button>
+          <ThemeOrbButton size={17} />
 
           <button
             type="button"

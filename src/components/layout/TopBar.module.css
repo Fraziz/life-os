@@ -17,14 +17,14 @@
 }
 
 :global([data-theme='light']) .topBar {
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom-color: var(--color-border-subtle);
 }
 
 :global([data-theme='dark']) .topBar {
-  background: rgba(18, 21, 28, 0.92);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom-color: var(--color-border-subtle);
