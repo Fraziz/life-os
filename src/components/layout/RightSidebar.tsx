@@ -370,7 +370,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
             className={styles.shortcutLinkItem}
             style={{
               width: '100%',
-              background: 'var(--color-surface)',
+              background: 'var(--color-control-bg, var(--color-surface))',
               border: '1px solid var(--color-border)',
               padding: '8px 12px',
               cursor: 'pointer',
