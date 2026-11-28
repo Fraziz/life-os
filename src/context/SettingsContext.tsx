@@ -145,8 +145,23 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const colorPalette = settings.colorTheme || 'slate';
     document.documentElement.setAttribute('data-color-theme', colorPalette);
 
+    const syncDesktopCompanionTheme = (isDark: boolean) => {
+      try {
+        const win = window as Window & {
+          sarilingDesktop?: {
+            syncTheme?: (payload: { theme: 'light' | 'dark'; colorTheme: string }) => void;
+          };
+        };
+        win.sarilingDesktop?.syncTheme?.({
+          theme: isDark ? 'dark' : 'light',
+          colorTheme: colorPalette,
+        });
+      } catch {}
+    };
+
     const applyResolvedMode = (isDark: boolean) => {
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      syncDesktopCompanionTheme(isDark);
     };
 
     if (settings.theme === 'system') {

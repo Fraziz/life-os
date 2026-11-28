@@ -6,6 +6,179 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sariling Mundo Quick Bubble</title>
   <style>
+    :root {
+      --edge-line-bg: rgba(71, 85, 105, 0.72);
+      --edge-line-work-bg: #334155;
+      --edge-line-border: rgba(255, 255, 255, 0.34);
+      --edge-line-glow: rgba(15, 23, 42, 0.28);
+      --edge-hover-bg: rgba(15, 23, 42, 0.95);
+      --edge-hover-border: rgba(255, 255, 255, 0.28);
+      --edge-pip-color: #64748b;
+    }
+
+    [data-theme='dark'] {
+      --edge-line-bg: rgba(148, 163, 184, 0.66);
+      --edge-line-work-bg: #cbd5e1;
+      --edge-line-border: rgba(255, 255, 255, 0.24);
+      --edge-line-glow: rgba(148, 163, 184, 0.28);
+      --edge-hover-bg: rgba(19, 22, 31, 0.96);
+      --edge-hover-border: rgba(255, 255, 255, 0.28);
+      --edge-pip-color: #94a3b8;
+    }
+
+    /* ── Synced Theme Palettes (Light + Dark) ── */
+    :root[data-color-theme='ocean'] {
+      --edge-line-bg: #2563eb;
+      --edge-line-work-bg: #1d4ed8;
+      --edge-line-border: rgba(191, 219, 254, 0.65);
+      --edge-line-glow: rgba(37, 99, 235, 0.48);
+      --edge-hover-bg: rgba(23, 55, 110, 0.96);
+      --edge-hover-border: rgba(147, 197, 253, 0.55);
+      --edge-pip-color: #3b82f6;
+    }
+    [data-theme='dark'][data-color-theme='ocean'] {
+      --edge-line-bg: #60a5fa;
+      --edge-line-work-bg: #3b82f6;
+      --edge-line-border: rgba(191, 219, 254, 0.55);
+      --edge-line-glow: rgba(96, 165, 250, 0.52);
+      --edge-hover-bg: rgba(18, 36, 59, 0.96);
+      --edge-hover-border: rgba(96, 165, 250, 0.55);
+      --edge-pip-color: #60a5fa;
+    }
+
+    :root[data-color-theme='sage'] {
+      --edge-line-bg: #1b6b4a;
+      --edge-line-work-bg: #15803d;
+      --edge-line-border: rgba(187, 247, 208, 0.62);
+      --edge-line-glow: rgba(27, 107, 74, 0.46);
+      --edge-hover-bg: rgba(20, 66, 46, 0.96);
+      --edge-hover-border: rgba(116, 198, 157, 0.55);
+      --edge-pip-color: #22c55e;
+    }
+    [data-theme='dark'][data-color-theme='sage'] {
+      --edge-line-bg: #52b788;
+      --edge-line-work-bg: #40916c;
+      --edge-line-border: rgba(183, 228, 199, 0.52);
+      --edge-line-glow: rgba(82, 183, 136, 0.5);
+      --edge-hover-bg: rgba(18, 41, 31, 0.96);
+      --edge-hover-border: rgba(82, 183, 136, 0.55);
+      --edge-pip-color: #52b788;
+    }
+
+    :root[data-color-theme='sand'] {
+      --edge-line-bg: #8c4a19;
+      --edge-line-work-bg: #a65b21;
+      --edge-line-border: rgba(253, 230, 138, 0.55);
+      --edge-line-glow: rgba(140, 74, 25, 0.46);
+      --edge-hover-bg: rgba(74, 42, 20, 0.96);
+      --edge-hover-border: rgba(224, 159, 90, 0.55);
+      --edge-pip-color: #d97706;
+    }
+    [data-theme='dark'][data-color-theme='sand'] {
+      --edge-line-bg: #e09f5a;
+      --edge-line-work-bg: #cc8b45;
+      --edge-line-border: rgba(253, 230, 138, 0.5);
+      --edge-line-glow: rgba(224, 159, 90, 0.5);
+      --edge-hover-bg: rgba(40, 29, 21, 0.96);
+      --edge-hover-border: rgba(224, 159, 90, 0.55);
+      --edge-pip-color: #e09f5a;
+    }
+
+    :root[data-color-theme='indigo'] {
+      --edge-line-bg: #4f46e5;
+      --edge-line-work-bg: #4338ca;
+      --edge-line-border: rgba(199, 210, 254, 0.65);
+      --edge-line-glow: rgba(79, 70, 229, 0.5);
+      --edge-hover-bg: rgba(42, 36, 112, 0.96);
+      --edge-hover-border: rgba(165, 180, 252, 0.58);
+      --edge-pip-color: #6366f1;
+    }
+    [data-theme='dark'][data-color-theme='indigo'] {
+      --edge-line-bg: #818cf8;
+      --edge-line-work-bg: #6366f1;
+      --edge-line-border: rgba(199, 210, 254, 0.55);
+      --edge-line-glow: rgba(129, 140, 248, 0.52);
+      --edge-hover-bg: rgba(26, 24, 59, 0.96);
+      --edge-hover-border: rgba(129, 140, 248, 0.55);
+      --edge-pip-color: #818cf8;
+    }
+
+    :root[data-color-theme='teal'] {
+      --edge-line-bg: #0d8278;
+      --edge-line-work-bg: #0d6e66;
+      --edge-line-border: rgba(153, 246, 228, 0.62);
+      --edge-line-glow: rgba(13, 130, 120, 0.48);
+      --edge-hover-bg: rgba(15, 62, 66, 0.96);
+      --edge-hover-border: rgba(94, 234, 212, 0.55);
+      --edge-pip-color: #14b8a6;
+    }
+    [data-theme='dark'][data-color-theme='teal'] {
+      --edge-line-bg: #2dd4bf;
+      --edge-line-work-bg: #14b8a6;
+      --edge-line-border: rgba(153, 246, 228, 0.55);
+      --edge-line-glow: rgba(45, 212, 191, 0.52);
+      --edge-hover-bg: rgba(16, 41, 46, 0.96);
+      --edge-hover-border: rgba(45, 212, 191, 0.55);
+      --edge-pip-color: #2dd4bf;
+    }
+
+    :root[data-color-theme='rose'] {
+      --edge-line-bg: #be2e5b;
+      --edge-line-work-bg: #a32a50;
+      --edge-line-border: rgba(251, 207, 232, 0.62);
+      --edge-line-glow: rgba(190, 46, 91, 0.48);
+      --edge-hover-bg: rgba(84, 26, 46, 0.96);
+      --edge-hover-border: rgba(249, 168, 212, 0.55);
+      --edge-pip-color: #ec4899;
+    }
+    [data-theme='dark'][data-color-theme='rose'] {
+      --edge-line-bg: #f47296;
+      --edge-line-work-bg: #ec4878;
+      --edge-line-border: rgba(251, 207, 232, 0.55);
+      --edge-line-glow: rgba(244, 114, 150, 0.52);
+      --edge-hover-bg: rgba(46, 24, 33, 0.96);
+      --edge-hover-border: rgba(244, 114, 150, 0.55);
+      --edge-pip-color: #f47296;
+    }
+
+    :root[data-color-theme='plum'] {
+      --edge-line-bg: #7c3aed;
+      --edge-line-work-bg: #6b26c4;
+      --edge-line-border: rgba(221, 214, 254, 0.65);
+      --edge-line-glow: rgba(124, 58, 237, 0.5);
+      --edge-hover-bg: rgba(58, 28, 99, 0.96);
+      --edge-hover-border: rgba(196, 181, 253, 0.58);
+      --edge-pip-color: #8b5cf6;
+    }
+    [data-theme='dark'][data-color-theme='plum'] {
+      --edge-line-bg: #b388ff;
+      --edge-line-work-bg: #9c66ff;
+      --edge-line-border: rgba(221, 214, 254, 0.55);
+      --edge-line-glow: rgba(179, 136, 255, 0.52);
+      --edge-hover-bg: rgba(36, 23, 59, 0.96);
+      --edge-hover-border: rgba(179, 136, 255, 0.55);
+      --edge-pip-color: #b388ff;
+    }
+
+    :root[data-color-theme='olive'] {
+      --edge-line-bg: #4d701e;
+      --edge-line-work-bg: #44611b;
+      --edge-line-border: rgba(217, 249, 157, 0.62);
+      --edge-line-glow: rgba(77, 112, 30, 0.48);
+      --edge-hover-bg: rgba(38, 56, 22, 0.96);
+      --edge-hover-border: rgba(188, 224, 126, 0.55);
+      --edge-pip-color: #65a30d;
+    }
+    [data-theme='dark'][data-color-theme='olive'] {
+      --edge-line-bg: #a3c962;
+      --edge-line-work-bg: #8eb54c;
+      --edge-line-border: rgba(217, 249, 157, 0.52);
+      --edge-line-glow: rgba(163, 201, 98, 0.5);
+      --edge-hover-bg: rgba(28, 41, 20, 0.96);
+      --edge-hover-border: rgba(163, 201, 98, 0.55);
+      --edge-pip-color: #a3c962;
+    }
+
     * {
       box-sizing: border-box;
       user-select: none;
@@ -37,26 +210,25 @@
       width: 48px;
       height: 48px;
       border-radius: 999px;
-      background: #0d0f14;
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: var(--edge-hover-bg);
+      border: 1px solid var(--edge-hover-border);
       box-shadow:
         0 6px 18px rgba(0, 0, 0, 0.34),
-        0 1px 3px rgba(0, 0, 0, 0.24);
+        0 0 12px var(--edge-line-glow);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
-      transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s ease, background 0.16s ease;
+      transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
     }
 
     .circleBubble:hover {
       transform: scale(1.06);
-      background: #151923;
-      border-color: rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.65);
     }
 
     .circleBubble.active {
-      border-color: rgba(255, 255, 255, 0.65);
+      border-color: rgba(255, 255, 255, 0.78);
     }
 
     .circleBubble:active {
@@ -78,33 +250,27 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #64748b;
+      background: var(--edge-pip-color);
       border: 2px solid #0d0f14;
       transition: background 0.2s ease, transform 0.2s ease;
     }
 
     .circleBubble.hasWork .statusPip {
-      background: #f59e0b;
+      background: var(--edge-line-bg);
     }
 
-    @keyframes pipBlinkWork {
-      0%, 100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 8px rgba(245, 158, 11, 0.9); }
-      50% { opacity: 0.25; transform: scale(0.85); box-shadow: none; }
-    }
-
-    @keyframes pipBlinkUrgent {
-      0%, 100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px rgba(239, 68, 68, 0.95); }
-      50% { opacity: 0.2; transform: scale(0.85); box-shadow: none; }
+    @keyframes pipBlinkSynced {
+      0%, 100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 8px var(--edge-line-glow); }
+      50% { opacity: 0.32; transform: scale(0.85); box-shadow: none; }
     }
 
     .circleBubble.blinking .statusPip {
-      background: #f59e0b;
-      animation: pipBlinkWork 1.2s ease-in-out infinite;
+      background: var(--edge-line-bg);
+      animation: pipBlinkSynced 1.2s ease-in-out infinite;
     }
 
     .circleBubble.blinking.urgent .statusPip {
-      background: #ef4444;
-      animation: pipBlinkUrgent 0.9s ease-in-out infinite;
+      animation: pipBlinkSynced 0.9s ease-in-out infinite;
     }
 
     .circleBubble.active .statusPip {
@@ -150,12 +316,12 @@
     .edgeSliver {
       width: 5px;
       height: 58px;
-      background: rgba(148, 163, 184, 0.34);
+      background: var(--edge-line-bg);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-      opacity: 0.44;
+      border: 1px solid var(--edge-line-border);
+      box-shadow: 0 2px 10px var(--edge-line-glow);
+      opacity: 0.82;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -164,9 +330,9 @@
         width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
         height 0.22s cubic-bezier(0.22, 1, 0.36, 1),
         opacity 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease;
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
     }
 
     .edgeStage.left .edgeSliver {
@@ -180,36 +346,21 @@
     }
 
     .edgeLineHandle.hasWork .edgeSliver {
-      background: rgba(203, 213, 225, 0.52);
-      opacity: 0.62;
+      background: var(--edge-line-bg);
+      opacity: 0.92;
     }
 
-    @keyframes edgeBlinkWork {
+    @keyframes edgeBlinkSynced {
       0%, 100% {
         opacity: 1;
-        background: #f59e0b;
-        border-color: rgba(254, 243, 199, 0.9);
-        box-shadow: 0 0 14px rgba(245, 158, 11, 0.85), 0 0 4px rgba(251, 191, 36, 0.95);
+        background: var(--edge-line-bg);
+        border-color: var(--edge-line-border);
+        box-shadow: 0 0 14px var(--edge-line-glow), 0 0 4px var(--edge-line-glow);
       }
       50% {
-        opacity: 0.24;
-        background: rgba(245, 158, 11, 0.42);
-        border-color: rgba(251, 191, 36, 0.35);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
-      }
-    }
-
-    @keyframes edgeBlinkUrgent {
-      0%, 100% {
-        opacity: 1;
-        background: #ef4444;
-        border-color: rgba(254, 226, 226, 0.92);
-        box-shadow: 0 0 16px rgba(239, 68, 68, 0.9), 0 0 5px rgba(248, 113, 113, 0.95);
-      }
-      50% {
-        opacity: 0.2;
-        background: rgba(239, 68, 68, 0.38);
-        border-color: rgba(248, 113, 113, 0.35);
+        opacity: 0.34;
+        background: var(--edge-line-work-bg);
+        border-color: var(--edge-line-border);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
       }
     }
@@ -217,11 +368,11 @@
     .edgeLineHandle.blinking:not(:hover):not(.active) .edgeSliver {
       width: 6px;
       height: 64px;
-      animation: edgeBlinkWork 1.25s ease-in-out infinite;
+      animation: edgeBlinkSynced 1.35s ease-in-out infinite;
     }
 
     .edgeLineHandle.blinking.urgent:not(:hover):not(.active) .edgeSliver {
-      animation: edgeBlinkUrgent 0.9s ease-in-out infinite;
+      animation: edgeBlinkSynced 0.95s ease-in-out infinite;
     }
 
     .edgeLineHandle:hover,
@@ -234,9 +385,9 @@
       width: 28px;
       height: 68px;
       opacity: 1;
-      background: rgba(13, 15, 20, 0.94);
-      border-color: rgba(255, 255, 255, 0.24);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.36);
+      background: var(--edge-hover-bg);
+      border-color: var(--edge-hover-border);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.36), 0 0 14px var(--edge-line-glow);
       animation: none;
     }
 
@@ -261,9 +412,9 @@
       height: 38px;
       padding: 0 12px 0 9px;
       border-radius: 999px;
-      background: rgba(13, 15, 20, 0.94);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+      background: var(--edge-hover-bg);
+      border: 1px solid var(--edge-hover-border);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32), 0 0 12px var(--edge-line-glow);
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -274,8 +425,7 @@
 
     .pillHandle:hover {
       transform: scale(1.02);
-      border-color: rgba(255, 255, 255, 0.48);
-      background: #151923;
+      border-color: rgba(255, 255, 255, 0.62);
     }
 
     .pillHandle:active {
@@ -301,22 +451,21 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #64748b;
+      background: var(--edge-pip-color);
       flex-shrink: 0;
     }
 
     .pillHandle.hasWork .pillDot {
-      background: #f59e0b;
+      background: var(--edge-line-bg);
     }
 
     .pillHandle.blinking .pillDot {
-      background: #f59e0b;
-      animation: pipBlinkWork 1.2s ease-in-out infinite;
+      background: var(--edge-line-bg);
+      animation: pipBlinkSynced 1.2s ease-in-out infinite;
     }
 
     .pillHandle.blinking.urgent .pillDot {
-      background: #ef4444;
-      animation: pipBlinkUrgent 0.9s ease-in-out infinite;
+      animation: pipBlinkSynced 0.9s ease-in-out infinite;
     }
 
     .pillHandle.active .pillDot {
@@ -380,6 +529,9 @@
     function applyState(state) {
       if (!state) return;
       currentState = state;
+
+      document.documentElement.setAttribute('data-theme', state.theme === 'dark' ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-color-theme', state.colorTheme || 'slate');
 
       elCircle.classList.toggle('hidden', state.mode !== 'circle');
       elLineWrap.classList.toggle('hidden', state.mode !== 'line');

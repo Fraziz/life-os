@@ -30,7 +30,23 @@ let startupBriefingDone = false;
 const alertCooldowns = new Map();
 let blinkPausedForCurrentWork = false;
 let blinkAcknowledgedKeys = new Set();
+const VALID_COLOR_THEMES = new Set([
+  'slate',
+  'ocean',
+  'sage',
+  'sand',
+  'indigo',
+  'teal',
+  'rose',
+  'plum',
+  'olive',
+]);
+
 let lastSnapshotCache = null;
+let currentThemeState = {
+  theme: 'light',
+  colorTheme: 'slate',
+};
 let currentBubbleWorkState = {
   hasWork: false,
   isBlinking: false,
@@ -40,6 +56,59 @@ let currentBubbleWorkState = {
   pillText: 'Sariling Mundo',
   workKeys: [],
 };
+
+function normalizeColorTheme(raw) {
+  const val = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  return VALID_COLOR_THEMES.has(val) ? val : 'slate';
+}
+
+function loadInitialThemeState() {
+  const cfg = readJson(CONFIG_PATH(), {});
+  const cachedSnap = readJson(LAST_SNAPSHOT_PATH(), null);
+  const savedTheme = cfg.theme || (cachedSnap && cachedSnap.theme);
+  const savedColor = cfg.colorTheme || (cachedSnap && cachedSnap.colorTheme);
+  currentThemeState = {
+    theme: savedTheme === 'dark' ? 'dark' : 'light',
+    colorTheme: normalizeColorTheme(savedColor),
+  };
+}
+
+function updateDesktopThemeState(rawTheme, rawColorTheme) {
+  const nextTheme = rawTheme === 'dark' ? 'dark' : 'light';
+  const nextColorTheme = normalizeColorTheme(rawColorTheme || currentThemeState.colorTheme);
+  const changed =
+    currentThemeState.theme !== nextTheme ||
+    currentThemeState.colorTheme !== nextColorTheme;
+
+  currentThemeState = {
+    theme: nextTheme,
+    colorTheme: nextColorTheme,
+  };
+
+  if (lastSnapshotCache && typeof lastSnapshotCache === 'object') {
+    lastSnapshotCache = {
+      ...lastSnapshotCache,
+      theme: nextTheme,
+      colorTheme: nextColorTheme,
+    };
+  }
+
+  if (changed) {
+    const cfg = readJson(CONFIG_PATH(), {});
+    writeJson(CONFIG_PATH(), {
+      ...cfg,
+      theme: nextTheme,
+      colorTheme: nextColorTheme,
+    });
+    sendBubbleState();
+    if (popoverWindow && !popoverWindow.isDestroyed()) {
+      popoverWindow.webContents.send('popover:theme', currentThemeState);
+    }
+    if (toastWindow && !toastWindow.isDestroyed()) {
+      toastWindow.webContents.send('toast:theme', currentThemeState);
+    }
+  }
+}
 
 function getAlertSoundEnabled() {
   const cfg = readJson(CONFIG_PATH(), {});
@@ -328,6 +397,8 @@ function sendBubbleState() {
     blinkPaused: currentBubbleWorkState.blinkPaused,
     workTone: currentBubbleWorkState.workTone,
     pillText: currentBubbleWorkState.pillText,
+    theme: currentThemeState.theme,
+    colorTheme: currentThemeState.colorTheme,
   });
 }
 
@@ -453,9 +524,22 @@ async function readWorkspaceSnapshot() {
   const getCachedFallback = () => {
     const cached = readJson(LAST_SNAPSHOT_PATH(), null);
     if (cached && cached.ready) {
-      return { ...cached, soundEnabled, cachedOffline: true };
+      return {
+        ...cached,
+        theme: cached.theme || currentThemeState.theme,
+        colorTheme: normalizeColorTheme(cached.colorTheme || currentThemeState.colorTheme),
+        soundEnabled,
+        cachedOffline: true,
+      };
     }
-    return { ready: false, theme: 'light', soundEnabled, upNext: [], summary: 'Workspace loading' };
+    return {
+      ready: false,
+      theme: currentThemeState.theme,
+      colorTheme: currentThemeState.colorTheme,
+      soundEnabled,
+      upNext: [],
+      summary: 'Workspace loading',
+    };
   };
 
   if (!mainWindow || mainWindow.isDestroyed() || !isMainWindowTrustedOrigin()) {
@@ -474,10 +558,24 @@ async function readWorkspaceSnapshot() {
           const rawSettings = localStorage.getItem('life_os_user_settings_v1');
 
           const settings = rawSettings ? JSON.parse(rawSettings) : null;
-          const theme = settings && settings.theme === 'dark' ? 'dark' : 'light';
+          const domTheme = document.documentElement.getAttribute('data-theme');
+          const prefersDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          const theme = domTheme === 'dark' || domTheme === 'light'
+            ? domTheme
+            : settings && settings.theme === 'dark'
+            ? 'dark'
+            : settings && settings.theme === 'light'
+            ? 'light'
+            : prefersDark
+            ? 'dark'
+            : 'light';
+          const rawColorTheme = (settings && settings.colorTheme) || document.documentElement.getAttribute('data-color-theme') || 'slate';
+          const colorTheme = ['slate', 'ocean', 'sage', 'sand', 'indigo', 'teal', 'rose', 'plum', 'olive'].includes(rawColorTheme)
+            ? rawColorTheme
+            : 'slate';
 
           if (isAuthPage && !localStorage.getItem('life_os_active_uid')) {
-            return { ready: false, needsAuth: true, theme, upNext: [], summary: 'Sign in required' };
+            return { ready: false, needsAuth: true, theme, colorTheme, upNext: [], summary: 'Sign in required' };
           }
 
           const tasks = Array.isArray(rawTasks ? JSON.parse(rawTasks) : null) ? JSON.parse(rawTasks) : [];
@@ -904,6 +1002,7 @@ async function readWorkspaceSnapshot() {
           return {
             ready: true,
             theme,
+            colorTheme,
             primary,
             upNext,
             taskItems,
@@ -918,16 +1017,20 @@ async function readWorkspaceSnapshot() {
             summary: parts.join(' · '),
           };
         } catch {
-          return { ready: false, theme: 'light', upNext: [], summary: 'Workspace loading' };
+          return { ready: false, theme: 'light', colorTheme: 'slate', upNext: [], summary: 'Workspace loading' };
         }
       })()
     `);
 
     const enriched = snap && typeof snap === 'object' ? { ...snap, soundEnabled } : snap;
+    if (enriched && (enriched.theme || enriched.colorTheme)) {
+      updateDesktopThemeState(enriched.theme, enriched.colorTheme);
+    }
     if (enriched && enriched.ready) {
       writeJson(LAST_SNAPSHOT_PATH(), {
         ready: true,
         theme: enriched.theme,
+        colorTheme: enriched.colorTheme,
         primary: enriched.primary,
         upNext: enriched.upNext,
         taskItems: enriched.taskItems,
@@ -947,6 +1050,8 @@ async function readWorkspaceSnapshot() {
         syncBubbleWorkFromSnapshot(cached);
         return {
           ...cached,
+          theme: currentThemeState.theme,
+          colorTheme: currentThemeState.colorTheme,
           soundEnabled,
           edgeBlinkEnabled: getEdgeBlinkEnabled(),
           isBlinking: currentBubbleWorkState.isBlinking,
@@ -961,6 +1066,8 @@ async function readWorkspaceSnapshot() {
     return enriched && typeof enriched === 'object'
       ? {
           ...enriched,
+          theme: enriched.theme || currentThemeState.theme,
+          colorTheme: normalizeColorTheme(enriched.colorTheme || currentThemeState.colorTheme),
           edgeBlinkEnabled: getEdgeBlinkEnabled(),
           isBlinking: currentBubbleWorkState.isBlinking,
           blinkMuted: currentBubbleWorkState.blinkMuted,
@@ -1092,6 +1199,8 @@ function showOutsideToast(payload) {
     if (toastWindow && !toastWindow.isDestroyed()) {
       toastWindow.webContents.send('toast:show', {
         ...payload,
+        theme: payload.theme || currentThemeState.theme,
+        colorTheme: normalizeColorTheme(payload.colorTheme || currentThemeState.colorTheme),
         soundEnabled: payload.soundEnabled !== false && getAlertSoundEnabled(),
       });
     }
@@ -1597,7 +1706,14 @@ if (!gotSingleLock) {
 
   app.whenReady().then(() => {
     app.setAppUserModelId('com.sarilingmundo.lifeos');
+    loadInitialThemeState();
     ensureDefaultAutoStart();
+
+    ipcMain.on('desktop:sync-theme', (_event, payload) => {
+      if (payload && typeof payload === 'object') {
+        updateDesktopThemeState(payload.theme, payload.colorTheme);
+      }
+    });
 
     ipcMain.handle('desktop:get-url', () => getConfiguredUrl() || '');
     ipcMain.handle('desktop:save-url', (_event, rawUrl) => {
@@ -1733,6 +1849,8 @@ if (!gotSingleLock) {
         blinkPaused: currentBubbleWorkState.blinkPaused,
         workTone: currentBubbleWorkState.workTone,
         pillText: currentBubbleWorkState.pillText,
+        theme: currentThemeState.theme,
+        colorTheme: currentThemeState.colorTheme,
       };
     });
 

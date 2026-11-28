@@ -14,4 +14,5 @@ contextBridge.exposeInMainWorld('sarilingDesktop', {
   stopEdgeBlink: () => ipcRenderer.invoke('desktop:stop-edge-blink'),
   testAlertRing: () => ipcRenderer.invoke('desktop:test-ring'),
   notifyWorkspaceReady: () => ipcRenderer.send('desktop:workspace-ready'),
+  syncTheme: (payload) => ipcRenderer.send('desktop:sync-theme', payload),
 });

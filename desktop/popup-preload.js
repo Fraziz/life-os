@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('sarilingPopover', {
     ipcRenderer.on('popover:opened', listener);
     return () => ipcRenderer.removeListener('popover:opened', listener);
   },
+  onTheme: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('popover:theme', listener);
+    return () => ipcRenderer.removeListener('popover:theme', listener);
+  },
   setSoundEnabled: (enabled) => ipcRenderer.invoke('popover:set-sound', enabled),
   setBlinkEnabled: (enabled) => ipcRenderer.invoke('popover:set-blink-enabled', enabled),
   stopBlink: () => ipcRenderer.invoke('popover:stop-blink'),
