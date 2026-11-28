@@ -3101,6 +3101,45 @@ a.summaryPill:active {
   line-height: 1.45;
 }
 
+/* ── Welcome Back Supportive Card ── */
+.welcomeBackCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: clamp(16px, 2vw, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.welcomeBackHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.welcomeBackTitle {
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--color-text);
+  margin: 0 0 4px;
+}
+
+.welcomeBackText {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.welcomeBackActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ── Single Focal Anchor: Focus Spotlight Card ── */
 .focusSpotlightCard {
   background: var(--color-surface);

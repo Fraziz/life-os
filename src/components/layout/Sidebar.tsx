@@ -17,6 +17,7 @@ import {
   Layers,
   Folder,
   RotateCcw,
+  Compass,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -45,6 +46,7 @@ const NAV_ICON_MAP: Record<
   knowledge: BookOpen,
   files: Folder,
   review: RotateCcw,
+  reset: Compass,
 };
 
 function matchesNavItem(pathname: string, item: NavItem): boolean {

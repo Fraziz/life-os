@@ -25,13 +25,26 @@ import RightSidebar from '@/components/layout/RightSidebar';
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
 import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
+import { makeTaskEasierSteps } from '@/utils/makeTaskEasier';
+import {
+  evaluateWelcomeBackState,
+  dismissWelcomeBackBanner,
+} from '@/utils/welcomeBack';
 import styles from './page.module.css';
 
 export default function TodayDashboardContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
+  const {
+    tasks,
+    updateTask,
+    toggleTaskDone,
+    toggleTaskReminder,
+    quickAddTask,
+    toggleSubtask,
+    breakdownTask,
+  } = useTasks();
   const { activeProjects, projects, toggleProjectReminder } = useProjects();
   const { goals } = useGoals();
   const {
@@ -132,7 +145,19 @@ export default function TodayDashboardContent() {
   const [queueExpanded, setQueueExpanded] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
+  const [makingEasierBusy, setMakingEasierBusy] = useState(false);
+  const [welcomeBackState, setWelcomeBackState] = useState<{
+    visible: boolean;
+    daysAway: number;
+  }>({ visible: false, daysAway: 0 });
   const assistMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const res = evaluateWelcomeBackState();
+    if (res.shouldShow) {
+      setWelcomeBackState({ visible: true, daysAway: res.daysAway });
+    }
+  }, []);
 
   useEffect(() => {
     if (!assistMenuOpen) return;
@@ -375,11 +400,47 @@ export default function TodayDashboardContent() {
       showQuickFeedback('Added to Today');
     } else {
       quickDump(clean, { isReminder: false });
-      showQuickFeedback('Parked in Idea Parking');
+      showQuickFeedback('Parked in Brain Dump');
     }
 
     setCaptureText('');
     playSuccessChime();
+  };
+
+  const handleMakePrimaryEasier = async (task: (typeof tasks)[number]) => {
+    if (makingEasierBusy) return;
+    setMakingEasierBusy(true);
+    try {
+      const { steps } = await makeTaskEasierSteps(task, settings.aiSettings);
+      breakdownTask(task.id, steps);
+      setExpandedSubtasks((prev) => ({ ...prev, [task.id]: true }));
+      playSubtaskTick();
+      showQuickFeedback('Broken into small starter steps');
+    } finally {
+      setMakingEasierBusy(false);
+    }
+  };
+
+  const handleDismissWelcomeBack = () => {
+    dismissWelcomeBackBanner();
+    setWelcomeBackState({ visible: false, daysAway: 0 });
+  };
+
+  const handleWelcomeRescheduleTomorrow = () => {
+    const tomorrowStr = new Date(Date.now() + 86_400_000).toISOString().split('T')[0];
+    tasks
+      .filter((t) => t.status !== 'done' && t.dueDate && t.dueDate < todayStr)
+      .forEach((t) => updateTask(t.id, { dueDate: tomorrowStr }));
+    handleDismissWelcomeBack();
+    showQuickFeedback('Earlier tasks gently moved to tomorrow');
+  };
+
+  const handleWelcomeMovePastToBacklog = () => {
+    tasks
+      .filter((t) => t.status !== 'done' && t.dueDate && t.dueDate < todayStr)
+      .forEach((t) => updateTask(t.id, { status: 'backlog', dueDate: undefined }));
+    handleDismissWelcomeBack();
+    showQuickFeedback('Earlier tasks parked in Backlog');
   };
 
   const handleSetMainWin = (e: React.FormEvent) => {
@@ -578,6 +639,63 @@ export default function TodayDashboardContent() {
           </div>
         )}
 
+        {/* ── Supportive Welcome Back Card (Shown only when returning after 2+ days away) ── */}
+        {welcomeBackState.visible && (
+          <section className={styles.welcomeBackCard} aria-label="Welcome back">
+            <div className={styles.welcomeBackHeader}>
+              <div>
+                <h2 className={styles.welcomeBackTitle}>Welcome back, {userName}.</h2>
+                <p className={styles.welcomeBackText}>
+                  Glad you&apos;re here. Stepping away is normal—there is nothing to feel behind on.
+                  {overdueCount > 0
+                    ? ` You have ${overdueCount} unfinished task${
+                        overdueCount === 1 ? '' : 's'
+                      } from earlier days whenever you want to reschedule them.`
+                    : ' Take a breath and choose just one calm priority for today.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.stuckSwitchBtn}
+                onClick={handleDismissWelcomeBack}
+              >
+                Dismiss
+              </button>
+            </div>
+
+            <div className={styles.welcomeBackActions}>
+              {overdueCount > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className={styles.completeFocusBtn}
+                    onClick={handleWelcomeRescheduleTomorrow}
+                  >
+                    Move Earlier Tasks to Tomorrow
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.completeFocusBtn}
+                    onClick={handleWelcomeMovePastToBacklog}
+                  >
+                    Park Earlier Tasks for Later
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                className={styles.completeFocusBtn}
+                onClick={() => {
+                  handleDismissWelcomeBack();
+                  window.dispatchEvent(new CustomEvent('open-next-action'));
+                }}
+              >
+                Choose 1 Priority
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* ── 3. Single Focal Anchor: RIGHT NOW Card (Icon-Free) ── */}
         <section className={styles.focusSpotlightCard} aria-label="Primary Focus">
           {primaryTask ? (
@@ -672,6 +790,18 @@ export default function TodayDashboardContent() {
                 >
                   Mark Done
                 </button>
+
+                {(!primaryTask.subtasks || primaryTask.subtasks.length === 0) && (
+                  <button
+                    type="button"
+                    className={styles.completeFocusBtn}
+                    onClick={() => void handleMakePrimaryEasier(primaryTask)}
+                    disabled={makingEasierBusy}
+                    title="Break this task into small, easy starter steps"
+                  >
+                    {makingEasierBusy ? 'Breaking down…' : 'Make This Easier'}
+                  </button>
+                )}
               </div>
             </>
           ) : (

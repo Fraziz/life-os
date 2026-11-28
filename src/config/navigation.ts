@@ -102,6 +102,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'review',
         isAvailable: true,
       },
+      {
+        id: 'reset',
+        label: 'Mental Reset',
+        href: '/reset',
+        icon: 'reset',
+        isAvailable: true,
+      },
     ],
   },
 ];

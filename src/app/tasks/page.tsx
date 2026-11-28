@@ -6,7 +6,9 @@ import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useMilestones } from '@/context/MilestoneContext';
+import { useSettings } from '@/context/SettingsContext';
 import type { Task, TaskStatus, TaskPriority } from '@/types';
+import { makeTaskEasierSteps } from '@/utils/makeTaskEasier';
 import {
   CheckSquare,
   Square,
@@ -80,6 +82,7 @@ export default function TasksPage() {
   const { projects } = useProjects();
   const { goals } = useGoals();
   const { milestones } = useMilestones();
+  const { settings } = useSettings();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
 
@@ -161,6 +164,9 @@ export default function TasksPage() {
   const [breakdownModalOpen, setBreakdownModalOpen] = useState(false);
   const [breakdownTargetTask, setBreakdownTargetTask] = useState<Task | null>(null);
   const [breakdownStepsText, setBreakdownStepsText] = useState('');
+  const [makingEasierId, setMakingEasierId] = useState<string | null>(null);
+  const [modalSuggestingBusy, setModalSuggestingBusy] = useState(false);
+  const [rescheduleMenuTaskId, setRescheduleMenuTaskId] = useState<string | null>(null);
 
   // Collapsible subtask checklists
   const [expandedTasksMap, setExpandedTasksMap] = useState<Record<string, boolean>>({});
@@ -262,6 +268,52 @@ export default function TasksPage() {
     setBreakdownTargetTask(t);
     setBreakdownStepsText('');
     setBreakdownModalOpen(true);
+  };
+
+  const handleMakeTaskEasierInline = async (t: Task) => {
+    if (makingEasierId) return;
+    setMakingEasierId(t.id);
+    try {
+      const { steps } = await makeTaskEasierSteps(t, settings.aiSettings);
+      breakdownTask(t.id, steps);
+      setExpandedTasksMap((prev) => ({ ...prev, [t.id]: true }));
+      playSubtaskTick();
+    } finally {
+      setMakingEasierId(null);
+    }
+  };
+
+  const handleSuggestStepsInModal = async () => {
+    if (!breakdownTargetTask || modalSuggestingBusy) return;
+    setModalSuggestingBusy(true);
+    try {
+      const { steps } = await makeTaskEasierSteps(breakdownTargetTask, settings.aiSettings);
+      setBreakdownStepsText(steps.join('\n'));
+    } finally {
+      setModalSuggestingBusy(false);
+    }
+  };
+
+  const handleQuickReschedule = (task: Task, mode: 'today' | 'tomorrow' | 'next-week' | 'later') => {
+    const now = new Date();
+    const toLocalIso = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    if (mode === 'later') {
+      updateTask(task.id, { dueDate: undefined, status: 'backlog' });
+    } else if (mode === 'today') {
+      updateTask(task.id, { dueDate: toLocalIso(now), status: task.status === 'backlog' ? 'todo' : task.status });
+    } else if (mode === 'tomorrow') {
+      const tmr = new Date(now.getTime() + 86_400_000);
+      updateTask(task.id, { dueDate: toLocalIso(tmr) });
+    } else if (mode === 'next-week') {
+      const nw = new Date(now.getTime() + 7 * 86_400_000);
+      updateTask(task.id, { dueDate: toLocalIso(nw) });
+    }
+    setRescheduleMenuTaskId(null);
   };
 
   const handleTaskToggle = (e: React.MouseEvent, taskId: string) => {
@@ -704,18 +756,33 @@ export default function TasksPage() {
               </button>
             </form>
           ) : (
-            <button
-              type="button"
-              className={styles.addSubtaskBtn}
-              onClick={() => {
-                setActiveSubtaskTaskId(task.id);
-                setNewSubtaskTitle('');
-                setExpandedTasksMap((prev) => ({ ...prev, [task.id]: true }));
-              }}
-              title="Add a subtask to this task"
-            >
-              <Plus size={12} /> Add subtask
-            </button>
+            <div className={styles.easierActionsInline}>
+              <button
+                type="button"
+                className={styles.addSubtaskBtn}
+                onClick={() => {
+                  setActiveSubtaskTaskId(task.id);
+                  setNewSubtaskTitle('');
+                  setExpandedTasksMap((prev) => ({ ...prev, [task.id]: true }));
+                }}
+                title="Add a subtask to this task"
+              >
+                <Plus size={12} /> Add subtask
+              </button>
+
+              {col.id !== 'done' && (
+                <button
+                  type="button"
+                  className={styles.makeEasierBtn}
+                  onClick={() => void handleMakeTaskEasierInline(task)}
+                  disabled={makingEasierId === task.id}
+                  title="Break this task into tiny, easy-to-start steps"
+                >
+                  <Wand2 size={11} />
+                  <span>{makingEasierId === task.id ? 'Breaking down…' : 'Make This Easier'}</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -768,21 +835,64 @@ export default function TasksPage() {
 
         {/* ── Card Footer ── */}
         <div className={styles.taskFooter}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {task.dueDate ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                <Calendar size={12} /> {task.dueDate}
-              </span>
-            ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+            {col.id !== 'done' ? (
               <button
                 type="button"
                 className={styles.calendarAddBtn}
-                onClick={() => openEditModal(task)}
-                title="Add to Calendar"
-                aria-label="Add to Calendar"
+                onClick={() =>
+                  setRescheduleMenuTaskId((prev) => (prev === task.id ? null : task.id))
+                }
+                title="Reschedule task"
+                aria-expanded={rescheduleMenuTaskId === task.id}
+                style={
+                  task.dueDate
+                    ? { width: 'auto', padding: '2px 7px', gap: '4px', fontSize: '11px' }
+                    : undefined
+                }
               >
                 <Calendar size={12} />
+                {task.dueDate && <span>{task.dueDate}</span>}
               </button>
+            ) : (
+              task.dueDate && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <Calendar size={12} /> {task.dueDate}
+                </span>
+              )
+            )}
+
+            {rescheduleMenuTaskId === task.id && (
+              <div className={styles.quickReschedulePopover} role="menu">
+                <button
+                  type="button"
+                  className={styles.quickRescheduleItem}
+                  onClick={() => handleQuickReschedule(task, 'today')}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className={styles.quickRescheduleItem}
+                  onClick={() => handleQuickReschedule(task, 'tomorrow')}
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  className={styles.quickRescheduleItem}
+                  onClick={() => handleQuickReschedule(task, 'next-week')}
+                >
+                  Next Week
+                </button>
+                <button
+                  type="button"
+                  className={styles.quickRescheduleItem}
+                  onClick={() => handleQuickReschedule(task, 'later')}
+                >
+                  Move to Backlog
+                </button>
+              </div>
             )}
 
             {task.estimatedDuration && (
@@ -1813,7 +1923,18 @@ export default function TasksPage() {
 
             <form onSubmit={handleBreakdownSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <div className={styles.formGroup}>
-                <label className={styles.label} style={{ marginBottom: '4px' }}>Actionable Steps (One step per line)</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                  <label className={styles.label}>Actionable Steps (One step per line)</label>
+                  <button
+                    type="button"
+                    className={styles.makeEasierBtn}
+                    onClick={() => void handleSuggestStepsInModal()}
+                    disabled={modalSuggestingBusy}
+                  >
+                    <Wand2 size={11} />
+                    <span>{modalSuggestingBusy ? 'Suggesting…' : 'Suggest Small Steps'}</span>
+                  </button>
+                </div>
                 <textarea
                   className={styles.textarea}
                   style={{ minHeight: '160px', fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--text-xs)' }}

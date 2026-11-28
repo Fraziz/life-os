@@ -31,6 +31,8 @@ import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
+import { useSettings } from '@/context/SettingsContext';
+import { makeTaskEasierSteps } from '@/utils/makeTaskEasier';
 import {
   isDocVideoLesson,
   isDocBookOrDocument,
@@ -137,10 +139,32 @@ export default function FocusPage() {
   } = useFocus();
 
   const { docs, updateDoc, addDoc, toggleDocReminder } = useKnowledge();
-  const { tasks, toggleSubtask } = useTasks();
+  const { tasks, toggleSubtask, breakdownTask } = useTasks();
   const { goals } = useGoals();
   const { projects } = useProjects();
   const { quickDump } = useInbox();
+  const { settings } = useSettings();
+
+  const [hideTimerDigits, setHideTimerDigits] = useState(false);
+  const [showAllFocusSteps, setShowAllFocusSteps] = useState(false);
+  const [focusMakingEasier, setFocusMakingEasier] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('life_os_focus_hide_timer_v1');
+      if (saved === 'true') setHideTimerDigits(true);
+    } catch {}
+  }, []);
+
+  const toggleHideTimerDigits = () => {
+    setHideTimerDigits((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('life_os_focus_hide_timer_v1', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [targetTab, setTargetTab] = useState<'tasks' | 'knowledge' | 'videos'>('tasks');
@@ -1247,25 +1271,43 @@ export default function FocusPage() {
                 >
                   Long Break
                 </button>
+                <button
+                  type="button"
+                  className={`${styles.modeTab} ${hideTimerDigits ? styles.activeMode : ''}`}
+                  onClick={toggleHideTimerDigits}
+                  title="Hide countdown digits to reduce time pressure"
+                >
+                  {hideTimerDigits ? 'Show Timer' : 'Hide Timer'}
+                </button>
               </div>
 
-              {/* Formal Digital Timer Display Card */}
-              <div className={styles.timerDisplayCard} data-tour="focus-timer">
-                <div className={styles.timerNumber}>
-                  {mode === 'flow'
-                    ? formatTimer(secondsElapsed)
-                    : formatTimer(secondsRemaining)}
+              {/* Formal Digital Timer Display Card (Optional Calm Hidden Digits) */}
+              {!hideTimerDigits ? (
+                <div className={styles.timerDisplayCard} data-tour="focus-timer">
+                  <div className={styles.timerNumber}>
+                    {mode === 'flow'
+                      ? formatTimer(secondsElapsed)
+                      : formatTimer(secondsRemaining)}
+                  </div>
+                  <div className={styles.timerMetaRow}>
+                    <span className={styles.timerModeLabel}>
+                      {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
+                    </span>
+                    <span className={styles.timerStatusDot}>•</span>
+                    <span className={styles.timerStatusText}>
+                      {isRunning ? 'ACTIVE' : 'READY'}
+                    </span>
+                  </div>
                 </div>
-                <div className={styles.timerMetaRow}>
-                  <span className={styles.timerModeLabel}>
-                    {mode === 'flow' ? 'FLOW' : mode.replace('_', ' ').toUpperCase()}
-                  </span>
-                  <span className={styles.timerStatusDot}>•</span>
-                  <span className={styles.timerStatusText}>
-                    {isRunning ? 'ACTIVE' : 'READY'}
+              ) : (
+                <div className={styles.quietTimerBanner} data-tour="focus-timer">
+                  <span>
+                    {isRunning
+                      ? 'Timer running quietly in the background — focus at your own pace.'
+                      : 'Timer digits hidden — start whenever you are ready.'}
                   </span>
                 </div>
-              </div>
+              )}
 
               {/* Current Task / Target Details */}
               <div className={styles.currentTaskArea} data-tour="focus-task-select">
@@ -1323,69 +1365,162 @@ export default function FocusPage() {
                 )}
               </div>
 
-              {/* Subtasks checklist (for tasks) */}
+              {/* One Next Action Spotlight + Optional Full Checklist */}
               {!activeDoc && (
                 <div className={styles.subtasksBox}>
-                  <div className={styles.subtasksHeaderRow}>
-                    <span className={styles.subtasksLabel}>
-                      Steps ({liveActiveTask?.subtasks?.filter((s) => s.completed).length || 0}/{liveActiveTask?.subtasks?.length || 0}):
-                    </span>
-                  </div>
+                  {(() => {
+                    const allSubs = liveActiveTask?.subtasks || [];
+                    const completedCount = allSubs.filter((s) => s.completed).length;
+                    const nextStep = allSubs.find((s) => !s.completed) || null;
 
-                  {liveActiveTask?.subtasks && liveActiveTask.subtasks.length > 0 ? (
-                    liveActiveTask.subtasks.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
-                      >
-                        <button
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 0,
-                            color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                          }}
-                          onClick={(e) => handleSubtaskCheck(e, sub.id)}
-                        >
-                          {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
-                        </button>
-                        <span style={{ flex: 1, textAlign: 'left' }}>{sub.title}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', margin: 0, padding: '4px 0', textAlign: 'left' }}>
-                      No steps yet. Add steps to this task from the Tasks page.
-                    </p>
-                  )}
+                    return (
+                      <>
+                        <div className={styles.subtasksHeaderRow}>
+                          <span className={styles.subtasksLabel}>
+                            {nextStep
+                              ? `Next Action (${completedCount}/${allSubs.length} done)`
+                              : allSubs.length > 0
+                              ? `All ${allSubs.length} steps completed`
+                              : 'Next Action'}
+                          </span>
+
+                          {allSubs.length > 1 && (
+                            <button
+                              type="button"
+                              className={styles.btnMagicBreakdown}
+                              onClick={() => setShowAllFocusSteps((v) => !v)}
+                            >
+                              {showAllFocusSteps ? 'Focus on 1 step' : `All steps (${allSubs.length})`}
+                            </button>
+                          )}
+
+                          {liveActiveTask && allSubs.length === 0 && (
+                            <button
+                              type="button"
+                              className={styles.btnMagicBreakdown}
+                              disabled={focusMakingEasier}
+                              onClick={async () => {
+                                setFocusMakingEasier(true);
+                                try {
+                                  const { steps } = await makeTaskEasierSteps(
+                                    liveActiveTask,
+                                    settings.aiSettings
+                                  );
+                                  breakdownTask(liveActiveTask.id, steps);
+                                  playSubtaskTick();
+                                } finally {
+                                  setFocusMakingEasier(false);
+                                }
+                              }}
+                            >
+                              {focusMakingEasier ? 'Breaking down…' : 'Make This Easier'}
+                            </button>
+                          )}
+                        </div>
+
+                        {allSubs.length > 0 ? (
+                          showAllFocusSteps ? (
+                            allSubs.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className={`${styles.subtaskRow} ${sub.completed ? styles.done : ''}`}
+                              >
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    color: sub.completed
+                                      ? 'var(--color-success)'
+                                      : 'var(--color-text-faint)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                  }}
+                                  onClick={(e) => handleSubtaskCheck(e, sub.id)}
+                                >
+                                  {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+                                </button>
+                                <span style={{ flex: 1, textAlign: 'left' }}>{sub.title}</span>
+                              </div>
+                            ))
+                          ) : nextStep ? (
+                            <div className={styles.nextActionSpotlightRow}>
+                              <button
+                                type="button"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  color: 'var(--color-accent)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                }}
+                                onClick={(e) => handleSubtaskCheck(e, nextStep.id)}
+                                aria-label="Complete next action"
+                              >
+                                <Square size={17} />
+                              </button>
+                              <span style={{ flex: 1, textAlign: 'left', fontWeight: 600 }}>
+                                {nextStep.title}
+                              </span>
+                            </div>
+                          ) : (
+                            <p
+                              style={{
+                                fontSize: '12px',
+                                color: 'var(--color-success)',
+                                margin: 0,
+                                padding: '4px 0',
+                              }}
+                            >
+                              Every step on this task is complete—nice work!
+                            </p>
+                          )
+                        ) : (
+                          <p
+                            style={{
+                              fontSize: '12px',
+                              color: 'var(--color-text-muted)',
+                              margin: 0,
+                              padding: '4px 0',
+                              textAlign: 'left',
+                            }}
+                          >
+                            {liveActiveTask
+                              ? 'Feeling stuck? Click "Make This Easier" to break this into tiny starter steps.'
+                              : 'Choose a task above or start a calm open focus session.'}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
-              {/* Zen Mode Only Controls */}
-              {isZenMode && (
-                <div className={styles.controlsRow}>
-                  {isRunning ? (
-                    <button className={styles.btnPause} onClick={pauseTimer}>
-                      Pause
-                    </button>
-                  ) : (
-                    <button className={styles.btnStart} onClick={startTimer}>
-                      {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
-                    </button>
-                  )}
-                  <button className={styles.btnReset} onClick={resetTimer}>
-                    Reset
+              {/* Clear Primary Session Controls (Always Accessible) */}
+              <div className={styles.controlsRow}>
+                {isRunning ? (
+                  <button className={styles.btnPause} onClick={pauseTimer}>
+                    Pause
                   </button>
-                  <button
-                    className={styles.btnFinish}
-                    onClick={() => setFinishModalOpen(true)}
-                  >
-                    Finish
+                ) : (
+                  <button className={styles.btnStart} onClick={startTimer}>
+                    {secondsElapsed > 0 ? 'Resume' : 'Start Focus'}
                   </button>
-                </div>
-              )}
+                )}
+                <button className={styles.btnReset} onClick={resetTimer}>
+                  Reset
+                </button>
+                <button
+                  className={styles.btnFinish}
+                  onClick={() => setFinishModalOpen(true)}
+                >
+                  Finish
+                </button>
+              </div>
 
               {/* Zen Mode Inline Distraction Parking Lot */}
               {isZenMode && (

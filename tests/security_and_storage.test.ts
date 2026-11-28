@@ -9,6 +9,8 @@ import { verifyAdminRequest } from '../src/lib/adminAuth';
 import { clearPreviewCache, getCachedPreview, getPreviewCacheSampleHosts, getPreviewCacheStats, setPreviewCache } from '../src/lib/linkPreviewCache';
 import { sanitizeBannerHref, sanitizeSystemConfig } from '../src/lib/systemConfig';
 import { maskSecretKey } from '../src/lib/serverAiVault';
+import { generateSmartMicroSteps } from '../src/utils/makeTaskEasier';
+import { computeDaysBetween, getLocalTodayDateStr } from '../src/utils/welcomeBack';
 
 test('SSRF protection blocks private networks, localhost, metadata, and obfuscated IPs', () => {
   assert.equal(isPrivateOrReservedHost('127.0.0.1'), true);
@@ -186,4 +188,24 @@ test('SystemConfig preserves non-secret AI availability fields without leaking s
   assert.equal(blankDefaults.aiConfigured, false);
   assert.equal(blankDefaults.aiProvider, 'groq');
   assert.equal(blankDefaults.aiModel, 'openai/gpt-oss-120b');
+});
+
+test('Make This Easier smart micro-step generator produces contextual low-friction starter steps', () => {
+  const studySteps = generateSmartMicroSteps('Study English grammar chapters');
+  assert.equal(studySteps.length, 4);
+  assert.match(studySteps[0], /2m/);
+
+  const emailSteps = generateSmartMicroSteps('Reply to CardMasters inquiry');
+  assert.equal(emailSteps.length, 4);
+  assert.match(emailSteps[1], /bullet/i);
+
+  const genericSteps = generateSmartMicroSteps('Renew passport');
+  assert.equal(genericSteps.length, 4);
+});
+
+test('Welcome Back date math calculates calendar day gaps cleanly across months', () => {
+  assert.equal(computeDaysBetween('2026-11-25', '2026-11-28'), 3);
+  assert.equal(computeDaysBetween('2026-11-27', '2026-11-28'), 1);
+  assert.equal(computeDaysBetween('2026-10-30', '2026-11-02'), 3);
+  assert.equal(getLocalTodayDateStr(new Date(2026, 10, 28)), '2026-11-28');
 });
