@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStore';
+import { readSystemConfig } from '@/lib/systemConfig';
 import { AttachmentProvider } from '@/context/AttachmentContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -121,11 +122,15 @@ export default function AuthGate({
   }, [activeAuthUid, isGuest]);
 
   const [takingLong, setTakingLong] = useState(false);
+  const [allowGuestMode, setAllowGuestMode] = useState(true);
 
   // Safety timer: if auth takes more than 1 second, give user responsive bypass buttons
   useEffect(() => {
     const timer = setTimeout(() => {
       setTakingLong(true);
+      void readSystemConfig().then((cfg) => {
+        setAllowGuestMode(cfg.allowGuestMode);
+      });
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
@@ -194,23 +199,25 @@ export default function AuthGate({
             >
               Sign In
             </button>
-            <button
-              type="button"
-              onClick={continueAsGuest}
-              style={{
-                minHeight: '44px',
-                padding: '0 18px',
-                borderRadius: '10px',
-                border: '1px solid var(--color-accent, #0d0f14)',
-                background: 'var(--color-surface-2, #eaedf2)',
-                color: 'var(--color-text, #0d0f14)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Continue in Local Mode
-            </button>
+            {allowGuestMode && (
+              <button
+                type="button"
+                onClick={continueAsGuest}
+                style={{
+                  minHeight: '44px',
+                  padding: '0 18px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--color-accent, #0d0f14)',
+                  background: 'var(--color-surface-2, #eaedf2)',
+                  color: 'var(--color-text, #0d0f14)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue in Local Mode
+              </button>
+            )}
           </div>
         )}
       </div>

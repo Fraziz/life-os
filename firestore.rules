@@ -1,6 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwnerUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/app/owner)
+        && get(/databases/$(database)/documents/app/owner).data.uid == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return request.auth != null && (
+        isOwnerUser() ||
+        (request.auth.token.email == 'aaronpaul@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
     // App owner record — strictly readable/writable only by the owner themselves
     match /app/owner {
       allow read: if request.auth != null && request.auth.uid == resource.data.uid;
@@ -8,7 +21,25 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
 
-    // User private data (KV store, files metadata, collections)
+    // Public operational flags & broadcast banner (no sensitive user data)
+    match /app/systemConfig {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Admin-only audit log
+    match /app/adminAudit/{entryId} {
+      allow read, write, delete: if isAdmin();
+    }
+
+    // User summary directory doc (account status visible to owner/admin only)
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // User private data (KV store, books, files metadata, sessions)
     match /users/{userId}/{document=**} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }

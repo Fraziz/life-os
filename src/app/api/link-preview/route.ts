@@ -1,28 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
-
-export interface LinkPreviewData {
-  url: string;
-  hostname: string;
-  title: string;
-  description: string;
-  image: string | null;
-  favicon: string;
-  siteName: string;
-}
-
-// In-memory server cache to ensure instantaneous responses for repeated link previews
-const previewCache = new Map<string, { data: LinkPreviewData; timestamp: number }>();
-const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const MAX_PREVIEW_CACHE_ENTRIES = 500;
-
-function setPreviewCache(key: string, data: LinkPreviewData) {
-  if (previewCache.size >= MAX_PREVIEW_CACHE_ENTRIES) {
-    const oldestKey = previewCache.keys().next().value;
-    if (oldestKey) previewCache.delete(oldestKey);
-  }
-  previewCache.set(key, { data, timestamp: Date.now() });
-}
+import { getCachedPreview, setPreviewCache, type LinkPreviewData } from '@/lib/linkPreviewCache';
 
 function safeExternalHttpUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -181,9 +159,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Check cache
-  const cached = previewCache.get(validUrl);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return NextResponse.json(cached.data);
+  const cached = getCachedPreview(validUrl);
+  if (cached) {
+    return NextResponse.json(cached);
   }
 
   const parsedUrl = new URL(validUrl);

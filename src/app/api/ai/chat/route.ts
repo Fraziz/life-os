@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
+import { verifyFirebaseIdToken } from '@/lib/firebaseServerAuth';
 
 interface AiChatRequestBody {
   prompt?: unknown;
@@ -23,34 +24,6 @@ function errMessage(err: unknown, fallback: string): string {
 }
 
 export const dynamic = 'force-dynamic';
-
-const FIREBASE_WEB_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '';
-
-async function verifyFirebaseIdToken(authHeader: string | null): Promise<string | null> {
-  if (!authHeader || !authHeader.startsWith('Bearer ') || !FIREBASE_WEB_API_KEY) {
-    return null;
-  }
-  const idToken = authHeader.slice(7).trim();
-  if (!idToken || idToken.length > 4096) return null;
-
-  try {
-    const resp = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_WEB_API_KEY)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(5000),
-        body: JSON.stringify({ idToken }),
-      }
-    );
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const uid = data?.users?.[0]?.localId;
-    return typeof uid === 'string' && uid.length > 0 ? uid : null;
-  } catch {
-    return null;
-  }
-}
 
 export async function POST(request: Request) {
   try {

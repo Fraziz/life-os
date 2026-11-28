@@ -118,6 +118,34 @@ function clearUserLocalStorageSync() {
   clearLocalWorkspaceSilently();
 }
 
+async function syncUserDirectoryProfile(firebaseUser: User) {
+  if (!firebaseUser?.uid) return;
+  try {
+    const providerId = firebaseUser.providerData?.[0]?.providerId || 'password';
+    const now = new Date().toISOString();
+    await withTimeout(
+      setDoc(
+        doc(getFirebaseDb(), 'users', firebaseUser.uid),
+        {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || '',
+          provider: providerId,
+          emailVerified: Boolean(firebaseUser.emailVerified),
+          createdAt: firebaseUser.metadata?.creationTime || now,
+          lastActiveAt: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      ).catch(() => undefined),
+      2500,
+      undefined
+    );
+  } catch {
+    // Non-fatal summary sync error
+  }
+}
+
 let accountSwitchQueue: Promise<void> = Promise.resolve();
 
 /**
@@ -185,6 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setReady(true);
         if (next) {
           try {
+            void syncUserDirectoryProfile(next);
             const record = await claimOrVerifyOwner(next);
             setOwner(record);
             setOwnerExists(true);
@@ -233,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsGuest(false);
       setUser(cred.user);
       try {
+        void syncUserDirectoryProfile(cred.user);
         const record = await claimOrVerifyOwner(cred.user);
         setOwner(record);
         setOwnerExists(true);
@@ -265,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsGuest(false);
       setUser(cred.user);
       try {
+        void syncUserDirectoryProfile(cred.user);
         const record = await claimOrVerifyOwner(cred.user);
         setOwner(record);
         setOwnerExists(true);
@@ -289,6 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsGuest(false);
       setUser(cred.user);
       try {
+        void syncUserDirectoryProfile(cred.user);
         const record = await claimOrVerifyOwner(cred.user);
         setOwner(record);
         setOwnerExists(true);
@@ -493,6 +525,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         wipeCloudKv(uid),
         wipeCloudBooks(uid),
       ]);
+
+      try {
+        await deleteDoc(doc(db, 'users', uid)).catch(() => undefined);
+      } catch {}
 
       try {
         const ownerSnap = await getDoc(doc(db, 'app', 'owner'));

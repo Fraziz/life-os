@@ -53,6 +53,25 @@ export function checkRateLimit(
   return { success: true, remaining: limit - record.count, resetAt: record.resetAt };
 }
 
+export function getRateLimitStats() {
+  const now = Date.now();
+  let activeBuckets = 0;
+  for (const record of rateLimitMap.values()) {
+    if (record.resetAt > now) activeBuckets += 1;
+  }
+  return {
+    activeBuckets,
+    totalTracked: rateLimitMap.size,
+    maxEntries: MAX_RATE_LIMIT_ENTRIES,
+  };
+}
+
+export function clearRateLimits(): number {
+  const count = rateLimitMap.size;
+  rateLimitMap.clear();
+  return count;
+}
+
 /**
  * Distributed-ready rate limiter: uses Upstash Redis REST when configured
  * (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`), otherwise falls back

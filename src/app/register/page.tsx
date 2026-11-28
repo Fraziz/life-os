@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { readSystemConfig } from '@/lib/systemConfig';
 import Logo from '@/components/ui/Logo';
 import styles from '../login/page.module.css';
 
@@ -42,6 +43,15 @@ export default function RegisterPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [allowRegistrations, setAllowRegistrations] = useState(true);
+  const [allowGuestMode, setAllowGuestMode] = useState(true);
+
+  useEffect(() => {
+    void readSystemConfig().then((cfg) => {
+      setAllowRegistrations(cfg.allowRegistrations);
+      setAllowGuestMode(cfg.allowGuestMode);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,26 +105,40 @@ export default function RegisterPage() {
 
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>Create your account</h1>
-          <p className={styles.subtitle}>Begin your private, isolated workspace</p>
+          <p className={styles.subtitle}>
+            {allowRegistrations
+              ? 'Begin your private, isolated workspace'
+              : 'New account registration is currently paused'}
+          </p>
         </div>
 
-        {/* Google Sign Up */}
-        <button
-          type="button"
-          className={styles.googleBtn}
-          onClick={handleGoogleSignIn}
-          disabled={busy || googleBusy}
-          aria-label="Continue with Google"
-        >
-          <GoogleIcon />
-          <span>{googleBusy ? 'Connecting with Google…' : 'Continue with Google'}</span>
-        </button>
+        {!allowRegistrations ? (
+          <div className={styles.errorAlert} role="status">
+            <span>
+              New public sign-ups are temporarily paused. If you already have an account, please sign in below.
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Google Sign Up */}
+            <button
+              type="button"
+              className={styles.googleBtn}
+              onClick={handleGoogleSignIn}
+              disabled={busy || googleBusy}
+              aria-label="Continue with Google"
+            >
+              <GoogleIcon />
+              <span>{googleBusy ? 'Connecting with Google…' : 'Continue with Google'}</span>
+            </button>
 
-        <div className={styles.divider}>
-          <div className={styles.dividerLine} />
-          <span className={styles.dividerText}>or register with email</span>
-          <div className={styles.dividerLine} />
-        </div>
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>or register with email</span>
+              <div className={styles.dividerLine} />
+            </div>
+          </>
+        )}
 
         {(validationError || error) && (
           <div className={styles.errorAlert} role="alert">
@@ -122,7 +146,8 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        {allowRegistrations && (
+          <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="register-name">
               Your Name
@@ -213,6 +238,7 @@ export default function RegisterPage() {
             {!busy && <ArrowRight size={15} />}
           </button>
         </form>
+        )}
 
         <div className={styles.switchPrompt}>
           <span>Already have an account?</span>
@@ -221,18 +247,20 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        <button
-          type="button"
-          className={styles.guestBtn}
-          onClick={() => {
-            continueAsGuest();
-            router.replace('/');
-          }}
-          aria-label="Continue to Local Workspace without an account"
-        >
-          <span>Continue in Local Mode (Offline)</span>
-          <ArrowRight size={14} />
-        </button>
+        {allowGuestMode && (
+          <button
+            type="button"
+            className={styles.guestBtn}
+            onClick={() => {
+              continueAsGuest();
+              router.replace('/');
+            }}
+            aria-label="Continue to Local Workspace without an account"
+          >
+            <span>Continue in Local Mode (Offline)</span>
+            <ArrowRight size={14} />
+          </button>
+        )}
       </div>
 
       <div className={styles.footerTrust}>

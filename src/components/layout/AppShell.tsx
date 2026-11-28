@@ -42,6 +42,7 @@ const GrammarAssist = dynamic(() => import('@/components/ui/GrammarAssist'), { s
 const GlobalLinkPreview = dynamic(() => import('@/components/ui/GlobalLinkPreview'), { ssr: false });
 import HierarchyProgressSync from './HierarchyProgressSync';
 import { initFirebaseAnalytics } from '@/lib/firebase';
+import { DEFAULT_SYSTEM_CONFIG, subscribeSystemConfig, type SystemConfig } from '@/lib/systemConfig';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGate from '@/components/auth/AuthGate';
 import { PanelLeft, Bot } from 'lucide-react';
@@ -87,6 +88,15 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const [nextActionOpen, setNextActionOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [systemConfig, setSystemConfig] = useState<SystemConfig>(DEFAULT_SYSTEM_CONFIG);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    return subscribeSystemConfig((cfg) => {
+      setSystemConfig(cfg);
+      setBannerDismissed(false);
+    });
+  }, []);
 
   // Restore persisted sidebar preference on mount
   useEffect(() => {
@@ -386,6 +396,28 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
           {/* Automatic Tasks -> Projects -> Goals -> Dreams Progress Cascade */}
           <HierarchyProgressSync />
+
+          {systemConfig.bannerEnabled && systemConfig.bannerMessage && !bannerDismissed && (
+            <div
+              className={`${styles.systemBanner} ${
+                systemConfig.bannerTone === 'warning' ? styles.systemBannerWarning : ''
+              }`}
+              role="status"
+            >
+              <div className={styles.systemBannerText}>
+                {systemConfig.bannerTitle && <strong>{systemConfig.bannerTitle}: </strong>}
+                <span>{systemConfig.bannerMessage}</span>
+              </div>
+              <button
+                type="button"
+                className={styles.systemBannerClose}
+                onClick={() => setBannerDismissed(true)}
+                aria-label="Dismiss announcement"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           <main
             className={`${styles.content} ${pathname === '/knowledge' ? styles.knowledgeContent : ''}`}

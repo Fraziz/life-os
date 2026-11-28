@@ -5,6 +5,8 @@ import { checkRateLimit, isPrivateOrReservedHost } from '../src/lib/rateLimit';
 import { isBookStorageKey, isManagedKvKey } from '../src/lib/cloudStore';
 import { hashLocalPin, verifyLocalPin } from '../src/lib/pinHash';
 import { isSafeRichUrl, sanitizeRichHtml } from '../src/utils/htmlSanitizer';
+import { verifyAdminRequest } from '../src/lib/adminAuth';
+import { clearPreviewCache, getCachedPreview, getPreviewCacheStats, setPreviewCache } from '../src/lib/linkPreviewCache';
 
 test('SSRF protection blocks private networks, localhost, metadata, and obfuscated IPs', () => {
   assert.equal(isPrivateOrReservedHost('127.0.0.1'), true);
@@ -93,4 +95,32 @@ test('HTML sanitizer strips XSS scripts, event handlers, and unsafe URLs', () =>
   assert.equal(clean.includes('onclick'), false);
   assert.equal(clean.includes('javascript:'), false);
   assert.equal(clean.includes('Hello'), true);
+});
+
+test('Admin verification rejects missing or malformed bearer tokens', async () => {
+  const noAuthReq = new Request('http://localhost:3000/api/admin/session');
+  assert.equal(await verifyAdminRequest(noAuthReq), null);
+
+  const badAuthReq = new Request('http://localhost:3000/api/admin/session', {
+    headers: { authorization: 'Basic invalid' },
+  });
+  assert.equal(await verifyAdminRequest(badAuthReq), null);
+});
+
+test('Link preview cache stores, reads, and flushes entries cleanly', () => {
+  clearPreviewCache();
+  assert.equal(getPreviewCacheStats().entries, 0);
+  setPreviewCache('https://example.com', {
+    url: 'https://example.com',
+    hostname: 'example.com',
+    title: 'Example',
+    description: 'Desc',
+    image: null,
+    favicon: '/favicon.ico',
+    siteName: 'Example',
+  });
+  assert.equal(getPreviewCacheStats().entries, 1);
+  assert.equal(getCachedPreview('https://example.com')?.title, 'Example');
+  assert.equal(clearPreviewCache(), 1);
+  assert.equal(getCachedPreview('https://example.com'), null);
 });

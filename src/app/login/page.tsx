@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { readSystemConfig } from '@/lib/systemConfig';
 import Logo from '@/components/ui/Logo';
 import styles from './page.module.css';
 
@@ -41,6 +42,13 @@ export default function LoginPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [allowGuestMode, setAllowGuestMode] = useState(true);
+
+  useEffect(() => {
+    void readSystemConfig().then((cfg) => {
+      setAllowGuestMode(cfg.allowGuestMode);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,18 +246,20 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <button
-          type="button"
-          className={styles.guestBtn}
-          onClick={() => {
-            continueAsGuest();
-            router.replace('/');
-          }}
-          aria-label="Continue to Local Workspace without an account"
-        >
-          <span>Continue in Local Mode (Offline)</span>
-          <ArrowRight size={14} />
-        </button>
+        {allowGuestMode && (
+          <button
+            type="button"
+            className={styles.guestBtn}
+            onClick={() => {
+              continueAsGuest();
+              router.replace('/');
+            }}
+            aria-label="Continue to Local Workspace without an account"
+          >
+            <span>Continue in Local Mode (Offline)</span>
+            <ArrowRight size={14} />
+          </button>
+        )}
       </div>
 
       <div className={styles.footerTrust}>
