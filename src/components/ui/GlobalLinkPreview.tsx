@@ -99,7 +99,7 @@ export default function GlobalLinkPreview() {
         const spaceBelow = window.innerHeight - rect.bottom;
         const isAbove = spaceBelow < ESTIMATED_HEIGHT + 20 && rect.top > ESTIMATED_HEIGHT + 20;
 
-        let y = isAbove ? rect.top - 8 : rect.bottom + 8;
+        const y = isAbove ? rect.top - 8 : rect.bottom + 8;
 
         const cleanUrl = rawUrl.toLowerCase().startsWith('www.') ? `https://${rawUrl}` : rawUrl;
 

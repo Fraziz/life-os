@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
+import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
 
 export interface LinkPreviewData {
   url: string;
@@ -160,7 +160,7 @@ function getSmartFallback(urlStr: string): LinkPreviewData {
 export async function GET(req: NextRequest) {
   // Rate limiting: 60 link previews per minute per IP
   const clientIp = getClientIp(req);
-  const rateCheck = checkRateLimit(`link-preview:${clientIp}`, 60, 60 * 1000);
+  const rateCheck = await checkRateLimitAsync(`link-preview:${clientIp}`, 60, 60 * 1000);
   if (!rateCheck.success) {
     return NextResponse.json(
       { error: 'Too many preview requests. Please wait a moment.' },

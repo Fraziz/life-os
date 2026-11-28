@@ -8,14 +8,34 @@ import './globals.css';
 // This is required because pages use React Context providers available only at runtime
 export const dynamic = 'force-dynamic';
 
+const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || process.env.URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  title: 'Sariling Mundo',
+  metadataBase: new URL(siteOrigin),
+  title: {
+    default: 'Sariling Mundo — Personal Operating System',
+    template: '%s | Sariling Mundo',
+  },
   description:
-    'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, and daily actions.',
+    'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, knowledge notes, and daily actions.',
   keywords: ['goal setting', 'productivity', 'life planning', 'habits', 'focus', 'task management'],
   authors: [{ name: 'Sariling Mundo' }],
   creator: 'Sariling Mundo',
-  robots: 'noindex, nofollow',
+  openGraph: {
+    type: 'website',
+    siteName: 'Sariling Mundo',
+    title: 'Sariling Mundo — Personal Operating System',
+    description:
+      'Organize dreams, goals, projects, tasks, books, habits, and focus sessions in one isolated workspace.',
+    images: [{ url: '/logo.png?v=3', width: 512, height: 512, alt: 'Sariling Mundo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Sariling Mundo — Personal Operating System',
+    description:
+      'Organize dreams, goals, projects, tasks, books, habits, and focus sessions in one isolated workspace.',
+    images: ['/logo.png?v=3'],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

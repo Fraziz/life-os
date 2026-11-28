@@ -4,9 +4,7 @@
  * Auto-formats extracted content into clean, readable Knowledge Base notes.
  */
 
-import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
-import JSZip from 'jszip';
+// Heavy parsers (mammoth, xlsx, jszip) are loaded dynamically on demand to keep initial route bundles lean.
 
 /**
  * Converts an HTML <table> element into clean, aligned Markdown table syntax.
@@ -391,6 +389,7 @@ export async function extractTextFromEpub(file: File): Promise<{ title: string; 
   let title = baseName.charAt(0).toUpperCase() + baseName.slice(1);
 
   const arrayBuffer = await file.arrayBuffer();
+  const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(arrayBuffer);
 
   // 1. Locate the package OPF file via META-INF/container.xml
@@ -543,6 +542,7 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
   if (ext === 'docx' || file.type.includes('wordprocessingml')) {
     try {
       const arrayBuffer = await file.arrayBuffer();
+      const mammoth = (await import('mammoth')).default;
       // Try convertToHtml first to preserve tables, headings, bold, italic, lists, and links!
       const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
       const htmlVal = htmlResult.value || '';
@@ -573,6 +573,7 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
   ) {
     try {
       const arrayBuffer = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const sheetNames = workbook.SheetNames || [];
       const parts: string[] = [];
@@ -581,7 +582,7 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
         const worksheet = workbook.Sheets[sheetName];
         if (!worksheet) return;
 
-        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' });
         if (!rows || rows.length === 0) return;
 
         const validRows = rows.filter((r) =>
@@ -624,11 +625,12 @@ export async function extractTextFromFile(file: File): Promise<{ title: string; 
   if (ext === 'csv' || ext === 'tsv' || file.type.includes('csv')) {
     try {
       const text = await file.text();
+      const XLSX = await import('xlsx');
       const workbook = XLSX.read(text, { type: 'string' });
       const sheetName = workbook.SheetNames[0];
       if (sheetName) {
         const worksheet = workbook.Sheets[sheetName];
-        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' });
         const validRows = rows.filter((r) =>
           r.some((c) => c !== undefined && c !== null && String(c).trim() !== '')
         );
@@ -1064,7 +1066,7 @@ export function cleanAndFormatPastedText(
   sourceText = removeEmojisAndIcons(sourceText);
 
   // 3. Normalization of whitespace, word spacing, and punctuation
-  let clean = sourceText
+  const clean = sourceText
     .replace(/\r\n|\r/g, '\n')
     .replace(/\f/g, '\n\n')
     .replace(/\u00A0/g, ' ') // convert non-breaking spaces

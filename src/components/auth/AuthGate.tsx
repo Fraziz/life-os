@@ -21,20 +21,26 @@ export default function AuthGate({
   const router = useRouter();
   const [hydrateError, setHydrateError] = useState<string | null>(null);
   const lastSyncedUid = useRef<string | null>(null);
-  const sessionMountedAt = useRef(Date.now());
+  const sessionMountedAt = useRef(0);
 
-  const isAuthRoute = pathname === '/login' || pathname === '/register';
+  useEffect(() => {
+    sessionMountedAt.current = Date.now();
+  }, []);
+
+  const isAuthOnlyRoute = pathname === '/login' || pathname === '/register';
+  const isLegalRoute = pathname === '/privacy' || pathname === '/terms';
+  const isPublicRoute = isAuthOnlyRoute || isLegalRoute;
 
   // Redirect once auth state is known
   useEffect(() => {
     if (!ready) return;
-    if (!user && !isAuthRoute) {
+    if (!user && !isPublicRoute) {
       router.replace('/login');
     }
-    if (user && isAuthRoute) {
+    if (user && isAuthOnlyRoute) {
       router.replace('/');
     }
-  }, [ready, user, isAuthRoute, router]);
+  }, [ready, user, isPublicRoute, isAuthOnlyRoute, router]);
 
   // Session revocation listener (for "Log out of all devices" - Firebase users only)
   useEffect(() => {
@@ -124,9 +130,9 @@ export default function AuthGate({
     return () => clearTimeout(timer);
   }, []);
 
-  // If not logged in: render children on auth pages (/login and /register)
+  // If not logged in: render children on public pages (/login, /register, /privacy, /terms)
   if (!user) {
-    if (isAuthRoute) {
+    if (isPublicRoute) {
       return <>{children}</>;
     }
     return (
@@ -138,9 +144,9 @@ export default function AuthGate({
           alignItems: 'center',
           justifyContent: 'center',
           gap: '16px',
-          background: '#0b0d17',
-          color: 'rgba(255, 255, 255, 0.85)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          background: 'var(--color-bg, #f4f5f8)',
+          color: 'var(--color-text, #0d0f14)',
+          fontFamily: "var(--font-sans, system-ui, -apple-system, sans-serif)",
           fontSize: '15px',
           padding: '24px',
           textAlign: 'center',
@@ -148,11 +154,11 @@ export default function AuthGate({
       >
         <div
           style={{
-            width: '34px',
-            height: '34px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
-            border: '3px solid rgba(255, 255, 255, 0.15)',
-            borderTopColor: '#38bdf8',
+            border: '3px solid var(--color-border, #d0d4df)',
+            borderTopColor: 'var(--color-accent, #0d0f14)',
             animation: 'spin 0.8s linear infinite',
           }}
         />
@@ -165,7 +171,7 @@ export default function AuthGate({
             `,
           }}
         />
-        <div style={{ fontWeight: 500, letterSpacing: '0.01em' }}>
+        <div style={{ fontWeight: 500, letterSpacing: '-0.01em' }}>
           Opening Sariling Mundo…
         </div>
 
@@ -175,29 +181,31 @@ export default function AuthGate({
               type="button"
               onClick={() => router.replace('/login')}
               style={{
-                padding: '8px 18px',
-                borderRadius: '999px',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                background: 'rgba(255, 255, 255, 0.08)',
-                color: '#ffffff',
+                minHeight: '44px',
+                padding: '0 18px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-border, #d0d4df)',
+                background: 'var(--color-surface, #ffffff)',
+                color: 'var(--color-text, #0d0f14)',
                 fontSize: '13px',
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              Sign In →
+              Sign In
             </button>
             <button
               type="button"
               onClick={continueAsGuest}
               style={{
-                padding: '8px 18px',
-                borderRadius: '999px',
-                border: '1px solid rgba(56, 189, 248, 0.4)',
-                background: 'rgba(56, 189, 248, 0.12)',
-                color: '#38bdf8',
+                minHeight: '44px',
+                padding: '0 18px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-accent, #0d0f14)',
+                background: 'var(--color-surface-2, #eaedf2)',
+                color: 'var(--color-text, #0d0f14)',
                 fontSize: '13px',
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
             >

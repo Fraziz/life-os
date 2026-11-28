@@ -4,24 +4,28 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   GoogleAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile,
   updatePassword,
+  updateProfile,
   EmailAuthProvider,
-  reauthenticateWithCredential,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { explainFirebaseError, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { deleteObject, ref } from 'firebase/storage';
+import { explainFirebaseError, getFirebaseAuth, getFirebaseDb, getFirebaseStorage } from '@/lib/firebase';
 import { removeCurrentDeviceSession, revokeAllOtherDeviceSessions } from '@/lib/deviceSessions';
 import { idbClear } from '@/lib/idbStore';
-import { clearLocalWorkspaceSilently, stopCloudSync } from '@/lib/cloudStore';
-import { flushPendingBookSaves } from '@/lib/bookCloudSync';
+import { clearLocalWorkspaceSilently, stopCloudSync, wipeCloudKv } from '@/lib/cloudStore';
+import { flushPendingBookSaves, wipeCloudBooks } from '@/lib/bookCloudSync';
 import { hashLocalPin, verifyLocalPin } from '@/lib/pinHash';
 
 export interface AppUser {
@@ -57,10 +61,12 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   continueAsGuest: () => void;
   logout: () => Promise<void>;
   logoutAllDevices: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  deleteAccount: (currentPassword?: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -112,6 +118,34 @@ function clearUserLocalStorageSync() {
   clearLocalWorkspaceSilently();
 }
 
+let accountSwitchQueue: Promise<void> = Promise.resolve();
+
+/**
+ * Serializes local workspace cleanup when switching accounts or exiting guest mode
+ * so concurrent auth callbacks and login/signup handlers never race on IndexedDB.
+ */
+function syncActiveLocalAccount(nextUid: string): Promise<void> {
+  accountSwitchQueue = accountSwitchQueue
+    .catch(() => undefined)
+    .then(async () => {
+      if (typeof localStorage === 'undefined') return;
+      try {
+        const lastUid = localStorage.getItem('life_os_active_uid');
+        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
+        if (wasGuest || (lastUid && lastUid !== nextUid)) {
+          clearUserLocalStorageSync();
+          await idbClear();
+        }
+        localStorage.removeItem('life_os_guest_mode');
+        localStorage.removeItem('life_os_guest_vault_pin');
+        localStorage.setItem('life_os_active_uid', nextUid);
+      } catch {
+        // ignore storage restrictions
+      }
+    });
+  return accountSwitchQueue;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<(User | AppUser) | null>(null);
   const [owner, setOwner] = useState<OwnerRecord | null>(null);
@@ -143,18 +177,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const auth = getFirebaseAuth();
       unsub = onAuthStateChanged(auth, async (next) => {
         clearTimeout(fallbackTimer);
-        if (next && typeof localStorage !== 'undefined') {
-          try {
-            const lastUid = localStorage.getItem('life_os_active_uid');
-            const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
-            if (wasGuest || (lastUid && lastUid !== next.uid)) {
-              clearUserLocalStorageSync();
-              void idbClear();
-            }
-            localStorage.removeItem('life_os_guest_mode');
-            localStorage.removeItem('life_os_guest_vault_pin');
-            localStorage.setItem('life_os_active_uid', next.uid);
-          } catch {}
+        if (next) {
+          await syncActiveLocalAccount(next.uid);
         }
         setUser(next);
         setIsGuest(false);
@@ -205,16 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error('Connection timed out. Check your internet connection or Firebase setup.')), 10000)
       );
       const cred = await Promise.race([authPromise, timeoutPromise]);
-      try {
-        const lastUid = localStorage.getItem('life_os_active_uid');
-        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
-        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
-          await clearUserLocalStorage();
-        }
-        localStorage.removeItem('life_os_guest_mode');
-        localStorage.removeItem('life_os_guest_vault_pin');
-        localStorage.setItem('life_os_active_uid', cred.user.uid);
-      } catch {}
+      await syncActiveLocalAccount(cred.user.uid);
       setIsGuest(false);
       setUser(cred.user);
       try {
@@ -246,16 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // ignore profile update error
         }
       }
-      try {
-        const lastUid = localStorage.getItem('life_os_active_uid');
-        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
-        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
-          await clearUserLocalStorage();
-        }
-        localStorage.removeItem('life_os_guest_mode');
-        localStorage.removeItem('life_os_guest_vault_pin');
-        localStorage.setItem('life_os_active_uid', cred.user.uid);
-      } catch {}
+      await syncActiveLocalAccount(cred.user.uid);
       setIsGuest(false);
       setUser(cred.user);
       try {
@@ -279,15 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const cred = await signInWithPopup(auth, provider);
-      try {
-        const lastUid = localStorage.getItem('life_os_active_uid');
-        const wasGuest = localStorage.getItem('life_os_guest_mode') === 'true';
-        if (wasGuest || (lastUid && lastUid !== cred.user.uid)) {
-          await clearUserLocalStorage();
-        }
-        localStorage.removeItem('life_os_guest_mode');
-        localStorage.setItem('life_os_active_uid', cred.user.uid);
-      } catch {}
+      await syncActiveLocalAccount(cred.user.uid);
       setIsGuest(false);
       setUser(cred.user);
       try {
@@ -417,6 +415,114 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    setError(null);
+    const trimmed = email.trim();
+    if (!trimmed) {
+      const msg = 'Please enter your email address first.';
+      setError(msg);
+      throw new Error(msg);
+    }
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), trimmed);
+    } catch (err: unknown) {
+      const message = explainFirebaseError(err);
+      setError(message);
+      throw new Error(message);
+    }
+  };
+
+  const deleteAccount = async (currentPassword?: string) => {
+    setError(null);
+    if (isGuest) {
+      await logout();
+      return;
+    }
+
+    const auth = getFirebaseAuth();
+    const current = auth.currentUser;
+    if (!current) {
+      throw new Error('No signed-in account found.');
+    }
+
+    const uid = current.uid;
+    const hasPasswordProvider = current.providerData.some((p) => p.providerId === 'password');
+    const hasGoogleProvider = current.providerData.some((p) => p.providerId === 'google.com');
+
+    try {
+      // Reauthenticate BEFORE deleting any cloud data so aborted/failed reauth never leaves half-wiped data.
+      if (hasPasswordProvider && current.email) {
+        if (!currentPassword?.trim()) {
+          throw new Error('Please enter your current password to confirm account deletion.');
+        }
+        const cred = EmailAuthProvider.credential(current.email, currentPassword.trim());
+        await reauthenticateWithCredential(current, cred);
+      } else if (hasGoogleProvider) {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await reauthenticateWithPopup(current, provider);
+      }
+
+      await flushPendingBookSaves(uid);
+      await stopCloudSync({ flushWrites: false });
+
+      const db = getFirebaseDb();
+      try {
+        const filesSnap = await getDocs(collection(db, 'users', uid, 'files'));
+        await Promise.all(
+          filesSnap.docs.map(async (fDoc) => {
+            const storagePath = fDoc.data()?.storagePath;
+            if (typeof storagePath === 'string' && storagePath && storagePath !== 'inline-firestore') {
+              await deleteObject(ref(getFirebaseStorage(), storagePath)).catch(() => undefined);
+            }
+            await deleteDoc(fDoc.ref).catch(() => undefined);
+          })
+        );
+      } catch {}
+
+      try {
+        const sessionsSnap = await getDocs(collection(db, 'users', uid, 'sessions'));
+        await Promise.all(sessionsSnap.docs.map((s) => deleteDoc(s.ref).catch(() => undefined)));
+      } catch {}
+
+      try {
+        await deleteDoc(doc(db, 'users', uid, 'meta', 'session')).catch(() => undefined);
+      } catch {}
+
+      await Promise.allSettled([
+        wipeCloudKv(uid),
+        wipeCloudBooks(uid),
+      ]);
+
+      try {
+        const ownerSnap = await getDoc(doc(db, 'app', 'owner'));
+        if (ownerSnap.exists() && ownerSnap.data()?.uid === uid) {
+          await deleteDoc(doc(db, 'app', 'owner'));
+        }
+      } catch {}
+
+      await deleteUser(current);
+    } catch (err: unknown) {
+      const code = typeof err === 'object' && err && 'code' in err ? String((err as { code: string }).code) : '';
+      let message = explainFirebaseError(err);
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        message = 'Current password is incorrect.';
+      } else if (code === 'auth/requires-recent-login') {
+        message = 'For security, please sign out, sign back in, and retry deleting your account.';
+      }
+      setError(message);
+      throw new Error(message);
+    }
+
+    try {
+      localStorage.removeItem('life_os_guest_mode');
+    } catch {}
+    await clearUserLocalStorage();
+    setUser(null);
+    setIsGuest(false);
+    setOwner(null);
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -429,12 +535,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       signup,
       signInWithGoogle,
+      sendPasswordReset,
       continueAsGuest,
       logout,
       logoutAllDevices,
       changePassword,
+      deleteAccount,
       clearError: () => setError(null),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user, owner, ready, isGuest, ownerExists, error, cloudWarning]
   );
 

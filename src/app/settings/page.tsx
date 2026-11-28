@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '@/context/SettingsContext';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -86,7 +87,7 @@ const WEEKDAYS = [
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
-  const { user, isGuest, logout, logoutAllDevices, changePassword } = useAuth();
+  const { user, isGuest, logout, logoutAllDevices, changePassword, deleteAccount } = useAuth();
   const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
   const { startTour, resetAllTours } = useTour();
@@ -140,6 +141,13 @@ export default function SettingsPage() {
   // Backup & Portability state
   const restoreFileInputRef = useRef<HTMLInputElement | null>(null);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+
+  // Permanent account deletion state
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [deleteAccountPhrase, setDeleteAccountPhrase] = useState('');
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
 
   // Custom Logo & Tab Icon state
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -207,14 +215,37 @@ export default function SettingsPage() {
 
   const handleExportBackup = async () => {
     if (typeof window === 'undefined') return;
-    const backup: Record<string, any> = {};
+    const backup: Record<string, unknown> = {};
+    const sensitiveKeys = new Set([
+      'life_os_guest_vault_pin',
+      'life_os_active_uid',
+      'life_os_guest_mode',
+    ]);
 
-    // 1. Collect all local storage keys
+    // 1. Collect all local storage keys while scrubbing secrets and API credentials
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_'))) {
+      if (
+        key &&
+        !sensitiveKeys.has(key) &&
+        (key.startsWith('life_os_') || key.startsWith('life-os-') || key.startsWith('lifeos_'))
+      ) {
         try {
-          backup[key] = JSON.parse(localStorage.getItem(key) || 'null');
+          const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+          if (key === 'life_os_user_settings_v1' && parsed && typeof parsed === 'object') {
+            const copy = { ...(parsed as Record<string, unknown>) };
+            if (copy.aiSettings && typeof copy.aiSettings === 'object') {
+              copy.aiSettings = {
+                ...(copy.aiSettings as Record<string, unknown>),
+                apiKey: '',
+                savedKeys: [],
+                activeKeyId: undefined,
+              };
+            }
+            backup[key] = copy;
+          } else {
+            backup[key] = parsed;
+          }
         } catch {
           backup[key] = localStorage.getItem(key);
         }
@@ -256,8 +287,15 @@ export default function SettingsPage() {
         return;
       }
 
+      const ignoredImportKeys = new Set([
+        'life_os_guest_vault_pin',
+        'life_os_active_uid',
+        'life_os_guest_mode',
+      ]);
       const keys = Object.keys(data).filter(
-        (k) => k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_')
+        (k) =>
+          !ignoredImportKeys.has(k) &&
+          (k.startsWith('life_os_') || k.startsWith('life-os-') || k.startsWith('lifeos_'))
       );
 
       if (keys.length === 0) {
@@ -282,7 +320,30 @@ export default function SettingsPage() {
 
       setRestoreStatus('Restoring data...');
       for (const key of keys) {
-        const val = data[key];
+        let val = data[key];
+        // Preserve existing local AI API credentials when restoring a sanitized export
+        if (key === 'life_os_user_settings_v1' && val && typeof val === 'object') {
+          try {
+            const existingRaw = localStorage.getItem(key);
+            const existingParsed = existingRaw ? JSON.parse(existingRaw) : null;
+            const importedAi = (val as { aiSettings?: Record<string, unknown> }).aiSettings;
+            const existingAi = existingParsed?.aiSettings;
+            const hasImportedKey =
+              Boolean(importedAi?.apiKey) ||
+              (Array.isArray(importedAi?.savedKeys) && importedAi.savedKeys.length > 0);
+            if (!hasImportedKey && existingAi) {
+              val = {
+                ...(val as Record<string, unknown>),
+                aiSettings: {
+                  ...(importedAi || {}),
+                  apiKey: existingAi.apiKey || '',
+                  savedKeys: existingAi.savedKeys || [],
+                  activeKeyId: existingAi.activeKeyId,
+                },
+              };
+            }
+          } catch {}
+        }
         const valStr = typeof val === 'string' ? val : JSON.stringify(val);
         try {
           localStorage.setItem(key, valStr);
@@ -549,32 +610,6 @@ export default function SettingsPage() {
     }
   };
 
-  if (!isLoaded) {
-    return <PageSkeleton variant="default" cardsCount={4} showMetrics={false} showControls={false} />;
-  }
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateSettings(formData);
-    setToastText('Preferences saved successfully');
-    setShowSavedToast(true);
-    setTimeout(() => setShowSavedToast(false), 3000);
-  };
-
-  const toggleWorkDay = (dayId: number) => {
-    const current = formData.workingHours.workDays;
-    const updatedDays = current.includes(dayId)
-      ? current.filter((d) => d !== dayId)
-      : [...current, dayId].sort();
-    setFormData({
-      ...formData,
-      workingHours: {
-        ...formData.workingHours,
-        workDays: updatedDays,
-      },
-    });
-  };
-
   type SectionKey =
     | 'account'
     | 'experience'
@@ -607,6 +642,32 @@ export default function SettingsPage() {
     ai: true,
     data: false,
   });
+
+  if (!isLoaded) {
+    return <PageSkeleton variant="default" cardsCount={4} showMetrics={false} showControls={false} />;
+  }
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings(formData);
+    setToastText('Preferences saved successfully');
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 3000);
+  };
+
+  const toggleWorkDay = (dayId: number) => {
+    const current = formData.workingHours.workDays;
+    const updatedDays = current.includes(dayId)
+      ? current.filter((d) => d !== dayId)
+      : [...current, dayId].sort();
+    setFormData({
+      ...formData,
+      workingHours: {
+        ...formData.workingHours,
+        workDays: updatedDays,
+      },
+    });
+  };
 
   const toggleSection = (key: SectionKey) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -3334,7 +3395,7 @@ export default function SettingsPage() {
                       Complete Snapshot Export (.json)
                     </span>
                     <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                      Download all Dreams, Goals, Projects, Tasks, Workouts, Notes, and Settings in a portable standard format.
+                      Download all Dreams, Goals, Projects, Tasks, Workouts, Notes, Books, and Settings in a portable standard format (API keys &amp; credentials excluded).
                     </span>
                   </div>
 
@@ -3519,6 +3580,110 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </div>
+
+                {!isGuest && (
+                  <div className={styles.dangerCard} style={{ marginTop: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ShieldAlert size={16} style={{ color: 'var(--color-danger, #ef4444)' }} />
+                      <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)' }}>
+                        Delete Account Permanently
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+                      Permanently deletes your Firebase account and erases all cloud records, uploaded attachments, books, and active device sessions. This cannot be undone.
+                    </p>
+
+                    {!showDeleteAccountConfirm ? (
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
+                        <button
+                          type="button"
+                          className={styles.btnDanger}
+                          onClick={() => {
+                            setDeleteAccountError(null);
+                            setDeleteAccountPhrase('');
+                            setDeleteAccountPassword('');
+                            setShowDeleteAccountConfirm(true);
+                          }}
+                        >
+                          <Trash2 size={13} />
+                          Delete My Account
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px', paddingTop: '10px', borderTop: '1px solid var(--color-border-subtle)' }}>
+                        {deleteAccountError && (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-danger, #ef4444)' }} role="alert">
+                            {deleteAccountError}
+                          </div>
+                        )}
+
+                        {user?.providerData?.some((p) => p.providerId === 'password') && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                              Current Password
+                            </label>
+                            <input
+                              type="password"
+                              value={deleteAccountPassword}
+                              onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                              placeholder="Enter your password to verify"
+                              disabled={deleteAccountBusy}
+                              style={{ width: '100%', maxWidth: '340px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.82rem' }}
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                            Type DELETE ACCOUNT to confirm
+                          </label>
+                          <input
+                            type="text"
+                            value={deleteAccountPhrase}
+                            onChange={(e) => setDeleteAccountPhrase(e.target.value)}
+                            placeholder="DELETE ACCOUNT"
+                            disabled={deleteAccountBusy}
+                            style={{ width: '100%', maxWidth: '340px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.82rem' }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <button
+                            type="button"
+                            className={styles.btnDangerSolid}
+                            disabled={deleteAccountBusy || deleteAccountPhrase !== 'DELETE ACCOUNT'}
+                            onClick={async () => {
+                              setDeleteAccountError(null);
+                              setDeleteAccountBusy(true);
+                              try {
+                                await deleteAccount(deleteAccountPassword);
+                                window.location.href = '/register';
+                              } catch (err: unknown) {
+                                setDeleteAccountError(err instanceof Error ? err.message : 'Failed to delete account.');
+                              } finally {
+                                setDeleteAccountBusy(false);
+                              }
+                            }}
+                          >
+                            <Trash2 size={13} />
+                            {deleteAccountBusy ? 'Deleting Account…' : 'Confirm Permanent Deletion'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnSecondary}
+                            disabled={deleteAccountBusy}
+                            onClick={() => {
+                              setShowDeleteAccountConfirm(false);
+                              setDeleteAccountError(null);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -3530,7 +3695,15 @@ export default function SettingsPage() {
           <div>
             <h3 className={styles.privacyTitle}>Private &amp; Local-First Architecture</h3>
             <p className={styles.privacyText}>
-              All data is stored directly in your local environment and synced securely via your private Firebase cloud project.
+              Your workspace is stored locally and synced per user ID via Firebase rules. Review our{' '}
+              <Link href="/privacy" style={{ color: 'var(--color-text)', textDecoration: 'underline' }}>
+                Privacy Policy
+              </Link>{' '}
+              and{' '}
+              <Link href="/terms" style={{ color: 'var(--color-text)', textDecoration: 'underline' }}>
+                Terms of Service
+              </Link>
+              .
             </p>
           </div>
         </div>

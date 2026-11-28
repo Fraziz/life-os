@@ -32,17 +32,34 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { login, signInWithGoogle, continueAsGuest, error, clearError } = useAuth();
+  const { login, signInWithGoogle, sendPasswordReset, continueAsGuest, error, clearError } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!email.trim()) return;
+    if (resetMode) {
+      setBusy(true);
+      setResetSent(false);
+      clearError();
+      try {
+        await sendPasswordReset(email);
+        setResetSent(true);
+      } catch {
+        // Error is set in AuthContext
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (!password) return;
     setBusy(true);
     clearError();
     try {
@@ -77,31 +94,45 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.titleGroup}>
-          <h1 className={styles.title}>Welcome back</h1>
-          <p className={styles.subtitle}>Sign in to your private workspace</p>
+          <h1 className={styles.title}>{resetMode ? 'Reset your password' : 'Welcome back'}</h1>
+          <p className={styles.subtitle}>
+            {resetMode
+              ? 'Enter your email and we will send a reset link'
+              : 'Sign in to your private workspace'}
+          </p>
         </div>
 
-        {/* Google Sign In */}
-        <button
-          type="button"
-          className={styles.googleBtn}
-          onClick={handleGoogleSignIn}
-          disabled={busy || googleBusy}
-          aria-label="Continue with Google"
-        >
-          <GoogleIcon />
-          <span>{googleBusy ? 'Connecting with Google…' : 'Continue with Google'}</span>
-        </button>
+        {!resetMode && (
+          <>
+            {/* Google Sign In */}
+            <button
+              type="button"
+              className={styles.googleBtn}
+              onClick={handleGoogleSignIn}
+              disabled={busy || googleBusy}
+              aria-label="Continue with Google"
+            >
+              <GoogleIcon />
+              <span>{googleBusy ? 'Connecting with Google…' : 'Continue with Google'}</span>
+            </button>
 
-        <div className={styles.divider}>
-          <div className={styles.dividerLine} />
-          <span className={styles.dividerText}>or continue with email</span>
-          <div className={styles.dividerLine} />
-        </div>
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>or continue with email</span>
+              <div className={styles.dividerLine} />
+            </div>
+          </>
+        )}
 
         {error && (
           <div className={styles.errorAlert} role="alert">
             <span>{error}</span>
+          </div>
+        )}
+
+        {resetMode && resetSent && (
+          <div className={styles.successAlert} role="status">
+            If an account matches <strong>{email.trim()}</strong>, a password reset link has been sent. Check your inbox and spam folder.
           </div>
         )}
 
@@ -124,42 +155,80 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="login-password">
-              Password
-            </label>
-            <div className={styles.inputWrap}>
-              <input
-                id="login-password"
-                className={`${styles.input} ${styles.inputWithIcon}`}
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Enter your password"
-                disabled={busy || googleBusy}
-              />
-              <button
-                type="button"
-                className={styles.eyeBtn}
-                onClick={() => setShowPassword((prev) => !prev)}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {!resetMode && (
+            <div className={styles.formGroup}>
+              <div className={styles.labelRow}>
+                <label className={styles.label} htmlFor="login-password">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  className={styles.forgotBtn}
+                  onClick={() => {
+                    clearError();
+                    setResetSent(false);
+                    setResetMode(true);
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className={styles.inputWrap}>
+                <input
+                  id="login-password"
+                  className={`${styles.input} ${styles.inputWithIcon}`}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Enter your password"
+                  disabled={busy || googleBusy}
+                />
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             type="submit"
             className={styles.submitBtn}
-            disabled={busy || googleBusy || !email || !password}
+            disabled={busy || googleBusy || !email.trim() || (!resetMode && !password)}
           >
-            <span>{busy ? 'Signing in…' : 'Sign In'}</span>
+            <span>
+              {resetMode
+                ? busy
+                  ? 'Sending link…'
+                  : 'Send Reset Link'
+                : busy
+                ? 'Signing in…'
+                : 'Sign In'}
+            </span>
             {!busy && <ArrowRight size={15} />}
           </button>
+
+          {resetMode && (
+            <button
+              type="button"
+              className={styles.guestBtn}
+              style={{ marginTop: 4 }}
+              onClick={() => {
+                clearError();
+                setResetSent(false);
+                setResetMode(false);
+              }}
+            >
+              Back to Sign In
+            </button>
+          )}
         </form>
 
         <div className={styles.switchPrompt}>
@@ -186,12 +255,17 @@ export default function LoginPage() {
       <div className={styles.footerTrust}>
         <span className={styles.trustItem}>
           <ShieldCheck size={13} />
-          End-to-end user isolation
+          Per-account UID isolation
         </span>
         <span className={styles.trustItem}>
           <Lock size={12} />
-          Encrypted private storage
+          Private cloud &amp; local sync
         </span>
+      </div>
+      <div className={styles.legalLinks}>
+        <Link href="/privacy" className={styles.legalLink}>Privacy Policy</Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/terms" className={styles.legalLink}>Terms of Service</Link>
       </div>
     </main>
   );

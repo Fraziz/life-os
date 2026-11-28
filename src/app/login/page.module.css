@@ -154,6 +154,61 @@
   letter-spacing: 0.01em;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.forgotBtn {
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color var(--transition-fast);
+}
+
+.forgotBtn:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.successAlert {
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.legalLinks {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+}
+
+.legalLink {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.legalLink:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
 .inputWrap {
   position: relative;
   display: flex;

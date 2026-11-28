@@ -1,13 +1,8 @@
 // Sariling Mundo Service Worker for Offline Caching, PWA Installation & Mobile Notifications
-const CACHE_NAME = 'sariling-mundo-v5';
+const CACHE_NAME = 'sariling-mundo-v6';
 
 const STATIC_ASSETS = [
   '/',
-  '/routine',
-  '/tasks',
-  '/inbox',
-  '/focus',
-  '/settings',
   '/manifest.webmanifest',
   '/logo.png',
   '/icon-192.png',
@@ -95,9 +90,15 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Never cache dynamic API endpoints
+  // Never cache dynamic API, Firebase Auth, or dev HMR requests
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/__/') ||
+    url.pathname.includes('webpack-hmr')
+  ) {
+    return;
+  }
 
   // For page navigation, always fetch fresh from network first so users get latest updates
   if (event.request.mode === 'navigate') {

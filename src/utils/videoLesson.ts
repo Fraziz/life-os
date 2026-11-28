@@ -31,7 +31,7 @@ export function isDocVideoLesson(doc: {
   tags?: string[];
   content?: string;
   title?: string;
-  videoLessons?: any[];
+  videoLessons?: unknown[];
 } | null | undefined): boolean {
   if (!doc) return false;
   if (doc.docType === 'video-lesson') return true;
@@ -369,7 +369,10 @@ export function generateVideoBlockHtml(options: VideoBlockRenderOptions): string
       (rawVideoId && /^[a-zA-Z0-9_-]{11}$/.test(rawVideoId)
         ? rawVideoId
         : rawUrl?.match(/(?:v=|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/)?.[1] || '');
-    const effectiveStart = ytDetails?.startTime ?? rawStartTime ?? 0;
+    const effectiveStart =
+      ytDetails && ytDetails.startTime > 0
+        ? ytDetails.startTime
+        : rawStartTime ?? 0;
     const isShorts = ytDetails?.isShorts || Boolean(rawUrl?.includes('/shorts/'));
 
     platform = 'youtube';
@@ -492,7 +495,7 @@ export function transformVideoLessonsInHtml(
   if (!html) return '';
 
   // 1. Transform markdown custom block: :::video-lesson{id="..." url="..." title="..." start="..." platform="..."}:::
-  let result = html.replace(
+  const result = html.replace(
     /:::video-lesson\{([^}]+)\}:::/g,
     (_, attrsStr) => {
       const idMatch = attrsStr.match(/id="([^"]+)"/);

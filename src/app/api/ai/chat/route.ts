@@ -1,5 +1,26 @@
 import { NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
+import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
+
+interface AiChatRequestBody {
+  prompt?: unknown;
+  systemPrompt?: unknown;
+  aiSettings?: {
+    provider?: string;
+    apiKey?: string;
+    apiEndpoint?: string;
+    model?: string;
+    temperature?: number;
+    savedKeys?: Array<{ apiKey?: string }>;
+  };
+}
+
+function errMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object') {
+    const e = err as { cause?: { code?: string; message?: string }; message?: string };
+    return e.cause?.code || e.cause?.message || e.message || fallback;
+  }
+  return fallback;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +59,7 @@ export async function POST(request: Request) {
     const rateKey = verifiedUid ? `ai-chat:user:${verifiedUid}` : `ai-chat:ip:${clientIp}`;
 
     // Rate limiting: max 25 AI generation requests per minute per user or IP
-    const rateCheck = checkRateLimit(rateKey, 25, 60 * 1000);
+    const rateCheck = await checkRateLimitAsync(rateKey, 25, 60 * 1000);
     if (!rateCheck.success) {
       return NextResponse.json(
         { error: 'Rate limit exceeded: Please wait a moment before sending more AI requests.' },
@@ -46,9 +67,9 @@ export async function POST(request: Request) {
       );
     }
 
-    let body: any;
+    let body: AiChatRequestBody;
     try {
-      body = await request.json();
+      body = (await request.json()) as AiChatRequestBody;
     } catch {
       return NextResponse.json({ error: 'Invalid JSON request body.' }, { status: 400 });
     }
@@ -56,6 +77,10 @@ export async function POST(request: Request) {
 
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 32000) {
       return NextResponse.json({ error: 'Prompt must be a non-empty string under 32,000 characters.' }, { status: 400 });
+    }
+
+    if (typeof systemPrompt !== 'string' || systemPrompt.length > 16000) {
+      return NextResponse.json({ error: 'System prompt must be a string under 16,000 characters.' }, { status: 400 });
     }
 
     if (!aiSettings) {
@@ -140,9 +165,12 @@ export async function POST(request: Request) {
             });
 
             if (resp.ok) {
-              const data = await resp.json();
+              const data = (await resp.json()) as {
+                candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+                usageMetadata?: { totalTokenCount?: number };
+              };
               const text =
-                data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ||
+                data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') ||
                 data.candidates?.[0]?.content?.parts?.[0]?.text ||
                 '';
               const tokensUsed = data.usageMetadata?.totalTokenCount || 400;
@@ -154,8 +182,8 @@ export async function POST(request: Request) {
             lastError = errJson.error?.message || `Gemini status ${resp.status}`;
             if (resp.status === 404 || resp.status === 400) continue;
             if (resp.status === 429) break; // try next key
-          } catch (e: any) {
-            lastError = e?.message || lastError;
+          } catch (e: unknown) {
+            lastError = errMessage(e, lastError);
           }
         }
       }
@@ -213,8 +241,8 @@ export async function POST(request: Request) {
             lastError = errJson.error?.message || `Anthropic status ${resp.status}`;
             if (resp.status === 404) continue;
             if (resp.status === 429 || resp.status === 401) break;
-          } catch (e: any) {
-            lastError = e?.message || lastError;
+          } catch (e: unknown) {
+            lastError = errMessage(e, lastError);
           }
         }
       }
@@ -272,8 +300,8 @@ export async function POST(request: Request) {
             lastError = errJson.message || `Cohere status ${resp.status}`;
             if (resp.status === 404) continue;
             if (resp.status === 429 || resp.status === 401) break;
-          } catch (e: any) {
-            lastError = e?.message || lastError;
+          } catch (e: unknown) {
+            lastError = errMessage(e, lastError);
           }
         }
       }
@@ -430,8 +458,8 @@ export async function POST(request: Request) {
           }
 
           return NextResponse.json({ error: rawErrMsg }, { status: resp.status });
-        } catch (fetchErr: any) {
-          const cause = fetchErr?.cause?.code || fetchErr?.cause?.message || fetchErr?.message || '';
+        } catch (fetchErr: unknown) {
+          const cause = errMessage(fetchErr, '');
           lastError = `Network connection to ${provider.toUpperCase()} failed${cause ? `: ${cause}` : ''}`;
         }
       }

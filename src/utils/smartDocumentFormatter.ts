@@ -309,7 +309,7 @@ Your strict objective is to organize and format the given raw notes into a forma
     const result = await executeOptionalAICall(prompt, systemPrompt, aiSettings, { plainLanguage: false });
 
     if (result && result.text && result.text.trim().length > 20) {
-      let cleanAi = result.text
+      const cleanAi = result.text
         .replace(/^```markdown\s*/i, '')
         .replace(/^```\s*/, '')
         .replace(/```$/, '')

@@ -242,8 +242,13 @@ export default function RegisterPage() {
         </span>
         <span className={styles.trustItem}>
           <Lock size={12} />
-          End-to-end encrypted storage
+          Per-account isolated cloud sync
         </span>
+      </div>
+      <div className={styles.legalLinks}>
+        <Link href="/privacy" className={styles.legalLink}>Privacy Policy</Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/terms" className={styles.legalLink}>Terms of Service</Link>
       </div>
     </main>
   );

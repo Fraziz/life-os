@@ -1,9 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // App owner record — require authentication so public visitors cannot scrape owner identity
+    // App owner record — strictly readable/writable only by the owner themselves
     match /app/owner {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
       allow create: if request.auth != null && !exists(/databases/$(database)/documents/app/owner);
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }

@@ -237,7 +237,7 @@ export default function InboxPage() {
 
     const currentSaved = settings.aiSettings?.savedKeys || [];
     const existingIndex = currentSaved.findIndex((k) => k.apiKey === extractedKey);
-    let updatedSaved = [...currentSaved];
+    const updatedSaved = [...currentSaved];
 
     if (existingIndex < 0) {
       updatedSaved.push({
@@ -2015,7 +2015,7 @@ export default function InboxPage() {
                 onClick={() => { setAiResults(null); setAiApplied(true); }}
                 style={{ padding: '8px 18px', borderRadius: '10px', border: 'none', background: 'var(--color-accent)', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <CheckCircle2 size={14} /> Got it — I'll convert manually
+                <CheckCircle2 size={14} /> Got it — I&apos;ll convert manually
               </button>
             </div>
           </div>

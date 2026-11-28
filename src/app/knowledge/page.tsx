@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useKnowledge, isTrueBookOrVideo } from '@/context/KnowledgeContext';
@@ -113,9 +114,9 @@ import {
   extractAllVideoLessons,
   type VideoLessonItem,
 } from '@/utils/videoLesson';
-import AddVideoLessonModal from '@/components/study/AddVideoLessonModal';
-import FocusViewWorkspace from '@/components/study/FocusViewWorkspace';
-import StudySessionCard from '@/components/study/StudySessionCard';
+const AddVideoLessonModal = dynamic(() => import('@/components/study/AddVideoLessonModal'), { ssr: false });
+const FocusViewWorkspace = dynamic(() => import('@/components/study/FocusViewWorkspace'), { ssr: false });
+const StudySessionCard = dynamic(() => import('@/components/study/StudySessionCard'), { ssr: false });
 
 // ── Color Highlight Palette (Literal Translucent Highlighter Marker) ──
 const HIGHLIGHT_COLORS: { name: string; bg: string; border: string; text: string; label: string }[] = [

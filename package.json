@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --import ./tests/ts-loader.mjs --test tests/study_features.test.ts tests/security_and_storage.test.ts"
   },
   "dependencies": {
     "firebase": "^12.18.0",

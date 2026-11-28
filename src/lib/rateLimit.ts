@@ -9,6 +9,7 @@ interface RateLimitRecord {
 }
 
 const rateLimitMap = new Map<string, RateLimitRecord>();
+const MAX_RATE_LIMIT_ENTRIES = 10_000;
 
 // Periodic cleanup every 5 minutes to prevent memory leak
 if (typeof setInterval !== 'undefined') {
@@ -36,6 +37,10 @@ export function checkRateLimit(
   const record = rateLimitMap.get(key);
 
   if (!record || record.resetAt <= now) {
+    if (!record && rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = rateLimitMap.keys().next().value;
+      if (oldestKey) rateLimitMap.delete(oldestKey);
+    }
     rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
     return { success: true, remaining: limit - 1, resetAt: now + windowMs };
   }
@@ -46,6 +51,60 @@ export function checkRateLimit(
 
   record.count += 1;
   return { success: true, remaining: limit - record.count, resetAt: record.resetAt };
+}
+
+/**
+ * Distributed-ready rate limiter: uses Upstash Redis REST when configured
+ * (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`), otherwise falls back
+ * transparently to the bounded in-memory sliding window.
+ */
+export async function checkRateLimitAsync(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<{ success: boolean; remaining: number; resetAt: number }> {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!redisUrl || !redisToken) {
+    return checkRateLimit(key, limit, windowMs);
+  }
+
+  try {
+    const bucketKey = `ratelimit:${key}`;
+    const resp = await fetch(`${redisUrl.replace(/\/$/, '')}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${redisToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(1500),
+      body: JSON.stringify([
+        ['INCR', bucketKey],
+        ['PTTL', bucketKey],
+      ]),
+    });
+    if (!resp.ok) {
+      return checkRateLimit(key, limit, windowMs);
+    }
+    const results = (await resp.json()) as Array<{ result?: number }>;
+    const count = Number(results?.[0]?.result ?? 1);
+    let ttl = Number(results?.[1]?.result ?? -1);
+    if (ttl < 0) {
+      await fetch(`${redisUrl.replace(/\/$/, '')}/pexpire/${encodeURIComponent(bucketKey)}/${windowMs}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${redisToken}` },
+        signal: AbortSignal.timeout(1500),
+      }).catch(() => undefined);
+      ttl = windowMs;
+    }
+    return {
+      success: count <= limit,
+      remaining: Math.max(0, limit - count),
+      resetAt: Date.now() + Math.max(0, ttl),
+    };
+  } catch {
+    return checkRateLimit(key, limit, windowMs);
+  }
 }
 
 export function getClientIp(req: Request): string {

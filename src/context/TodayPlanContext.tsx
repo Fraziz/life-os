@@ -113,7 +113,7 @@ export function TodayPlanProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setMainFocus = (taskId: string | null, customText?: string) => {
-    let newSelected = [...todayPlan.selectedTaskIds];
+    const newSelected = [...todayPlan.selectedTaskIds];
     if (taskId && !newSelected.includes(taskId)) {
       newSelected.push(taskId);
     }
