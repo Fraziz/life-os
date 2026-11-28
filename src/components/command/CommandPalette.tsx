@@ -76,8 +76,8 @@ export default function CommandPalette() {
       id: 'act-focus-25',
       category: 'Quick Actions',
       title: 'Start 25m Focus Block',
-      subtitle: 'Pomodoro timer in Focus Space',
-      keywords: ['timer', 'pomodoro', 'work', 'focus'],
+      subtitle: 'Pomodoro timer in Focus Mode',
+      keywords: ['timer', 'pomodoro', 'work', 'focus', 'space'],
       onSelect: () => {
         setTimerMode('pomodoro', 25);
         startTimer();
@@ -88,9 +88,9 @@ export default function CommandPalette() {
     {
       id: 'act-brain-dump',
       category: 'Quick Actions',
-      title: 'Quick Idea Parking',
-      subtitle: 'Park idea or thought to Inbox',
-      keywords: ['inbox', 'capture', 'note', 'idea', 'dump'],
+      title: 'Quick Brain Dump',
+      subtitle: 'Capture a thought, note, or reminder',
+      keywords: ['brain', 'dump', 'inbox', 'capture', 'note', 'idea', 'parking'],
       onSelect: () => {
         router.push('/inbox');
         closePalette();
@@ -168,9 +168,9 @@ export default function CommandPalette() {
     {
       id: 'nav-focus',
       category: 'Navigation',
-      title: 'Focus Space',
+      title: 'Focus Mode',
       subtitle: '/focus',
-      keywords: ['timer', 'zen', 'reader', 'sounds'],
+      keywords: ['timer', 'zen', 'reader', 'sounds', 'focus', 'space'],
       onSelect: () => {
         router.push('/focus');
         closePalette();
@@ -179,7 +179,7 @@ export default function CommandPalette() {
     {
       id: 'nav-tasks',
       category: 'Navigation',
-      title: 'Task Board & List',
+      title: 'Tasks',
       subtitle: '/tasks',
       keywords: ['todo', 'doing', 'done', 'backlog'],
       onSelect: () => {
@@ -190,9 +190,9 @@ export default function CommandPalette() {
     {
       id: 'nav-calendar',
       category: 'Navigation',
-      title: 'Calendar & Schedule',
+      title: 'Calendar & Routines',
       subtitle: '/calendar',
-      keywords: ['events', 'deadlines', 'day', 'week', 'month'],
+      keywords: ['events', 'deadlines', 'day', 'week', 'month', 'routine'],
       onSelect: () => {
         router.push('/calendar');
         closePalette();
@@ -201,9 +201,9 @@ export default function CommandPalette() {
     {
       id: 'nav-inbox',
       category: 'Navigation',
-      title: 'Idea Parking / Inbox',
+      title: 'Brain Dump',
       subtitle: '/inbox',
-      keywords: ['capture', 'thoughts', 'someday'],
+      keywords: ['brain', 'dump', 'capture', 'thoughts', 'someday', 'idea', 'parking'],
       onSelect: () => {
         router.push('/inbox');
         closePalette();

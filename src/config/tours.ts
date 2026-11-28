@@ -25,18 +25,9 @@ export const MAIN_SYSTEM_TOUR: TourDefinition = {
       route: '/',
     },
     {
-      id: 'daily-routine',
-      target: '[data-tour="nav-routine"]',
-      title: 'Daily Routine Schedule',
-      content:
-        'Structure your day into clear time blocks with checkable mini-steps so you always know what block is active now without decision fatigue.',
-      placement: 'right',
-      route: '/routine',
-    },
-    {
       id: 'brain-dump-inbox',
       target: '[data-tour="nav-inbox"]',
-      title: 'Idea Parking & Capture',
+      title: 'Brain Dump',
       content:
         'Offload sudden thoughts, notes, and reminders before they scatter your focus. Convert anything actionable directly into tasks, projects, or goals.',
       placement: 'right',
@@ -52,12 +43,21 @@ export const MAIN_SYSTEM_TOUR: TourDefinition = {
       route: '/tasks',
     },
     {
-      id: 'planning-hierarchy',
-      target: '[data-tour="nav-section-planning"]',
-      fallbackTarget: '[data-tour="nav-projects"]',
-      title: 'Long-Term Life Hierarchy',
+      id: 'daily-routine',
+      target: '[data-tour="nav-calendar"]',
+      title: 'Calendar & Routines',
       content:
-        'Connect everyday actions up to Projects, Goals, and Dreams so daily execution steadily moves your bigger vision forward.',
+        'Manage deadlines, focus blocks, and your Daily Routine schedule from one calm place—switch between Calendar and Daily Routine anytime at the top.',
+      placement: 'right',
+      route: '/routine',
+    },
+    {
+      id: 'planning-hierarchy',
+      target: '[data-tour="nav-section-life-management"]',
+      fallbackTarget: '[data-tour="nav-projects"]',
+      title: 'Life Management',
+      content:
+        'Connect everyday actions up to Projects and Goals & Vision so daily execution steadily moves your bigger plans forward.',
       placement: 'right',
       route: '/',
     },
@@ -132,7 +132,7 @@ export const CONTEXTUAL_TOURS: Record<string, TourDefinition> = {
   },
   'focus-space': {
     id: 'focus-space',
-    title: 'Focus Space Deep Dive',
+    title: 'Focus Mode Deep Dive',
     badge: 'Focus Mode',
     steps: [
       {
@@ -166,7 +166,7 @@ export const CONTEXTUAL_TOURS: Record<string, TourDefinition> = {
   },
   'idea-parking': {
     id: 'idea-parking',
-    title: 'Idea Parking Workflow',
+    title: 'Brain Dump Workflow',
     badge: 'Capture',
     steps: [
       {

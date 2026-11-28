@@ -27,7 +27,13 @@ import SelectCheckbox, { shouldToggleSelectionOnCardClick } from '@/components/u
 import MasonryGrid from '@/components/ui/MasonryGrid';
 import EntityFiles from '@/components/files/EntityFiles';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import PairedPageSwitcher from '@/components/layout/PairedPageSwitcher';
 import AdhdHierarchyModal from '@/components/guidance/AdhdHierarchyModal';
+
+const GOALS_VISION_TABS = [
+  { label: 'Goals', href: '/goals' },
+  { label: 'Dreams & Vision', href: '/dreams' },
+];
 import { playSuccessChime } from '@/utils/soundAndDopamine';
 import AutoLinkText from '@/components/ui/AutoLinkText';
 
@@ -228,10 +234,15 @@ export default function DreamsPage() {
 
   return (
     <div className={styles.page}>
+      <PairedPageSwitcher
+        ariaLabel="Goals and Vision views"
+        tabs={GOALS_VISION_TABS}
+      />
+
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Dreams &amp; Vision Board</h1>
+          <h1 className={styles.title}>Dreams &amp; Vision</h1>
         </div>
 
         <div className={styles.headerActions}>

@@ -1,0 +1,72 @@
+.switcherWrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: -4px;
+}
+
+.switcherTrack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.switcherTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.switcherTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.switcherTab:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.switcherTab:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.switcherTabActive {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.switcherTabActive:hover {
+  background: var(--color-surface-2);
+}
+
+@media (max-width: 768px) {
+  .switcherTrack {
+    width: 100%;
+  }
+
+  .switcherTab {
+    flex: 1;
+    min-height: 42px;
+    font-size: 0.84rem;
+  }
+}

@@ -1010,7 +1010,7 @@ export default function FocusPage() {
         <header className={`${styles.header} ${activeDoc && focusViewMode === 'book' ? styles.headerCompact : ''}`}>
           <div className={styles.titleArea}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 className={styles.title}>Focus Space</h1>
+              <h1 className={styles.title}>Focus Mode</h1>
               {activeDoc && (
                 <span className={styles.toastSaved}>
                   {isDocVideoLesson(activeDoc) ? 'Video Lesson Active' : 'Book Reader Active'}
@@ -1052,7 +1052,7 @@ export default function FocusPage() {
       )}
 
       {/* Contextual Onboarding Tour Guide */}
-      {!isZenMode && <ContextualTourBanner tourId="focus-space" featureName="Focus Space" />}
+      {!isZenMode && <ContextualTourBanner tourId="focus-space" featureName="Focus Mode" />}
 
       {/* Main Focus Container */}
       <div className={activeDoc && focusViewMode === 'book' ? (isDocVideoLesson(activeDoc) ? styles.focusContainerVideo : styles.focusContainerBook) : styles.focusContainer}>

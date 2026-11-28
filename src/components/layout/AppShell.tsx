@@ -56,10 +56,18 @@ import { useGlobalLinkDetector } from '@/utils/useGlobalLinkDetector';
  */
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Today';
+  if (pathname.startsWith('/routine')) return 'Daily Routine';
+  if (pathname.startsWith('/dreams')) return 'Dreams & Vision';
+  if (pathname.startsWith('/settings')) return 'Settings';
   const allItems = NAV_SECTIONS.flatMap((s) => s.items);
-  const match = allItems.find((item) =>
-    item.href !== '/' && pathname.startsWith(item.href)
-  );
+  const match = allItems.find((item) => {
+    if (item.href === '/') return false;
+    const prefixes =
+      item.activePaths && item.activePaths.length > 0 ? item.activePaths : [item.href];
+    return prefixes.some(
+      (prefix) => prefix !== '/' && (pathname === prefix || pathname.startsWith(`${prefix}/`))
+    );
+  });
   return match?.label ?? 'Sariling Mundo';
 }
 

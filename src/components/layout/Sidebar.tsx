@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,21 +9,14 @@ import {
   PinOff,
   Home,
   Play,
-  Send,
+  Inbox,
   CheckSquare,
   Calendar,
-  Clock,
-  Cloud,
   Target,
   BookOpen,
-  Repeat,
-  Dumbbell,
   Layers,
   Folder,
   RotateCcw,
-  TrendingUp,
-  Zap,
-  Compass,
 } from 'lucide-react';
 
 import { NAV_SECTIONS } from '@/config/navigation';
@@ -35,27 +28,45 @@ import { usePwaInstall } from '@/utils/usePwaInstall';
 import Logo from '@/components/ui/Logo';
 import styles from './Sidebar.module.css';
 
-// Mapping of navigation icon identifiers to Lucide icons
-const NAV_ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>> = {
+const SIDEBAR_SECTIONS_STORAGE_KEY = 'life_os_sidebar_sections_v1';
+
+// Mapping of navigation icon identifiers to distinct Lucide icons
+const NAV_ICON_MAP: Record<
+  string,
+  React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
+> = {
   today: Home,
-  routine: Clock,
-  focus: Play,
-  inbox: Send,
+  inbox: Inbox,
   tasks: CheckSquare,
+  focus: Play,
   calendar: Calendar,
-  roadmap: Compass,
-  dreams: Cloud,
+  projects: Layers,
   goals: Target,
-  projects: Folder,
   knowledge: BookOpen,
-  habits: Repeat,
-  workout: Dumbbell,
-  areas: Layers,
   files: Folder,
   review: RotateCcw,
-  progress: TrendingUp,
-  reset: Zap,
 };
+
+function matchesNavItem(pathname: string, item: NavItem): boolean {
+  if (item.href === '/') {
+    return pathname === '/';
+  }
+  const prefixes =
+    item.activePaths && item.activePaths.length > 0 ? item.activePaths : [item.href];
+  return prefixes.some(
+    (prefix) => prefix !== '/' && (pathname === prefix || pathname.startsWith(`${prefix}/`))
+  );
+}
+
+function getDefaultSectionState(): Record<string, boolean> {
+  const initial: Record<string, boolean> = {};
+  for (const section of NAV_SECTIONS) {
+    if (section.collapsible) {
+      initial[section.id] = section.defaultOpen ?? true;
+    }
+  }
+  return initial;
+}
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -68,43 +79,113 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  collapsed,
   pinned = false,
   mobileOpen,
   onCollapse,
   onPinToggle,
   onMobileClose,
-  onOpenNextAction,
 }: SidebarProps) {
   const pathname = usePathname();
   const { settings, toggleSimpleMode } = useSettings();
-  const { user, isGuest, logout } = useAuth();
-  const { startTour } = useTour();
+  const { user, logout } = useAuth();
+  const { startTour, isOpen: isTourOpen } = useTour();
   const { canPromptInstall, isStandalone, promptInstall } = usePwaInstall();
 
-  const userDisplayName = user?.displayName || settings?.profile?.displayName || (user?.email ? user.email.split('@')[0] : 'User');
+  const userDisplayName =
+    user?.displayName ||
+    settings?.profile?.displayName ||
+    (user?.email ? user.email.split('@')[0] : 'User');
   const userSubtitle = user?.email || settings?.profile?.name || 'Personal Space';
   const userInitials = (userDisplayName || 'U').slice(0, 2).toUpperCase();
 
-  // Hover auto-open / auto-close state (Instagram PC style)
+  // Desktop hover rail state
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
 
-  // Local pinned fallback if not passed from parent
   const [isPinned, setIsPinned] = useState(pinned);
-
   useEffect(() => {
     setIsPinned(pinned);
   }, [pinned]);
 
-  const [moreOpen, setMoreOpen] = useState(true);
+  // Persistent expanded/collapsed group preferences
+  const [sectionOpenMap, setSectionOpenMap] = useState<Record<string, boolean>>(
+    getDefaultSectionState
+  );
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const displayedSections = settings.simpleMode
-    ? NAV_SECTIONS.filter((s) => s.id === 'daily')
-    : NAV_SECTIONS;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_SECTIONS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (parsed && typeof parsed === 'object') {
+        setSectionOpenMap((prev) => {
+          const merged = { ...prev };
+          for (const key of Object.keys(merged)) {
+            if (typeof parsed[key] === 'boolean') {
+              merged[key] = parsed[key] as boolean;
+            }
+          }
+          return merged;
+        });
+      }
+    } catch {
+      // Ignore malformed or unavailable localStorage
+    }
+  }, []);
 
-  // An expanded sidebar is active when either mobile drawer is open, pinned open, or hovered
+  // Close profile menu on outside click or Escape
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (footerRef.current && !footerRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setProfileMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [profileMenuOpen]);
+
+  const toggleSection = (sectionId: string) => {
+    setSectionOpenMap((prev) => {
+      const next = { ...prev, [sectionId]: !prev[sectionId] };
+      try {
+        localStorage.setItem(SIDEBAR_SECTIONS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const displayedSections = useMemo(
+    () =>
+      settings.simpleMode
+        ? NAV_SECTIONS.filter((s) => s.id === 'primary')
+        : NAV_SECTIONS,
+    [settings.simpleMode]
+  );
+
+  // Strictly highlight only a single active navigation item across the entire sidebar
+  const activeItemId = useMemo(() => {
+    for (const section of displayedSections) {
+      for (const item of section.items) {
+        if (matchesNavItem(pathname, item)) {
+          return item.id;
+        }
+      }
+    }
+    return null;
+  }, [displayedSections, pathname]);
+
   const isExpanded = mobileOpen || isPinned || isHovered;
 
   const handleMouseEnter = () => {
@@ -117,10 +198,9 @@ export default function Sidebar({
 
   const handleMouseLeave = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    // Smooth 180ms debounce so rapid mouse movements don't flicker or shake
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 180);
+    }, 150);
   };
 
   const handlePinClick = () => {
@@ -133,7 +213,9 @@ export default function Sidebar({
     }
     try {
       localStorage.setItem('life_os_sidebar_pinned', String(nextPinned));
-    } catch { }
+    } catch {
+      // Ignore storage errors
+    }
   };
 
   const handleNavClick = () => {
@@ -147,7 +229,6 @@ export default function Sidebar({
     isExpanded ? styles.isExpanded : '',
     isPinned ? styles.isPinned : '',
     isHovered ? styles.isHovered : '',
-    collapsed && !isHovered ? styles.collapsed : '',
     mobileOpen ? styles.mobileOpen : '',
   ]
     .filter(Boolean)
@@ -170,7 +251,13 @@ export default function Sidebar({
       >
         {/* Brand Header */}
         <div className={styles.header}>
-          <Link href="/" className={styles.brand} title="Sariling Mundo" onClick={handleNavClick} data-tour="brand">
+          <Link
+            href="/"
+            className={styles.brand}
+            title="Sariling Mundo"
+            onClick={handleNavClick}
+            data-tour="brand"
+          >
             <Logo
               iconOnly={!isExpanded}
               size={28}
@@ -186,7 +273,7 @@ export default function Sidebar({
               onClick={handlePinClick}
               title={
                 isPinned
-                  ? 'Unpin sidebar (Auto-collapse on mouse leave)'
+                  ? 'Unpin sidebar (auto-collapse on mouse leave)'
                   : 'Pin sidebar open (Ctrl+B)'
               }
               aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
@@ -197,45 +284,64 @@ export default function Sidebar({
           </div>
         </div>
 
-
-
-        {/* Navigation Sections */}
+        {/* Navigation Groups */}
         <nav className={styles.nav}>
           {displayedSections.map((section, sIndex) => {
-            const isMore = section.id === 'more' && section.items.length > 1;
+            const isCollapsible = Boolean(section.collapsible);
+            const userPrefOpen = isCollapsible ? Boolean(sectionOpenMap[section.id]) : true;
+            // Keep Life Management visible while guided tour runs so tour targets resolve cleanly
+            const isSectionOpen =
+              userPrefOpen || (isTourOpen && section.id === 'life-management');
+
+            // If a collapsible group is closed, keep it quiet — only surface an item if it is currently active
+            const visibleItems = isSectionOpen
+              ? section.items
+              : section.items.filter((item) => item.id === activeItemId);
+
+            const showCollapsedRailDivider = sIndex > 0 && visibleItems.length > 0;
 
             return (
-              <div key={section.id} className={styles.sectionGroup} data-tour={`nav-section-${section.id}`}>
-                <div className={styles.sectionHeaderRow}>
-                  {isMore ? (
-                    <button
-                      type="button"
-                      className={styles.sectionHeaderBtn}
-                      onClick={() => setMoreOpen(!moreOpen)}
-                      aria-expanded={moreOpen}
-                    >
-                      <span className={styles.sectionTitle}>{section.label}</span>
-                      <ChevronDown
-                        size={13}
-                        className={`${styles.moreChevron} ${moreOpen ? styles.moreChevronOpen : ''
+              <div
+                key={section.id}
+                className={styles.sectionGroup}
+                data-tour={`nav-section-${section.id}`}
+              >
+                {!section.hideHeader && (
+                  <div
+                    className={`${styles.sectionHeaderRow} ${
+                      !showCollapsedRailDivider ? styles.sectionHeaderRowEmptyRail : ''
+                    }`}
+                  >
+                    {isCollapsible ? (
+                      <button
+                        type="button"
+                        className={styles.sectionHeaderBtn}
+                        onClick={() => toggleSection(section.id)}
+                        aria-expanded={isSectionOpen}
+                        tabIndex={isExpanded ? 0 : -1}
+                      >
+                        <span className={styles.sectionTitle}>{section.label}</span>
+                        <ChevronDown
+                          size={13}
+                          className={`${styles.moreChevron} ${
+                            isSectionOpen ? styles.moreChevronOpen : ''
                           }`}
-                      />
-                    </button>
-                  ) : (
-                    <span className={styles.sectionTitle}>{section.label}</span>
-                  )}
-                  {sIndex > 0 && (
-                    <div className={styles.sectionDividerRail} aria-hidden="true" />
-                  )}
-                </div>
+                        />
+                      </button>
+                    ) : (
+                      <span className={styles.sectionTitle}>{section.label}</span>
+                    )}
 
-                {(!isMore || moreOpen) && (
+                    {showCollapsedRailDivider && (
+                      <div className={styles.sectionDividerRail} aria-hidden="true" />
+                    )}
+                  </div>
+                )}
+
+                {visibleItems.length > 0 && (
                   <div className={styles.sectionItemsList}>
-                    {section.items.map((item: NavItem) => {
-                      const isActive =
-                        item.href === '/'
-                          ? pathname === '/'
-                          : pathname.startsWith(item.href);
+                    {visibleItems.map((item: NavItem) => {
+                      const isActive = item.id === activeItemId;
                       const IconComponent = NAV_ICON_MAP[item.icon] || Layers;
 
                       return (
@@ -245,14 +351,16 @@ export default function Sidebar({
                             prefetch={true}
                             onClick={handleNavClick}
                             data-tour={`nav-${item.id}`}
-                            className={`${styles.navItem} ${isActive ? styles.activeItem : ''
-                              }`}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={`${styles.navItem} ${
+                              isActive ? styles.activeItem : ''
+                            }`}
                             title={!isExpanded ? item.label : undefined}
                           >
                             <span className={styles.navIconBox}>
                               <IconComponent
-                                size={19}
-                                strokeWidth={isActive ? 2.2 : 1.8}
+                                size={18}
+                                strokeWidth={isActive ? 2.1 : 1.8}
                                 className={styles.navIcon}
                               />
                             </span>
@@ -271,59 +379,80 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Subtle, Formal Inspiration */}
-        <div className={styles.sidebarQuote}>
-          <p className={styles.quoteText}>
-            &ldquo;Small steps every day build the life you want.&rdquo;
-          </p>
-        </div>
-
         {/* User Profile Footer */}
-        <div className={styles.footer}>
+        <div className={styles.footer} ref={footerRef}>
           <div
             className={styles.userCard}
             onClick={() => {
               if (!isExpanded && onPinToggle) {
                 onPinToggle(true);
               }
-              setProfileMenuOpen(!profileMenuOpen);
+              setProfileMenuOpen((prev) => !prev);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!isExpanded && onPinToggle) {
+                  onPinToggle(true);
+                }
+                setProfileMenuOpen((prev) => !prev);
+              }
             }}
             role="button"
             tabIndex={0}
+            aria-expanded={profileMenuOpen}
+            aria-haspopup="menu"
             data-tour="user-profile"
             title={!isExpanded ? userDisplayName : undefined}
           >
             <div className={styles.userAvatar}>
               {user?.photoURL ? (
-                <img src={user.photoURL} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                <img
+                  src={user.photoURL}
+                  alt=""
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                  }}
+                />
               ) : (
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-accent)' }}>{userInitials}</span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--color-accent)',
+                  }}
+                >
+                  {userInitials}
+                </span>
               )}
             </div>
 
             <div className={styles.userInfo}>
-              <span className={styles.userName}>
-                {userDisplayName}
-              </span>
-              <span className={styles.userRole}>
-                {userSubtitle}
-              </span>
+              <span className={styles.userName}>{userDisplayName}</span>
+              <span className={styles.userRole}>{userSubtitle}</span>
             </div>
 
             <ChevronDown
               size={14}
-              className={`${styles.userChevron} ${profileMenuOpen ? styles.userChevronOpen : ''
-                }`}
+              className={`${styles.userChevron} ${
+                profileMenuOpen ? styles.userChevronOpen : ''
+              }`}
             />
           </div>
 
           {profileMenuOpen && isExpanded && (
-            <div className={styles.profileDropdown}>
+            <div className={styles.profileDropdown} role="menu">
               <Link
                 href="/settings"
                 className={styles.dropdownItem}
                 data-tour="nav-settings"
-                onClick={() => setProfileMenuOpen(false)}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  handleNavClick();
+                }}
               >
                 <span>Settings</span>
               </Link>
@@ -335,13 +464,16 @@ export default function Sidebar({
                   toggleSimpleMode();
                 }}
               >
-                <span>{settings.simpleMode ? 'Switch to Full Mode' : 'Switch to Simple Mode'}</span>
+                <span>
+                  {settings.simpleMode ? 'Show Full Navigation' : 'Simple Sidebar Mode'}
+                </span>
               </button>
               <button
                 type="button"
                 className={styles.dropdownItem}
                 onClick={() => {
                   setProfileMenuOpen(false);
+                  handleNavClick();
                   startTour();
                 }}
               >
@@ -352,9 +484,12 @@ export default function Sidebar({
                 className={styles.dropdownItem}
                 onClick={() => {
                   setProfileMenuOpen(false);
-                  const desktopApi = (window as Window & {
-                    sarilingDesktop?: { toggleBubblePopover?: () => Promise<unknown> };
-                  }).sarilingDesktop;
+                  handleNavClick();
+                  const desktopApi = (
+                    window as Window & {
+                      sarilingDesktop?: { toggleBubblePopover?: () => Promise<unknown> };
+                    }
+                  ).sarilingDesktop;
                   if (desktopApi?.toggleBubblePopover) {
                     void desktopApi.toggleBubblePopover();
                   } else {
@@ -364,8 +499,8 @@ export default function Sidebar({
               >
                 <span>Floating Bubble</span>
               </button>
-              {!isStandalone && (
-                canPromptInstall ? (
+              {!isStandalone &&
+                (canPromptInstall ? (
                   <button
                     type="button"
                     className={styles.dropdownItem}
@@ -380,12 +515,14 @@ export default function Sidebar({
                   <Link
                     href="/settings#desktop-app"
                     className={styles.dropdownItem}
-                    onClick={() => setProfileMenuOpen(false)}
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      handleNavClick();
+                    }}
                   >
                     <span>Desktop App (Windows)</span>
                   </Link>
-                )
-              )}
+                ))}
               <button
                 type="button"
                 className={styles.dropdownItem}

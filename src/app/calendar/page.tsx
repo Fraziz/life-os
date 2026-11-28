@@ -22,6 +22,12 @@ import { useGoals } from '@/context/GoalContext';
 import { useMilestones } from '@/context/MilestoneContext';
 import styles from './page.module.css';
 import PageSkeleton from '@/components/ui/PageSkeleton';
+import PairedPageSwitcher from '@/components/layout/PairedPageSwitcher';
+
+const CALENDAR_ROUTINE_TABS = [
+  { label: 'Calendar', href: '/calendar' },
+  { label: 'Daily Routine', href: '/routine' },
+];
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -240,12 +246,17 @@ export default function CalendarPage() {
 
   return (
     <div className={styles.page}>
+      <PairedPageSwitcher
+        ariaLabel="Calendar and Routines views"
+        tabs={CALENDAR_ROUTINE_TABS}
+      />
+
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Calendar & Planning</h1>
+          <h1 className={styles.title}>Calendar &amp; Routines</h1>
           <p className={styles.subtitle}>
-            Coordinate dedicated deep-work blocks, external events, and target deadlines in a single schedule.
+            Coordinate focus blocks, events, and target deadlines alongside your daily routines.
           </p>
         </div>
 

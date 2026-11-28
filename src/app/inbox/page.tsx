@@ -642,12 +642,12 @@ export default function InboxPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>Idea Parking & Inbox</h1>
+          <h1 className={styles.title}>Brain Dump</h1>
         </div>
       </header>
 
       {/* Contextual Onboarding Tour Guide */}
-      <ContextualTourBanner tourId="idea-parking" featureName="Idea Parking" />
+      <ContextualTourBanner tourId="idea-parking" featureName="Brain Dump" />
 
       {/* ── Fast Idea Parking Capture Bar ── */}
       {!(filterTab === 'important' && !isVaultUnlocked) && (
@@ -667,7 +667,7 @@ export default function InboxPage() {
                   handleQuickSubmit(e);
                 }
               }}
-              placeholder={isListening ? 'Listening to voice...' : 'Enter idea parking...'}
+              placeholder={isListening ? 'Listening to voice...' : 'Write down a thought, task, or reminder...'}
               autoFocus
             />
 

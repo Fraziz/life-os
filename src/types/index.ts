@@ -557,6 +557,7 @@ export interface NavItem {
   id: string;
   label: string;
   href: string;
+  activePaths?: string[];   // Additional route prefixes that mark this item active (e.g. ['/calendar', '/routine'])
   icon: string;
   phase?: number;           // Which phase builds this feature
   isAvailable: boolean;     // False = show "Coming Soon"
@@ -567,6 +568,9 @@ export interface NavItem {
 export interface NavSection {
   id: string;
   label: string;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  hideHeader?: boolean;
   items: NavItem[];
 }
 

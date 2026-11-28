@@ -13,12 +13,12 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: 'Alt + I', desc: 'Jump to Idea Parking (Inbox / Quick Capture)' },
-    { key: 'Alt + G', desc: 'Jump to Goals & Ambitions' },
-    { key: 'Alt + P', desc: 'Jump to Projects & Progress Cascade' },
-    { key: 'Alt + T', desc: 'Jump to Task Board & Execution' },
-    { key: 'Alt + Y', desc: 'Jump to Today Dashboard' },
-    { key: 'Alt + F', desc: 'Jump to Focus Space (Timer & Soundscape)' },
+    { key: 'Alt + I', desc: 'Jump to Brain Dump (Quick Thought Capture)' },
+    { key: 'Alt + G', desc: 'Jump to Goals & Vision' },
+    { key: 'Alt + P', desc: 'Jump to Projects' },
+    { key: 'Alt + T', desc: 'Jump to Tasks' },
+    { key: 'Alt + Y', desc: 'Jump to Today' },
+    { key: 'Alt + F', desc: 'Jump to Focus Mode (Timer & Soundscape)' },
     { key: 'Alt + B', desc: 'Jump to Habits & Streak Tracker' },
     { key: 'Alt + R', desc: 'Jump to Weekly Review Wizard' },
     { key: '⌘ K / Ctrl+K', desc: 'Global Full-Text Search across Sariling Mundo' },

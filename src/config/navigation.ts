@@ -2,12 +2,17 @@ import type { NavSection } from '@/types';
 
 /**
  * Single source of truth for Sariling Mundo navigation.
- * Matches all ADHD-focused categories and item names exactly.
+ * Designed around cognitive clarity and low decision fatigue:
+ *  1. Primary (always visible): Start, dump thoughts, manage tasks, focus.
+ *  2. Life Management (collapsible, open by default): Calendar & Routines, Projects, Goals & Vision.
+ *  3. More (collapsible, collapsed by default): Books & Lessons, Files, Weekly Review.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
-    id: 'daily',
-    label: 'Daily',
+    id: 'primary',
+    label: 'Primary',
+    collapsible: false,
+    hideHeader: true,
     items: [
       {
         id: 'today',
@@ -17,22 +22,8 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'routine',
-        label: 'Daily Routine',
-        href: '/routine',
-        icon: 'routine',
-        isAvailable: true,
-      },
-      {
-        id: 'focus',
-        label: 'Focus Space',
-        href: '/focus',
-        icon: 'focus',
-        isAvailable: true,
-      },
-      {
         id: 'inbox',
-        label: 'Idea Parking',
+        label: 'Brain Dump',
         href: '/inbox',
         icon: 'inbox',
         isAvailable: true,
@@ -45,30 +36,26 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'calendar',
-        label: 'Calendar',
-        href: '/calendar',
-        icon: 'calendar',
+        id: 'focus',
+        label: 'Focus Mode',
+        href: '/focus',
+        icon: 'focus',
         isAvailable: true,
       },
     ],
   },
   {
-    id: 'planning',
-    label: 'Planning',
+    id: 'life-management',
+    label: 'Life Management',
+    collapsible: true,
+    defaultOpen: true,
     items: [
       {
-        id: 'dreams',
-        label: 'Dreams & Vision',
-        href: '/dreams',
-        icon: 'dreams',
-        isAvailable: true,
-      },
-      {
-        id: 'goals',
-        label: 'Goals',
-        href: '/goals',
-        icon: 'goals',
+        id: 'calendar',
+        label: 'Calendar & Routines',
+        href: '/calendar',
+        activePaths: ['/calendar', '/routine'],
+        icon: 'calendar',
         isAvailable: true,
       },
       {
@@ -78,11 +65,21 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'projects',
         isAvailable: true,
       },
+      {
+        id: 'goals',
+        label: 'Goals & Vision',
+        href: '/goals',
+        activePaths: ['/goals', '/dreams'],
+        icon: 'goals',
+        isAvailable: true,
+      },
     ],
   },
   {
-    id: 'growth',
-    label: 'Growth',
+    id: 'more',
+    label: 'More',
+    collapsible: true,
+    defaultOpen: false,
     items: [
       {
         id: 'knowledge',
@@ -98,12 +95,6 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'files',
         isAvailable: true,
       },
-    ],
-  },
-  {
-    id: 'more',
-    label: 'Review',
-    items: [
       {
         id: 'review',
         label: 'Weekly Review',
