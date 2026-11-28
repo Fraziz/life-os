@@ -15,53 +15,38 @@ const INBOX_STORAGE_KEY = 'life_os_inbox_v1';
 
 export const DEFAULT_INBOX_ITEMS: InboxItem[] = [
   {
-    id: 'inbox-link-questions',
-    content:
-      'LINK: CLASSROOM For school-safe questions, teamwork, communication, confidence, and friendship. LINK: TEENS More personal, funny, challenging, and relationship-oriented questions. LINK: AFTER HOURS Your more mature/social version for adults and older audiences.',
+    id: 'inbox-sample-1',
+    content: 'Book dentist appointment for next month',
     status: 'inbox',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-test-people',
-    content: 'Is this good enough to test with real people?',
+    id: 'inbox-sample-2',
+    content: 'Gift idea for a friend’s upcoming birthday',
     status: 'inbox',
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-app-ideas',
-    content: 'App ideas (inner child / fun)',
+    id: 'inbox-sample-3',
+    content: 'Side project idea: build a small tool that solves an everyday annoyance',
     status: 'inbox',
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-biz-ideas',
-    content: 'Business name ideas (Groovy Club, etc.)',
+    id: 'inbox-sample-4',
+    content: 'Weekend reset: back up photos and clear phone storage',
     status: 'inbox',
     createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'inbox-motorcycle',
-    content: 'Motorcycle research (XSR155 / Click / ADV)',
+    id: 'inbox-sample-5',
+    content: 'Groceries to pick up: coffee, fruit, eggs, oats',
     status: 'inbox',
     createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'inbox-future-plans',
-    content: 'Future plans / graduation anxiety',
-    status: 'inbox',
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'inbox-random',
-    content: 'Random ideas / dreams',
-    status: 'inbox',
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
@@ -241,7 +226,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
           setItems((prev) => {
             if (prev.some((i) => i.id === target.id)) return prev;
             const restored = [target, ...prev];
-            try { localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            try { localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(restored)); } catch { }
             return restored;
           });
         },
@@ -406,11 +391,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       items.map((i) =>
         i.id === id
           ? {
-              ...i,
-              isApplied: !i.isApplied,
-              appliedAt: !i.isApplied ? new Date().toISOString() : undefined,
-              updatedAt: new Date().toISOString(),
-            }
+            ...i,
+            isApplied: !i.isApplied,
+            appliedAt: !i.isApplied ? new Date().toISOString() : undefined,
+            updatedAt: new Date().toISOString(),
+          }
           : i
       )
     );

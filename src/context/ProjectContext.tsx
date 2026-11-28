@@ -9,28 +9,28 @@ const PROJECTS_STORAGE_KEY = 'life_os_projects_v1';
 
 export const DEFAULT_PROJECTS: Project[] = [
   {
-    id: 'project-link-or-dare',
-    title: 'LINK OR DARE',
-    description: 'Social card game development, question decks, and card prototyping.',
+    id: 'project-personal-reset',
+    title: 'Home & Digital Workspace Reset',
+    description: 'Declutter desk, organize cloud folders, and simplify daily environment.',
     status: 'active',
     priority: 'high',
-    progress: 100,
-    goalId: 'goal-4',
-    lifeAreaId: 'area-creative',
-    notes: 'Next: Finalize card designs. 75 / 75 cards ready.',
+    progress: 50,
+    goalId: 'goal-2',
+    lifeAreaId: 'area-personal',
+    notes: 'Focus on one small area or folder at a time.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'project-gainroot',
-    title: 'GAINROOT',
-    description: 'Sweet potato nutrition product planning, shelf life research, and FDA registration.',
+    id: 'project-flagship-build',
+    title: 'Personal Portfolio & Skill Project',
+    description: 'Design, build, and share one meaningful creative or career project step by step.',
     status: 'active',
-    priority: 'high',
-    progress: 40,
+    priority: 'medium',
+    progress: 35,
     goalId: 'goal-4',
     lifeAreaId: 'area-career',
-    notes: 'Next: Finalize packaging design. Product Plan in progress.',
+    notes: 'Keep scope small and ship an early version first.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -143,7 +143,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           setProjects((prev) => {
             if (prev.some((p) => p.id === target.id)) return prev;
             const restored = [target, ...prev];
-            try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(restored)); } catch {}
+            try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(restored)); } catch { }
             return restored;
           });
         },

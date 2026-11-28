@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/context/TaskContext';
 import { useGoals } from '@/context/GoalContext';
 import { useProjects } from '@/context/ProjectContext';
@@ -30,6 +31,7 @@ export default function DailyBriefingModal({
   initialMode = 'morning',
 }: DailyBriefingModalProps) {
   const { settings } = useSettings();
+  const { user } = useAuth();
   const { tasks } = useTasks();
   const { activeGoals } = useGoals();
   const { activeProjects } = useProjects();
@@ -54,7 +56,10 @@ export default function DailyBriefingModal({
     return habits.filter((h) => isHabitCompletedOnDate(h.id, todayStr)).length;
   }, [habits, isHabitCompletedOnDate, todayStr]);
 
-  const userName = settings?.profile?.displayName || 'Aaron';
+  const userName =
+    settings?.profile?.displayName ||
+    user?.displayName ||
+    (user?.email ? user.email.split('@')[0] : 'friend');
 
   const briefingText = briefingCache[mode] || '';
 

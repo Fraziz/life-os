@@ -54,14 +54,13 @@ export const DEFAULT_DAILY_ROUTINE: RoutineBlock[] = [
   {
     id: 'routine-3',
     timeRange: '9:00 – 10:00 AM',
-    title: 'English practice',
+    title: 'Learning & skill practice',
     startMinute: 9 * 60,
     endMinute: 10 * 60,
     steps: [
-      'Read one short passage',
-      'Learn 3 useful expressions',
-      'Speak out loud for 5–10 minutes',
-      'Explain something in your own words',
+      'Read one short chapter or article',
+      'Practice a core skill for 20 minutes',
+      'Write 2 quick takeaways in your own words',
     ],
   },
   {
@@ -71,21 +70,20 @@ export const DEFAULT_DAILY_ROUTINE: RoutineBlock[] = [
     startMinute: 10 * 60,
     endMinute: 12 * 60,
     steps: [
-      'Capstone, studies, or important responsibilities',
+      'Work, studies, or your #1 responsibility',
       'Focus on one task at a time',
     ],
   },
   {
     id: 'routine-5',
     timeRange: '1:00 – 2:00 PM',
-    title: 'Guitar practice',
+    title: 'Creative or hobby block',
     startMinute: 13 * 60,
     endMinute: 14 * 60,
     steps: [
-      '10 minutes: technique',
-      '15 minutes: chords and progressions',
-      '20 minutes: actual songs',
-      '15 minutes: play without tutorials',
+      '10 minutes: warm up without pressure',
+      '30 minutes: hands-on creative practice',
+      '15 minutes: enjoy making something freely',
     ],
   },
   {

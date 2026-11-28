@@ -17,23 +17,31 @@ export const metadata: Metadata = {
     template: '%s | Sariling Mundo',
   },
   description:
-    'Sariling Mundo helps you transform your dreams and ambitions into realistic goals, projects, tasks, knowledge notes, and daily actions.',
-  keywords: ['goal setting', 'productivity', 'life planning', 'habits', 'focus', 'task management'],
+    'A calm, ADHD-friendly personal workspace to clear your head, break down overwhelming tasks, and focus on one step at a time.',
+  keywords: [
+    'ADHD productivity',
+    'personal workspace',
+    'brain dump',
+    'task breakdown',
+    'daily routine',
+    'focus timer',
+    'goal planning',
+  ],
   authors: [{ name: 'Sariling Mundo' }],
   creator: 'Sariling Mundo',
   openGraph: {
     type: 'website',
     siteName: 'Sariling Mundo',
-    title: 'Sariling Mundo — Personal Operating System',
+    title: 'Sariling Mundo — Calm Personal Operating System',
     description:
-      'Organize dreams, goals, projects, tasks, books, habits, and focus sessions in one isolated workspace.',
+      'Clear racing thoughts, shrink overwhelming tasks into tiny steps, and move forward without guilt.',
     images: [{ url: '/logo.png?v=3', width: 512, height: 512, alt: 'Sariling Mundo' }],
   },
   twitter: {
     card: 'summary',
-    title: 'Sariling Mundo — Personal Operating System',
+    title: 'Sariling Mundo — Calm Personal Operating System',
     description:
-      'Organize dreams, goals, projects, tasks, books, habits, and focus sessions in one isolated workspace.',
+      'Clear racing thoughts, shrink overwhelming tasks into tiny steps, and move forward without guilt.',
     images: ['/logo.png?v=3'],
   },
   appleWebApp: {

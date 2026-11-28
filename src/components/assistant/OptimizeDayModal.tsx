@@ -9,6 +9,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/context/TaskContext';
 import { useGoals } from '@/context/GoalContext';
 import { useHabits } from '@/context/HabitContext';
@@ -25,6 +26,7 @@ interface OptimizeDayModalProps {
 
 export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalProps) {
   const { settings } = useSettings();
+  const { user } = useAuth();
   const { tasks } = useTasks();
   const { activeGoals } = useGoals();
   const { habits } = useHabits();
@@ -82,7 +84,10 @@ export default function OptimizeDayModal({ isOpen, onClose }: OptimizeDayModalPr
             calendarEvents: events,
             startHour: hour,
             availableHours: settings?.availableHoursPerDay || 8,
-            userName: settings?.profile?.displayName || 'Aaron',
+            userName:
+              settings?.profile?.displayName ||
+              user?.displayName ||
+              (user?.email ? user.email.split('@')[0] : 'friend'),
           },
           settings?.aiSettings
         );

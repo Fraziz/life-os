@@ -161,7 +161,7 @@ export default function RegisterPage() {
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Aaron Paul"
+              placeholder="e.g. Alex Rivera"
               disabled={busy || googleBusy}
               autoFocus
             />

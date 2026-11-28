@@ -10,114 +10,73 @@ const TASKS_STORAGE_KEY = 'life_os_tasks_v1';
 
 export const DEFAULT_TASKS: Task[] = [
   {
-    id: 'task-ui-design',
-    title: 'Finish Sariling Mundo UI design (final layout)',
-    description: 'Finalize the three-column responsive Sariling Mundo layout matching the modern aesthetic.',
+    id: 'task-calm-start',
+    title: 'Clear desk and choose one main win for today',
+    description: 'Start small so your workspace feels calm and ready.',
     status: 'doing',
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],
-    estimatedDuration: 60,
-    projectId: 'project-link-or-dare',
-    goalId: 'goal-1',
-    lifeAreaId: 'area-creative',
-    tags: ['School', 'UI', 'Design'],
-    subtasks: [],
+    estimatedDuration: 15,
+    projectId: 'project-personal-reset',
+    tags: ['Starter', 'Focus'],
+    subtasks: [
+      { id: 'sub-start-1', title: 'Put away mugs, papers, or extra tabs (2m)', completed: false },
+      { id: 'sub-start-2', title: 'Keep water nearby', completed: false },
+      { id: 'sub-start-3', title: 'Pick the single task that matters most today', completed: false },
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-study-english',
-    title: 'Study English (SVO + parts of speech)',
-    description: 'A1 - B2 grammar practice and sentence structures.',
+    id: 'task-deep-work',
+    title: 'Spend 25 minutes on your main project',
+    description: 'One focused sprint—progress over perfection.',
     status: 'todo',
     priority: 'high',
     dueDate: new Date().toISOString().split('T')[0],
-    estimatedDuration: 45,
-    goalId: 'goal-5',
-    lifeAreaId: 'area-learning',
-    tags: ['Study', 'English'],
+    estimatedDuration: 25,
+    projectId: 'project-flagship-build',
+    goalId: 'goal-4',
+    tags: ['Deep Work'],
     subtasks: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-workout',
-    title: 'Workout (full body / pull ups)',
-    description: 'Upper body, pull ups and core routine.',
+    id: 'task-movement',
+    title: '20-minute walk, stretch, or workout',
+    description: 'Reset mental energy and step away from screens.',
     status: 'todo',
-    priority: 'high',
+    priority: 'medium',
     dueDate: new Date().toISOString().split('T')[0],
-    estimatedDuration: 45,
-    goalId: 'goal-6',
-    lifeAreaId: 'area-health',
-    tags: ['Health', 'Fitness'],
-    subtasks: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-cardmasters',
-    title: 'Reply to CardMasters inquiry (research other PH printers)',
-    description: 'Compare printing quote and quality for card deck prototyping.',
-    status: 'todo',
-    priority: 'medium',
-    projectId: 'project-link-or-dare',
-    goalId: 'goal-4',
-    lifeAreaId: 'area-creative',
-    tags: ['LINK OR DARE', 'Business'],
-    subtasks: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-gainroot',
-    title: 'Work on GAINROOT product plan',
-    description: 'Structure nutritional specs and FDA compliance.',
-    status: 'todo',
-    priority: 'medium',
-    projectId: 'project-gainroot',
-    goalId: 'goal-4',
-    lifeAreaId: 'area-career',
-    tags: ['GAINROOT', 'Product'],
-    subtasks: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-guitar',
-    title: 'Practice guitar (30 mins)',
-    description: 'Fingerpicking and chord transitions.',
-    status: 'todo',
-    priority: 'medium',
-    goalId: 'goal-1',
-    lifeAreaId: 'area-creative',
-    tags: ['Hobby', 'Music'],
+    estimatedDuration: 20,
+    tags: ['Health'],
     subtasks: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
     id: 'task-reading',
-    title: 'Read 5 pages (philosophy / Stoicism)',
-    description: 'Meditations or Letters from a Stoic daily reading.',
+    title: 'Read 10 pages or watch one short lesson',
+    description: 'Take two quick notes in Books & Lessons.',
     status: 'todo',
     priority: 'medium',
+    estimatedDuration: 25,
     goalId: 'goal-5',
-    lifeAreaId: 'area-learning',
-    tags: ['Mindset', 'Reading'],
+    tags: ['Learning'],
     subtasks: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-clean-room',
-    title: 'Clean room / organize files',
-    description: 'Declutter physical workspace and digital folder structures.',
-    status: 'todo',
+    id: 'task-digital-tidy',
+    title: 'Organize downloads folder and desktop files',
+    description: 'Delete obvious duplicates and group active files.',
+    status: 'backlog',
     priority: 'low',
-    goalId: 'goal-2',
-    lifeAreaId: 'area-money',
-    tags: ['Personal'],
+    estimatedDuration: 15,
+    projectId: 'project-personal-reset',
+    tags: ['Admin'],
     subtasks: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -203,52 +162,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     const cleanedTitle = cleanMarkdownText(title);
     if (!cleanedTitle) return;
 
-    let inferredProjectId = overrides?.projectId;
-    let inferredGoalId = overrides?.goalId;
-    let inferredLifeAreaId = overrides?.lifeAreaId;
-
-    const titleLower = cleanedTitle.toLowerCase();
-    const tagsLower = (overrides?.tags || []).map((t) => t.toLowerCase());
-
-    if (!inferredProjectId) {
-      if (
-        tagsLower.some((tg) => tg.includes('link or dare')) ||
-        titleLower.includes('link or dare') ||
-        titleLower.includes('cardmasters') ||
-        titleLower.includes('sariling mundo')
-      ) {
-        inferredProjectId = 'project-link-or-dare';
-        if (!inferredGoalId) inferredGoalId = 'goal-4';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-creative';
-      } else if (
-        tagsLower.some((tg) => tg.includes('gainroot')) ||
-        titleLower.includes('gainroot')
-      ) {
-        inferredProjectId = 'project-gainroot';
-        if (!inferredGoalId) inferredGoalId = 'goal-4';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-career';
-      }
-    }
-
-    if (!inferredGoalId) {
-      if (titleLower.includes('english') || tagsLower.some((tg) => tg.includes('english') || tg.includes('study'))) {
-        inferredGoalId = 'goal-5';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-learning';
-      } else if (titleLower.includes('workout') || titleLower.includes('pull ups') || tagsLower.some((tg) => tg.includes('health') || tg.includes('fitness'))) {
-        inferredGoalId = 'goal-6';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-health';
-      } else if (titleLower.includes('reading') || titleLower.includes('stoic') || tagsLower.some((tg) => tg.includes('reading'))) {
-        inferredGoalId = 'goal-5';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-learning';
-      } else if (titleLower.includes('guitar') || titleLower.includes('music')) {
-        inferredGoalId = 'goal-1';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-creative';
-      } else if (titleLower.includes('clean') || titleLower.includes('room')) {
-        inferredGoalId = 'goal-2';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-money';
-      }
-    }
-
     const newTask: Task = {
       id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       title: cleanedTitle,
@@ -257,9 +170,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       tags: [],
       subtasks: [],
       ...overrides,
-      projectId: inferredProjectId,
-      goalId: inferredGoalId,
-      lifeAreaId: inferredLifeAreaId,
+      projectId: overrides?.projectId,
+      goalId: overrides?.goalId,
+      lifeAreaId: overrides?.lifeAreaId,
       description: overrides?.description ? cleanMarkdownText(overrides.description) : overrides?.description,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -268,59 +181,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTask = (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    let inferredProjectId = data.projectId;
-    let inferredGoalId = data.goalId;
-    let inferredLifeAreaId = data.lifeAreaId;
-
-    const titleLower = (data.title || '').toLowerCase();
-    const tagsLower = (data.tags || []).map((t) => t.toLowerCase());
-
-    if (!inferredProjectId) {
-      if (
-        tagsLower.some((tg) => tg.includes('link or dare')) ||
-        titleLower.includes('link or dare') ||
-        titleLower.includes('cardmasters') ||
-        titleLower.includes('sariling mundo')
-      ) {
-        inferredProjectId = 'project-link-or-dare';
-        if (!inferredGoalId) inferredGoalId = 'goal-4';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-creative';
-      } else if (
-        tagsLower.some((tg) => tg.includes('gainroot')) ||
-        titleLower.includes('gainroot')
-      ) {
-        inferredProjectId = 'project-gainroot';
-        if (!inferredGoalId) inferredGoalId = 'goal-4';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-career';
-      }
-    }
-
-    if (!inferredGoalId) {
-      if (titleLower.includes('english') || tagsLower.some((tg) => tg.includes('english') || tg.includes('study'))) {
-        inferredGoalId = 'goal-5';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-learning';
-      } else if (titleLower.includes('workout') || titleLower.includes('pull ups') || tagsLower.some((tg) => tg.includes('health') || tg.includes('fitness'))) {
-        inferredGoalId = 'goal-6';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-health';
-      } else if (titleLower.includes('reading') || titleLower.includes('stoic') || tagsLower.some((tg) => tg.includes('reading'))) {
-        inferredGoalId = 'goal-5';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-learning';
-      } else if (titleLower.includes('guitar') || titleLower.includes('music')) {
-        inferredGoalId = 'goal-1';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-creative';
-      } else if (titleLower.includes('clean') || titleLower.includes('room')) {
-        inferredGoalId = 'goal-2';
-        if (!inferredLifeAreaId) inferredLifeAreaId = 'area-money';
-      }
-    }
-
     const newTask: Task = {
       ...data,
       title: cleanMarkdownText(data.title),
       description: data.description ? cleanMarkdownText(data.description) : undefined,
-      projectId: inferredProjectId,
-      goalId: inferredGoalId,
-      lifeAreaId: inferredLifeAreaId,
+      projectId: data.projectId,
+      goalId: data.goalId,
+      lifeAreaId: data.lifeAreaId,
       id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       completedAt: data.status === 'done' ? (data.completedAt || new Date().toISOString()) : undefined,
       tags: data.tags || [],

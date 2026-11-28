@@ -13,22 +13,17 @@ export interface QuickNote {
 const DEFAULT_QUICK_NOTES: QuickNote[] = [
   {
     id: 'qn-1',
-    text: 'Check printing services in PH (affordable + quality)',
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: 'qn-2',
-    text: 'Research sweet potato (nutrition, shelf life, FDA)',
+    text: 'Keep today simple: finish 1 meaningful task before noon',
     createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
   },
   {
-    id: 'qn-3',
-    text: 'Learn business basics (opportunity, customer, market)',
+    id: 'qn-2',
+    text: 'Write down distracting thoughts instead of switching tabs',
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
-    id: 'qn-4',
-    text: 'Watch Norman Lewis 30 Days (English)',
+    id: 'qn-3',
+    text: 'Review weekly goals on Sunday evening',
     createdAt: new Date(Date.now() - 3600000).toISOString(),
   },
 ];

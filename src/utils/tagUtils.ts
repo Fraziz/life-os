@@ -22,7 +22,7 @@ export function formatTagLabel(tag: string): string {
   if (!tag) return '';
   const trimmed = tag.trim();
 
-  // If already uppercase (e.g. "LINK OR DARE", "GAINROOT") with more than 1 character, preserve it
+  // If already uppercase (e.g. "MVP", "DEEP WORK") with more than 2 characters, preserve it
   if (trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed) && trimmed.length > 2) {
     return trimmed;
   }
