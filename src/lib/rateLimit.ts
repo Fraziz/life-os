@@ -66,6 +66,28 @@ export function getRateLimitStats() {
   };
 }
 
+export interface RateLimitBucketDetail {
+  bucket: string;
+  count: number;
+  resetsInSeconds: number;
+}
+
+export function getRateLimitDetails(limit = 12): RateLimitBucketDetail[] {
+  const now = Date.now();
+  const active: RateLimitBucketDetail[] = [];
+  for (const [key, record] of rateLimitMap.entries()) {
+    if (record.resetAt > now) {
+      active.push({
+        bucket: key.length > 48 ? `${key.slice(0, 45)}...` : key,
+        count: record.count,
+        resetsInSeconds: Math.max(1, Math.ceil((record.resetAt - now) / 1000)),
+      });
+    }
+  }
+  active.sort((a, b) => b.count - a.count);
+  return active.slice(0, Math.max(1, limit));
+}
+
 export function clearRateLimits(): number {
   const count = rateLimitMap.size;
   rateLimitMap.clear();

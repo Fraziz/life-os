@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
@@ -400,7 +401,11 @@ function ShellContent({ children }: { children: React.ReactNode }) {
           {systemConfig.bannerEnabled && systemConfig.bannerMessage && !bannerDismissed && (
             <div
               className={`${styles.systemBanner} ${
-                systemConfig.bannerTone === 'warning' ? styles.systemBannerWarning : ''
+                systemConfig.bannerTone === 'warning'
+                  ? styles.systemBannerWarning
+                  : systemConfig.bannerTone === 'critical'
+                  ? styles.systemBannerCritical
+                  : ''
               }`}
               role="status"
             >
@@ -408,14 +413,32 @@ function ShellContent({ children }: { children: React.ReactNode }) {
                 {systemConfig.bannerTitle && <strong>{systemConfig.bannerTitle}: </strong>}
                 <span>{systemConfig.bannerMessage}</span>
               </div>
-              <button
-                type="button"
-                className={styles.systemBannerClose}
-                onClick={() => setBannerDismissed(true)}
-                aria-label="Dismiss announcement"
-              >
-                Dismiss
-              </button>
+              <div className={styles.systemBannerActions}>
+                {systemConfig.bannerActionLabel && systemConfig.bannerActionHref && (
+                  systemConfig.bannerActionHref.startsWith('/') ? (
+                    <Link href={systemConfig.bannerActionHref} className={styles.systemBannerClose}>
+                      {systemConfig.bannerActionLabel}
+                    </Link>
+                  ) : (
+                    <a
+                      href={systemConfig.bannerActionHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.systemBannerClose}
+                    >
+                      {systemConfig.bannerActionLabel}
+                    </a>
+                  )
+                )}
+                <button
+                  type="button"
+                  className={styles.systemBannerClose}
+                  onClick={() => setBannerDismissed(true)}
+                  aria-label="Dismiss announcement"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 

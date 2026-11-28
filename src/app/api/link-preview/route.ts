@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
 import { getCachedPreview, setPreviewCache, type LinkPreviewData } from '@/lib/linkPreviewCache';
+import { getServerSystemConfig } from '@/lib/serverSystemConfig';
 
 function safeExternalHttpUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -136,6 +137,14 @@ function getSmartFallback(urlStr: string): LinkPreviewData {
 }
 
 export async function GET(req: NextRequest) {
+  const sysCfg = await getServerSystemConfig();
+  if (!sysCfg.linkPreviewsEnabled) {
+    return NextResponse.json(
+      { error: 'Link preview resolution is temporarily paused by an administrator.' },
+      { status: 503 }
+    );
+  }
+
   // Rate limiting: 60 link previews per minute per IP
   const clientIp = getClientIp(req);
   const rateCheck = await checkRateLimitAsync(`link-preview:${clientIp}`, 60, 60 * 1000);

@@ -27,19 +27,46 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Admin-only audit log
-    match /app/adminAudit/{entryId} {
+    // Operational status incidents (public read for status checks, admin write)
+    match /adminIncidents/{incidentId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+
+    // Admin-only immutable/audit trail
+    match /adminAudit/{entryId} {
       allow read, write, delete: if isAdmin();
     }
 
-    // User summary directory doc (account status visible to owner/admin only)
+    // Admin-only internal account notes & risk flags (never exposed to users)
+    match /adminUserNotes/{userId} {
+      allow read, write, delete: if isAdmin();
+    }
+
+    // User summary directory doc (account status visible to user & owner/admin)
     match /users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.keys().hasAny(['accountStatus', 'suspensionReason', 'suspendedAt', 'adminRole']);
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        (request.auth.uid == userId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['accountStatus', 'suspensionReason', 'suspendedAt', 'adminRole']))
+      );
       allow delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
-    // User private data (KV store, books, files metadata, sessions)
+    // Device session control (admin can inspect active devices or force global sign-out)
+    match /users/{userId}/meta/session {
+      allow read, write, delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /users/{userId}/sessions/{sessionId} {
+      allow read, write, delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // User private data (KV store, books, files metadata) — strictly user-isolated
     match /users/{userId}/{document=**} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }

@@ -2,13 +2,20 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '@/context/AuthContext';
 import { hydrateFromCloud, startCloudSync, stopCloudSync } from '@/lib/cloudStore';
-import { readSystemConfig } from '@/lib/systemConfig';
+import {
+  DEFAULT_SYSTEM_CONFIG,
+  readSystemConfig,
+  subscribeSystemConfig,
+  type SystemConfig,
+} from '@/lib/systemConfig';
 import { AttachmentProvider } from '@/context/AttachmentContext';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { startDeviceSessionTracking } from '@/lib/deviceSessions';
+import statusStyles from '@/app/status.module.css';
 
 export default function AuthGate({
   children,
@@ -23,9 +30,21 @@ export default function AuthGate({
   const [hydrateError, setHydrateError] = useState<string | null>(null);
   const lastSyncedUid = useRef<string | null>(null);
   const sessionMountedAt = useRef(0);
+  const [sysConfig, setSysConfig] = useState<SystemConfig>(DEFAULT_SYSTEM_CONFIG);
+  const [suspensionInfo, setSuspensionInfo] = useState<{ suspended: boolean; reason?: string } | null>(null);
+  const [adminBypass, setAdminBypass] = useState<{ uid: string | null; checked: boolean; allowed: boolean }>({
+    uid: null,
+    checked: false,
+    allowed: false,
+  });
+  const [verifyNotice, setVerifyNotice] = useState<string | null>(null);
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   useEffect(() => {
     sessionMountedAt.current = Date.now();
+    return subscribeSystemConfig((cfg) => {
+      setSysConfig(cfg);
+    });
   }, []);
 
   const isAuthOnlyRoute = pathname === '/login' || pathname === '/register';
@@ -73,6 +92,72 @@ export default function AuthGate({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, isGuest]);
+
+  // Real-time account status enforcement (Admin Suspend / Restore)
+  useEffect(() => {
+    if (!user || isGuest) {
+      setSuspensionInfo(null);
+      return;
+    }
+    try {
+      const userDocRef = doc(getFirebaseDb(), 'users', user.uid);
+      const unsub = onSnapshot(userDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as { accountStatus?: string; suspensionReason?: string };
+          if (data?.accountStatus === 'suspended') {
+            setSuspensionInfo({
+              suspended: true,
+              reason: data.suspensionReason || undefined,
+            });
+            void stopCloudSync({ flushWrites: false });
+          } else {
+            setSuspensionInfo(null);
+          }
+        } else {
+          setSuspensionInfo(null);
+        }
+      });
+      return () => unsub();
+    } catch {
+      // ignore offline failsafe
+    }
+  }, [user, isGuest]);
+
+  // Verify admin bypass only when maintenanceMode or strict email verification is enabled
+  useEffect(() => {
+    const needsPolicyBypassCheck = Boolean(sysConfig.maintenanceMode || sysConfig.requireVerifiedEmail);
+    if (!needsPolicyBypassCheck || !user || isGuest) {
+      setAdminBypass({ uid: user?.uid || null, checked: true, allowed: false });
+      return;
+    }
+    let active = true;
+    setAdminBypass({ uid: user.uid, checked: false, allowed: false });
+    (async () => {
+      try {
+        const fbUser = getFirebaseAuth().currentUser;
+        const token = fbUser ? await fbUser.getIdToken() : null;
+        if (!token) {
+          if (active) setAdminBypass({ uid: user.uid, checked: true, allowed: false });
+          return;
+        }
+        const resp = await fetch('/api/admin/session', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!resp.ok) {
+          if (active) setAdminBypass({ uid: user.uid, checked: true, allowed: false });
+          return;
+        }
+        const payload = (await resp.json()) as { authorized?: boolean };
+        if (active) setAdminBypass({ uid: user.uid, checked: true, allowed: Boolean(payload?.authorized) });
+      } catch {
+        if (active) setAdminBypass({ uid: user.uid, checked: true, allowed: false });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [sysConfig.maintenanceMode, sysConfig.requireVerifiedEmail, user, isGuest]);
 
   // Ask browser/OS to keep IndexedDB & local storage persistent under storage pressure
   useEffect(() => {
@@ -221,6 +306,163 @@ export default function AuthGate({
           </div>
         )}
       </div>
+    );
+  }
+
+  // Enforce account suspension set from Admin Console
+  if (suspensionInfo?.suspended && !isPublicRoute) {
+    return (
+      <main className={statusStyles.wrap}>
+        <section className={statusStyles.card}>
+          <div className={statusStyles.kicker}>
+            <span className={statusStyles.dot} aria-hidden="true" />
+            <span>Access Restricted</span>
+          </div>
+          <h1 className={statusStyles.title}>Your account access is suspended</h1>
+          <p className={statusStyles.desc}>
+            {suspensionInfo.reason ||
+              'Access to this workspace has been temporarily paused by an administrator.'}
+          </p>
+          <div className={statusStyles.actions}>
+            <button
+              type="button"
+              className={statusStyles.primaryBtn}
+              onClick={() => void logout()}
+            >
+              Sign Out
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const isAdminRoute = pathname === '/admin';
+  const hasAdminBypass = adminBypass.uid === user.uid && adminBypass.checked && adminBypass.allowed;
+  const checkingPolicyBypass =
+    (sysConfig.maintenanceMode || sysConfig.requireVerifiedEmail) &&
+    !isGuest &&
+    !isAdminRoute &&
+    !isPublicRoute &&
+    (!adminBypass.checked || adminBypass.uid !== user.uid);
+
+  if (checkingPolicyBypass) {
+    return (
+      <main className={statusStyles.wrap}>
+        <section className={statusStyles.card}>
+          <div className={statusStyles.kicker}>
+            <span className={statusStyles.dot} aria-hidden="true" />
+            <span>Verifying Platform Access</span>
+          </div>
+          <h1 className={statusStyles.title}>Checking workspace availability…</h1>
+          <p className={statusStyles.desc}>Please wait a moment while active platform policies are verified.</p>
+        </section>
+      </main>
+    );
+  }
+
+  // Enforce Scheduled Maintenance Mode (Admin Console and verified owner bypass cleanly)
+  if (sysConfig.maintenanceMode && !isPublicRoute && !isAdminRoute && !hasAdminBypass) {
+    return (
+      <main className={statusStyles.wrap}>
+        <section className={statusStyles.card}>
+          <div className={statusStyles.kicker}>
+            <span className={statusStyles.dot} aria-hidden="true" />
+            <span>Scheduled Maintenance</span>
+          </div>
+          <h1 className={statusStyles.title}>Workspace is temporarily paused</h1>
+          <p className={statusStyles.desc}>{sysConfig.maintenanceMessage}</p>
+          <div className={statusStyles.actions}>
+            <button
+              type="button"
+              className={statusStyles.primaryBtn}
+              onClick={() => window.location.reload()}
+            >
+              Check Availability
+            </button>
+            <button
+              type="button"
+              className={statusStyles.secondaryBtn}
+              onClick={() => void logout()}
+            >
+              Sign Out
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // Enforce verified email policy when enabled by Admin
+  const isUnverifiedEmail =
+    sysConfig.requireVerifiedEmail &&
+    !isGuest &&
+    !isPublicRoute &&
+    !isAdminRoute &&
+    !hasAdminBypass &&
+    'emailVerified' in user &&
+    !user.emailVerified;
+
+  if (isUnverifiedEmail) {
+    return (
+      <main className={statusStyles.wrap}>
+        <section className={statusStyles.card}>
+          <div className={statusStyles.kicker}>
+            <span className={statusStyles.dot} aria-hidden="true" />
+            <span>Security Policy · Email Verification</span>
+          </div>
+          <h1 className={statusStyles.title}>Verify your email to continue</h1>
+          <p className={statusStyles.desc}>
+            Verified email addresses are currently required for cloud workspace access. Check the inbox for{' '}
+            <strong>{user.email}</strong> or request a new link below.
+          </p>
+          {verifyNotice && <div className={statusStyles.digest}>{verifyNotice}</div>}
+          <div className={statusStyles.actions}>
+            <button
+              type="button"
+              className={statusStyles.primaryBtn}
+              disabled={verifyBusy}
+              onClick={async () => {
+                setVerifyBusy(true);
+                setVerifyNotice(null);
+                try {
+                  const fbUser = getFirebaseAuth().currentUser;
+                  if (fbUser) {
+                    await sendEmailVerification(fbUser);
+                    setVerifyNotice('Verification email sent. Confirm the link, then click Refresh Status.');
+                  }
+                } catch (err: unknown) {
+                  setVerifyNotice(
+                    err instanceof Error ? err.message : 'Unable to resend verification email right now.'
+                  );
+                } finally {
+                  setVerifyBusy(false);
+                }
+              }}
+            >
+              {verifyBusy ? 'Sending…' : 'Resend Verification Email'}
+            </button>
+            <button
+              type="button"
+              className={statusStyles.secondaryBtn}
+              onClick={async () => {
+                const fbUser = getFirebaseAuth().currentUser;
+                if (fbUser) await fbUser.reload().catch(() => undefined);
+                window.location.reload();
+              }}
+            >
+              Refresh Status
+            </button>
+            <button
+              type="button"
+              className={statusStyles.secondaryBtn}
+              onClick={() => void logout()}
+            >
+              Sign Out
+            </button>
+          </div>
+        </section>
+      </main>
     );
   }
 

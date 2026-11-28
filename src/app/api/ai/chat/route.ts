@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimitAsync, getClientIp, isPrivateOrReservedHost } from '@/lib/rateLimit';
 import { verifyFirebaseIdToken } from '@/lib/firebaseServerAuth';
+import { getServerSystemConfig } from '@/lib/serverSystemConfig';
 
 interface AiChatRequestBody {
   prompt?: unknown;
@@ -28,11 +29,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request);
-    const verifiedUid = await verifyFirebaseIdToken(request.headers.get('authorization'));
+    const [verifiedUid, sysCfg] = await Promise.all([
+      verifyFirebaseIdToken(request.headers.get('authorization')),
+      getServerSystemConfig(),
+    ]);
     const rateKey = verifiedUid ? `ai-chat:user:${verifiedUid}` : `ai-chat:ip:${clientIp}`;
 
-    // Rate limiting: max 25 AI generation requests per minute per user or IP
-    const rateCheck = await checkRateLimitAsync(rateKey, 25, 60 * 1000);
+    // Rate limiting: configured centrally from Admin Control Plane (default 25 req/min)
+    const rateCheck = await checkRateLimitAsync(rateKey, sysCfg.aiRateLimitPerMin, 60 * 1000);
     if (!rateCheck.success) {
       return NextResponse.json(
         { error: 'Rate limit exceeded: Please wait a moment before sending more AI requests.' },
@@ -63,12 +67,13 @@ export async function POST(request: Request) {
     const provider = aiSettings.provider || 'gemini';
     const rawApiKey = (aiSettings.apiKey || '').trim();
 
-    // Server-only environment keys: strictly require an authenticated Firebase user before spending server quota
-    const envGroqKey1 = verifiedUid ? (process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY || '') : '';
-    const envGroqKey2 = verifiedUid ? (process.env.GROQ_API_KEY_2 || '') : '';
-    const envGeminiKey = verifiedUid ? (process.env.GEMINI_API_KEY || '') : '';
-    const envOpenAIKey = verifiedUid ? (process.env.OPENAI_API_KEY || '') : '';
-    const envAnthropicKey = verifiedUid ? (process.env.ANTHROPIC_API_KEY || '') : '';
+    // Server-only environment keys: strictly require authenticated user AND enabled platform AI quota
+    const allowServerQuota = Boolean(verifiedUid) && sysCfg.serverAiEnabled;
+    const envGroqKey1 = allowServerQuota ? (process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY || '') : '';
+    const envGroqKey2 = allowServerQuota ? (process.env.GROQ_API_KEY_2 || '') : '';
+    const envGeminiKey = allowServerQuota ? (process.env.GEMINI_API_KEY || '') : '';
+    const envOpenAIKey = allowServerQuota ? (process.env.OPENAI_API_KEY || '') : '';
+    const envAnthropicKey = allowServerQuota ? (process.env.ANTHROPIC_API_KEY || '') : '';
 
     const effectiveApiKey =
       rawApiKey ||
@@ -83,6 +88,12 @@ export async function POST(request: Request) {
         : '');
 
     if (!effectiveApiKey && provider !== 'custom') {
+      if (verifiedUid && !sysCfg.serverAiEnabled) {
+        return NextResponse.json(
+          { error: 'Platform server AI quota is temporarily paused by an administrator. Add a personal API key in Settings or try again later.' },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         {
           error: verifiedUid

@@ -43,10 +43,12 @@ export default function LoginPage() {
   const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [allowGuestMode, setAllowGuestMode] = useState(true);
+  const [allowGoogleAuth, setAllowGoogleAuth] = useState(true);
 
   useEffect(() => {
     void readSystemConfig().then((cfg) => {
       setAllowGuestMode(cfg.allowGuestMode);
+      setAllowGoogleAuth(cfg.allowGoogleAuth);
     });
   }, []);
 
@@ -110,7 +112,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {!resetMode && (
+        {!resetMode && allowGoogleAuth && (
           <>
             {/* Google Sign In */}
             <button

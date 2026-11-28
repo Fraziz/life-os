@@ -45,11 +45,13 @@ export default function RegisterPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [allowRegistrations, setAllowRegistrations] = useState(true);
   const [allowGuestMode, setAllowGuestMode] = useState(true);
+  const [allowGoogleAuth, setAllowGoogleAuth] = useState(true);
 
   useEffect(() => {
     void readSystemConfig().then((cfg) => {
       setAllowRegistrations(cfg.allowRegistrations);
       setAllowGuestMode(cfg.allowGuestMode);
+      setAllowGoogleAuth(cfg.allowGoogleAuth);
     });
   }, []);
 
@@ -118,7 +120,7 @@ export default function RegisterPage() {
               New public sign-ups are temporarily paused. If you already have an account, please sign in below.
             </span>
           </div>
-        ) : (
+        ) : allowGoogleAuth ? (
           <>
             {/* Google Sign Up */}
             <button
@@ -138,7 +140,7 @@ export default function RegisterPage() {
               <div className={styles.dividerLine} />
             </div>
           </>
-        )}
+        ) : null}
 
         {(validationError || error) && (
           <div className={styles.errorAlert} role="alert">

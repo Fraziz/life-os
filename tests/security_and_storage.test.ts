@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkRateLimit, isPrivateOrReservedHost } from '../src/lib/rateLimit';
+import { checkRateLimit, getRateLimitDetails, isPrivateOrReservedHost } from '../src/lib/rateLimit';
 import { isBookStorageKey, isManagedKvKey } from '../src/lib/cloudStore';
 import { hashLocalPin, verifyLocalPin } from '../src/lib/pinHash';
 import { isSafeRichUrl, sanitizeRichHtml } from '../src/utils/htmlSanitizer';
 import { verifyAdminRequest } from '../src/lib/adminAuth';
-import { clearPreviewCache, getCachedPreview, getPreviewCacheStats, setPreviewCache } from '../src/lib/linkPreviewCache';
+import { clearPreviewCache, getCachedPreview, getPreviewCacheSampleHosts, getPreviewCacheStats, setPreviewCache } from '../src/lib/linkPreviewCache';
+import { sanitizeBannerHref, sanitizeSystemConfig } from '../src/lib/systemConfig';
 
 test('SSRF protection blocks private networks, localhost, metadata, and obfuscated IPs', () => {
   assert.equal(isPrivateOrReservedHost('127.0.0.1'), true);
@@ -121,6 +122,38 @@ test('Link preview cache stores, reads, and flushes entries cleanly', () => {
   });
   assert.equal(getPreviewCacheStats().entries, 1);
   assert.equal(getCachedPreview('https://example.com')?.title, 'Example');
+  assert.deepEqual(getPreviewCacheSampleHosts(4), ['example.com']);
   assert.equal(clearPreviewCache(), 1);
   assert.equal(getCachedPreview('https://example.com'), null);
+});
+
+test('SystemConfig sanitizer clamps rate limits and blocks unsafe banner URLs', () => {
+  assert.equal(sanitizeBannerHref('/settings'), '/settings');
+  assert.equal(sanitizeBannerHref('https://status.example.com'), 'https://status.example.com/');
+  assert.equal(sanitizeBannerHref('javascript:alert(1)'), '');
+  assert.equal(sanitizeBannerHref('//evil.com'), '');
+
+  const cfg = sanitizeSystemConfig({
+    aiRateLimitPerMin: 9999,
+    bannerTone: 'critical',
+    bannerActionHref: 'javascript:evil()',
+    maintenanceMode: true,
+    serverAiEnabled: false,
+  });
+
+  assert.equal(cfg.aiRateLimitPerMin, 120);
+  assert.equal(cfg.bannerTone, 'critical');
+  assert.equal(cfg.bannerActionHref, '');
+  assert.equal(cfg.maintenanceMode, true);
+  assert.equal(cfg.serverAiEnabled, false);
+});
+
+test('RateLimit details surface busiest active buckets cleanly', () => {
+  const bucketKey = `admin-diag-test-${Date.now()}`;
+  checkRateLimit(bucketKey, 10, 60_000);
+  checkRateLimit(bucketKey, 10, 60_000);
+  const details = getRateLimitDetails(20);
+  const found = details.find((d) => d.bucket === bucketKey);
+  assert.ok(found);
+  assert.equal(found.count, 2);
 });

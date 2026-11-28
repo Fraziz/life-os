@@ -1,13 +1,24 @@
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
 
+export type BannerTone = 'info' | 'warning' | 'critical';
+
 export interface SystemConfig {
   allowRegistrations: boolean;
   allowGuestMode: boolean;
+  allowGoogleAuth: boolean;
+  requireVerifiedEmail: boolean;
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  serverAiEnabled: boolean;
+  linkPreviewsEnabled: boolean;
+  aiRateLimitPerMin: number;
   bannerEnabled: boolean;
-  bannerTone: 'info' | 'warning';
+  bannerTone: BannerTone;
   bannerTitle: string;
   bannerMessage: string;
+  bannerActionLabel: string;
+  bannerActionHref: string;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -15,21 +26,72 @@ export interface SystemConfig {
 export const DEFAULT_SYSTEM_CONFIG: SystemConfig = {
   allowRegistrations: true,
   allowGuestMode: true,
+  allowGoogleAuth: true,
+  requireVerifiedEmail: false,
+  maintenanceMode: false,
+  maintenanceMessage: 'Scheduled platform maintenance is in progress. Please check back shortly.',
+  serverAiEnabled: true,
+  linkPreviewsEnabled: true,
+  aiRateLimitPerMin: 25,
   bannerEnabled: false,
   bannerTone: 'info',
   bannerTitle: '',
   bannerMessage: '',
+  bannerActionLabel: '',
+  bannerActionHref: '',
 };
 
-function sanitizeSystemConfig(raw: Record<string, unknown> | undefined): SystemConfig {
+export function sanitizeBannerHref(raw: unknown): string {
+  if (typeof raw !== 'string') return '';
+  const trimmed = raw.trim().slice(0, 240);
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch {
+    return '';
+  }
+  return '';
+}
+
+export function sanitizeSystemConfig(raw: Record<string, unknown> | undefined): SystemConfig {
   if (!raw) return { ...DEFAULT_SYSTEM_CONFIG };
+
+  const rawRate = Number(raw.aiRateLimitPerMin);
+  const aiRateLimitPerMin = Number.isFinite(rawRate)
+    ? Math.max(5, Math.min(120, Math.round(rawRate)))
+    : DEFAULT_SYSTEM_CONFIG.aiRateLimitPerMin;
+
+  const bannerTone: BannerTone =
+    raw.bannerTone === 'critical'
+      ? 'critical'
+      : raw.bannerTone === 'warning'
+      ? 'warning'
+      : 'info';
+
   return {
     allowRegistrations: raw.allowRegistrations !== false,
     allowGuestMode: raw.allowGuestMode !== false,
+    allowGoogleAuth: raw.allowGoogleAuth !== false,
+    requireVerifiedEmail: Boolean(raw.requireVerifiedEmail),
+    maintenanceMode: Boolean(raw.maintenanceMode),
+    maintenanceMessage:
+      typeof raw.maintenanceMessage === 'string' && raw.maintenanceMessage.trim()
+        ? raw.maintenanceMessage.trim().slice(0, 320)
+        : DEFAULT_SYSTEM_CONFIG.maintenanceMessage,
+    serverAiEnabled: raw.serverAiEnabled !== false,
+    linkPreviewsEnabled: raw.linkPreviewsEnabled !== false,
+    aiRateLimitPerMin,
     bannerEnabled: Boolean(raw.bannerEnabled),
-    bannerTone: raw.bannerTone === 'warning' ? 'warning' : 'info',
+    bannerTone,
     bannerTitle: typeof raw.bannerTitle === 'string' ? raw.bannerTitle.slice(0, 120) : '',
     bannerMessage: typeof raw.bannerMessage === 'string' ? raw.bannerMessage.slice(0, 500) : '',
+    bannerActionLabel:
+      typeof raw.bannerActionLabel === 'string' ? raw.bannerActionLabel.slice(0, 48) : '',
+    bannerActionHref: sanitizeBannerHref(raw.bannerActionHref),
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
     updatedBy: typeof raw.updatedBy === 'string' ? raw.updatedBy : undefined,
   };
