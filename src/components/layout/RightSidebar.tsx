@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { Search, Sun, Moon, Bell } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
@@ -94,6 +95,9 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
   const rhythmPercent = Math.min(100, Math.round((doneTodayTarget / totalTodayTarget) * 100));
 
   const hasNotifications = unreadCount > 0;
+  const bellTooltip = hasNotifications
+    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+    : 'Notifications';
 
   const selectedDeadlines = getDeadlinesForDate(selectedDate);
   const selectedEvents = getEventsForDate(selectedDate);
@@ -103,7 +107,7 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
 
   return (
     <aside className={styles.rightSidebar} aria-label="Today companion rail">
-      {/* ── Minimalist Icon-Free Utility Row ── */}
+      {/* ── Top Utility Search & Icon Actions ── */}
       <div className={styles.topUtilityRow} data-tour="right-utility">
         <div
           className={styles.searchBox}
@@ -113,31 +117,35 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
           }}
           role="button"
           tabIndex={0}
-          style={{ justifyContent: 'space-between' }}
         >
-          <span className={styles.searchPlaceholder}>Search</span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>Ctrl+K</span>
+          <Search size={15} className={styles.searchIcon} />
+          <span className={styles.searchPlaceholder}>Search...</span>
         </div>
 
         <div className={styles.utilityIcons}>
           <button
             type="button"
-            className={styles.minimalPillBtn}
+            className={styles.iconBtn}
             onClick={toggleTheme}
-            title={currentTheme === 'light' ? 'Switch to Dark mode' : 'Switch to Light mode'}
+            title={currentTheme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
+            aria-label="Toggle theme"
           >
-            {currentTheme === 'light' ? 'Dark' : 'Light'}
+            {currentTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
           </button>
 
           <button
             type="button"
-            className={styles.minimalPillBtn}
+            className={styles.iconBtn}
             onClick={() => window.dispatchEvent(new CustomEvent('open-reminders'))}
-            title="Notifications"
+            title={bellTooltip}
+            aria-label={bellTooltip}
           >
-            <span>Alerts</span>
+            <Bell size={17} />
             {hasNotifications && (
-              <span className={styles.inlineCountDot}>
+              <span
+                className={styles.notificationBadge}
+                aria-label={`${unreadCount} unread notifications`}
+              >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
