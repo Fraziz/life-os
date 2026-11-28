@@ -2,32 +2,25 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  Brain,
-  Target,
-  Calendar,
-  Plus,
   Check,
-  Layers,
-  Leaf,
-  Mountain,
   X,
   Play,
-  Pause,
-  Zap,
-  Flame,
   Moon,
   Battery,
   BatteryMedium,
   BatteryCharging,
-  Flag,
   Clock,
   CheckSquare,
   Square,
   BookOpen,
-  Video,
-  Lightbulb,
-  Folder,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  RotateCcw,
+  Plus,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -37,7 +30,12 @@ import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import { useLifeAreas } from '@/context/LifeAreaContext';
-import { playSuccessChime, playSubtaskTick, triggerDopamineBurst, playTimerAlarmSound, stopTimerAlarm } from '@/utils/soundAndDopamine';
+import { useFocus } from '@/context/FocusContext';
+import {
+  playSuccessChime,
+  playSubtaskTick,
+  triggerDopamineBurst,
+} from '@/utils/soundAndDopamine';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import { formatTagLabel } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
@@ -45,34 +43,37 @@ import LifeDomainPill from '@/components/layout/LifeDomainPill';
 
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
-import DailyAccomplishReminder from '@/components/reminders/DailyAccomplishReminder';
 import { resolveTaskHierarchy } from '@/utils/hierarchyResolver';
 import styles from './page.module.css';
 
 export default function TodayDashboardContent() {
+  const router = useRouter();
   const { settings } = useSettings();
   const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects, projects, toggleProjectReminder } = useProjects();
-  const { activeGoals, goals } = useGoals();
+  const { goals } = useGoals();
   const { focusedAreaId, areas } = useLifeAreas();
-  const { quickDump, activeItems: brainDumpItems, activeReminders, deleteInboxItem, toggleItemApplied, toggleItemReminder } = useInbox();
+  const {
+    quickDump,
+    activeReminders,
+    toggleItemApplied,
+    toggleItemReminder,
+  } = useInbox();
+  const { selectFocusTask, startTimer } = useFocus();
   const dailyRoutine = useDailyRoutineReminder();
   const { docs, addDoc } = useKnowledge();
 
+  // ── Featured Book Picker State ────────────────────────────────
   const [featuredBookId, setFeaturedBookId] = useState<string | null>(null);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
   const [bookSearchQuery, setBookSearchQuery] = useState('');
   const [newBookTitleInput, setNewBookTitleInput] = useState('');
-  const [isReminderBannerDismissed, setIsReminderBannerDismissed] = useState(false);
 
-  // Load user's selected book from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('life_os_featured_book_id');
       if (saved) setFeaturedBookId(saved);
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     const onBookChanged = (e: Event) => {
       const custom = e as CustomEvent<string>;
@@ -82,20 +83,19 @@ export default function TodayDashboardContent() {
     return () => window.removeEventListener('life_os_featured_book_changed', onBookChanged);
   }, []);
 
-  const currentReadingDoc = (featuredBookId ? docs.find((d) => d.id === featuredBookId) : null)
-    || docs.find((d) => d.readStatus === 'reading')
-    || docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100)
-    || docs.find((d) => d.isPinned)
-    || docs.find((d) => !d.id.startsWith('doc-sariling-mundo') && !d.id.startsWith('doc-life-os'))
-    || docs[0];
+  const currentReadingDoc =
+    (featuredBookId ? docs.find((d) => d.id === featuredBookId) : null) ||
+    docs.find((d) => d.readStatus === 'reading') ||
+    docs.find((d) => (d.readProgress || 0) > 0 && (d.readProgress || 0) < 100) ||
+    docs.find((d) => d.isPinned) ||
+    docs.find((d) => !d.id.startsWith('doc-sariling-mundo') && !d.id.startsWith('doc-life-os')) ||
+    docs[0];
 
   const handleSelectFeaturedBook = (id: string) => {
     setFeaturedBookId(id);
     try {
       localStorage.setItem('life_os_featured_book_id', id);
-    } catch {
-      // ignore
-    }
+    } catch {}
     setBookPickerOpen(false);
   };
 
@@ -117,38 +117,59 @@ export default function TodayDashboardContent() {
   };
 
   const filteredPickerDocs = [...docs]
-    .filter((d) =>
-      !bookSearchQuery.trim() ||
-      d.title.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
-      (Array.isArray(d.tags) && d.tags.some((t) => t.toLowerCase().includes(bookSearchQuery.toLowerCase())))
+    .filter(
+      (d) =>
+        !bookSearchQuery.trim() ||
+        d.title.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
+        (Array.isArray(d.tags) &&
+          d.tags.some((t) => t.toLowerCase().includes(bookSearchQuery.toLowerCase())))
     )
     .sort((a, b) => {
-      // 1. Featured / active book at the top
       if (a.id === featuredBookId) return -1;
       if (b.id === featuredBookId) return 1;
-      // 2. Currently reading books next
       const aReading = a.readStatus === 'reading' || (a.readProgress || 0) > 0;
       const bReading = b.readStatus === 'reading' || (b.readProgress || 0) > 0;
       if (aReading && !bReading) return -1;
       if (!aReading && bReading) return 1;
-      // 3. User's custom books before default system manuals
       const aIsCustom = !a.id.startsWith('doc-sariling-mundo') && !a.id.startsWith('doc-life-os');
       const bIsCustom = !b.id.startsWith('doc-sariling-mundo') && !b.id.startsWith('doc-life-os');
       if (aIsCustom && !bIsCustom) return -1;
       if (!aIsCustom && bIsCustom) return 1;
-      // 4. Pinned books
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      // 5. Recent updatedAt
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
 
+  // ── Modals & Progressive Disclosure State ─────────────────────
   const [briefingModalOpen, setBriefingModalOpen] = useState(false);
   const [optimizeModalOpen, setOptimizeModalOpen] = useState(false);
   const [briefingInitialMode, setBriefingInitialMode] = useState<'morning' | 'evening'>('morning');
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
+  const [assistMenuOpen, setAssistMenuOpen] = useState(false);
+  const [queueExpanded, setQueueExpanded] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
+  const assistMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!assistMenuOpen) return;
+    const onOutside = (e: MouseEvent) => {
+      if (assistMenuRef.current && !assistMenuRef.current.contains(e.target as Node)) {
+        setAssistMenuOpen(false);
+      }
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAssistMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    window.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      window.removeEventListener('keydown', onEsc);
+    };
+  }, [assistMenuOpen]);
 
   const toggleSubtasks = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -162,9 +183,8 @@ export default function TodayDashboardContent() {
     setBriefingModalOpen(true);
   };
 
-  // ── Greeting & Date ──────────────────────────────────────────
+  // ── Greeting & Date ───────────────────────────────────────────
   const [greeting, setGreeting] = useState('Good morning');
-  const [dateDisplay, setDateDisplay] = useState('');
   const [todayHeaderDate, setTodayHeaderDate] = useState('');
 
   useEffect(() => {
@@ -173,19 +193,15 @@ export default function TodayDashboardContent() {
     if (hour < 12) setGreeting('Good morning');
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
-    setDateDisplay(
-      now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-    );
     setTodayHeaderDate(
-      now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
+      now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
     );
   }, []);
 
-  const userName = settings?.profile?.displayName || 'Aaron';
+  const userName = settings?.profile?.displayName || 'there';
   const todayStr = new Date().toISOString().split('T')[0];
 
-
-  // ── Energy Mode (reactive from Sidebar or localStorage) ──────
+  // ── Functional ADHD Energy Regulator ──────────────────────────
   const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high'>('normal');
 
   useEffect(() => {
@@ -194,9 +210,7 @@ export default function TodayDashboardContent() {
       if (saved === 'low' || saved === 'normal' || saved === 'high') {
         setEnergyLevel(saved);
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     const onEnergyChange = (e: Event) => {
       const custom = e as CustomEvent<'low' | 'normal' | 'high'>;
@@ -208,15 +222,16 @@ export default function TodayDashboardContent() {
 
   const selectEnergy = (lvl: 'low' | 'normal' | 'high') => {
     setEnergyLevel(lvl);
+    if (lvl === 'low') {
+      setQueueExpanded(false);
+    }
     try {
       localStorage.setItem('life_os_energy_level', lvl);
       window.dispatchEvent(new CustomEvent('life_os_energy_changed', { detail: lvl }));
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
-  // ── Domain Filter ───────────────────────────────────────────
+  // ── Domain-Scoped Tasks & Energy-Aware Ordering ───────────────
   const domainTasks = useMemo(() => {
     if (!focusedAreaId) return tasks;
     const activeArea = areas.find((a) => a.id === focusedAreaId);
@@ -228,65 +243,83 @@ export default function TodayDashboardContent() {
       const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
       const matchesTag = Boolean(
         areaNameLower &&
-        t.tags &&
-        t.tags.some((tag) => {
-          const tl = tag.toLowerCase();
-          return tl.includes(areaNameLower) || areaNameLower.includes(tl);
-        })
+          t.tags &&
+          t.tags.some((tag) => {
+            const tl = tag.toLowerCase();
+            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
+          })
       );
       return matchesDirect || matchesProject || matchesGoal || matchesTag;
     });
   }, [tasks, focusedAreaId, areas, projects, goals]);
 
-  // ── Tasks ────────────────────────────────────────────────────
-  const doItNowActive = domainTasks.filter((t) => t.status !== 'done' && t.tags?.includes('do-it-now'));
-  const otherHighPriority = domainTasks.filter(
-    (t) => t.status !== 'done' && !t.tags?.includes('do-it-now') && (t.priority === 'urgent' || t.priority === 'high')
-  );
-
-  // Guarantee that Do It Now priorities are strictly unique by id and title
-  const dedupeTasks = (items: typeof domainTasks) => {
+  const activeDomainTasks = useMemo(() => {
     const seenIds = new Set<string>();
     const seenTitles = new Set<string>();
-    return items.filter((item) => {
+    const pending = domainTasks.filter((item) => {
+      if (item.status === 'done') return false;
       if (seenIds.has(item.id)) return false;
       seenIds.add(item.id);
       const norm = item.title.trim().toLowerCase();
       if (norm && seenTitles.has(norm)) return false;
-      seenTitles.add(norm);
+      if (norm) seenTitles.add(norm);
       return true;
     });
-  };
 
-  const uniqueDoItNow = dedupeTasks(doItNowActive);
-  const uniqueOtherHigh = dedupeTasks(otherHighPriority);
+    const priorityRank: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
 
-  // Show all unique Do It Now tasks, plus top high-priority tasks up to at least 3
-  const topPriorities = uniqueDoItNow.length > 0
-    ? [...uniqueDoItNow, ...uniqueOtherHigh.slice(0, Math.max(0, 3 - uniqueDoItNow.length))]
-    : uniqueOtherHigh.slice(0, 3);
+    return [...pending].sort((a, b) => {
+      const aDoNow = a.tags?.includes('do-it-now') ? 1 : 0;
+      const bDoNow = b.tags?.includes('do-it-now') ? 1 : 0;
+      if (aDoNow !== bDoNow) return bDoNow - aDoNow;
 
-  const otherTasks = domainTasks
-    .filter((t) => t.status !== 'done' && !topPriorities.some((p) => p.id === t.id))
-    .slice(0, 8);
+      if (energyLevel === 'low') {
+        // Low energy: surface shorter / lower-friction wins first so initiation feels effortless
+        const aDur = a.estimatedDuration || 25;
+        const bDur = b.estimatedDuration || 25;
+        if (aDur !== bDur) return aDur - bDur;
+      }
 
-  // Filter completed tasks to show ONLY tasks completed TODAY
-  const completedTasks = domainTasks
-    .filter((t) => {
-      if (t.status !== 'done') return false;
-      if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
-      if (t.updatedAt) return t.updatedAt.split('T')[0] === todayStr;
-      return true;
-    })
-    .slice(0, 8);
+      const aDoing = a.status === 'doing' ? 1 : 0;
+      const bDoing = b.status === 'doing' ? 1 : 0;
+      if (aDoing !== bDoing) return bDoing - aDoing;
 
-  const [showCompleted, setShowCompleted] = useState(true);
+      const aPrio = priorityRank[a.priority || 'medium'] || 2;
+      const bPrio = priorityRank[b.priority || 'medium'] || 2;
+      if (aPrio !== bPrio) return bPrio - aPrio;
 
-  // ── Unified Today's Reminders (Daily Routine, Tasks, Ideas, Projects) ──
+      return 0;
+    });
+  }, [domainTasks, energyLevel]);
+
+  const primaryTask = activeDomainTasks[0] || null;
+  const nextUpTasks = energyLevel === 'low' ? [] : activeDomainTasks.slice(1, 3);
+  const remainingTasks =
+    energyLevel === 'low' ? activeDomainTasks.slice(1) : activeDomainTasks.slice(3);
+
+  const overdueCount = useMemo(
+    () => tasks.filter((t) => t.status !== 'done' && t.dueDate && t.dueDate < todayStr).length,
+    [tasks, todayStr]
+  );
+
+  const completedTodayTasks = useMemo(
+    () =>
+      domainTasks
+        .filter((t) => {
+          if (t.status !== 'done') return false;
+          if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
+          if (t.updatedAt) return t.updatedAt.split('T')[0] === todayStr;
+          return true;
+        })
+        .slice(0, 10),
+    [domainTasks, todayStr]
+  );
+
+  // ── Pinned Reminders Strip ────────────────────────────────────
   const todayReminders = useMemo(() => {
     const list: Array<{
       id: string;
-      type: 'routine' | 'task' | 'book' | 'video' | 'idea' | 'project';
+      type: 'routine' | 'task' | 'idea' | 'project';
       typeLabel: string;
       title: string;
       subtitle?: string;
@@ -295,85 +328,106 @@ export default function TodayDashboardContent() {
       onClearReminder: () => void;
     }> = [];
 
-    // 0. Recurring Daily Routine reminder (returns automatically every new day)
-    if (dailyRoutine.isActiveToday) {
-      list.push({
-        id: 'daily-routine-today',
-        type: 'routine',
-        typeLabel: 'Routine',
-        title: 'Daily Routine',
-        subtitle: dailyRoutine.subtitle,
-        href: '/routine',
-        onFinish: dailyRoutine.markDoneToday,
-        onClearReminder: dailyRoutine.markDoneToday,
-      });
-    }
-
-    // 1. Tasks marked as reminder
     tasks
       .filter((t) => t.isReminder && t.status !== 'done')
       .forEach((t) => {
         list.push({
           id: t.id,
           type: 'task',
-          typeLabel: 'TASK',
+          typeLabel: 'Task',
           title: t.title,
-          subtitle: t.dueDate ? `Due ${t.dueDate}` : (t.priority ? `${t.priority} priority` : undefined),
+          subtitle: t.dueDate ? `Due ${t.dueDate}` : undefined,
           href: '/tasks',
           onFinish: () => toggleTaskDone(t.id),
           onClearReminder: () => toggleTaskReminder(t.id),
         });
       });
 
-    // 2. Idea Parking thoughts marked as reminder
     (activeReminders || [])
       .filter((r) => !r.isApplied && r.status === 'inbox')
       .forEach((r) => {
         list.push({
           id: r.id,
           type: 'idea',
-          typeLabel: 'IDEA',
+          typeLabel: 'Idea',
           title: r.content,
-          subtitle: r.reminderTime ? `Time: ${r.reminderTime}` : 'Idea Parking',
+          subtitle: r.reminderTime ? `${r.reminderTime}` : undefined,
           href: '/inbox',
           onFinish: () => toggleItemApplied(r.id),
           onClearReminder: () => toggleItemReminder(r.id),
         });
       });
 
-    // 4. Projects marked as reminder
     (activeProjects || [])
       .filter((p) => p.isReminder && p.status !== 'completed')
       .forEach((p) => {
         list.push({
           id: p.id,
           type: 'project',
-          typeLabel: 'PROJECT',
+          typeLabel: 'Project',
           title: p.title,
-          subtitle: `${p.progress}% progress • ${p.priority} priority`,
+          subtitle: `${p.progress}%`,
           href: '/projects',
           onClearReminder: () => toggleProjectReminder(p.id),
         });
       });
 
     return list;
-  }, [dailyRoutine.isActiveToday, dailyRoutine.subtitle, dailyRoutine.markDoneToday, tasks, activeReminders, activeProjects, toggleTaskDone, toggleTaskReminder, toggleItemApplied, toggleItemReminder, toggleProjectReminder]);
+  }, [
+    tasks,
+    activeReminders,
+    activeProjects,
+    toggleTaskDone,
+    toggleTaskReminder,
+    toggleItemApplied,
+    toggleItemReminder,
+    toggleProjectReminder,
+  ]);
 
-  const [addingTask, setAddingTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+  // ── Unified Calm Capture (1 Input instead of 5) ───────────────
+  const [captureMode, setCaptureMode] = useState<'task' | 'idea'>('task');
+  const [captureText, setCaptureText] = useState('');
+  const [captureFeedback, setCaptureFeedback] = useState<string | null>(null);
+  const [emptyFocusInput, setEmptyFocusInput] = useState('');
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const showQuickFeedback = (msg: string) => {
+    setCaptureFeedback(msg);
+    setTimeout(() => setCaptureFeedback(null), 2600);
+  };
+
+  const handleUnifiedCapture = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTaskTitle.trim()) {
-      quickAddTask(newTaskTitle.trim(), {
-        priority: 'medium',
+    const clean = captureText.trim();
+    if (!clean) return;
+
+    if (captureMode === 'task') {
+      quickAddTask(clean, {
+        priority: 'high',
         dueDate: todayStr,
         lifeAreaId: focusedAreaId || undefined,
       });
-      setNewTaskTitle('');
-      setAddingTask(false);
-      playSuccessChime();
+      showQuickFeedback('Added to Today');
+    } else {
+      quickDump(clean, { isReminder: false });
+      showQuickFeedback('Safely parked in Idea Parking — stay on your focus');
     }
+
+    setCaptureText('');
+    playSuccessChime();
+  };
+
+  const handleSetMainWin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = emptyFocusInput.trim();
+    if (!clean) return;
+    quickAddTask(clean, {
+      priority: 'high',
+      dueDate: todayStr,
+      lifeAreaId: focusedAreaId || undefined,
+      tags: ['do-it-now'],
+    });
+    setEmptyFocusInput('');
+    playSuccessChime();
   };
 
   const handleToggleTask = (id: string, e: React.MouseEvent) => {
@@ -389,817 +443,674 @@ export default function TodayDashboardContent() {
     triggerDopamineBurst(e.clientX, e.clientY);
   };
 
-  // ── Brain Dump (Single Unified Source of Truth) ───────────────
-  const [dumpText, setDumpText] = useState('');
-  const [dumpIsReminder, setDumpIsReminder] = useState(false);
-  const [expandedThoughtIds, setExpandedThoughtIds] = useState<Record<string, boolean>>({});
-  const [addingDump, setAddingDump] = useState(false);
-  const dumpInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDump = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (dumpText.trim()) {
-      quickDump(dumpText.trim(), { isReminder: dumpIsReminder });
-      setDumpText('');
-      setAddingDump(false);
-      setDumpIsReminder(false);
-      playSuccessChime();
-    }
+  const handleStartFocusOnTask = (task: (typeof tasks)[number]) => {
+    selectFocusTask(task);
+    startTimer();
+    router.push('/focus');
   };
 
-  const focusDump = () => {
-    setAddingDump(true);
-    setTimeout(() => {
-      dumpInputRef.current?.focus();
-      dumpInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
-  };
-
-  // ── Pomodoro Timer ───────────────────────────────────────────
-  const [timerSecs, setTimerSecs] = useState(25 * 60);
-  const [timerRunning, setTimerRunning] = useState(false);
-
-  useEffect(() => {
-    let iv: NodeJS.Timeout | null = null;
-    if (timerRunning) {
-      iv = setInterval(() => {
-        setTimerSecs((prev) => {
-          if (prev <= 1) {
-            setTimerRunning(false);
-            playTimerAlarmSound();
-            return 25 * 60;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (iv) clearInterval(iv);
-    };
-  }, [timerRunning]);
-
-  const fmtTimer = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-
-  // ── Wrap Up Day Celebration Modal ─────────────────────────────
-  const [wrapUpOpen, setWrapUpOpen] = useState(false);
-
-  const handleOpenWrapUp = (e: React.MouseEvent) => {
-    setWrapUpOpen(true);
-    playSuccessChime();
-    triggerDopamineBurst(e.clientX, e.clientY);
-  };
-
-  // ── Helpers ──────────────────────────────────────────────────
   const getTaskRowContext = (task: (typeof tasks)[number]) => {
-    const isDoItNow = Boolean(task.tags?.includes('do-it-now'));
     const hier = resolveTaskHierarchy(task, projects, goals);
-    const contextParts = [
-      hier.parentGoal ? `Goal: ${hier.parentGoal.title}` : '',
-      hier.parentProject ? `Project: ${hier.parentProject.title}` : '',
-      task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '',
-    ].filter(Boolean);
-    const shortContext = isDoItNow
-      ? 'Do It Now'
-      : hier.parentProject?.title ||
-      (task.tags && task.tags.length > 0 ? formatTagLabel(task.tags[0]) : '') ||
+    const shortContext =
+      hier.parentProject?.title ||
       hier.parentGoal?.title ||
-      '';
-    return { isDoItNow, shortContext, tooltip: contextParts.join(' • ') || undefined };
+      (task.tags && task.tags.length > 0 && task.tags[0] !== 'do-it-now'
+        ? formatTagLabel(task.tags[0])
+        : '');
+    return { shortContext };
   };
 
-  const getProjectIcon = (title: string) => {
-    if (/gain/i.test(title)) return <Leaf size={15} />;
-    if (/link|dare/i.test(title)) return <Layers size={15} />;
-    return <Target size={15} />;
-  };
-
-  const tasksDone = tasks.filter((t) => t.status === 'done').length;
-  const getActionTitleFontSize = (text: string) => {
-    if (text.length > 28) return '0.70rem';
-    if (text.length > 18) return '0.76rem';
-    if (text.length > 12) return '0.82rem';
-    return '0.88rem';
-  };
-
-  const readingTitle = currentReadingDoc?.title || 'Knowledge Book';
+  const tasksDoneTotal = tasks.filter((t) => t.status === 'done').length;
+  const readingTitle = currentReadingDoc?.title || 'Books & Notes';
+  const nextMicroStep = primaryTask?.subtasks?.find((s) => !s.completed) || null;
 
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.mainColumn}>
-
-        {/* Hero Banner */}
-        <div className={styles.heroBanner}>
-          <div className={styles.heroOverlay}>
-            <div className={styles.heroLeft}>
-              <h1 className={styles.heroGreeting}>{greeting}, {userName}!</h1>
-              {dateDisplay && (
-                <div className={styles.heroDateBadge}>
-                  <Calendar size={13} />
-                  <span>{dateDisplay}</span>
-                </div>
-              )}
-            </div>
-            <div className={styles.heroQuoteCard}>
-              <div className={styles.heroQuoteText}>&ldquo;Discipline today, freedom tomorrow.&rdquo;</div>
-              <div className={styles.heroQuoteAuthor}>— Action Principle —</div>
-            </div>
+        {/* ── 1. Calm Executive Top Header ── */}
+        <header className={styles.cockpitHeader}>
+          <div className={styles.cockpitTitleBlock}>
+            <h1 className={styles.cockpitGreeting}>
+              {greeting}, {userName}
+            </h1>
+            {todayHeaderDate && <p className={styles.cockpitDateSub}>{todayHeaderDate}</p>}
           </div>
-        </div>
 
-        {/* ── Daily Accomplishment Action Reminder ── */}
-        <DailyAccomplishReminder />
-
-        {/* Daily Snapshot */}
-        <div className={styles.dailySummaryRow}>
-          <div className={styles.summaryPill}>
-            <Check size={13} className={styles.pillIconGreen} />
-            <span><strong>{tasksDone}</strong> / {tasks.length} tasks done</span>
-          </div>
-          <Link href="/routine" className={styles.summaryPill}>
-            <Clock size={13} className={styles.pillIconOrange} />
-            <span><strong>{dailyRoutine.completedCount}</strong> / {dailyRoutine.totalCount} routine</span>
-          </Link>
-          <button
-            type="button"
-            className={`${styles.summaryPill} ${styles.summaryPillOptimize}`}
-            onClick={() => setOptimizeModalOpen(true)}
-            title="1-Click AI Auto Time-Blocker: Optimize hourly day schedule"
-          >
-            <span>Optimize Day</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.summaryPill} ${styles.summaryPillBriefing}`}
-            onClick={() => handleOpenBriefing()}
-            title="Open Executive Morning Briefing / Evening Reflection"
-          >
-            <span>AI Briefing</span>
-          </button>
-          <LifeDomainPill />
-        </div>
-
-
-
-        {/* Quick Actions */}
-        <div className={styles.quickActionsGrid}>
-          <button type="button" className={styles.actionCard} onClick={() => setAddingTask(true)}>
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapCheck}`}>
-              <Plus size={19} strokeWidth={2.2} />
-            </div>
-            <div className={styles.actionCardTitle}>Add Task</div>
-            <div className={styles.actionCardSub}>Quick add</div>
-          </button>
-
-          <button type="button" className={styles.actionCard} onClick={focusDump}>
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapBrain}`}>
-              <Brain size={19} strokeWidth={2.2} />
-            </div>
-            <div className={styles.actionCardTitle}>Idea Parking</div>
-            <div className={styles.actionCardSub}>Quick capture</div>
-          </button>
-
-          <button
-            type="button"
-            className={styles.actionCard}
-            onClick={() => window.dispatchEvent(new CustomEvent('open-next-action'))}
-          >
-            <div className={`${styles.actionIconWrap} ${styles.iconWrapSun}`}>
-              <Zap size={19} strokeWidth={2.2} />
-            </div>
-            <div className={styles.actionCardTitle}>What to do?</div>
-            <div className={styles.actionCardSub}>AI picks next</div>
-          </button>
-
-          <div className={styles.actionCard} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
-              <Link
-                href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
-                title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Study & Books'}
-              >
-                <div className={`${styles.actionIconWrap} ${styles.iconWrapTarget}`} style={{ marginBottom: 0 }}>
-                  <BookOpen size={19} strokeWidth={2.2} />
-                </div>
-              </Link>
+          <div className={styles.cockpitControlsRow}>
+            {/* Functional Energy Regulator */}
+            <div className={styles.headerEnergyPills} role="group" aria-label="Energy level">
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setBookPickerOpen(true);
-                }}
-                className={styles.changeBookBtn}
-                title="Choose which book to put here"
+                className={`${styles.headerEnergyBtn} ${
+                  energyLevel === 'low' ? styles.headerEnergyBtnActive : ''
+                }`}
+                onClick={() => selectEnergy('low')}
+                title="Low Energy: Hides extra lists and shows only 1 manageable step"
               >
-                Change
+                <Battery size={13} />
+                <span>Low</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.headerEnergyBtn} ${
+                  energyLevel === 'normal' ? styles.headerEnergyBtnActive : ''
+                }`}
+                onClick={() => selectEnergy('normal')}
+                title="Steady Focus: Shows #1 focus + up to 2 next priorities"
+              >
+                <BatteryMedium size={13} />
+                <span>Steady</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.headerEnergyBtn} ${
+                  energyLevel === 'high' ? styles.headerEnergyBtnActive : ''
+                }`}
+                onClick={() => selectEnergy('high')}
+                title="High Energy: Tackle your hardest priority first"
+              >
+                <BatteryCharging size={13} />
+                <span>High</span>
               </button>
             </div>
 
-            <Link
-              href={currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'}
-              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, justifyContent: 'center' }}
-              title={currentReadingDoc ? `Open book: ${currentReadingDoc.title}` : 'Open Study & Books'}
-            >
-              <div
-                className={styles.actionCardTitle}
-                style={{
-                  fontSize: getActionTitleFontSize(readingTitle),
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
-                  lineHeight: 1.25,
-                }}
+            <LifeDomainPill />
+
+            {/* Progressive Disclosure Assist Menu (replaces 6 scattered top buttons) */}
+            <div className={styles.assistMenuWrap} ref={assistMenuRef}>
+              <button
+                type="button"
+                className={styles.assistMenuBtn}
+                onClick={() => setAssistMenuOpen((v) => !v)}
+                aria-expanded={assistMenuOpen}
+                aria-haspopup="menu"
               >
-                {readingTitle}
-              </div>
-              <div className={styles.actionCardSub}>
-                {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0
-                  ? `${currentReadingDoc.readProgress}% completed`
-                  : 'Study & Books'}
-              </div>
-            </Link>
-          </div>
-        </div>
+                <SlidersHorizontal size={14} />
+                <span>Tools</span>
+                {overdueCount > 0 && <span className={styles.assistDot} />}
+              </button>
 
-        {/* Today's Tasks */}
-        <section className={styles.contentSectionCard}>
-          <div className={styles.sectionHeaderRow}>
-            <div className={styles.sectionHeaderLeft}>
-              <h2 className={styles.sectionHeading}>Today</h2>
-              {todayHeaderDate && (
-                <span className={styles.sectionHeaderDate}>{todayHeaderDate}</span>
-              )}
-
-              {/* Combined Today's Energy Switcher */}
-              <div className={styles.headerEnergyCluster}>
-                <div className={styles.headerEnergyPills}>
+              {assistMenuOpen && (
+                <div className={styles.assistDropdown} role="menu">
                   <button
                     type="button"
-                    className={`${styles.headerEnergyBtn} ${energyLevel === 'low' ? styles.headerEnergyBtnActive : ''}`}
-                    onClick={() => selectEnergy('low')}
-                    title="Low Energy: Pick just 1 tiny task. Momentum beats perfection today."
+                    role="menuitem"
+                    className={styles.assistDropdownItem}
+                    onClick={() => {
+                      setAssistMenuOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-next-action'));
+                    }}
                   >
-                    <Battery size={13} />
-                    <span>Low</span>
+                    <span>Pick Next Action For Me</span>
+                    <span className={styles.assistHint}>Ctrl+J</span>
                   </button>
                   <button
                     type="button"
-                    className={`${styles.headerEnergyBtn} ${energyLevel === 'normal' ? styles.headerEnergyBtnActive : ''}`}
-                    onClick={() => selectEnergy('normal')}
-                    title="Steady Focus: Work in 25-minute Pomodoro sprints with real rest breaks."
+                    role="menuitem"
+                    className={styles.assistDropdownItem}
+                    onClick={() => {
+                      setAssistMenuOpen(false);
+                      setOptimizeModalOpen(true);
+                    }}
                   >
-                    <BatteryMedium size={13} />
-                    <span>Steady</span>
+                    <span>Auto-Optimize Schedule</span>
                   </button>
                   <button
                     type="button"
-                    className={`${styles.headerEnergyBtn} ${energyLevel === 'high' ? styles.headerEnergyBtnActive : ''}`}
-                    onClick={() => selectEnergy('high')}
-                    title="High Energy: Tackle your #1 hardest priority right now while focus is sharp."
+                    role="menuitem"
+                    className={styles.assistDropdownItem}
+                    onClick={() => {
+                      setAssistMenuOpen(false);
+                      handleOpenBriefing();
+                    }}
                   >
-                    <BatteryCharging size={13} />
-                    <span>High</span>
+                    <span>AI Daily Briefing</span>
                   </button>
-                </div>
-              </div>
-            </div>
-
-            <Link href="/tasks" className={styles.viewAllNotesLink}>All tasks →</Link>
-          </div>
-
-          {/* Reminders (Compact, Minimalist) */}
-          {todayReminders.length > 0 && (
-            <div className={styles.todayRemindersCard}>
-              <div className={styles.todayRemindersHeader}>
-                <div className={styles.todayRemindersHeaderLeft}>
-                  <h3 className={styles.todayRemindersTitle}>Reminders</h3>
-                  <span className={styles.todayRemindersCountBadge}>{todayReminders.length}</span>
-                </div>
-              </div>
-
-              <div className={styles.todayRemindersList}>
-                {todayReminders.map((rem) => (
-                  <div key={`${rem.type}-${rem.id}`} className={styles.todayReminderRow}>
-                    {rem.onFinish ? (
-                      <button
-                        type="button"
-                        className={styles.reminderCheckBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          rem.onFinish?.();
-                          playSuccessChime();
-                          triggerDopamineBurst();
-                        }}
-                        title="Mark as done / finish"
-                        aria-label="Complete reminder"
-                      >
-                        <Check size={12} />
-                      </button>
-                    ) : (
-                      <span className={styles.reminderDotMarker} />
+                  <Link
+                    href="/reset"
+                    role="menuitem"
+                    className={styles.assistDropdownItem}
+                    onClick={() => setAssistMenuOpen(false)}
+                  >
+                    <span>Compassion Reset (Overdue)</span>
+                    {overdueCount > 0 && (
+                      <span className={styles.assistCountPill}>{overdueCount}</span>
                     )}
+                  </Link>
+                  <div className={styles.assistDivider} />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.assistDropdownItem}
+                    onClick={(e) => {
+                      setAssistMenuOpen(false);
+                      setWrapUpOpen(true);
+                      playSuccessChime();
+                      triggerDopamineBurst(e.clientX, e.clientY);
+                    }}
+                  >
+                    <span>Wrap Up Day</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
 
-                    <span className={`${styles.reminderTypeBadge} ${styles[`typeBadge_${rem.type}`] || ''}`}>
-                      <span>{rem.typeLabel}</span>
+        {/* Gentle Low-Energy Reassurance Banner */}
+        {energyLevel === 'low' && (
+          <div className={styles.gentleModeBanner} role="status">
+            <span>
+              <strong>Gentle Mode active:</strong> Extra lists are hidden so your mind can rest. Just
+              focus on one small step below—momentum beats perfection.
+            </span>
+          </div>
+        )}
+
+        {/* ── 2. Single Focal Anchor: RIGHT NOW Spotlight Card ── */}
+        <section className={styles.focusSpotlightCard} aria-label="Primary Focus">
+          {primaryTask ? (
+            <>
+              <div className={styles.spotlightTopBar}>
+                <div className={styles.spotlightEyebrow}>
+                  <span className={styles.spotlightPulseDot} />
+                  <span>
+                    {energyLevel === 'low' ? 'ONE GENTLE STEP' : 'FOCUS RIGHT NOW'}
+                  </span>
+                  {getTaskRowContext(primaryTask).shortContext && (
+                    <span className={styles.spotlightContextPill}>
+                      {getTaskRowContext(primaryTask).shortContext}
                     </span>
+                  )}
+                </div>
 
-                    <Link href={rem.href} className={styles.reminderItemLink} title="Open item">
-                      <span className={styles.reminderItemTitle}>{rem.title}</span>
-                      {rem.subtitle && <span className={styles.reminderItemSub}>{rem.subtitle}</span>}
-                    </Link>
+                <button
+                  type="button"
+                  className={styles.stuckSwitchBtn}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-next-action'))}
+                  title="Feeling resistance? Let AI suggest an easier starting point"
+                >
+                  <Sparkles size={12} />
+                  <span>Stuck? Pick for me</span>
+                </button>
+              </div>
 
+              <h2 className={styles.spotlightTitle}>{primaryTask.title}</h2>
+
+              {/* First uncompleted subtask surfaced immediately to lower initiation friction */}
+              {nextMicroStep && (
+                <div className={styles.spotlightSubtaskRow}>
+                  <button
+                    type="button"
+                    className={styles.spotlightSubtaskCheck}
+                    onClick={(e) => handleToggleSubtask(primaryTask.id, nextMicroStep.id, e)}
+                    title="Complete this micro-step"
+                  >
+                    <Square size={14} />
+                    <span>First step: {nextMicroStep.title}</span>
+                  </button>
+                  {primaryTask.subtasks && primaryTask.subtasks.length > 1 && (
                     <button
                       type="button"
-                      className={styles.reminderDismissBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rem.onClearReminder();
-                      }}
-                      title="Remove reminder (unpin from Today)"
-                      aria-label="Remove reminder"
+                      className={styles.subtaskBadgeBtn}
+                      onClick={(e) => toggleSubtasks(primaryTask.id, e)}
                     >
-                      <X size={12} />
+                      {primaryTask.subtasks.filter((s) => s.completed).length}/
+                      {primaryTask.subtasks.length} steps{' '}
+                      {expandedSubtasks[primaryTask.id] ? '▲' : '▼'}
                     </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top Priorities */}
-          <div className={styles.subSectionWrap}>
-            <h3 className={styles.subSectionTitle}>
-              {topPriorities.length > 3 ? `Top ${topPriorities.length} Priorities` : 'Top 3 Priorities'}
-            </h3>
-            <div className={styles.prioritiesList}>
-              {topPriorities.length === 0 && (
-                <div className={styles.emptyState}>
-                  No high-priority tasks.{' '}
-                  <button type="button" className={styles.emptyStateLink}
-                    onClick={() => setAddingTask(true)}>Add one</button>
+                  )}
                 </div>
               )}
-              {topPriorities.map((item, idx) => {
-                const { isDoItNow, shortContext, tooltip } = getTaskRowContext(item);
 
-                return (
-                  <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div
-                      className={`${styles.priorityRow} ${item.status === 'done' ? styles.taskDoneRow : ''}`}
-                      title={tooltip}
-                      style={isDoItNow ? {
-                        background: 'rgba(212, 163, 115, 0.07)',
-                        border: '1px solid rgba(212, 163, 115, 0.28)',
-                      } : undefined}
-                    >
-                      <div className={styles.priorityLeft}>
+              {primaryTask.subtasks &&
+                primaryTask.subtasks.length > 1 &&
+                expandedSubtasks[primaryTask.id] && (
+                  <div className={styles.spotlightSubtasksExpanded}>
+                    {primaryTask.subtasks.map((sub) => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={(e) => handleToggleSubtask(primaryTask.id, sub.id, e)}
+                        className={styles.spotlightSubtaskItem}
+                      >
+                        {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
                         <span
-                          className={styles.priorityNumBadge}
-                          style={isDoItNow ? {
-                            backgroundColor: '#d4a373',
-                            color: '#ffffff',
-                            fontWeight: 700,
-                          } : undefined}
+                          style={{
+                            textDecoration: sub.completed ? 'line-through' : 'none',
+                            opacity: sub.completed ? 0.6 : 1,
+                          }}
                         >
-                          {idx + 1}
+                          {sub.title}
                         </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+              <div className={styles.spotlightActionsRow}>
+                <button
+                  type="button"
+                  className={styles.startFocusCta}
+                  onClick={() => handleStartFocusOnTask(primaryTask)}
+                >
+                  <Play size={15} fill="currentColor" />
+                  <span>Start Focus Session</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.completeFocusBtn}
+                  onClick={(e) => handleToggleTask(primaryTask.id, e)}
+                >
+                  <Check size={15} strokeWidth={2.4} />
+                  <span>Mark Complete</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className={styles.emptySpotlightWrap}>
+              <div className={styles.spotlightEyebrow}>
+                <span className={styles.spotlightPulseDot} />
+                <span>CLEAR SLATE</span>
+              </div>
+              <h2 className={styles.spotlightTitle}>
+                What is the one thing that would make today feel like a win?
+              </h2>
+              <form onSubmit={handleSetMainWin} className={styles.emptySpotlightForm}>
+                <input
+                  type="text"
+                  value={emptyFocusInput}
+                  onChange={(e) => setEmptyFocusInput(e.target.value)}
+                  placeholder="Write one clear, doable action..."
+                  className={styles.captureTextInput}
+                />
+                <button
+                  type="submit"
+                  className={styles.startFocusCta}
+                  disabled={!emptyFocusInput.trim()}
+                >
+                  <Plus size={15} />
+                  <span>Set Focus</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+
+        {/* ── 3. Unified Quick Capture (Replaces 5 duplicate inputs) ── */}
+        <form onSubmit={handleUnifiedCapture} className={styles.unifiedCaptureCard}>
+          <div className={styles.captureModePills} role="tablist" aria-label="Capture destination">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={captureMode === 'task'}
+              className={`${styles.captureModeBtn} ${
+                captureMode === 'task' ? styles.captureModeBtnActive : ''
+              }`}
+              onClick={() => setCaptureMode('task')}
+            >
+              Today Task
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={captureMode === 'idea'}
+              className={`${styles.captureModeBtn} ${
+                captureMode === 'idea' ? styles.captureModeBtnActive : ''
+              }`}
+              onClick={() => setCaptureMode('idea')}
+              title="Offload distracting mid-work thoughts into Idea Parking without cluttering Today"
+            >
+              Park Thought
+            </button>
+          </div>
+
+          <input
+            type="text"
+            value={captureText}
+            onChange={(e) => setCaptureText(e.target.value)}
+            placeholder={
+              captureMode === 'task'
+                ? 'Add a task for today and press Enter...'
+                : 'Offload a random thought or worry into Idea Parking...'
+            }
+            className={styles.unifiedCaptureInput}
+          />
+
+          <button
+            type="submit"
+            className={styles.unifiedCaptureSubmit}
+            disabled={!captureText.trim()}
+          >
+            {captureMode === 'task' ? 'Add' : 'Park'}
+          </button>
+
+          {captureFeedback && (
+            <span className={styles.captureFeedbackPill} role="status">
+              {captureFeedback}
+            </span>
+          )}
+        </form>
+
+        {/* ── 4. Pinned Reminders (Only when active) ── */}
+        {todayReminders.length > 0 && (
+          <div className={styles.todayRemindersCard}>
+            <div className={styles.todayRemindersHeader}>
+              <div className={styles.todayRemindersHeaderLeft}>
+                <h3 className={styles.todayRemindersTitle}>Pinned Reminders</h3>
+                <span className={styles.todayRemindersCountBadge}>{todayReminders.length}</span>
+              </div>
+            </div>
+
+            <div className={styles.todayRemindersList}>
+              {todayReminders.map((rem) => (
+                <div key={`${rem.type}-${rem.id}`} className={styles.todayReminderRow}>
+                  {rem.onFinish ? (
+                    <button
+                      type="button"
+                      className={styles.reminderCheckBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rem.onFinish?.();
+                        playSuccessChime();
+                        triggerDopamineBurst();
+                      }}
+                      title="Mark done"
+                      aria-label="Complete reminder"
+                    >
+                      <Check size={12} />
+                    </button>
+                  ) : (
+                    <span className={styles.reminderDotMarker} />
+                  )}
+
+                  <span className={styles.reminderTypeBadge}>{rem.typeLabel}</span>
+
+                  <Link href={rem.href} className={styles.reminderItemLink}>
+                    <span className={styles.reminderItemTitle}>{rem.title}</span>
+                    {rem.subtitle && (
+                      <span className={styles.reminderItemSub}>{rem.subtitle}</span>
+                    )}
+                  </Link>
+
+                  <button
+                    type="button"
+                    className={styles.reminderDismissBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      rem.onClearReminder();
+                    }}
+                    title="Unpin from Today"
+                    aria-label="Remove reminder"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. Next Up Queue (Rule of 3 + Progressive Disclosure) ── */}
+        {(nextUpTasks.length > 0 || remainingTasks.length > 0 || completedTodayTasks.length > 0) && (
+          <section className={styles.contentSectionCard} aria-label="Up Next Queue">
+            <div className={styles.sectionHeaderRow} style={{ marginBottom: nextUpTasks.length > 0 ? 12 : 6 }}>
+              <div className={styles.sectionHeaderLeft}>
+                <h2 className={styles.sectionHeading}>
+                  {energyLevel === 'low' ? 'Parked For Later' : 'Up Next'}
+                </h2>
+                <span className={styles.sectionHeaderDate}>
+                  {activeDomainTasks.length > 1 ? `${activeDomainTasks.length - 1} queued` : 'Clear'}
+                </span>
+              </div>
+              <Link href="/tasks" className={styles.viewAllNotesLink}>
+                Task board →
+              </Link>
+            </div>
+
+            {nextUpTasks.length > 0 && (
+              <div className={styles.prioritiesList}>
+                {nextUpTasks.map((item, idx) => {
+                  const { shortContext } = getTaskRowContext(item);
+                  return (
+                    <div key={item.id} className={styles.cleanQueueRow}>
+                      <div className={styles.priorityLeft}>
+                        <span className={styles.priorityNumBadge}>{idx + 2}</span>
                         <button
                           type="button"
                           className={styles.checkboxBtn}
                           onClick={(e) => handleToggleTask(item.id, e)}
+                          aria-label={`Complete ${item.title}`}
                         >
-                          {item.status === 'done' ? (
-                            <div className={styles.checkedBox}><Check size={12} strokeWidth={3} /></div>
-                          ) : (
-                            <div className={styles.emptyBox} style={isDoItNow ? { borderColor: '#d4a373' } : undefined} />
-                          )}
+                          <div className={styles.emptyBox} />
                         </button>
                         <span className={styles.taskTitleText}>{item.title}</span>
                         {item.subtasks && item.subtasks.length > 0 && (
-                          <button
-                            type="button"
-                            className={styles.subtaskBadgeBtn}
-                            onClick={(e) => toggleSubtasks(item.id, e)}
-                            title="Toggle subtask checklist"
-                          >
-                            <span>{item.subtasks.filter((s) => s.completed).length}/{item.subtasks.length} steps</span>
-                            <span style={{ fontSize: '9px' }}>{expandedSubtasks[item.id] ? '▲' : '▼'}</span>
-                          </button>
+                          <span className={styles.quietMetaChip}>
+                            {item.subtasks.filter((s) => s.completed).length}/{item.subtasks.length}
+                          </span>
                         )}
                       </div>
 
-                      {shortContext && (
-                        <span
-                          className={`${styles.taskContextText} ${isDoItNow ? styles.taskContextDoItNow : ''}`}
-                          title={tooltip}
-                        >
-                          {shortContext}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Subtask Step Breakdown (Collapsible) */}
-                    {item.subtasks && item.subtasks.length > 0 && expandedSubtasks[item.id] && (
-                      <div style={{ marginLeft: '46px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '6px' }}>
-                        {item.subtasks.map((sub) => (
-                          <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleSubtask(item.id, sub.id, e)}
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
-                              title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
-                            >
-                              {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
-                            </button>
-                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Other Tasks */}
-          <div className={styles.otherTasksWrap}>
-            <div className={styles.otherTasksHeader}>
-              <h3 className={styles.subSectionTitle}>Other Tasks</h3>
-              <span className={styles.sectionHeaderDate}>
-                {tasks.filter((t) => t.status !== 'done').length} pending
-              </span>
-            </div>
-            <div className={styles.otherTasksList}>
-              {otherTasks.map((task) => {
-                const { isDoItNow, shortContext, tooltip } = getTaskRowContext(task);
-
-                return (
-                  <div key={task.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div
-                      className={`${styles.otherTaskRow} ${task.status === 'done' ? styles.taskDoneRow : ''}`}
-                      title={tooltip}
-                      style={isDoItNow ? {
-                        background: 'rgba(212, 163, 115, 0.05)',
-                        border: '1px solid rgba(212, 163, 115, 0.22)',
-                      } : undefined}
-                    >
-                      <button
-                        type="button"
-                        className={styles.checkboxBtn}
-                        onClick={(e) => handleToggleTask(task.id, e)}
-                      >
-                        {task.status === 'done' ? (
-                          <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
-                        ) : (
-                          <div className={styles.emptyCircle} style={isDoItNow ? { borderColor: '#d4a373' } : undefined} />
+                      <div className={styles.rowRightActions}>
+                        {shortContext && (
+                          <span className={styles.taskContextText}>{shortContext}</span>
                         )}
-                      </button>
-                      <span className={styles.otherTaskTitle}>{task.title}</span>
-                      {task.subtasks && task.subtasks.length > 0 && (
                         <button
                           type="button"
-                          className={styles.subtaskBadgeBtn}
-                          onClick={(e) => toggleSubtasks(task.id, e)}
-                          title="Toggle subtask checklist"
+                          className={styles.rowFocusMiniBtn}
+                          onClick={() => handleStartFocusOnTask(item)}
+                          title="Start focus timer on this task"
+                          aria-label={`Focus on ${item.title}`}
                         >
-                          <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps</span>
-                          <span style={{ fontSize: '9px' }}>{expandedSubtasks[task.id] ? '▲' : '▼'}</span>
+                          <Play size={12} />
                         </button>
-                      )}
-                      {shortContext && (
-                        <span
-                          className={`${styles.taskContextText} ${isDoItNow ? styles.taskContextDoItNow : ''}`}
-                          style={{ marginLeft: 'auto' }}
-                          title={tooltip}
-                        >
-                          {shortContext}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Subtask Step Breakdown for Other Tasks (Collapsible) */}
-                    {task.subtasks && task.subtasks.length > 0 && expandedSubtasks[task.id] && (
-                      <div style={{ marginLeft: '32px', display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '4px' }}>
-                        {task.subtasks.map((sub) => (
-                          <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: sub.completed ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}>
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleSubtask(task.id, sub.id, e)}
-                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: sub.completed ? 'var(--color-success)' : 'var(--color-text-faint)', display: 'inline-flex', alignItems: 'center' }}
-                              title={sub.completed ? 'Mark uncompleted' : 'Mark done'}
-                            >
-                              {sub.completed ? <CheckSquare size={13} /> : <Square size={13} />}
-                            </button>
-                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.title}</span>
-                          </div>
-                        ))}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-              {addingTask ? (
-                <form onSubmit={handleCreateTask} className={styles.addTaskForm}>
-                  <input
-                    type="text"
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCreateTask(e);
-                      }
-                    }}
-                    placeholder="Task name..."
-                    className={styles.addTaskInput}
-                    autoFocus
-                  />
-                  <div className={styles.addTaskBtnGroup}>
-                    <button type="submit" className={styles.addTaskSubmitBtn}>Add</button>
-                    <button
-                      type="button"
-                      className={styles.addTaskCancelBtn}
-                      onClick={() => setAddingTask(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : (
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Progressive disclosure for remaining tasks so users never face a wall of 10+ items */}
+            {remainingTasks.length > 0 && (
+              <div className={styles.disclosureQueueWrap}>
                 <button
                   type="button"
-                  className={styles.addTaskTrigger}
-                  onClick={() => setAddingTask(true)}
+                  className={styles.queueDisclosureBtn}
+                  onClick={() => setQueueExpanded((v) => !v)}
+                  aria-expanded={queueExpanded}
                 >
-                  <Plus size={14} /><span>Add task</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Completed Today (Visual proof of accomplishments) */}
-          {completedTasks.length > 0 && (
-            <div className={styles.completedTasksWrap}>
-              <div
-                className={styles.completedTasksHeader}
-                onClick={() => setShowCompleted(!showCompleted)}
-                role="button"
-                tabIndex={0}
-              >
-                <span className={styles.completedTasksTitle}>
-                  Completed Today ({completedTasks.length})
-                </span>
-                <span className={styles.completedBadge}>
-                  {showCompleted ? 'Hide' : 'Show'}
-                </span>
-              </div>
-
-              {showCompleted && (
-                <div className={styles.completedTasksList}>
-                  {completedTasks.map((t) => (
-                    <div key={t.id} className={styles.completedTaskRow}>
-                      <button
-                        type="button"
-                        className={styles.checkboxBtn}
-                        onClick={(e) => handleToggleTask(t.id, e)}
-                        title="Mark pending"
-                      >
-                        <div className={styles.checkedCircle}><Check size={11} strokeWidth={3} /></div>
-                      </button>
-                      <span className={styles.completedTaskTitle}>{t.title}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Projects & Goals */}
-        <section className={styles.contentSectionCard}>
-          <div className={styles.sectionHeaderRow}>
-            <div className={styles.sectionHeaderLeft}>
-              <Target size={17} className={styles.targetHeaderIcon} />
-              <h2 className={styles.sectionHeading}>Projects &amp; Goals</h2>
-            </div>
-            <Link href="/projects" className={styles.viewAllNotesLink}>View all →</Link>
-          </div>
-
-          <div className={styles.projectGoalsGrid}>
-            {activeProjects.slice(0, 2).map((project) => (
-              <div key={project.id} className={styles.projectCard}>
-                <div className={styles.projectCardHeader}>
-                  <div className={styles.projectCardIconWrap}>{getProjectIcon(project.title)}</div>
-                  <span className={styles.projectCardTitle}>{project.title}</span>
-                </div>
-                <div className={styles.progressBarBg}>
-                  <div
-                    className={project.progress >= 100 ? styles.progressBarFillDark : styles.progressBarFillGreen}
-                    style={{ width: `${Math.min(100, project.progress ?? 0)}%` }}
-                  />
-                </div>
-                {project.notes && (
-                  <div className={styles.projectNextLabel}>{project.notes.split('\n')[0]}</div>
-                )}
-                <div className={styles.projectMetaRow}>
-                  <span>{project.progress ?? 0}% complete</span>
-                </div>
-              </div>
-            ))}
-
-            {activeGoals.length > 0 && (
-              <div className={styles.projectCard}>
-                <div className={styles.projectCardHeader}>
-                  <div className={styles.projectCardIconWrap}><Mountain size={15} /></div>
-                  <span className={styles.projectCardTitle}>Goals</span>
-                </div>
-                <div className={styles.personalGoalsList}>
-                  {activeGoals.slice(0, 4).map((g) => (
-                    <div key={g.id} className={styles.personalGoalRow}>
-                      <div className={styles.emptyCircleSmall} />
-                      <span className={styles.personalGoalText}>{g.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Idea Parking — Minimalist Quick Capture Preview */}
-        <section className={styles.contentSectionCard}>
-          <div className={styles.sectionHeaderRow}>
-            <div className={styles.sectionHeaderLeft}>
-              <h2 className={styles.sectionHeading}>Idea Parking</h2>
-              <span className={styles.sectionHeaderDate}>
-                {brainDumpItems.length}
-              </span>
-            </div>
-            <Link href="/inbox" className={styles.viewAllNotesLink}>Open inbox →</Link>
-          </div>
-
-          <div className={styles.notesList}>
-            {brainDumpItems.slice(0, 5).map((item) => {
-              const isExpanded = Boolean(expandedThoughtIds[item.id]);
-              return (
-                <div
-                  key={item.id}
-                  className={styles.noteItemRow}
-                  onClick={() =>
-                    setExpandedThoughtIds((prev) => ({ ...prev, [item.id]: !prev[item.id] }))
-                  }
-                  title={isExpanded ? 'Click to collapse' : item.content}
-                >
-                  <span className={styles.noteBullet}>•</span>
-                  <span className={`${styles.noteText} ${isExpanded ? styles.noteTextExpanded : ''}`}>
-                    {item.content}
+                  <span>
+                    {queueExpanded
+                      ? 'Hide extra tasks'
+                      : `Show ${remainingTasks.length} more parked task${
+                          remainingTasks.length === 1 ? '' : 's'
+                        }`}
                   </span>
-                  {item.reminderTime && (
-                    <span className={styles.noteTimeMeta}>{item.reminderTime}</span>
-                  )}
-                  {item.isReminder && (
-                    <span className={styles.noteReminderMeta}>Reminder</span>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.noteDeleteBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteInboxItem(item.id);
-                    }}
-                    aria-label="Delete thought"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              );
-            })}
+                  {queueExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
 
-            {addingDump ? (
-              <form onSubmit={handleDump} className={styles.addTaskForm} style={{ marginTop: 8 }}>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setDumpIsReminder(false)}
-                    style={{
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: !dumpIsReminder ? 600 : 400,
-                      background: !dumpIsReminder ? 'var(--color-surface-2)' : 'transparent',
-                      color: !dumpIsReminder ? 'var(--color-text)' : 'var(--color-text-muted)',
-                      border: '1px solid var(--color-border)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Thought
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDumpIsReminder(true)}
-                    style={{
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: dumpIsReminder ? 600 : 400,
-                      background: dumpIsReminder ? 'var(--color-accent)' : 'transparent',
-                      color: dumpIsReminder ? '#ffffff' : 'var(--color-text-muted)',
-                      border: '1px solid var(--color-border)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Reminder
-                  </button>
-                </div>
-                <input
-                  ref={dumpInputRef}
-                  type="text"
-                  value={dumpText}
-                  onChange={(e) => setDumpText(e.target.value)}
-                  placeholder={dumpIsReminder ? "Set a reminder (moves right to left on Today screen)..." : "Dump a thought, idea, or worry..."}
-                  className={styles.addTaskInput}
-                  autoFocus
-                />
-                <div className={styles.addTaskBtnGroup}>
-                  <button type="submit" className={styles.addTaskSubmitBtn}>
-                    {dumpIsReminder ? 'Add Reminder' : 'Capture'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.addTaskCancelBtn}
-                    onClick={() => {
-                      setAddingDump(false);
-                      setDumpIsReminder(false);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button
-                type="button"
-                className={styles.addTaskTrigger}
-                onClick={() => {
-                  setAddingDump(true);
-                  setTimeout(() => dumpInputRef.current?.focus(), 50);
-                }}
-                style={{ marginTop: 4 }}
-              >
-                <Plus size={13} /><span>Dump thought</span>
-              </button>
+                {queueExpanded && (
+                  <div className={styles.otherTasksList} style={{ marginTop: 8 }}>
+                    {remainingTasks.slice(0, 10).map((task) => {
+                      const { shortContext } = getTaskRowContext(task);
+                      return (
+                        <div key={task.id} className={styles.otherTaskRow}>
+                          <button
+                            type="button"
+                            className={styles.checkboxBtn}
+                            onClick={(e) => handleToggleTask(task.id, e)}
+                            aria-label={`Complete ${task.title}`}
+                          >
+                            <div className={styles.emptyCircle} />
+                          </button>
+                          <span className={styles.otherTaskTitle}>{task.title}</span>
+                          {shortContext && (
+                            <span
+                              className={styles.taskContextText}
+                              style={{ marginLeft: 'auto' }}
+                            >
+                              {shortContext}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.rowFocusMiniBtn}
+                            onClick={() => handleStartFocusOnTask(task)}
+                            title="Start focus timer"
+                            aria-label={`Focus on ${task.title}`}
+                          >
+                            <Play size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Completed Today Dopamine Wins */}
+            {completedTodayTasks.length > 0 && (
+              <div className={styles.completedTasksWrap}>
+                <button
+                  type="button"
+                  className={styles.queueDisclosureBtn}
+                  onClick={() => setShowCompleted((v) => !v)}
+                  aria-expanded={showCompleted}
+                >
+                  <span>
+                    Completed today ({completedTodayTasks.length} win
+                    {completedTodayTasks.length === 1 ? '' : 's'})
+                  </span>
+                  {showCompleted ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+
+                {showCompleted && (
+                  <div className={styles.completedTasksList}>
+                    {completedTodayTasks.map((t) => (
+                      <div key={t.id} className={styles.completedTaskRow}>
+                        <button
+                          type="button"
+                          className={styles.checkboxBtn}
+                          onClick={(e) => handleToggleTask(t.id, e)}
+                          title="Undo completion"
+                        >
+                          <div className={styles.checkedCircle}>
+                            <Check size={11} strokeWidth={3} />
+                          </div>
+                        </button>
+                        <span className={styles.completedTaskTitle}>{t.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── 6. Calm Daily Anchors (Routine + Current Book) ── */}
+        {energyLevel !== 'low' && (
+          <div className={styles.calmContextGrid}>
+            <Link href="/routine" className={styles.calmContextCard}>
+              <div className={styles.calmCardTop}>
+                <span className={styles.calmCardLabel}>
+                  <Clock size={14} />
+                  <span>Daily Routine</span>
+                </span>
+                <span className={styles.calmCardBadge}>
+                  {dailyRoutine.completedCount}/{dailyRoutine.totalCount}
+                </span>
+              </div>
+              <div className={styles.calmCardTitle}>
+                {dailyRoutine.subtitle || 'Follow your structured time blocks'}
+              </div>
+            </Link>
+
+            <div className={styles.calmContextCard}>
+              <div className={styles.calmCardTop}>
+                <span className={styles.calmCardLabel}>
+                  <BookOpen size={14} />
+                  <span>Active Reading</span>
+                </span>
+                <button
+                  type="button"
+                  className={styles.changeBookBtn}
+                  onClick={() => setBookPickerOpen(true)}
+                >
+                  Switch
+                </button>
+              </div>
+              <Link
+                href={
+                  currentReadingDoc ? `/knowledge?docId=${currentReadingDoc.id}` : '/knowledge'
+                }
+                className={styles.calmCardLinkBody}
+              >
+                <span className={styles.calmCardTitle}>{readingTitle}</span>
+                {currentReadingDoc?.readProgress != null && currentReadingDoc.readProgress > 0 && (
+                  <span className={styles.calmCardSub}>
+                    {currentReadingDoc.readProgress}% completed
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
-        </section>
-
-        {/* Wrap Up Day Button */}
-        <div className={styles.wrapUpContainer}>
-          <button type="button" className={styles.wrapUpDayBtn} onClick={handleOpenWrapUp}>
-            <Moon size={15} />
-            <span>Wrap Up Day</span>
-          </button>
-        </div>
-
-        <footer className={styles.bottomMottoFooter}>
-          <span>Focus</span><span className={styles.mottoDot}>·</span>
-          <span>Build</span><span className={styles.mottoDot}>·</span>
-          <span>Grow</span><span className={styles.mottoDot}>·</span>
-          <span>Freedom</span>
-        </footer>
+        )}
       </div>
 
-      <RightSidebar />
+      <RightSidebar
+        onOpenWrapUp={(e) => {
+          setWrapUpOpen(true);
+          playSuccessChime();
+          triggerDopamineBurst(e.clientX, e.clientY);
+        }}
+        overdueCount={overdueCount}
+      />
 
       {/* Evening Shutdown & Wrap Up Day Modal */}
       {wrapUpOpen && (
         <div className={styles.modalBackdrop} onClick={() => setWrapUpOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.modalTitle}>Great Job Today, {userName}!</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Moon size={18} />
+              <h2 className={styles.modalTitle} style={{ margin: 0 }}>
+                Great Job Today, {userName}
+              </h2>
+            </div>
             <p className={styles.modalSubtitle}>
               You showed up and took action today. Take a deep breath and acknowledge your wins.
             </p>
 
             <div className={styles.modalStatsGrid}>
               <div className={styles.modalStatCard}>
-                <span className={styles.modalStatNumber}>{tasksDone}</span>
+                <span className={styles.modalStatNumber}>{completedTodayTasks.length || tasksDoneTotal}</span>
                 <span className={styles.modalStatLabel}>Tasks Completed</span>
               </div>
               <div className={styles.modalStatCard}>
                 <span className={styles.modalStatNumber}>{dailyRoutine.completedCount}</span>
-                <span className={styles.modalStatLabel}>Routine Done</span>
+                <span className={styles.modalStatLabel}>Routine Blocks</span>
               </div>
             </div>
 
             <div className={styles.modalReflection}>
-              <strong>Evening Anchor:</strong> You don&apos;t have to finish everything to deserve rest. Give your brain full permission to turn off now so you can recharge.
+              <strong>Evening Anchor:</strong> You don&apos;t have to finish everything to deserve
+              rest. Give your brain full permission to recharge tonight.
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', width: '100%' }}>
               <button
                 type="button"
                 className={styles.modalPrimaryBtn}
-                style={{ flex: 1, background: 'var(--color-surface-2)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                style={{
+                  flex: 1,
+                  background: 'var(--color-surface-2)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                }}
                 onClick={() => {
                   setWrapUpOpen(false);
                   handleOpenBriefing('evening');
@@ -1220,8 +1131,6 @@ export default function TodayDashboardContent() {
         </div>
       )}
 
-
-
       {/* Daily Briefing & Reflection Modal */}
       <DailyBriefingModal
         isOpen={briefingModalOpen}
@@ -1241,9 +1150,9 @@ export default function TodayDashboardContent() {
           <div className={styles.bookPickerModalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.bookPickerHeader}>
               <div>
-                <h3 className={styles.bookPickerTitle}>Choose Dashboard Book</h3>
+                <h3 className={styles.bookPickerTitle}>Choose Active Reading Book</h3>
                 <p className={styles.bookPickerDesc}>
-                  Select which book appears on your Today dashboard. Clicking it opens the book immediately.
+                  Select which book or study note stays pinned on Today.
                 </p>
               </div>
               <button
@@ -1273,40 +1182,65 @@ export default function TodayDashboardContent() {
                     <button
                       key={doc.id}
                       type="button"
-                      className={`${styles.bookListItem} ${isSelected ? styles.bookListItemActive : ''}`}
+                      className={`${styles.bookListItem} ${
+                        isSelected ? styles.bookListItemActive : ''
+                      }`}
                       onClick={() => handleSelectFeaturedBook(doc.id)}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, textAlign: 'left' }}>
-                        <BookOpen size={16} style={{ color: isSelected ? '#38bdf8' : 'var(--color-text-muted)', flexShrink: 0 }} />
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          minWidth: 0,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <BookOpen
+                          size={16}
+                          style={{
+                            color: isSelected ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                            flexShrink: 0,
+                          }}
+                        />
                         <div style={{ minWidth: 0 }}>
                           <div className={styles.bookItemTitle}>{doc.title}</div>
                           <div className={styles.bookItemMeta}>
-                            {doc.readProgress != null && doc.readProgress > 0 ? `${doc.readProgress}% read · ` : ''}
+                            {doc.readProgress != null && doc.readProgress > 0
+                              ? `${doc.readProgress}% read · `
+                              : ''}
                             {doc.category || 'document'}
                           </div>
                         </div>
                       </div>
                       <span className={styles.bookSelectBadge}>
-                        {isSelected ? '✓ Active' : 'Select'}
+                        {isSelected ? 'Active' : 'Select'}
                       </span>
                     </button>
                   );
                 })
               ) : (
-                <div style={{ padding: '20px 0', textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                <div
+                  style={{
+                    padding: '20px 0',
+                    textAlign: 'center',
+                    fontSize: '0.82rem',
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
                   No matching books found.
                 </div>
               )}
             </div>
 
             <div className={styles.bookCreateDivider}>
-              <span>Or add a new book to read</span>
+              <span>Or add a new book</span>
             </div>
 
             <form onSubmit={handleCreateAndSelectBook} className={styles.bookCreateForm}>
               <input
                 type="text"
-                placeholder="Enter new book title (e.g. Atomic Habits)..."
+                placeholder="Enter new book title..."
                 value={newBookTitleInput}
                 onChange={(e) => setNewBookTitleInput(e.target.value)}
                 className={styles.bookCreateInput}

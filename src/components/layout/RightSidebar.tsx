@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -10,48 +10,49 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  Repeat,
+  ChevronDown,
+  ChevronUp,
   ArrowRight,
-  Flame,
   Flag,
   Clock,
+  RotateCcw,
 } from 'lucide-react';
 
 import { useSettings } from '@/context/SettingsContext';
 import { useSearch } from '@/context/SearchContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useTasks } from '@/context/TaskContext';
-import { useProjects } from '@/context/ProjectContext';
-import { useGoals } from '@/context/GoalContext';
 import { useCalendar } from '@/context/CalendarContext';
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import type { AppTheme } from '@/types';
 import styles from './RightSidebar.module.css';
 
-export default function RightSidebar() {
+interface RightSidebarProps {
+  onOpenWrapUp?: (e: React.MouseEvent) => void;
+  overdueCount?: number;
+}
+
+export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSidebarProps) {
   const { settings, updateSettings } = useSettings();
   const { openSearch } = useSearch();
   const { unreadCount } = useReminders();
   const { tasks } = useTasks();
-  const { activeProjects } = useProjects();
-  const { activeGoals } = useGoals();
   const { getDeadlinesForDate, getEventsForDate, getScheduledBlocksForDate } = useCalendar();
   const dailyRoutine = useDailyRoutineReminder();
 
-  // ── Theme toggle (strictly switches between: Black (Dark) ↔ White (Light)) ────
   const currentTheme = settings.theme;
   const toggleTheme = () => {
     const nextTheme: AppTheme = currentTheme === 'light' ? 'dark' : 'light';
     updateSettings({ theme: nextTheme });
   };
-  const themeIcon = currentTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />;
-  const themeTitle = currentTheme === 'light' ? 'Switch to Black (Dark Theme)' : 'Switch to White (Light Theme)';
+  const themeIcon = currentTheme === 'light' ? <Moon size={16} /> : <Sun size={16} />;
+  const themeTitle =
+    currentTheme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme';
 
-  // ── Selected Date for Agenda Inspection ──────────────────────
-  const [selectedDate, setSelectedDate] = useState<string>(
-    () => new Date().toISOString().split('T')[0]
-  );
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const [viewDate, setViewDate] = useState<Date>(new Date());
 
   const formatDayDateStr = (y: number, m: number, d: number) => {
     const mm = String(m + 1).padStart(2, '0');
@@ -69,9 +70,6 @@ export default function RightSidebar() {
     }
   };
 
-  // ── Calendar Month Navigation ────────────────────────────────
-  const [viewDate, setViewDate] = useState<Date>(new Date());
-
   const prevMonth = () => {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
@@ -80,54 +78,63 @@ export default function RightSidebar() {
   };
 
   const monthName = viewDate.toLocaleDateString([], { month: 'long', year: 'numeric' });
-
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const calendarDays: (number | null)[] = [];
-  for (let i = 0; i < firstDayIndex; i++) {
-    calendarDays.push(null);
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    calendarDays.push(d);
-  }
+  for (let i = 0; i < firstDayIndex; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
 
   const isToday = (d: number | null) => {
     if (!d) return false;
     const today = new Date();
     return (
-      d === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear()
+      d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
     );
   };
 
-  // ── Live Real Stats & Momentum ────────────────────────────────
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tasksDone = tasks.filter((t) => t.status === 'done').length;
-  const totalTasks = tasks.length;
-  const routineDone = dailyRoutine.completedCount;
-  const totalRoutine = dailyRoutine.totalCount;
+  // Daily completion rhythm (only today's completed tasks + routine blocks)
+  const completedTodayCount = tasks.filter((t) => {
+    if (t.status !== 'done') return false;
+    if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
+    if (t.updatedAt) return t.updatedAt.split('T')[0] === todayStr;
+    return false;
+  }).length;
+  const dueOrActiveToday = tasks.filter(
+    (t) => t.status !== 'done' && (t.dueDate === todayStr || t.tags?.includes('do-it-now'))
+  ).length;
+  const totalTodayTarget = Math.max(1, completedTodayCount + dueOrActiveToday + dailyRoutine.totalCount);
+  const doneTodayTarget = completedTodayCount + dailyRoutine.completedCount;
+  const rhythmPercent = Math.min(100, Math.round((doneTodayTarget / totalTodayTarget) * 100));
 
-  const totalActions = totalTasks + totalRoutine;
-  const completedActions = tasksDone + routineDone;
-  const momentumPercent = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
-
-  // ── Notification State (Strictly focused on notifications, not reminders) ──
   const hasNotifications = unreadCount > 0;
   const bellTooltip = hasNotifications
     ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
     : 'Notifications';
 
+  const selectedDeadlines = getDeadlinesForDate(selectedDate);
+  const selectedEvents = getEventsForDate(selectedDate);
+  const selectedBlocks = getScheduledBlocksForDate(selectedDate);
+  const totalSelectedMarks =
+    selectedDeadlines.length + selectedEvents.length + selectedBlocks.length;
+
   return (
-    <aside className={styles.rightSidebar} aria-label="Secondary widgets">
-      {/* ── Top Utility Search & Actions ───────────────────────── */}
+    <aside className={styles.rightSidebar} aria-label="Today companion rail">
+      {/* ── Top Utility Search & Actions ── */}
       <div className={styles.topUtilityRow} data-tour="right-utility">
-        <div className={styles.searchBox} onClick={openSearch} role="button" tabIndex={0}>
+        <div
+          className={styles.searchBox}
+          onClick={openSearch}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') openSearch();
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <Search size={15} className={styles.searchIcon} />
-          <span className={styles.searchPlaceholder}>Search...</span>
+          <span className={styles.searchPlaceholder}>Search (Ctrl+K)</span>
         </div>
 
         <div className={styles.utilityIcons}>
@@ -148,10 +155,12 @@ export default function RightSidebar() {
             title={bellTooltip}
             aria-label={bellTooltip}
           >
-            <Bell size={17} />
-
+            <Bell size={16} />
             {hasNotifications && (
-              <span className={styles.notificationBadge} aria-label={`${unreadCount} unread notifications`}>
+              <span
+                className={styles.notificationBadge}
+                aria-label={`${unreadCount} unread notifications`}
+              >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -159,304 +168,262 @@ export default function RightSidebar() {
         </div>
       </div>
 
-      {/* ── Mini Calendar Card ─────────────────────────────────── */}
+      {/* ── Calm Today Horizon & Collapsible Month Grid ── */}
       <div className={styles.widgetCard}>
-        <div className={styles.calendarHeader}>
+        <div className={styles.calendarHeader} style={{ marginBottom: 4 }}>
           <div className={styles.calendarTitle}>
-            <CalendarIcon size={16} />
-            <span>Calendar</span>
+            <CalendarIcon size={15} />
+            <span>Schedule &amp; Deadlines</span>
           </div>
+          <button
+            type="button"
+            className={styles.jumpTodayBtn}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            onClick={() => setCalendarExpanded((v) => !v)}
+            aria-expanded={calendarExpanded}
+          >
+            <span>{calendarExpanded ? 'Hide Grid' : 'Month'}</span>
+            {calendarExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
         </div>
 
-        <div className={styles.monthNavRow}>
-          <span className={styles.monthName}>{monthName}</span>
-          <div className={styles.navArrows}>
-            <button type="button" onClick={prevMonth} className={styles.arrowBtn} aria-label="Previous month">
-              <ChevronLeft size={16} />
-            </button>
-            <button type="button" onClick={nextMonth} className={styles.arrowBtn} aria-label="Next month">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.calendarGrid}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className={styles.calDayLabel}>
-              {d}
-            </div>
-          ))}
-
-          {calendarDays.map((d, index) => {
-            if (d === null) {
-              return <div key={`empty-${index}`} className={styles.calEmptyCell} />;
-            }
-
-            const dayDateStr = formatDayDateStr(year, month, d);
-            const dayDeadlines = getDeadlinesForDate(dayDateStr);
-            const dayEvents = getEventsForDate(dayDateStr);
-            const dayBlocks = getScheduledBlocksForDate(dayDateStr);
-
-            const hasDeadline = dayDeadlines.length > 0;
-            const hasEvent = dayEvents.length > 0;
-            const hasBlock = dayBlocks.length > 0;
-            const isSelected = dayDateStr === selectedDate;
-            const active = isToday(d);
-
-            const tooltipParts: string[] = [];
-            if (hasDeadline) {
-              tooltipParts.push(
-                `[Deadline] ${dayDeadlines.length} deadline${dayDeadlines.length > 1 ? 's' : ''}: ${dayDeadlines.map((i) => i.title).join(', ')}`
-              );
-            }
-            if (hasEvent) {
-              tooltipParts.push(
-                `[Event] ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}: ${dayEvents.map((i) => i.title).join(', ')}`
-              );
-            }
-            if (hasBlock) {
-              tooltipParts.push(
-                `[Focus Block] ${dayBlocks.length} focus block${dayBlocks.length > 1 ? 's' : ''}: ${dayBlocks.map((i) => i.taskTitle).join(', ')}`
-              );
-            }
-            const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('\n') : undefined;
-
-            return (
-              <div
-                key={`day-${d}`}
-                onClick={() => setSelectedDate(dayDateStr)}
-                className={`${styles.calDayCell} ${active ? styles.calActiveDay : ''} ${isSelected ? styles.calSelectedDay : ''} ${hasDeadline ? styles.calHasDeadline : ''}`}
-                title={tooltipText}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    setSelectedDate(dayDateStr);
-                  }
-                }}
-                aria-label={`${dayDateStr} ${tooltipParts.join('. ')}`}
-              >
-                <span className={styles.calDayNumber}>{d}</span>
-                <div className={styles.calDotsRow}>
-                  {hasDeadline && <span className={`${styles.calDot} ${styles.calDotDeadline}`} />}
-                  {hasEvent && <span className={`${styles.calDot} ${styles.calDotEvent}`} />}
-                  {hasBlock && <span className={`${styles.calDot} ${styles.calDotBlock}`} />}
-                </div>
+        {calendarExpanded && (
+          <div style={{ marginTop: 8, marginBottom: 6 }}>
+            <div className={styles.monthNavRow}>
+              <span className={styles.monthName}>{monthName}</span>
+              <div className={styles.navArrows}>
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  className={styles.arrowBtn}
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className={styles.arrowBtn}
+                  aria-label="Next month"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* ── Legend ── */}
-        <div className={styles.calLegendRow}>
-          <span className={styles.legendItem}>
-            <span className={`${styles.calDot} ${styles.calDotDeadline}`} /> Deadline
-          </span>
-          <span className={styles.legendItem}>
-            <span className={`${styles.calDot} ${styles.calDotEvent}`} /> Event
-          </span>
-          <span className={styles.legendItem}>
-            <span className={`${styles.calDot} ${styles.calDotBlock}`} /> Focus
-          </span>
-        </div>
-
-        {/* ── Selected Day Marks & Agenda ── */}
-        {(() => {
-          const selectedDeadlines = getDeadlinesForDate(selectedDate);
-          const selectedEvents = getEventsForDate(selectedDate);
-          const selectedBlocks = getScheduledBlocksForDate(selectedDate);
-          const totalSelectedMarks =
-            selectedDeadlines.length + selectedEvents.length + selectedBlocks.length;
-
-          return (
-            <div className={styles.selectedDayAgenda}>
-              <div className={styles.agendaHeader}>
-                <div className={styles.agendaDateTitle}>
-                  <span>{formatFriendlyDate(selectedDate)}</span>
-                  {selectedDate === todayStr && (
-                    <span className={styles.todayBadge}>Today</span>
-                  )}
+            <div className={styles.calendarGrid}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <div key={d} className={styles.calDayLabel}>
+                  {d}
                 </div>
-                {selectedDate !== todayStr && (
-                  <button
-                    type="button"
-                    className={styles.jumpTodayBtn}
-                    onClick={() => {
-                      setSelectedDate(todayStr);
-                      setViewDate(new Date());
+              ))}
+
+              {calendarDays.map((d, index) => {
+                if (d === null) {
+                  return <div key={`empty-${index}`} className={styles.calEmptyCell} />;
+                }
+
+                const dayDateStr = formatDayDateStr(year, month, d);
+                const hasDeadline = getDeadlinesForDate(dayDateStr).length > 0;
+                const hasEvent = getEventsForDate(dayDateStr).length > 0;
+                const hasBlock = getScheduledBlocksForDate(dayDateStr).length > 0;
+                const isSelected = dayDateStr === selectedDate;
+                const active = isToday(d);
+
+                return (
+                  <div
+                    key={`day-${d}`}
+                    onClick={() => setSelectedDate(dayDateStr)}
+                    className={`${styles.calDayCell} ${active ? styles.calActiveDay : ''} ${
+                      isSelected ? styles.calSelectedDay : ''
+                    } ${hasDeadline ? styles.calHasDeadline : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') setSelectedDate(dayDateStr);
                     }}
                   >
-                    Jump to Today
-                  </button>
-                )}
-              </div>
-
-              <div className={styles.agendaItemsList}>
-                {selectedDeadlines.map((dl) => {
-                  const href =
-                    dl.sourceType === 'task' ? `/tasks?highlight=${dl.entityId}` :
-                    dl.sourceType === 'project' ? `/projects?highlight=${dl.entityId}` :
-                    dl.sourceType === 'goal' ? `/goals?highlight=${dl.entityId}` :
-                    dl.sourceType === 'milestone' ? `/milestones?highlight=${dl.entityId}` :
-                    `/tasks?highlight=${dl.entityId}`;
-                  return (
-                    <Link
-                      key={dl.id}
-                      href={href}
-                      className={`${styles.agendaItem} ${styles.agendaDeadlineItem}`}
-                      style={{ textDecoration: 'none', cursor: 'pointer' }}
-                      title={`Go to ${dl.sourceType}: ${dl.title}`}
-                    >
-                      <div className={styles.agendaItemIconWrap}>
-                        <Flag size={12} className={styles.deadlineIcon} />
-                      </div>
-                      <div className={styles.agendaItemContent}>
-                        <span className={styles.agendaItemTitle} title={dl.title}>
-                          {dl.title}
-                        </span>
-                        <div className={styles.agendaItemMetaRow}>
-                          <span className={styles.agendaSourceBadge}>{dl.sourceType}</span>
-                          {dl.priority && (
-                            <span style={{ textTransform: 'capitalize' }}>{dl.priority}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-
-                {selectedEvents.map((evt) => (
-                  <Link
-                    key={evt.id}
-                    href="/calendar"
-                    className={`${styles.agendaItem} ${styles.agendaEventItem}`}
-                    style={{ textDecoration: 'none', cursor: 'pointer' }}
-                    title={`Open calendar: ${evt.title}`}
-                  >
-                    <div className={styles.agendaItemIconWrap}>
-                      <CalendarIcon size={12} className={styles.eventIcon} />
+                    <span className={styles.calDayNumber}>{d}</span>
+                    <div className={styles.calDotsRow}>
+                      {hasDeadline && (
+                        <span className={`${styles.calDot} ${styles.calDotDeadline}`} />
+                      )}
+                      {hasEvent && <span className={`${styles.calDot} ${styles.calDotEvent}`} />}
+                      {hasBlock && <span className={`${styles.calDot} ${styles.calDotBlock}`} />}
                     </div>
-                    <div className={styles.agendaItemContent}>
-                      <span className={styles.agendaItemTitle} title={evt.title}>
-                        {evt.title}
-                      </span>
-                      <div className={styles.agendaItemMetaRow}>
-                        <span>
-                          {evt.startTime}
-                          {evt.endTime ? ` - ${evt.endTime}` : ''}
-                        </span>
-                        {evt.notes && <span>• {evt.notes}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-
-                {selectedBlocks.map((blk) => (
-                  <Link
-                    key={blk.id}
-                    href={`/tasks?highlight=${blk.taskId}`}
-                    className={`${styles.agendaItem} ${styles.agendaBlockItem}`}
-                    style={{ textDecoration: 'none', cursor: 'pointer' }}
-                    title={`Go to task: ${blk.taskTitle}`}
-                  >
-                    <div className={styles.agendaItemIconWrap}>
-                      <Clock size={12} className={styles.blockIcon} />
-                    </div>
-                    <div className={styles.agendaItemContent}>
-                      <span className={styles.agendaItemTitle} title={blk.taskTitle}>
-                        {blk.taskTitle}
-                      </span>
-                      <div className={styles.agendaItemMetaRow}>
-                        <span>
-                          {blk.startTime} ({blk.durationMinutes}m)
-                        </span>
-                        {blk.notes && <span>• {blk.notes}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-
-                {totalSelectedMarks === 0 && (
-                  <div className={styles.agendaEmptyState}>
-                    No deadlines or scheduled marks on this date
                   </div>
-                )}
-              </div>
-
-              <Link href="/calendar" className={styles.openCalendarLink}>
-                <span>Open Full Calendar</span>
-                <ArrowRight size={12} />
-              </Link>
+                );
+              })}
             </div>
-          );
-        })()}
+          </div>
+        )}
+
+        <div
+          className={styles.selectedDayAgenda}
+          style={!calendarExpanded ? { marginTop: 6, paddingTop: 8 } : undefined}
+        >
+          <div className={styles.agendaHeader}>
+            <div className={styles.agendaDateTitle}>
+              <span>{formatFriendlyDate(selectedDate)}</span>
+              {selectedDate === todayStr && <span className={styles.todayBadge}>Today</span>}
+            </div>
+            {selectedDate !== todayStr && (
+              <button
+                type="button"
+                className={styles.jumpTodayBtn}
+                onClick={() => {
+                  setSelectedDate(todayStr);
+                  setViewDate(new Date());
+                }}
+              >
+                Today
+              </button>
+            )}
+          </div>
+
+          <div className={styles.agendaItemsList}>
+            {selectedDeadlines.map((dl) => {
+              const href =
+                dl.sourceType === 'project'
+                  ? `/projects?highlight=${dl.entityId}`
+                  : dl.sourceType === 'goal'
+                  ? `/goals?highlight=${dl.entityId}`
+                  : dl.sourceType === 'milestone'
+                  ? `/milestones?highlight=${dl.entityId}`
+                  : `/tasks?highlight=${dl.entityId}`;
+              return (
+                <Link
+                  key={dl.id}
+                  href={href}
+                  className={styles.agendaItem}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div className={styles.agendaItemIconWrap}>
+                    <Flag size={12} className={styles.deadlineIcon} />
+                  </div>
+                  <div className={styles.agendaItemContent}>
+                    <span className={styles.agendaItemTitle}>{dl.title}</span>
+                    <div className={styles.agendaItemMetaRow}>
+                      <span className={styles.agendaSourceBadge}>{dl.sourceType}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+
+            {selectedEvents.map((evt) => (
+              <Link
+                key={evt.id}
+                href="/calendar"
+                className={styles.agendaItem}
+                style={{ textDecoration: 'none' }}
+              >
+                <div className={styles.agendaItemIconWrap}>
+                  <CalendarIcon size={12} className={styles.eventIcon} />
+                </div>
+                <div className={styles.agendaItemContent}>
+                  <span className={styles.agendaItemTitle}>{evt.title}</span>
+                  <div className={styles.agendaItemMetaRow}>
+                    <span>
+                      {evt.startTime}
+                      {evt.endTime ? ` – ${evt.endTime}` : ''}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+
+            {selectedBlocks.map((blk) => (
+              <Link
+                key={blk.id}
+                href={`/tasks?highlight=${blk.taskId}`}
+                className={styles.agendaItem}
+                style={{ textDecoration: 'none' }}
+              >
+                <div className={styles.agendaItemIconWrap}>
+                  <Clock size={12} className={styles.blockIcon} />
+                </div>
+                <div className={styles.agendaItemContent}>
+                  <span className={styles.agendaItemTitle}>{blk.taskTitle}</span>
+                  <div className={styles.agendaItemMetaRow}>
+                    <span>
+                      {blk.startTime} ({blk.durationMinutes}m)
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+
+            {totalSelectedMarks === 0 && (
+              <div className={styles.agendaEmptyState}>
+                Open schedule — no hard deadlines today
+              </div>
+            )}
+          </div>
+
+          <Link href="/calendar" className={styles.openCalendarLink}>
+            <span>Full Calendar</span>
+            <ArrowRight size={12} />
+          </Link>
+        </div>
       </div>
 
-      {/* ── Daily Momentum Card (Real Synced Data) ─────────────── */}
+      {/* ── Quiet Daily Rhythm & Compassion Reset ── */}
       <div className={styles.momentumCard}>
         <div className={styles.momentumHeader}>
-          <div className={styles.momentumTitle}>
-            <TrendingUp size={16} style={{ color: 'var(--color-text-muted)' }} />
-            <span>Daily Momentum</span>
-          </div>
-          <span className={styles.momentumBadge}>{momentumPercent}%</span>
+          <span className={styles.momentumTitle}>Daily Rhythm</span>
+          <span className={styles.momentumBadge}>
+            {completedTodayCount} task{completedTodayCount === 1 ? '' : 's'} ·{' '}
+            {dailyRoutine.completedCount}/{dailyRoutine.totalCount} routine
+          </span>
         </div>
 
         <div className={styles.momentumProgressTrack}>
           <div
             className={styles.momentumProgressFill}
-            style={{ width: `${momentumPercent}%` }}
+            style={{ width: `${rhythmPercent}%` }}
           />
         </div>
 
-        <div className={styles.momentumGrid}>
-          <div className={styles.momentumCell}>
-            <span className={styles.momentumCellLabel}>Tasks Done</span>
-            <span className={styles.momentumCellValue}>{tasksDone} / {totalTasks}</span>
-          </div>
-
-          <div className={styles.momentumCell}>
-            <span className={styles.momentumCellLabel}>Routine Done</span>
-            <span className={styles.momentumCellValue}>{routineDone} / {totalRoutine}</span>
-          </div>
-
-          <div className={styles.momentumCell}>
-            <span className={styles.momentumCellLabel}>Projects</span>
-            <span className={styles.momentumCellValue}>{activeProjects.length} Active</span>
-          </div>
-
-          <div className={styles.momentumCell}>
-            <span className={styles.momentumCellLabel}>Goals</span>
-            <span className={styles.momentumCellValue}>{activeGoals.length} Active</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Quick ADHD Shortcuts ───────────────────────────────── */}
-      <div className={styles.shortcutsCard}>
-        <div className={styles.momentumHeader}>
-          <div className={styles.momentumTitle}>
-            <span>Quick Shortcuts</span>
-          </div>
-        </div>
-
-        <div className={styles.shortcutLinksList}>
-          <Link href="/focus" className={styles.shortcutLinkItem}>
+        {overdueCount > 0 && (
+          <Link
+            href="/reset"
+            className={styles.shortcutLinkItem}
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border-subtle)',
+              padding: '8px 10px',
+            }}
+          >
             <div className={styles.shortcutItemLeft}>
-              <Flame size={14} style={{ color: 'var(--color-text-muted)' }} />
-              <span>Focus Space</span>
+              <RotateCcw size={13} />
+              <span>
+                {overdueCount} overdue · Compassion Reset
+              </span>
             </div>
-            <ArrowRight size={13} />
+            <ArrowRight size={12} />
           </Link>
+        )}
 
-          <Link href="/review" className={styles.shortcutLinkItem}>
+        {onOpenWrapUp && (
+          <button
+            type="button"
+            onClick={onOpenWrapUp}
+            className={styles.shortcutLinkItem}
+            style={{
+              width: '100%',
+              border: '1px solid var(--color-border-subtle)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
             <div className={styles.shortcutItemLeft}>
-              <Repeat size={14} style={{ color: 'var(--color-text-muted)' }} />
-              <span>Weekly Review</span>
+              <Moon size={13} />
+              <span>Wrap Up Day</span>
             </div>
-            <ArrowRight size={13} />
-          </Link>
-        </div>
+            <ArrowRight size={12} />
+          </button>
+        )}
       </div>
     </aside>
   );
