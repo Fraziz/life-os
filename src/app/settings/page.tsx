@@ -83,7 +83,7 @@ export default function SettingsPage() {
   const { user, isGuest, logout, logoutAllDevices, changePassword, deleteAccount } = useAuth();
   const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
   const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
-  const { startTour, resetAllTours } = useTour();
+  const { startTour, restartTour, resetAllTours, isOpen: isTourOpen, currentStep: currentTourStep } = useTour();
   const { docs, restoreStarterBooks } = useKnowledge();
   const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
@@ -482,6 +482,21 @@ export default function SettingsPage() {
     ai: true,
     data: false,
   });
+
+  // Ensure the Desktop & Edge card is visible whenever targeted by the Interactive Tour or #desktop-app anchor
+  useEffect(() => {
+    if (isTourOpen && currentTourStep?.target === '[data-tour="desktop-edge-card"]') {
+      setActiveCategory((prev) => (prev === 'all' || prev === 'appearance' ? prev : 'all'));
+      setOpenSections((prev) => (prev.appearance ? prev : { ...prev, appearance: true }));
+    }
+  }, [isTourOpen, currentTourStep]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#desktop-app') {
+      setActiveCategory('all');
+      setOpenSections((prev) => ({ ...prev, appearance: true }));
+    }
+  }, []);
 
   if (!isLoaded) {
     return <PageSkeleton variant="default" cardsCount={4} showMetrics={false} showControls={false} />;
@@ -1344,7 +1359,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* ── Windows Desktop App & Cloud Sync ── */}
-                <div id="desktop-app" className={styles.logoCustomizerCard}>
+                <div id="desktop-app" data-tour="desktop-edge-card" className={styles.logoCustomizerCard}>
                   <div className={styles.logoCustomizerHeader}>
                     <div>
                       <h3 className={styles.subCardTitle}>Windows Desktop App</h3>
@@ -1663,7 +1678,7 @@ export default function SettingsPage() {
                         <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Main System Tour</strong>
                       </div>
                       <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
-                        Take a guided walkthrough of the core cockpit, Idea Parking, Tasks Kanban, Planning hierarchy, and AI Assistant.
+                        Take a guided walkthrough of the core cockpit, Idea Parking, Tasks Kanban, Planning hierarchy, AI Assistant, and Screen-Edge Companion.
                       </p>
                     </div>
                     <button
@@ -1671,7 +1686,7 @@ export default function SettingsPage() {
                       className={styles.secondaryBtn}
                       style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
                       onClick={() => {
-                        startTour('main-tour');
+                        restartTour();
                         setToastText('Starting System Tour…');
                         setShowSavedToast(true);
                         setTimeout(() => setShowSavedToast(false), 2000);
@@ -1679,6 +1694,41 @@ export default function SettingsPage() {
                     >
                       <Compass size={14} />
                       Restart System Tour
+                    </button>
+                  </div>
+
+                  <div style={{
+                    padding: '16px',
+                    borderRadius: 'var(--radius-lg, 10px)',
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <Monitor size={16} style={{ color: 'var(--color-text-muted)' }} />
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text)' }}>Edge &amp; Floating Bubble Guide</strong>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.45, margin: 0 }}>
+                        Learn how to snap the Floating Bubble to your screen edge, pop up or pop out AI chat, and use the Desktop Edge Line sidebar &amp; blink alerts.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        startTour('edge-companion', 0);
+                        setToastText('Starting Edge & Floating Bubble Guide…');
+                        setShowSavedToast(true);
+                        setTimeout(() => setShowSavedToast(false), 2000);
+                      }}
+                    >
+                      <Monitor size={14} />
+                      Start Edge Guide
                     </button>
                   </div>
 

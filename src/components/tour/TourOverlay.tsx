@@ -67,9 +67,9 @@ export default function TourOverlay() {
 
     setTargetRect(computedRect);
 
-    // Calculate tooltip coordinates
-    const tooltipWidth = 330;
-    const tooltipHeight = 190;
+    // Calculate tooltip coordinates using live rendered dimensions when available
+    const tooltipWidth = tooltipRef.current?.offsetWidth || 330;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 225;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -130,27 +130,35 @@ export default function TourOverlay() {
 
     let attempts = 0;
     const maxAttempts = 15;
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
 
     const findAndScroll = () => {
       const el = findVisibleTarget(currentStep.target, currentStep.fallbackTarget);
 
       if (el) {
-        // If element is not already well in viewport, scroll gently
+        // If element is not already well in viewport (or needs headroom for a top tooltip), scroll gently
         const r = el.getBoundingClientRect();
+        const needsTopHeadroom = currentStep.placement === 'top' && r.height > 200;
+        const minTop = needsTopHeadroom ? Math.min(250, Math.floor(window.innerHeight * 0.34)) : 20;
         const isInView =
-          r.top >= 20 &&
+          r.top >= minTop &&
           r.bottom <= window.innerHeight - 20 &&
           r.left >= 20 &&
           r.right <= window.innerWidth - 20;
 
         if (!isInView) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: needsTopHeadroom ? 'end' : 'center',
+            inline: 'nearest',
+          });
         }
 
-        setTimeout(() => updateTargetPosition(), 120);
+        timers.push(setTimeout(() => updateTargetPosition(), 120));
+        timers.push(setTimeout(() => updateTargetPosition(), 380));
       } else if (attempts < maxAttempts) {
         attempts++;
-        setTimeout(findAndScroll, 100);
+        timers.push(setTimeout(findAndScroll, 100));
       }
     };
 
@@ -165,6 +173,7 @@ export default function TourOverlay() {
     window.addEventListener('scroll', handleScrollOrResize, { passive: true });
 
     return () => {
+      timers.forEach((t) => clearTimeout(t));
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize);
     };

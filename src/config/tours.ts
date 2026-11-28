@@ -74,19 +74,29 @@ export const MAIN_SYSTEM_TOUR: TourDefinition = {
     {
       id: 'ai-assistant',
       target: '[data-tour="ai-assistant-btn"]',
-      title: 'Always-Ready AI Assistant',
+      title: 'Floating AI Bubble: Pop-Up, Pop-Out & Edge Snap',
       content:
-        'Click this floating button or press Ctrl+L anytime to brainstorm next steps, clarify priorities, or turn rough ideas into concrete tasks.',
+        'Click this bubble (or press Ctrl+L) to pop up AI chat beside it, dock it as a side drawer, or pop it out into a standalone window. Drag it toward either side of the screen to snap it cleanly to the edge, or double-click to reset.',
       placement: 'left',
       route: '/',
     },
     {
-      id: 'settings-control',
-      target: '[data-tour="nav-settings"]',
+      id: 'edge-companion',
+      target: '[data-tour="desktop-edge-card"]',
       fallbackTarget: '[data-tour="user-profile"]',
-      title: 'Preferences, Desktop Sync & Replay',
+      title: 'Screen-Edge Handle & Desktop Floating Bubble',
       content:
-        'Choose White (Light), Black (Dark), or System Auto-Sync, customize Simple Mode or the Windows Desktop edge sidebar, and replay this tour anytime.',
+        'Keep Sariling Mundo one swipe away on your monitor edge. In the Windows Desktop App, switch the bubble to Edge Line mode (or drag it onto your left or right screen edge), then click or swipe inward to open your Edge Sidebar—with subtle edge blinking when tasks or routines need attention.',
+      placement: 'top',
+      route: '/settings',
+    },
+    {
+      id: 'settings-control',
+      target: '[data-tour="user-profile"]',
+      fallbackTarget: '[data-tour="nav-settings"]',
+      title: 'Profile Menu, Themes & Tour Replay',
+      content:
+        'Open your profile menu anytime to trigger the Floating Bubble, switch between Clean Light and Dark themes, toggle Simple Mode, or replay this Interactive Tour whenever you want.',
       placement: 'right',
       route: '/settings',
     },
@@ -94,6 +104,32 @@ export const MAIN_SYSTEM_TOUR: TourDefinition = {
 };
 
 export const CONTEXTUAL_TOURS: Record<string, TourDefinition> = {
+  'edge-companion': {
+    id: 'edge-companion',
+    title: 'Edge & Floating Bubble Guide',
+    badge: 'Screen Edge',
+    steps: [
+      {
+        id: 'edge-ai-bubble',
+        target: '[data-tour="ai-assistant-btn"]',
+        title: 'Web Floating Bubble & Edge Docking',
+        content:
+          'Click to pop up the AI card, dock it to the side, or pop it out into its own window. Drag the bubble left or right to snap it cleanly against the screen edge so it never blocks your reading.',
+        placement: 'left',
+        route: '/',
+      },
+      {
+        id: 'edge-desktop-line',
+        target: '[data-tour="desktop-edge-card"]',
+        fallbackTarget: '[data-tour="user-profile"]',
+        title: 'Desktop Edge Line & Quick Sidebar',
+        content:
+          'Choose Edge Line mode (or drag the desktop bubble onto your left/right monitor edge) to dock a minimal screen-edge handle. Click or swipe inward anytime to open your Edge Sidebar, and customize or mute Edge Line Blink alerts right here.',
+        placement: 'top',
+        route: '/settings',
+      },
+    ],
+  },
   'focus-space': {
     id: 'focus-space',
     title: 'Focus Space Deep Dive',
