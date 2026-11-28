@@ -356,10 +356,10 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
             style={{
               background: 'var(--color-surface-2)',
               border: '1px solid var(--color-border-subtle)',
-              padding: '8px 10px',
+              padding: '8px 12px',
             }}
           >
-            <span>{overdueCount} overdue · Reset plan</span>
+            <span>{overdueCount} from earlier · Mental Reset</span>
           </Link>
         )}
 
@@ -370,7 +370,9 @@ export default function RightSidebar({ onOpenWrapUp, overdueCount = 0 }: RightSi
             className={styles.shortcutLinkItem}
             style={{
               width: '100%',
-              border: '1px solid var(--color-border-subtle)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              padding: '8px 12px',
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}

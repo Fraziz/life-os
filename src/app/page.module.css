@@ -751,12 +751,12 @@ a.summaryPill:active {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: clamp(10px, 1.4vw, 16px) clamp(14px, 1.8vw, 22px);
+  padding: clamp(12px, 1.5vw, 18px) clamp(16px, 2vw, 24px);
   background: linear-gradient(90deg,
-      rgba(20, 24, 30, 0.5) 0%,
-      rgba(20, 24, 30, 0.3) 50%,
-      rgba(20, 24, 30, 0.12) 100%);
-  min-height: clamp(96px, 12vh, 120px);
+      rgba(15, 23, 42, 0.56) 0%,
+      rgba(15, 23, 42, 0.28) 52%,
+      rgba(15, 23, 42, 0.16) 100%);
+  min-height: clamp(98px, 12vh, 122px);
   box-sizing: border-box;
   width: 100%;
 }
@@ -804,15 +804,15 @@ a.summaryPill:active {
 }
 
 .heroQuoteCard {
-  background: rgba(18, 22, 32, 0.58);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  padding: 10px 14px;
-  max-width: 220px;
+  background: rgba(15, 23, 42, 0.40);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  padding: 10px 15px;
+  max-width: 224px;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
 }
 
 .heroQuoteText {
@@ -1105,10 +1105,10 @@ a.summaryPill:active {
 
 .contentSectionCard {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 20px 22px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
 }
@@ -1171,10 +1171,11 @@ a.summaryPill:active {
 .headerEnergyPills {
   display: inline-flex;
   align-items: center;
-  background: var(--color-surface-2);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   border-radius: 99px;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
 }
 
@@ -1182,15 +1183,15 @@ a.summaryPill:active {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 4px 12px;
   border-radius: 99px;
   border: none;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
   user-select: none;
   font-family: inherit;
   line-height: normal;
@@ -1201,14 +1202,17 @@ a.summaryPill:active {
 }
 
 .headerEnergyBtnActive {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--color-accent);
+  color: var(--color-text-inverse, #ffffff);
   font-weight: 600;
 }
 
+.headerEnergyBtnActive:hover {
+  color: var(--color-text-inverse, #ffffff);
+}
+
 :global([data-theme='dark']) .headerEnergyBtnActive {
-  background: var(--color-surface-3, rgba(255, 255, 255, 0.12));
+  background: var(--color-surface-3, rgba(255, 255, 255, 0.14));
   color: var(--color-text);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
@@ -2996,7 +3000,8 @@ a.summaryPill:active {
   padding: 0;
   border-radius: 50%;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
@@ -3143,13 +3148,13 @@ a.summaryPill:active {
 /* ── Single Focal Anchor: Focus Spotlight Card ── */
 .focusSpotlightCard {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: clamp(18px, 2.4vw, 24px);
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .spotlightTopBar {
@@ -3316,19 +3321,19 @@ a.summaryPill:active {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 10px;
-  background: var(--color-surface-2);
+  background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   font-size: 0.84rem;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.14s ease, border-color 0.14s ease;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 
 .completeFocusBtn:hover {
-  background: var(--color-surface-hover, var(--color-surface-2));
-  border-color: var(--color-border-focus);
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
 }
 
 .emptySpotlightWrap {
@@ -3372,6 +3377,7 @@ a.summaryPill:active {
   border-radius: 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
 }
 
 .captureModePills {
@@ -3380,14 +3386,14 @@ a.summaryPill:active {
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-subtle);
   border-radius: 9px;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
   flex-shrink: 0;
 }
 
 .captureModeBtn {
-  padding: 6px 10px;
-  border-radius: 7px;
+  padding: 5px 11px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--color-text-muted);
@@ -3400,9 +3406,9 @@ a.summaryPill:active {
 
 .captureModeBtnActive {
   background: var(--color-surface);
-  color: var(--color-text);
+  color: var(--color-accent);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .unifiedCaptureInput {
@@ -3424,24 +3430,27 @@ a.summaryPill:active {
 
 .unifiedCaptureSubmit {
   height: 36px;
-  padding: 0 14px;
+  padding: 0 15px;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
-  color: var(--color-text);
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-text-inverse, #ffffff);
   font-size: 0.78rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.14s ease, background 0.14s ease;
+  transition: opacity 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 
 .unifiedCaptureSubmit:hover:not(:disabled) {
-  border-color: var(--color-accent);
+  opacity: 0.92;
 }
 
 .unifiedCaptureSubmit:disabled {
-  opacity: 0.4;
+  background: var(--color-surface-2);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-faint);
+  opacity: 0.8;
   cursor: not-allowed;
 }
 
@@ -3543,12 +3552,13 @@ a.summaryPill:active {
   border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
   padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 8px;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 a.calmContextCard:hover {

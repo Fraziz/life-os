@@ -190,37 +190,37 @@
 /* ── Theme 1: Silver Paper & Pearl Slate (Light Mode - Default) ── */
 :root,
 [data-theme='light'] {
-  --color-bg:             #f4f5f8;
+  --color-bg:             #eef1f6;
   --color-surface:        #ffffff;
-  --color-surface-2:      #eaedf2;
-  --color-surface-3:      #dde1e9;
-  --color-surface-hover:  #d2d6e0;
+  --color-surface-2:      #f4f6fa;
+  --color-surface-3:      #e8ecf3;
+  --color-surface-hover:  #dfe5ef;
 
-  --color-border:         #d0d4df;
-  --color-border-subtle:  #e2e5ec;
-  --color-border-focus:   #0d0f14;
+  --color-border:         #d8dee9;
+  --color-border-subtle:  #e6ebf2;
+  --color-border-focus:   #0f172a;
 
-  --color-text:           #0d0f14;
-  --color-text-muted:     #545869;
-  --color-text-faint:     #8a8f9f;
+  --color-text:           #0f172a;
+  --color-text-muted:     #475569;
+  --color-text-faint:     #7c899e;
   --color-text-inverse:   #ffffff;
 
-  --color-accent:         #0d0f14;
-  --color-accent-light:   #1e212b;
-  --color-accent-dim:     rgba(13, 15, 20, 0.06);
-  --color-accent-glow:    rgba(13, 15, 20, 0.08);
-  --color-accent-hover:   #272a36;
+  --color-accent:         #0f172a;
+  --color-accent-light:   #1e293b;
+  --color-accent-dim:     rgba(15, 23, 42, 0.06);
+  --color-accent-glow:    rgba(15, 23, 42, 0.08);
+  --color-accent-hover:   #1e293b;
 
-  --color-card-sheen:     rgba(255, 255, 255, 0.9);
-  --ambient-glow-color:   rgba(255, 255, 255, 0.8);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(255, 255, 255, 0.55);
 
-  --color-badge-blue-bg:  #eaedf2;
+  --color-badge-blue-bg:  #f1f5f9;
   --color-badge-blue-txt: #334155;
-  --color-badge-purple-bg:#eaedf2;
+  --color-badge-purple-bg:#f1f5f9;
   --color-badge-purple-txt:#334155;
-  --color-badge-green-bg: #eaedf2;
-  --color-badge-green-txt:#0d0f14;
-  --color-badge-amber-bg: #eaedf2;
+  --color-badge-green-bg: #f1f5f9;
+  --color-badge-green-txt:#0f172a;
+  --color-badge-amber-bg: #f1f5f9;
   --color-badge-amber-txt:#334155;
 
   --color-success:        #059669;
@@ -233,22 +233,22 @@
   --color-info-dim:       rgba(51, 65, 85, 0.08);
 
   --color-lavender-card:  #ffffff;
-  --color-lavender-border:#e2e5ec;
+  --color-lavender-border:#e6ebf2;
   --color-mint-card:      #ffffff;
-  --color-mint-border:    #e2e5ec;
+  --color-mint-border:    #e6ebf2;
   --color-amber-card:     #ffffff;
-  --color-amber-border:   #e2e5ec;
+  --color-amber-border:   #e6ebf2;
   --color-rose-card:      #ffffff;
-  --color-rose-border:    #e2e5ec;
+  --color-rose-border:    #e6ebf2;
   --color-cyan-card:      #ffffff;
-  --color-cyan-border:    #e2e5ec;
+  --color-cyan-border:    #e6ebf2;
 
-  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-md:            0 4px 14px rgba(0, 0, 0, 0.06), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-lg:            0 10px 25px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-xl:            0 20px 40px rgba(0, 0, 0, 0.10), inset 0 1px 0 var(--color-card-sheen);
-  --shadow-glow:          0 0 16px rgba(0, 0, 0, 0.06);
-  --shadow-glow-sm:       0 0 8px rgba(0, 0, 0, 0.04);
+  --shadow-sm:            0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.04);
+  --shadow-md:            0 4px 16px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-lg:            0 12px 28px rgba(15, 23, 42, 0.09), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-xl:            0 20px 42px rgba(15, 23, 42, 0.12);
+  --shadow-glow:          0 0 16px rgba(15, 23, 42, 0.06);
+  --shadow-glow-sm:       0 0 8px rgba(15, 23, 42, 0.04);
 
   --color-pill-action-bg:     rgba(13, 15, 20, 0.05);
   --color-pill-action-text:   #0d0f14;
@@ -856,25 +856,25 @@ textarea:focus-visible {
 
 /* ── 1. Nordic Ocean ── */
 :root[data-theme='light'][data-color-theme='ocean'] {
-  --color-bg:             #d6e7f8;
-  --color-surface:        #eef5fd;
-  --color-surface-2:      #cbe0f5;
-  --color-surface-3:      #bad4ef;
-  --color-surface-hover:  #acc9e8;
-  --color-border:         #a6c4e4;
-  --color-border-subtle:  #bfd7f0;
+  --color-bg:             #dceaf8;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f0f6fc;
+  --color-surface-3:      #e2eef9;
+  --color-surface-hover:  #d4e5f5;
+  --color-border:         #c6dbf0;
+  --color-border-subtle:  #dce9f7;
   --color-border-focus:   #1d4ed8;
-  --color-text:           #0b1d33;
-  --color-text-muted:     #36506e;
-  --color-text-faint:     #5e7a99;
+  --color-text:           #0c1d33;
+  --color-text-muted:     #425b78;
+  --color-text-faint:     #738ba8;
   --color-text-inverse:   #ffffff;
   --color-accent:         #1d4ed8;
   --color-accent-light:   #2563eb;
-  --color-accent-dim:     rgba(29, 78, 216, 0.12);
-  --color-accent-glow:    rgba(29, 78, 216, 0.18);
+  --color-accent-dim:     rgba(29, 78, 216, 0.09);
+  --color-accent-glow:    rgba(29, 78, 216, 0.15);
   --color-accent-hover:   #1e40af;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(59, 130, 246, 0.18);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(59, 130, 246, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='ocean'] {
@@ -900,25 +900,25 @@ textarea:focus-visible {
 
 /* ── 2. Botanical Sage ── */
 :root[data-theme='light'][data-color-theme='sage'] {
-  --color-bg:             #d6ece0;
-  --color-surface:        #edf7f1;
-  --color-surface-2:      #c8e3d4;
-  --color-surface-3:      #b7d9c6;
-  --color-surface-hover:  #a7ceb8;
-  --color-border:         #a1cab3;
-  --color-border-subtle:  #bddbc9;
+  --color-bg:             #dcefe4;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #eff7f2;
+  --color-surface-3:      #e0efe7;
+  --color-surface-hover:  #d1e6db;
+  --color-border:         #c3ded0;
+  --color-border-subtle:  #d9ece2;
   --color-border-focus:   #1b6b4a;
-  --color-text:           #0c2419;
-  --color-text-muted:     #355747;
-  --color-text-faint:     #5c806f;
+  --color-text:           #0f241b;
+  --color-text-muted:     #426152;
+  --color-text-faint:     #718f80;
   --color-text-inverse:   #ffffff;
   --color-accent:         #1b6b4a;
   --color-accent-light:   #24825b;
-  --color-accent-dim:     rgba(27, 107, 74, 0.12);
-  --color-accent-glow:    rgba(27, 107, 74, 0.18);
+  --color-accent-dim:     rgba(27, 107, 74, 0.09);
+  --color-accent-glow:    rgba(27, 107, 74, 0.15);
   --color-accent-hover:   #145339;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(45, 138, 97, 0.16);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(45, 138, 97, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='sage'] {
@@ -944,25 +944,25 @@ textarea:focus-visible {
 
 /* ── 3. Warm Espresso & Sand (Zero Glare) ── */
 :root[data-theme='light'][data-color-theme='sand'] {
-  --color-bg:             #ecdecb;
-  --color-surface:        #f8f1e7;
-  --color-surface-2:      #e2d0b8;
-  --color-surface-3:      #d6c1a5;
-  --color-surface-hover:  #cab293;
-  --color-border:         #c5ad8e;
-  --color-border-subtle:  #dac7af;
+  --color-bg:             #efe3d3;
+  --color-surface:        #fffdfa;
+  --color-surface-2:      #f7f1e8;
+  --color-surface-3:      #ede3d5;
+  --color-surface-hover:  #e2d5c3;
+  --color-border:         #d9c9b4;
+  --color-border-subtle:  #eadfce;
   --color-border-focus:   #8c4a19;
   --color-text:           #24180e;
-  --color-text-muted:     #5c4735;
-  --color-text-faint:     #876f5a;
+  --color-text-muted:     #614e3d;
+  --color-text-faint:     #8f7b68;
   --color-text-inverse:   #ffffff;
   --color-accent:         #8c4a19;
   --color-accent-light:   #a65b21;
-  --color-accent-dim:     rgba(140, 74, 25, 0.12);
-  --color-accent-glow:    rgba(140, 74, 25, 0.18);
+  --color-accent-dim:     rgba(140, 74, 25, 0.09);
+  --color-accent-glow:    rgba(140, 74, 25, 0.15);
   --color-accent-hover:   #6e3912;
-  --color-card-sheen:     rgba(255, 252, 245, 0.65);
-  --ambient-glow-color:   rgba(196, 122, 56, 0.16);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(196, 122, 56, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='sand'] {
@@ -988,25 +988,25 @@ textarea:focus-visible {
 
 /* ── 4. Royal Iris (Indigo) ── */
 :root[data-theme='light'][data-color-theme='indigo'] {
-  --color-bg:             #dddaf7;
-  --color-surface:        #f1effd;
-  --color-surface-2:      #cfcbf2;
-  --color-surface-3:      #c0bbed;
-  --color-surface-hover:  #b1abe6;
-  --color-border:         #ada7e3;
-  --color-border-subtle:  #c5c1ee;
+  --color-bg:             #e2dff9;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f3f1fd;
+  --color-surface-3:      #e6e3f8;
+  --color-surface-hover:  #d8d4f2;
+  --color-border:         #cbc6ec;
+  --color-border-subtle:  #e0ddf5;
   --color-border-focus:   #4338ca;
-  --color-text:           #151130;
-  --color-text-muted:     #474170;
-  --color-text-faint:     #706a99;
+  --color-text:           #161230;
+  --color-text-muted:     #4d4773;
+  --color-text-faint:     #7d77a3;
   --color-text-inverse:   #ffffff;
   --color-accent:         #4338ca;
   --color-accent-light:   #4f46e5;
-  --color-accent-dim:     rgba(67, 56, 202, 0.12);
-  --color-accent-glow:    rgba(67, 56, 202, 0.18);
+  --color-accent-dim:     rgba(67, 56, 202, 0.09);
+  --color-accent-glow:    rgba(67, 56, 202, 0.15);
   --color-accent-hover:   #3730a3;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(99, 102, 241, 0.18);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(99, 102, 241, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='indigo'] {
@@ -1032,25 +1032,25 @@ textarea:focus-visible {
 
 /* ── 5. Harbor Teal ── */
 :root[data-theme='light'][data-color-theme='teal'] {
-  --color-bg:             #d1ecec;
-  --color-surface:        #ebf8f8;
-  --color-surface-2:      #c1e3e3;
-  --color-surface-3:      #afd9d9;
-  --color-surface-hover:  #9ecece;
-  --color-border:         #98c9c9;
-  --color-border-subtle:  #b5dddd;
+  --color-bg:             #d8f0f0;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #eef8f8;
+  --color-surface-3:      #dff0f0;
+  --color-surface-hover:  #cfe7e7;
+  --color-border:         #bedede;
+  --color-border-subtle:  #d5ecec;
   --color-border-focus:   #0d6e66;
-  --color-text:           #0a2426;
-  --color-text-muted:     #32585b;
-  --color-text-faint:     #598285;
+  --color-text:           #0c2426;
+  --color-text-muted:     #3d6163;
+  --color-text-faint:     #6c8f91;
   --color-text-inverse:   #ffffff;
   --color-accent:         #0d6e66;
   --color-accent-light:   #12877d;
-  --color-accent-dim:     rgba(13, 110, 102, 0.12);
-  --color-accent-glow:    rgba(13, 110, 102, 0.18);
+  --color-accent-dim:     rgba(13, 110, 102, 0.09);
+  --color-accent-glow:    rgba(13, 110, 102, 0.15);
   --color-accent-hover:   #09544e;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(20, 160, 148, 0.17);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(20, 160, 148, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='teal'] {
@@ -1076,25 +1076,25 @@ textarea:focus-visible {
 
 /* ── 6. Dusty Rosewood ── */
 :root[data-theme='light'][data-color-theme='rose'] {
-  --color-bg:             #f2d8e1;
-  --color-surface:        #fcf0f4;
-  --color-surface-2:      #eac8d4;
-  --color-surface-3:      #dfb7c5;
-  --color-surface-hover:  #d4a6b7;
-  --color-border:         #cfa1b2;
-  --color-border-subtle:  #e3c0cc;
+  --color-bg:             #f5dfe6;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #fbf1f4;
+  --color-surface-3:      #f2e2e8;
+  --color-surface-hover:  #e8d2da;
+  --color-border:         #dec2cc;
+  --color-border-subtle:  #eedbe2;
   --color-border-focus:   #a32a50;
-  --color-text:           #2b1019;
-  --color-text-muted:     #663d4b;
-  --color-text-faint:     #916574;
+  --color-text:           #291119;
+  --color-text-muted:     #694552;
+  --color-text-faint:     #997582;
   --color-text-inverse:   #ffffff;
   --color-accent:         #a32a50;
   --color-accent-light:   #bf3660;
-  --color-accent-dim:     rgba(163, 42, 80, 0.12);
-  --color-accent-glow:    rgba(163, 42, 80, 0.18);
+  --color-accent-dim:     rgba(163, 42, 80, 0.09);
+  --color-accent-glow:    rgba(163, 42, 80, 0.15);
   --color-accent-hover:   #821f3f;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(219, 75, 120, 0.16);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(219, 75, 120, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='rose'] {
@@ -1120,25 +1120,25 @@ textarea:focus-visible {
 
 /* ── 7. Velvet Plum ── */
 :root[data-theme='light'][data-color-theme='plum'] {
-  --color-bg:             #e5d8f6;
-  --color-surface:        #f5effd;
-  --color-surface-2:      #d9c8f0;
-  --color-surface-3:      #ccb7e8;
-  --color-surface-hover:  #bea5df;
-  --color-border:         #b9a0db;
-  --color-border-subtle:  #d1bfe9;
+  --color-bg:             #eadff8;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f6f1fc;
+  --color-surface-3:      #ebe2f7;
+  --color-surface-hover:  #dfd3f0;
+  --color-border:         #d2c3e8;
+  --color-border-subtle:  #e5dbf4;
   --color-border-focus:   #6b26c4;
-  --color-text:           #201033;
-  --color-text-muted:     #563e73;
-  --color-text-faint:     #8168a1;
+  --color-text:           #201133;
+  --color-text-muted:     #5a4575;
+  --color-text-faint:     #8a75a6;
   --color-text-inverse:   #ffffff;
   --color-accent:         #6b26c4;
   --color-accent-light:   #7e34de;
-  --color-accent-dim:     rgba(107, 38, 196, 0.12);
-  --color-accent-glow:    rgba(107, 38, 196, 0.18);
+  --color-accent-dim:     rgba(107, 38, 196, 0.09);
+  --color-accent-glow:    rgba(107, 38, 196, 0.15);
   --color-accent-hover:   #551c9e;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(139, 70, 230, 0.17);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(139, 70, 230, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='plum'] {
@@ -1164,25 +1164,25 @@ textarea:focus-visible {
 
 /* ── 8. Matcha & Moss ── */
 :root[data-theme='light'][data-color-theme='olive'] {
-  --color-bg:             #e0ead0;
-  --color-surface:        #f3f8eb;
-  --color-surface-2:      #d3e0be;
-  --color-surface-3:      #c5d5ac;
-  --color-surface-hover:  #b7ca9a;
-  --color-border:         #b2c693;
-  --color-border-subtle:  #cad9b4;
+  --color-bg:             #e4edd4;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f4f8ed;
+  --color-surface-3:      #e7efda;
+  --color-surface-hover:  #dae5c8;
+  --color-border:         #cbd9b4;
+  --color-border-subtle:  #dfead0;
   --color-border-focus:   #44611b;
-  --color-text:           #19240b;
-  --color-text-muted:     #495934;
-  --color-text-faint:     #718259;
+  --color-text:           #1a240d;
+  --color-text-muted:     #4d5c3a;
+  --color-text-faint:     #7a8a65;
   --color-text-inverse:   #ffffff;
   --color-accent:         #44611b;
   --color-accent-light:   #557823;
-  --color-accent-dim:     rgba(68, 97, 27, 0.12);
-  --color-accent-glow:    rgba(68, 97, 27, 0.18);
+  --color-accent-dim:     rgba(68, 97, 27, 0.09);
+  --color-accent-glow:    rgba(68, 97, 27, 0.15);
   --color-accent-hover:   #344b14;
-  --color-card-sheen:     rgba(255, 255, 255, 0.65);
-  --ambient-glow-color:   rgba(101, 138, 44, 0.16);
+  --color-card-sheen:     rgba(255, 255, 255, 0.95);
+  --ambient-glow-color:   rgba(101, 138, 44, 0.12);
 }
 
 :root[data-theme='dark'][data-color-theme='olive'] {

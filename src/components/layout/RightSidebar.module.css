@@ -23,7 +23,8 @@
   align-items: center;
   gap: 8px;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   border-radius: 10px;
   padding: 8px 12px;
   cursor: pointer;
@@ -58,7 +59,8 @@
   height: 36px;
   border-radius: 50%;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,10 +117,10 @@
 
 .widgetCard {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
 }
@@ -675,9 +677,10 @@
 
 .momentumCard {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-sm);
+  border-radius: 16px;
+  padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
