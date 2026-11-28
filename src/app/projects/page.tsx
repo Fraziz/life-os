@@ -7,7 +7,6 @@ import { useMilestones } from '@/context/MilestoneContext';
 import { useGoals } from '@/context/GoalContext';
 import { useDreams } from '@/context/DreamContext';
 import { useTasks } from '@/context/TaskContext';
-import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import type { Project, ProjectStatus, ProjectPriority } from '@/types';
 import {
@@ -818,7 +817,6 @@ export default function ProjectsPage() {
   const { goals } = useGoals();
   const { dreams } = useDreams();
   const { addTask, tasks } = useTasks();
-  const { activeAreas, focusedAreaId, setFocusedAreaId } = useLifeAreas();
 
   // ADHD Guidance & 1-Click Bridges
   const [adhdGuideOpen, setAdhdGuideOpen] = useState(false);
@@ -977,12 +975,6 @@ export default function ProjectsPage() {
   };
 
   const filteredProjects = projects.filter((p) => {
-    if (focusedAreaId) {
-      const parentGoal = goals.find((g) => g.id === p.goalId);
-      const matchesDirect = p.lifeAreaId === focusedAreaId;
-      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
-      if (!matchesDirect && !matchesGoal) return false;
-    }
     if (statusFilter === 'active' && (p.status === 'completed' || p.status === 'cancelled')) return false;
     if (statusFilter === 'planning' && p.status !== 'planning') return false;
     if (statusFilter === 'completed' && p.status !== 'completed') return false;
@@ -1056,25 +1048,6 @@ export default function ProjectsPage() {
                 {goals.map((g) => (
                   <option key={g.id} value={g.id}>
                     Goal: {g.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={11} className={styles.selectFilterChevron} />
-            </div>
-
-            {/* Life Area Filter Pill */}
-            <div className={styles.selectFilterWrap}>
-              <select
-                className={`${styles.selectFilter} ${focusedAreaId ? styles.selectFilterActive : ''}`}
-                value={focusedAreaId || 'all'}
-                onChange={(e) => setFocusedAreaId(e.target.value === 'all' ? null : e.target.value)}
-                title="Filter by Life Area"
-                aria-label="Filter by Life Area"
-              >
-                <option value="all">All Life Areas</option>
-                {activeAreas.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    Area: {a.name}
                   </option>
                 ))}
               </select>

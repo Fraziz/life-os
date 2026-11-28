@@ -123,10 +123,7 @@ export function LifeAreaProvider({ children }: { children: React.ReactNode }) {
     setIsLoaded(true);
 
     try {
-      const saved = localStorage.getItem('life_os_focused_area_id');
-      if (saved && saved !== 'all') {
-        setFocusedAreaIdState(saved);
-      }
+      localStorage.removeItem('life_os_focused_area_id');
     } catch {}
 
     const handleSync = () => reloadFromStorage();

@@ -65,7 +65,7 @@ export default function GoalsPage() {
   const { goals, addGoal, updateGoal, updateGoalProgress, deleteGoal, resetToDefaultGoals, isLoaded } = useGoals();
   const { dreams } = useDreams();
   const { projects, addProject } = useProjects();
-  const { activeAreas, focusedAreaId, setFocusedAreaId } = useLifeAreas();
+  const { activeAreas } = useLifeAreas();
   const { tasks, addTask } = useTasks();
   const { settings } = useSettings();
   const { confirm: confirmDialog } = useConfirm();
@@ -283,7 +283,6 @@ export default function GoalsPage() {
   }
 
   const filteredGoals = goals.filter((g) => {
-    if (focusedAreaId && g.lifeAreaId !== focusedAreaId) return false;
     if (statusFilter === 'active' && (g.status === 'completed' || g.status === 'archived')) return false;
     if (statusFilter === 'completed' && g.status !== 'completed') return false;
     if (horizonFilter !== 'all' && g.horizon !== horizonFilter) return false;
@@ -349,20 +348,6 @@ export default function GoalsPage() {
             <option value="yearly">Yearly</option>
             <option value="long-term">Long-term</option>
             <option value="custom">Custom</option>
-          </select>
-
-          <select
-            className={styles.selectFilter}
-            value={focusedAreaId || 'all'}
-            onChange={(e) => setFocusedAreaId(e.target.value === 'all' ? null : e.target.value)}
-            title="Filter by Life Area"
-          >
-            <option value="all">All Life Areas</option>
-            {activeAreas.map((a) => (
-              <option key={a.id} value={a.id}>
-                Area: {a.name}
-              </option>
-            ))}
           </select>
 
           <select

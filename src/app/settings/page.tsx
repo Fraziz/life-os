@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
 import {
@@ -40,7 +39,6 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
-  Layers,
   Compass,
   ChevronDown,
   Monitor,
@@ -82,7 +80,6 @@ export default function SettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings();
   const { user, isGuest, logout, logoutAllDevices, changePassword, deleteAccount } = useAuth();
   const { confirm: confirmDialog, alert: alertDialog, prompt: promptDialog } = useConfirm();
-  const { activeAreas, focusedAreaId, setFocusedAreaId, focusedArea } = useLifeAreas();
   const { startTour, restartTour, resetAllTours, isOpen: isTourOpen, currentStep: currentTourStep } = useTour();
   const { docs, restoreStarterBooks } = useKnowledge();
   const { canPromptInstall, isStandalone, isInstalled, promptInstall } = usePwaInstall();
@@ -453,7 +450,7 @@ export default function SettingsPage() {
   type SectionKey =
     | 'account'
     | 'experience'
-    | 'areas'
+    | 'shortcuts'
     | 'appearance'
     | 'tour'
     | 'profile'
@@ -464,14 +461,14 @@ export default function SettingsPage() {
     | 'ai'
     | 'data';
 
-  type SettingsCategory = 'all' | 'account' | 'appearance' | 'ai' | 'areas' | 'focus' | 'workflow' | 'data';
+  type SettingsCategory = 'all' | 'account' | 'appearance' | 'ai' | 'focus' | 'workflow' | 'data';
 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('all');
 
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     account: true,
     experience: false,
-    areas: false,
+    shortcuts: false,
     appearance: true,
     tour: false,
     profile: false,
@@ -532,7 +529,7 @@ export default function SettingsPage() {
     setOpenSections({
       account: true,
       experience: true,
-      areas: true,
+      shortcuts: true,
       appearance: true,
       tour: true,
       profile: true,
@@ -549,7 +546,7 @@ export default function SettingsPage() {
     setOpenSections({
       account: false,
       experience: false,
-      areas: false,
+      shortcuts: false,
       appearance: false,
       tour: false,
       profile: false,
@@ -576,14 +573,13 @@ export default function SettingsPage() {
         next.tour = true;
       } else if (cat === 'ai') {
         next.ai = true;
-      } else if (cat === 'areas') {
-        next.areas = true;
       } else if (cat === 'focus') {
         next.focus = true;
         next.notifications = true;
       } else if (cat === 'workflow') {
         next.workingHours = true;
         next.planning = true;
+        next.shortcuts = true;
       } else if (cat === 'data') {
         next.data = true;
       }
@@ -606,7 +602,6 @@ export default function SettingsPage() {
             { id: 'account', label: 'Account & Security' },
             { id: 'appearance', label: 'Visual & Themes' },
             { id: 'ai', label: 'AI Intelligence' },
-            { id: 'areas', label: 'Life Domains' },
             { id: 'focus', label: 'Focus & Sound' },
             { id: 'workflow', label: 'Schedule & Tasks' },
             { id: 'data', label: 'Data & Backup' },
@@ -928,111 +923,42 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {/* ── Life Domain Focus & Keyboard Shortcuts ── */}
-        {(activeCategory === 'all' || activeCategory === 'areas') && (
+        {/* ── Keyboard Shortcuts & Quick Navigation ── */}
+        {(activeCategory === 'all' || activeCategory === 'workflow') && (
           <section className={styles.sectionCard}>
             <div
               className={styles.sectionHeader}
-              onClick={() => toggleSection('areas')}
+              onClick={() => toggleSection('shortcuts')}
               role="button"
               tabIndex={0}
-              aria-expanded={openSections.areas}
+              aria-expanded={openSections.shortcuts}
             >
               <div className={styles.sectionHeaderLeft}>
                 <div className={styles.sectionIcon}>
-                  <Layers size={16} />
+                  <Sliders size={16} />
                 </div>
                 <div className={styles.sectionHeaderContent}>
-                  <h2 className={styles.sectionTitle}>Life Domain Focus &amp; Shortcuts</h2>
+                  <h2 className={styles.sectionTitle}>Keyboard Shortcuts &amp; Quick Navigation</h2>
                   <p className={styles.sectionDesc}>
-                    Filter your entire workspace (Today, Tasks, Projects, Habits, Goals) into a single life area for zero-distraction focus.
+                    Jump across Today, Idea Parking, Tasks, Focus Space, and system tools instantly from your keyboard.
                   </p>
                 </div>
               </div>
               <div className={styles.sectionHeaderRight}>
                 <span className={styles.collapseIndicator}>
-                  {openSections.areas ? 'Collapse' : 'Expand'}
+                  {openSections.shortcuts ? 'Collapse' : 'Expand'}
                 </span>
                 <ChevronDown
                   size={16}
-                  className={`${styles.chevron} ${openSections.areas ? styles.chevronOpen : ''}`}
+                  className={`${styles.chevron} ${openSections.shortcuts ? styles.chevronOpen : ''}`}
                 />
               </div>
             </div>
 
-            {openSections.areas && (
+            {openSections.shortcuts && (
               <div className={styles.sectionBody}>
-                {/* Current Status banner */}
-                <div className={styles.domainStatusBanner}>
-            <div className={styles.domainStatusLeft}>
-              <span className={styles.domainStatusLabel}>Active Focus:</span>
-              <span className={styles.domainStatusValue}>
-                <span
-                  className={styles.domainDot}
-                  style={{
-                    backgroundColor: focusedArea?.color || '#94a3b8',
-                    boxShadow: focusedArea?.color ? `0 0 8px ${focusedArea.color}` : undefined,
-                  }}
-                />
-                {focusedArea ? focusedArea.name : 'All Domains (Panoramic View)'}
-              </span>
-            </div>
-            {focusedArea && (
-              <button
-                type="button"
-                className={styles.domainResetBtn}
-                onClick={() => setFocusedAreaId(null)}
-              >
-                Reset to All Domains (Alt+0)
-              </button>
-            )}
-          </div>
-
-          {/* Interactive Domain Quick Switch Grid */}
-          <div className={styles.formGroup} style={{ marginTop: '16px' }}>
-            <label className={styles.label}>Quick Switch Domain Focus</label>
-            <div className={styles.domainPillGrid}>
-              <button
-                type="button"
-                className={`${styles.domainPillBtn} ${!focusedAreaId ? styles.domainPillActive : ''}`}
-                onClick={() => setFocusedAreaId(null)}
-              >
-                <span className={styles.domainDot} style={{ backgroundColor: '#94a3b8' }} />
-                <span>All Domains</span>
-                <kbd className={styles.domainKbd}>Alt+0</kbd>
-              </button>
-
-              {activeAreas.map((area, index) => {
-                const isSelected = focusedAreaId === area.id;
-                return (
-                  <button
-                    key={area.id}
-                    type="button"
-                    className={`${styles.domainPillBtn} ${isSelected ? styles.domainPillActive : ''}`}
-                    onClick={() => setFocusedAreaId(isSelected ? null : area.id)}
-                    style={
-                      isSelected && area.color
-                        ? ({ '--pill-border': area.color } as React.CSSProperties)
-                        : undefined
-                    }
-                  >
-                    <span
-                      className={styles.domainDot}
-                      style={{
-                        backgroundColor: area.color || '#94a3b8',
-                        boxShadow: isSelected ? `0 0 8px ${area.color}` : undefined,
-                      }}
-                    />
-                    <span>{area.name}</span>
-                    <kbd className={styles.domainKbd}>Alt+{index + 1}</kbd>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Complete System & Navigation Keyboard Shortcuts Reference */}
-          <div className={styles.formGroup} style={{ marginTop: '20px' }}>
+          <div className={styles.formGroup}>
             <label className={styles.label}>Global Keyboard Shortcuts &amp; Navigation Reference</label>
             <div className={styles.shortcutsTable}>
               {/* Category 1: Website Quick Navigation */}
@@ -1120,46 +1046,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Category 2: Life Domain Focus Mode */}
-              <div className={styles.shortcutsCategoryHeader}>
-                Life Domain Focus Mode
-              </div>
-
-              <div className={styles.shortcutRow}>
-                <div className={styles.shortcutDesc}>
-                  <span className={styles.shortcutName}>Toggle Domain Focus Dropdown</span>
-                  <span className={styles.shortcutSub}>Open or close the domain selector popup in the sidebar</span>
-                </div>
-                <div className={styles.shortcutKeys}>
-                  <kbd className={styles.domainKbd}>Alt + D</kbd>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>or</span>
-                  <kbd className={styles.domainKbd}>Alt + L</kbd>
-                </div>
-              </div>
-
-              <div className={styles.shortcutRow}>
-                <div className={styles.shortcutDesc}>
-                  <span className={styles.shortcutName}>Panoramic View (All Domains)</span>
-                  <span className={styles.shortcutSub}>Reset filter to view all workspace items across all domains</span>
-                </div>
-                <div className={styles.shortcutKeys}>
-                  <kbd className={styles.domainKbd}>Alt + 0</kbd>
-                </div>
-              </div>
-
-              <div className={styles.shortcutRow}>
-                <div className={styles.shortcutDesc}>
-                  <span className={styles.shortcutName}>Direct Domain Quick-Switch</span>
-                  <span className={styles.shortcutSub}>
-                    Jump directly to domains 1 through {activeAreas.length} (see domain badges in the grid above)
-                  </span>
-                </div>
-                <div className={styles.shortcutKeys}>
-                  <kbd className={styles.domainKbd}>Alt + 1..{activeAreas.length}</kbd>
-                </div>
-              </div>
-
-              {/* Category 3: System & Executive Controls */}
+              {/* Category 2: System & Executive Controls */}
               <div className={styles.shortcutsCategoryHeader}>
                 System &amp; Executive Controls
               </div>

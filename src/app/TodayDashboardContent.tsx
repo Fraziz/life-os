@@ -11,7 +11,6 @@ import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useInbox } from '@/context/InboxContext';
 import { useKnowledge } from '@/context/KnowledgeContext';
-import { useLifeAreas } from '@/context/LifeAreaContext';
 import { useFocus } from '@/context/FocusContext';
 import {
   playSuccessChime,
@@ -21,7 +20,6 @@ import {
 import { useDailyRoutineReminder } from '@/utils/dailyRoutineReminder';
 import { formatTagLabel } from '@/utils/tagUtils';
 import RightSidebar from '@/components/layout/RightSidebar';
-import LifeDomainPill from '@/components/layout/LifeDomainPill';
 
 import DailyBriefingModal from '@/components/assistant/DailyBriefingModal';
 import OptimizeDayModal from '@/components/assistant/OptimizeDayModal';
@@ -35,7 +33,6 @@ export default function TodayDashboardContent() {
   const { tasks, toggleTaskDone, toggleTaskReminder, quickAddTask, toggleSubtask } = useTasks();
   const { activeProjects, projects, toggleProjectReminder } = useProjects();
   const { goals } = useGoals();
-  const { focusedAreaId, areas } = useLifeAreas();
   const {
     quickDump,
     activeReminders,
@@ -222,32 +219,11 @@ export default function TodayDashboardContent() {
     } catch {}
   };
 
-  // ── Domain-Scoped Tasks & Energy-Aware Ordering ───────────────
-  const domainTasks = useMemo(() => {
-    if (!focusedAreaId) return tasks;
-    const activeArea = areas.find((a) => a.id === focusedAreaId);
-    const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
-    return tasks.filter((t) => {
-      const { parentProject, parentGoal } = resolveTaskHierarchy(t, projects, goals);
-      const matchesDirect = t.lifeAreaId === focusedAreaId;
-      const matchesProject = parentProject?.lifeAreaId === focusedAreaId;
-      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
-      const matchesTag = Boolean(
-        areaNameLower &&
-          t.tags &&
-          t.tags.some((tag) => {
-            const tl = tag.toLowerCase();
-            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
-          })
-      );
-      return matchesDirect || matchesProject || matchesGoal || matchesTag;
-    });
-  }, [tasks, focusedAreaId, areas, projects, goals]);
-
+  // ── Energy-Aware Active Tasks Ordering ────────────────────────
   const activeDomainTasks = useMemo(() => {
     const seenIds = new Set<string>();
     const seenTitles = new Set<string>();
-    const pending = domainTasks.filter((item) => {
+    const pending = tasks.filter((item) => {
       if (item.status === 'done') return false;
       if (seenIds.has(item.id)) return false;
       seenIds.add(item.id);
@@ -280,7 +256,7 @@ export default function TodayDashboardContent() {
 
       return 0;
     });
-  }, [domainTasks, energyLevel]);
+  }, [tasks, energyLevel]);
 
   const primaryTask = activeDomainTasks[0] || null;
   const nextUpTasks = energyLevel === 'low' ? [] : activeDomainTasks.slice(1, 3);
@@ -294,7 +270,7 @@ export default function TodayDashboardContent() {
 
   const completedTodayTasks = useMemo(
     () =>
-      domainTasks
+      tasks
         .filter((t) => {
           if (t.status !== 'done') return false;
           if (t.completedAt) return t.completedAt.split('T')[0] === todayStr;
@@ -302,7 +278,7 @@ export default function TodayDashboardContent() {
           return true;
         })
         .slice(0, 10),
-    [domainTasks, todayStr]
+    [tasks, todayStr]
   );
 
   // ── Pinned Reminders Strip ────────────────────────────────────
@@ -394,7 +370,6 @@ export default function TodayDashboardContent() {
       quickAddTask(clean, {
         priority: 'high',
         dueDate: todayStr,
-        lifeAreaId: focusedAreaId || undefined,
       });
       showQuickFeedback('Added to Today');
     } else {
@@ -413,7 +388,6 @@ export default function TodayDashboardContent() {
     quickAddTask(clean, {
       priority: 'high',
       dueDate: todayStr,
-      lifeAreaId: focusedAreaId || undefined,
       tags: ['do-it-now'],
     });
     setEmptyFocusInput('');
@@ -515,8 +489,6 @@ export default function TodayDashboardContent() {
           </div>
 
           <div className={styles.cockpitControlsRow}>
-            <LifeDomainPill />
-
             <div className={styles.assistMenuWrap} ref={assistMenuRef}>
               <button
                 type="button"

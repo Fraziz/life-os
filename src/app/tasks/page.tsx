@@ -6,7 +6,6 @@ import { useTasks } from '@/context/TaskContext';
 import { useProjects } from '@/context/ProjectContext';
 import { useGoals } from '@/context/GoalContext';
 import { useMilestones } from '@/context/MilestoneContext';
-import { useLifeAreas } from '@/context/LifeAreaContext';
 import type { Task, TaskStatus, TaskPriority } from '@/types';
 import {
   CheckSquare,
@@ -81,7 +80,6 @@ export default function TasksPage() {
   const { projects } = useProjects();
   const { goals } = useGoals();
   const { milestones } = useMilestones();
-  const { focusedAreaId, areas } = useLifeAreas();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
 
@@ -398,27 +396,8 @@ export default function TasksPage() {
 
   const filteredTasks = tasks.filter((t) => {
     const { parentProject, parentGoal } = resolveTaskHierarchy(t, projects, goals, milestones);
-
-    if (focusedAreaId) {
-      const activeArea = areas.find((a) => a.id === focusedAreaId);
-      const areaNameLower = activeArea ? activeArea.name.toLowerCase() : '';
-
-      const matchesDirect = t.lifeAreaId === focusedAreaId;
-      const matchesProject = parentProject?.lifeAreaId === focusedAreaId;
-      const matchesGoal = parentGoal?.lifeAreaId === focusedAreaId;
-      const matchesTag = Boolean(
-        areaNameLower &&
-          t.tags &&
-          t.tags.some((tag) => {
-            const tl = tag.toLowerCase();
-            return tl.includes(areaNameLower) || areaNameLower.includes(tl);
-          })
-      );
-
-      if (!matchesDirect && !matchesProject && !matchesGoal && !matchesTag) {
-        return false;
-      }
-    }
+    void parentProject;
+    void parentGoal;
 
     if (hideDone && t.status === 'done') return false;
     if (t.status === 'done' && doneTimeframe !== 'all') {

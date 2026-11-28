@@ -92,13 +92,6 @@ export const NAV_SECTIONS: NavSection[] = [
         isAvailable: true,
       },
       {
-        id: 'areas',
-        label: 'Life Areas',
-        href: '/areas',
-        icon: 'areas',
-        isAvailable: true,
-      },
-      {
         id: 'files',
         label: 'Files',
         href: '/files',
