@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('sarilingDesktop', {
   getCompanionConfig: () => ipcRenderer.invoke('desktop:get-companion-config'),
   setStartupEnabled: (enabled) => ipcRenderer.invoke('desktop:set-startup', enabled),
   setAlertSoundEnabled: (enabled) => ipcRenderer.invoke('desktop:set-sound', enabled),
+  setEdgeBlinkEnabled: (enabled) => ipcRenderer.invoke('desktop:set-edge-blink', enabled),
+  stopEdgeBlink: () => ipcRenderer.invoke('desktop:stop-edge-blink'),
   testAlertRing: () => ipcRenderer.invoke('desktop:test-ring'),
   notifyWorkspaceReady: () => ipcRenderer.send('desktop:workspace-ready'),
 });

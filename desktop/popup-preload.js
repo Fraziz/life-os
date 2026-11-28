@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('sarilingPopover', {
     return () => ipcRenderer.removeListener('popover:opened', listener);
   },
   setSoundEnabled: (enabled) => ipcRenderer.invoke('popover:set-sound', enabled),
+  setBlinkEnabled: (enabled) => ipcRenderer.invoke('popover:set-blink-enabled', enabled),
+  stopBlink: () => ipcRenderer.invoke('popover:stop-blink'),
+  resumeBlink: () => ipcRenderer.invoke('popover:resume-blink'),
   ringNow: () => ipcRenderer.invoke('popover:ring-now'),
   addTask: (title) => ipcRenderer.invoke('popover:add-task', title),
   completeTask: (taskId) => ipcRenderer.invoke('popover:complete-task', taskId),

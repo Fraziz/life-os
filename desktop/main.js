@@ -28,7 +28,18 @@ let toastHovered = false;
 let currentAlertKey = null;
 let startupBriefingDone = false;
 const alertCooldowns = new Map();
-let currentBubbleWorkState = { hasWork: false, pillText: 'Sariling Mundo' };
+let blinkPausedForCurrentWork = false;
+let blinkAcknowledgedKeys = new Set();
+let lastSnapshotCache = null;
+let currentBubbleWorkState = {
+  hasWork: false,
+  isBlinking: false,
+  blinkMuted: false,
+  blinkPaused: false,
+  workTone: 'neutral',
+  pillText: 'Sariling Mundo',
+  workKeys: [],
+};
 
 function getAlertSoundEnabled() {
   const cfg = readJson(CONFIG_PATH(), {});
@@ -42,6 +53,103 @@ function setAlertSoundEnabled(enabled) {
   if (tray) tray.setContextMenu(buildTrayMenu());
   void refreshPopover();
   return Boolean(enabled);
+}
+
+function getEdgeBlinkEnabled() {
+  const cfg = readJson(CONFIG_PATH(), {});
+  return cfg.edgeBlinkEnabled !== false;
+}
+
+function syncBubbleWorkFromSnapshot(snap) {
+  if (snap && snap.ready) {
+    lastSnapshotCache = snap;
+  }
+  const source = snap && snap.ready ? snap : lastSnapshotCache;
+  const hasWork = Boolean(source && source.ready && source.hasWork);
+  const workKeys = Array.isArray(source && source.workItemKeys)
+    ? source.workItemKeys.map((k) => String(k))
+    : [];
+
+  if (!hasWork) {
+    blinkAcknowledgedKeys.clear();
+    blinkPausedForCurrentWork = false;
+  } else if (blinkPausedForCurrentWork) {
+    const hasNewUnacked = workKeys.some((k) => !blinkAcknowledgedKeys.has(k));
+    if (hasNewUnacked) {
+      blinkPausedForCurrentWork = false;
+      blinkAcknowledgedKeys.clear();
+    }
+  }
+
+  const blinkMuted = !getEdgeBlinkEnabled();
+  const isBlinking = Boolean(hasWork && !blinkMuted && !blinkPausedForCurrentWork);
+  const workTone = !hasWork
+    ? 'neutral'
+    : source && (source.hasUrgentWork || (source.primary && source.primary.tone === 'urgent'))
+    ? 'urgent'
+    : 'work';
+
+  const pillText = source && source.primary
+    ? (source.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
+    : 'Sariling Mundo';
+
+  const changed =
+    currentBubbleWorkState.hasWork !== hasWork ||
+    currentBubbleWorkState.isBlinking !== isBlinking ||
+    currentBubbleWorkState.blinkMuted !== blinkMuted ||
+    currentBubbleWorkState.blinkPaused !== blinkPausedForCurrentWork ||
+    currentBubbleWorkState.workTone !== workTone ||
+    currentBubbleWorkState.pillText !== pillText;
+
+  currentBubbleWorkState = {
+    hasWork,
+    isBlinking,
+    blinkMuted,
+    blinkPaused: blinkPausedForCurrentWork,
+    workTone,
+    pillText,
+    workKeys,
+  };
+
+  if (changed) {
+    sendBubbleState();
+    if (tray) tray.setContextMenu(buildTrayMenu());
+  }
+}
+
+function setEdgeBlinkEnabled(enabled) {
+  const flag = Boolean(enabled);
+  const cfg = readJson(CONFIG_PATH(), {});
+  writeJson(CONFIG_PATH(), { ...cfg, edgeBlinkEnabled: flag });
+  if (flag) {
+    blinkAcknowledgedKeys.clear();
+    blinkPausedForCurrentWork = false;
+  }
+  syncBubbleWorkFromSnapshot(lastSnapshotCache);
+  sendBubbleState();
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  void refreshPopover();
+  return flag;
+}
+
+function stopEdgeBlink() {
+  blinkPausedForCurrentWork = true;
+  blinkAcknowledgedKeys = new Set(currentBubbleWorkState.workKeys || []);
+  syncBubbleWorkFromSnapshot(lastSnapshotCache);
+  sendBubbleState();
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  void refreshPopover();
+  return { ...currentBubbleWorkState, edgeBlinkEnabled: getEdgeBlinkEnabled() };
+}
+
+function resumeEdgeBlink() {
+  blinkPausedForCurrentWork = false;
+  blinkAcknowledgedKeys.clear();
+  syncBubbleWorkFromSnapshot(lastSnapshotCache);
+  sendBubbleState();
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  void refreshPopover();
+  return { ...currentBubbleWorkState, edgeBlinkEnabled: getEdgeBlinkEnabled() };
 }
 
 function setStartupLaunchEnabled(enabled) {
@@ -215,6 +323,10 @@ function sendBubbleState() {
     appVisible,
     popoverVisible,
     hasWork: currentBubbleWorkState.hasWork,
+    isBlinking: currentBubbleWorkState.isBlinking,
+    blinkMuted: currentBubbleWorkState.blinkMuted,
+    blinkPaused: currentBubbleWorkState.blinkPaused,
+    workTone: currentBubbleWorkState.workTone,
     pillText: currentBubbleWorkState.pillText,
   });
 }
@@ -773,6 +885,22 @@ async function readWorkspaceSnapshot() {
             };
           }
 
+          const workItemKeys = [];
+          sortedTasks.forEach((t) => workItemKeys.push('t:' + t.id));
+          if (activeBlock) workItemKeys.push('r-active:' + activeBlock.id);
+          blocks.forEach((b) => {
+            if (b && b.id && !completedBlockIds.includes(b.id)) {
+              workItemKeys.push('r:' + b.id);
+            }
+          });
+          reminderItems.forEach((rem) => {
+            if (rem && rem.id) workItemKeys.push('rem:' + rem.id);
+          });
+          const hasUrgentWork = Boolean(
+            sortedTasks.some((t) => (t.dueDate && t.dueDate < todayStr) || t.priority === 'urgent') ||
+            reminderItems.some((rem) => rem && rem.tone === 'urgent')
+          );
+
           return {
             ready: true,
             theme,
@@ -784,6 +912,8 @@ async function readWorkspaceSnapshot() {
             routineSummary: { done: routineDone, total: routineTotal },
             alertCandidate,
             startupCandidate,
+            workItemKeys,
+            hasUrgentWork,
             hasWork: Boolean(primary || reminderItems.length > 0),
             summary: parts.join(' · '),
           };
@@ -806,24 +936,38 @@ async function readWorkspaceSnapshot() {
         routineSummary: enriched.routineSummary,
         alertCandidate: enriched.alertCandidate,
         startupCandidate: enriched.startupCandidate,
+        workItemKeys: enriched.workItemKeys,
+        hasUrgentWork: enriched.hasUrgentWork,
         hasWork: enriched.hasWork,
         summary: enriched.summary,
       });
     } else if (enriched && !enriched.needsAuth) {
       const cached = readJson(LAST_SNAPSHOT_PATH(), null);
       if (cached && cached.ready) {
-        return { ...cached, soundEnabled, cachedOffline: true };
+        syncBubbleWorkFromSnapshot(cached);
+        return {
+          ...cached,
+          soundEnabled,
+          edgeBlinkEnabled: getEdgeBlinkEnabled(),
+          isBlinking: currentBubbleWorkState.isBlinking,
+          blinkMuted: currentBubbleWorkState.blinkMuted,
+          blinkPaused: currentBubbleWorkState.blinkPaused,
+          workTone: currentBubbleWorkState.workTone,
+          cachedOffline: true,
+        };
       }
     }
-    const hasWork = Boolean(enriched && enriched.hasWork);
-    const pillText = enriched && enriched.primary
-      ? (enriched.primary.kind === 'routine' ? 'Work Time' : 'Task Time')
-      : 'Sariling Mundo';
-    if (currentBubbleWorkState.hasWork !== hasWork || currentBubbleWorkState.pillText !== pillText) {
-      currentBubbleWorkState = { hasWork, pillText };
-      sendBubbleState();
-    }
-    return enriched;
+    syncBubbleWorkFromSnapshot(enriched);
+    return enriched && typeof enriched === 'object'
+      ? {
+          ...enriched,
+          edgeBlinkEnabled: getEdgeBlinkEnabled(),
+          isBlinking: currentBubbleWorkState.isBlinking,
+          blinkMuted: currentBubbleWorkState.blinkMuted,
+          blinkPaused: currentBubbleWorkState.blinkPaused,
+          workTone: currentBubbleWorkState.workTone,
+        }
+      : enriched;
   } catch {
     return getCachedFallback();
   }
@@ -1120,6 +1264,29 @@ function showBubbleContextMenu() {
       label: 'Check Reminders Now',
       click: () => { void evaluateAndNotifyAlerts(true); },
     },
+    ...(currentBubbleWorkState.isBlinking
+      ? [
+          {
+            label: 'Stop Edge Blinking Now',
+            click: () => stopEdgeBlink(),
+          },
+        ]
+      : currentBubbleWorkState.hasWork && currentBubbleWorkState.blinkPaused && getEdgeBlinkEnabled()
+      ? [
+          {
+            label: 'Resume Edge Blinking',
+            click: () => resumeEdgeBlink(),
+          },
+        ]
+      : []),
+    {
+      label: 'Mute Edge Line Blinking',
+      type: 'checkbox',
+      checked: !getEdgeBlinkEnabled(),
+      click: (item) => {
+        setEdgeBlinkEnabled(!item.checked);
+      },
+    },
     { type: 'separator' },
     {
       label: 'Design: Circle Bubble',
@@ -1359,6 +1526,29 @@ function buildTrayMenu() {
       label: 'Check & Ring Reminders Now',
       click: () => { void evaluateAndNotifyAlerts(true, { allowStartupBriefing: true }); },
     },
+    ...(currentBubbleWorkState.isBlinking
+      ? [
+          {
+            label: 'Stop Edge Line Blinking',
+            click: () => stopEdgeBlink(),
+          },
+        ]
+      : currentBubbleWorkState.hasWork && currentBubbleWorkState.blinkPaused && getEdgeBlinkEnabled()
+      ? [
+          {
+            label: 'Resume Edge Line Blinking',
+            click: () => resumeEdgeBlink(),
+          },
+        ]
+      : []),
+    {
+      label: 'Blink Edge Line for Tasks/Routine',
+      type: 'checkbox',
+      checked: getEdgeBlinkEnabled(),
+      click: (item) => {
+        setEdgeBlinkEnabled(item.checked);
+      },
+    },
     {
       label: 'Ring Alert Sounds',
       type: 'checkbox',
@@ -1432,17 +1622,45 @@ if (!gotSingleLock) {
     ipcMain.handle('desktop:get-companion-config', () => ({
       openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
       soundEnabled: getAlertSoundEnabled(),
+      edgeBlinkEnabled: getEdgeBlinkEnabled(),
+      isBlinking: currentBubbleWorkState.isBlinking,
+      blinkPaused: currentBubbleWorkState.blinkPaused,
     }));
 
     ipcMain.handle('desktop:set-startup', (_event, enabled) => ({
       openAtLogin: setStartupLaunchEnabled(enabled),
       soundEnabled: getAlertSoundEnabled(),
+      edgeBlinkEnabled: getEdgeBlinkEnabled(),
+      isBlinking: currentBubbleWorkState.isBlinking,
+      blinkPaused: currentBubbleWorkState.blinkPaused,
     }));
 
     ipcMain.handle('desktop:set-sound', (_event, enabled) => ({
       openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
       soundEnabled: setAlertSoundEnabled(enabled),
+      edgeBlinkEnabled: getEdgeBlinkEnabled(),
+      isBlinking: currentBubbleWorkState.isBlinking,
+      blinkPaused: currentBubbleWorkState.blinkPaused,
     }));
+
+    ipcMain.handle('desktop:set-edge-blink', (_event, enabled) => ({
+      openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
+      soundEnabled: getAlertSoundEnabled(),
+      edgeBlinkEnabled: setEdgeBlinkEnabled(enabled),
+      isBlinking: currentBubbleWorkState.isBlinking,
+      blinkPaused: currentBubbleWorkState.blinkPaused,
+    }));
+
+    ipcMain.handle('desktop:stop-edge-blink', () => {
+      stopEdgeBlink();
+      return {
+        openAtLogin: Boolean(app.getLoginItemSettings().openAtLogin),
+        soundEnabled: getAlertSoundEnabled(),
+        edgeBlinkEnabled: getEdgeBlinkEnabled(),
+        isBlinking: currentBubbleWorkState.isBlinking,
+        blinkPaused: currentBubbleWorkState.blinkPaused,
+      };
+    });
 
     ipcMain.handle('desktop:test-ring', async () => {
       hidePopover();
@@ -1510,9 +1728,19 @@ if (!gotSingleLock) {
         appVisible,
         popoverVisible,
         hasWork: currentBubbleWorkState.hasWork,
+        isBlinking: currentBubbleWorkState.isBlinking,
+        blinkMuted: currentBubbleWorkState.blinkMuted,
+        blinkPaused: currentBubbleWorkState.blinkPaused,
+        workTone: currentBubbleWorkState.workTone,
         pillText: currentBubbleWorkState.pillText,
       };
     });
+
+    ipcMain.handle('bubble:stop-blink', () => stopEdgeBlink());
+    ipcMain.handle('bubble:set-blink-enabled', (_event, enabled) => ({
+      edgeBlinkEnabled: setEdgeBlinkEnabled(enabled),
+      ...currentBubbleWorkState,
+    }));
 
     ipcMain.handle('bubble:toggle-popover', async () => {
       await togglePopover();
@@ -1790,6 +2018,19 @@ if (!gotSingleLock) {
       return { soundEnabled };
     });
 
+    ipcMain.handle('popover:set-blink-enabled', (_event, enabled) => {
+      const edgeBlinkEnabled = setEdgeBlinkEnabled(enabled);
+      return {
+        edgeBlinkEnabled,
+        isBlinking: currentBubbleWorkState.isBlinking,
+        blinkMuted: currentBubbleWorkState.blinkMuted,
+        blinkPaused: currentBubbleWorkState.blinkPaused,
+      };
+    });
+
+    ipcMain.handle('popover:stop-blink', () => stopEdgeBlink());
+    ipcMain.handle('popover:resume-blink', () => resumeEdgeBlink());
+
     ipcMain.handle('popover:ring-now', async () => {
       const snap = await readWorkspaceSnapshot();
       return {
@@ -1922,6 +2163,7 @@ if (!gotSingleLock) {
     createTray();
     setTimeout(() => { void evaluateAndNotifyAlerts(false, { allowStartupBriefing: true }); }, 4500);
     setTimeout(() => { void evaluateAndNotifyAlerts(false, { allowStartupBriefing: true }); }, 11000);
+    setInterval(() => { void readWorkspaceSnapshot(); }, 4000);
     setInterval(() => { void evaluateAndNotifyAlerts(false); }, 30000);
   });
 

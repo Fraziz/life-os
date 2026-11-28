@@ -104,13 +104,16 @@ export default function SettingsPage() {
   const [desktopCompanion, setDesktopCompanion] = useState<{
     openAtLogin: boolean;
     soundEnabled: boolean;
+    edgeBlinkEnabled?: boolean;
+    isBlinking?: boolean;
+    blinkPaused?: boolean;
   } | null>(null);
 
   useEffect(() => {
     const desktopApi = (window as Window & {
       sarilingDesktop?: {
         getBubbleConfig?: () => Promise<{ visible: boolean; mode: 'circle' | 'line' | 'pill'; edge: 'left' | 'right'; popoverVisible?: boolean }>;
-        getCompanionConfig?: () => Promise<{ openAtLogin: boolean; soundEnabled: boolean }>;
+        getCompanionConfig?: () => Promise<{ openAtLogin: boolean; soundEnabled: boolean; edgeBlinkEnabled?: boolean; isBlinking?: boolean; blinkPaused?: boolean }>;
       };
     }).sarilingDesktop;
     if (desktopApi?.getBubbleConfig) {
@@ -1709,6 +1712,40 @@ export default function SettingsPage() {
                           >
                             {desktopCompanion?.soundEnabled !== false ? 'Alert Ring Sound: On' : 'Alert Ring Sound: Off'}
                           </button>
+                          <button
+                            type="button"
+                            className={desktopCompanion?.edgeBlinkEnabled !== false ? styles.btnPrimary : styles.btnSecondary}
+                            onClick={async () => {
+                              const api = (window as Window & {
+                                sarilingDesktop?: {
+                                  setEdgeBlinkEnabled?: (e: boolean) => Promise<{ openAtLogin: boolean; soundEnabled: boolean; edgeBlinkEnabled?: boolean; isBlinking?: boolean; blinkPaused?: boolean }>;
+                                };
+                              }).sarilingDesktop;
+                              if (!api?.setEdgeBlinkEnabled) return;
+                              const next = await api.setEdgeBlinkEnabled(!(desktopCompanion?.edgeBlinkEnabled !== false));
+                              if (next) setDesktopCompanion(next);
+                            }}
+                          >
+                            {desktopCompanion?.edgeBlinkEnabled !== false ? 'Edge Line Blink: On' : 'Edge Line Blink: Muted'}
+                          </button>
+                          {desktopCompanion?.isBlinking && (
+                            <button
+                              type="button"
+                              className={styles.btnSecondary}
+                              onClick={async () => {
+                                const api = (window as Window & {
+                                  sarilingDesktop?: {
+                                    stopEdgeBlink?: () => Promise<{ openAtLogin: boolean; soundEnabled: boolean; edgeBlinkEnabled?: boolean; isBlinking?: boolean; blinkPaused?: boolean }>;
+                                  };
+                                }).sarilingDesktop;
+                                if (!api?.stopEdgeBlink) return;
+                                const next = await api.stopEdgeBlink();
+                                if (next) setDesktopCompanion(next);
+                              }}
+                            >
+                              Stop Edge Blinking
+                            </button>
+                          )}
                           <button
                             type="button"
                             className={styles.btnSecondary}

@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('sarilingBubble', {
   togglePopover: () => ipcRenderer.invoke('bubble:toggle-popover'),
   toggleApp: () => ipcRenderer.invoke('bubble:toggle-app'),
   setMode: (mode) => ipcRenderer.invoke('bubble:set-mode', mode),
+  stopBlink: () => ipcRenderer.invoke('bubble:stop-blink'),
+  setBlinkEnabled: (enabled) => ipcRenderer.invoke('bubble:set-blink-enabled', enabled),
   dragStart: (screenX, screenY) => ipcRenderer.send('bubble:drag-start', { screenX, screenY }),
   dragMove: (screenX, screenY) => ipcRenderer.send('bubble:drag-move', { screenX, screenY }),
   dragEnd: (screenX, screenY) => ipcRenderer.send('bubble:drag-end', { screenX, screenY }),

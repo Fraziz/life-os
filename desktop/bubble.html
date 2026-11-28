@@ -87,8 +87,29 @@
       background: #f59e0b;
     }
 
+    @keyframes pipBlinkWork {
+      0%, 100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 8px rgba(245, 158, 11, 0.9); }
+      50% { opacity: 0.25; transform: scale(0.85); box-shadow: none; }
+    }
+
+    @keyframes pipBlinkUrgent {
+      0%, 100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px rgba(239, 68, 68, 0.95); }
+      50% { opacity: 0.2; transform: scale(0.85); box-shadow: none; }
+    }
+
+    .circleBubble.blinking .statusPip {
+      background: #f59e0b;
+      animation: pipBlinkWork 1.2s ease-in-out infinite;
+    }
+
+    .circleBubble.blinking.urgent .statusPip {
+      background: #ef4444;
+      animation: pipBlinkUrgent 0.9s ease-in-out infinite;
+    }
+
     .circleBubble.active .statusPip {
       background: #ffffff;
+      animation: none;
     }
 
     /* ── Design 2: Minimalist Screen-Edge Panel Handle ── */
@@ -159,8 +180,48 @@
     }
 
     .edgeLineHandle.hasWork .edgeSliver {
-      background: rgba(203, 213, 225, 0.46);
-      opacity: 0.58;
+      background: rgba(203, 213, 225, 0.52);
+      opacity: 0.62;
+    }
+
+    @keyframes edgeBlinkWork {
+      0%, 100% {
+        opacity: 1;
+        background: #f59e0b;
+        border-color: rgba(254, 243, 199, 0.9);
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.85), 0 0 4px rgba(251, 191, 36, 0.95);
+      }
+      50% {
+        opacity: 0.24;
+        background: rgba(245, 158, 11, 0.42);
+        border-color: rgba(251, 191, 36, 0.35);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+      }
+    }
+
+    @keyframes edgeBlinkUrgent {
+      0%, 100% {
+        opacity: 1;
+        background: #ef4444;
+        border-color: rgba(254, 226, 226, 0.92);
+        box-shadow: 0 0 16px rgba(239, 68, 68, 0.9), 0 0 5px rgba(248, 113, 113, 0.95);
+      }
+      50% {
+        opacity: 0.2;
+        background: rgba(239, 68, 68, 0.38);
+        border-color: rgba(248, 113, 113, 0.35);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+      }
+    }
+
+    .edgeLineHandle.blinking:not(:hover):not(.active) .edgeSliver {
+      width: 6px;
+      height: 64px;
+      animation: edgeBlinkWork 1.25s ease-in-out infinite;
+    }
+
+    .edgeLineHandle.blinking.urgent:not(:hover):not(.active) .edgeSliver {
+      animation: edgeBlinkUrgent 0.9s ease-in-out infinite;
     }
 
     .edgeLineHandle:hover,
@@ -176,6 +237,7 @@
       background: rgba(13, 15, 20, 0.94);
       border-color: rgba(255, 255, 255, 0.24);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.36);
+      animation: none;
     }
 
     .edgeMiniLogo {
@@ -247,8 +309,19 @@
       background: #f59e0b;
     }
 
+    .pillHandle.blinking .pillDot {
+      background: #f59e0b;
+      animation: pipBlinkWork 1.2s ease-in-out infinite;
+    }
+
+    .pillHandle.blinking.urgent .pillDot {
+      background: #ef4444;
+      animation: pipBlinkUrgent 0.9s ease-in-out infinite;
+    }
+
     .pillHandle.active .pillDot {
       background: #ffffff;
+      animation: none;
     }
 
     .hidden {
@@ -292,7 +365,17 @@
     const elPill = document.getElementById('mode-pill');
     const elPillLabel = document.getElementById('pill-label');
 
-    let currentState = { mode: 'circle', edge: 'right', popoverVisible: false, hasWork: false, pillText: 'Sariling Mundo' };
+    let currentState = {
+      mode: 'circle',
+      edge: 'right',
+      popoverVisible: false,
+      hasWork: false,
+      isBlinking: false,
+      blinkMuted: false,
+      blinkPaused: false,
+      workTone: 'neutral',
+      pillText: 'Sariling Mundo',
+    };
 
     function applyState(state) {
       if (!state) return;
@@ -307,15 +390,36 @@
 
       const isActive = Boolean(state.popoverVisible);
       const hasWork = Boolean(state.hasWork);
+      const isBlinking = Boolean(state.isBlinking);
+      const isUrgent = state.workTone === 'urgent';
 
       elCircle.classList.toggle('active', isActive);
       elCircle.classList.toggle('hasWork', hasWork);
+      elCircle.classList.toggle('blinking', isBlinking);
+      elCircle.classList.toggle('urgent', isUrgent);
 
       elLineHandle.classList.toggle('active', isActive);
       elLineHandle.classList.toggle('hasWork', hasWork);
+      elLineHandle.classList.toggle('blinking', isBlinking);
+      elLineHandle.classList.toggle('urgent', isUrgent);
 
       elPill.classList.toggle('active', isActive);
       elPill.classList.toggle('hasWork', hasWork);
+      elPill.classList.toggle('blinking', isBlinking);
+      elPill.classList.toggle('urgent', isUrgent);
+
+      if (elLineHandle) {
+        if (isBlinking) {
+          elLineHandle.title =
+            'Pending task or routine — Click to view or Right-click to Stop / Mute blinking';
+        } else if (hasWork && (state.blinkMuted || state.blinkPaused)) {
+          elLineHandle.title =
+            'Pending work (blinking stopped/muted) — Click to view or Right-click to Resume';
+        } else {
+          elLineHandle.title =
+            'Click or swipe inward for Edge Sidebar · Drag up/down to move · Right-click for styles';
+        }
+      }
 
       if (state.pillText && elPillLabel) {
         elPillLabel.textContent = state.pillText;
